@@ -33,15 +33,15 @@
 struct pageinfo {
 	int pageNo;	
 
-	unsigned long pageversion;
+	unsigned long pageVersion;
    
 	// Used to save start address for this page. 
 	void * pageStart;
 	
 	// Following two fields are different in functionality.
-	void * origTwinPage;
+	void * twinPage;
 
-	unsigned long * wordChanges;
+  void * canaryBitmap; 
 	bool shared;
 	bool alloced;
 };

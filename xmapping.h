@@ -332,7 +332,7 @@ public:
     // to do word-by-word commit. 
     // Getting old version can means unnecessary to do the a word-by-word commit, but it is 
     // safe to do this.
-    curr->pageversion = _persistentVersions[pageNo];
+    curr->pageVersion = _persistentVersions[pageNo];
      
 	  // Force the copy-on-write of kernel by writing to this address directly
  #if defined(X86_32BIT)
@@ -349,8 +349,8 @@ public:
                   : "memory");
   #endif 
 
-    // Create the "origTwinPage" from _transientMemory.
-	  memcpy(curr->origTwinPage, pageStart, xdefines::PageSize);
+    // Create the "twinPage" from _transientMemory.
+	  memcpy(curr->twinPage, pageStart, xdefines::PageSize);
 
 	  // We will update the users of this page.
 	  origUsers = atomic::increment_and_return(&_pageUsers[pageNo]);
@@ -445,19 +445,18 @@ public:
       // thread can be overlapped by the second thread. 
       // It is only safe if we are using page-based lock!!!!!
       // That is, we have to acquire a page-based lock when we are trying to commit.
-  	  if(pageinfo->pageversion == _persistentVersions[pageNo]) {
+  	  if(pageinfo->pageVersion == _persistentVersions[pageNo]) {
     		// Faster commit
     		memcpy(persistent, pageinfo->pageStart, xdefines::PageSize);
   	  }
   	  else {
   	  	// Slower commit of one page.
-  		  writePageDiffs(pageinfo->pageStart, pageinfo->origTwinPage, persistent);
+  		  writePageDiffs(pageinfo->pageStart, pageinfo->twinPage, persistent);
   	  }
 #else 
-  		writePageDiffs(pageinfo->pageStart, pageinfo->origTwinPage, persistent);
+  		writePageDiffs(pageinfo->pageStart, pageinfo->twinPage, persistent);
 #endif
   
-      //UPDATE version number 
   	  _persistentVersions[pageNo]++;
 	  }
 

@@ -64,6 +64,7 @@ public:
   enum { SHAREDHEAP_CHUNK = 1048576};
   enum { LARGE_CHUNK = 1024 };
   enum { INTERNALHEAP_SIZE = 1048576UL * 20 };
+  enum { CANARY_WORD_LENGTH = 8 };
 
   // Reserve how many private pages for each process
   enum { PRIVATE_PAGES = 2000 }; 

@@ -37,7 +37,7 @@ public:
       static char buf[sizeof(xpageentry)];
       static xpageentry * theOneTrueObject = new (buf) xpageentry();
       return *theOneTrueObject;
-    }
+  }
 
 	void initialize(void) {
 		void * start;
@@ -57,7 +57,7 @@ public:
     cur = (struct pageinfo *)start;
     i = 0;
     while(i < PAGE_ENTRY_NUM) {
-        cur->origTwinPage = (void *)(pagestart + i * xdefines::PageSize);
+        cur->twinPage = (void *)(pagestart + i * xdefines::PageSize);
         cur++;
         i++;
     }
