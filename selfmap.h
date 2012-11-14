@@ -109,9 +109,9 @@ public:
         regions[*regionNumb].start = startaddr;
         regions[*regionNumb].end = endaddr;
         (*regionNumb)++;
-        //fprintf(stderr, "selfmap entry start %p end %p\n", startaddr, endaddr);
+        fprintf(stderr, "Haha, selfmap entry start %p end %p\n", startaddr, endaddr);
       }
-      else if((mapentry.find(" 08:0b ", 0) != string::npos) && (mapentry.find(" rw-p ") != string::npos)) {
+      else if((mapentry.find(" 08:0b ", 0) != string::npos) && (mapentry.find(" rw-p ") != string::npos)&& (mapentry.find("lib", 0) == string::npos)) {
         getRegionInfo(mapentry, &startaddr, &endaddr);
      
         // Check whether it is the applications' global region.
@@ -119,9 +119,9 @@ public:
           // When it is done, now we can exit.
           regions[*regionNumb].start = startaddr;
           regions[*regionNumb].end = endaddr;
-        //  fprintf(stderr, "selfmap entry start %p end %p\n", startaddr, endaddr);
+          fprintf(stderr, "selfmap entry start %p end %p\n", startaddr, endaddr);
           (*regionNumb)++;
-          break;
+//          break;
         //}
       }
       else {
