@@ -60,6 +60,8 @@
 #include "xpagestore.h"
 #include "objectheader.h"
 
+#include "watchpoint.h"
+
 // Encapsulates all memory spaces (globals & heap).
 
 class xmemory {
@@ -91,6 +93,11 @@ public:
 	  _globals.initialize();
 	  xpageentry::getInstance().initialize();
 	  xpagestore::getInstance().initialize();
+
+    // Now we can initialize the part about sanity checking.
+    // Why we are doing this because we try to avoid the checking 
+    // on the metadata of heaps.
+    _pheap.sanitycheckInitialize();
   }
 
   void finalize(void) {
@@ -98,6 +105,7 @@ public:
 	  _pheap.finalize();
   }
 
+  // Intercepting those allocations
   inline void *malloc (size_t sz) {
   	void * ptr;
   
@@ -121,9 +129,15 @@ public:
 	  return newptr;
   }
 
+  // We should mark this whole objects with 
+  // some canary words.
+  // Change the free operation to put into the tail of  
+  // list.
   inline void free (void * ptr) {
     size_t s = getSize (ptr);
 		_pheap.free(_heapid, ptr);
+
+    // Cleanup this object with sentinel except the first word. 
   }
 
   /// @return the allocated size of a dynamically-allocated object.
@@ -146,6 +160,10 @@ public:
 
   /// Called when a thread need to rollback.
   inline void rollback(void) {
+    // Now those watchpoints should be saved successfully,
+    // We might have to install the watchpoints now.
+    watchpoint::getInstance().installWatchpoints();
+
     // Save the heapmeta data.
     _pheap.recoverHeapMetadata(); 
 
@@ -155,7 +173,7 @@ public:
   }
 
   /// Transaction begins.
-  inline void begin (void) {
+  inline void atomicBegin (void) {
     // Reset global and heap protection.
     _globals.begin();
     _pheap.begin();
@@ -179,11 +197,42 @@ public:
     }
 #endif
   }
-  
-  inline void commit (void) {
+
+  // Check and commit in the end of transaction.  
+  // We are using two phases here:
+  // First, we will check whether there is some overflow error or not.
+  // Second, if there is no overflow, then we can start to commit the
+  // changes.
+  inline bool atomicEnd (void) {
+    bool hasOverflow = false; 
+    // Check whether there are some overflow here.
+    //if(_pheap.sanitycheckPerform(&watchpoints[0]) == false) {
+    hasOverflow = _pheap.sanitycheckPerform();
+    if(hasOverflow == false) {
+	  	fprintf(stderr, "%d : atomic commit, NO OVERFLOW\n", getpid());
+      // Commit if there is no overflow.
+		  _pheap.commit();
+		  _globals.commit();
+    }
+    else {
+	  	fprintf(stderr, "%d : OVERFLOW!!!!\n", getpid());
+
+    }
+    return hasOverflow;
+  }
+
+  // We will check the overflow in the end.
+  // There is no need to commit those changes,
+  // we only need to check whether there is some overflow.
+  // If no overflow, then we don't need to do anything.
+  // If some overflows, then we have to rollback.
+  inline void programEnd(void) {
+    bool hasOverflow = false; 
 	//	fprintf(stderr, "%d : atomic commit\n", getpid());
-		_pheap.checkandcommit();
-		_globals.checkandcommit();
+    // Check whether there are some overflow here.
+    //if(_pheap.sanitycheckPerform(&watchpoints[0]) == false) {
+    hasOverflow = _pheap.sanitycheckPerform();
+    
   }
 
 #if 0

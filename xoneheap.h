@@ -34,9 +34,13 @@ class xoneheap {
 public:
 
   void initialize(void * ptr, size_t size) { getHeap()->initialize(ptr, size); }
+  void sanitycheckInitialize(void * ptr, size_t size) { getHeap()->sanitycheckInitialize(ptr, size); }
   void finalize () { getHeap()->finalize(); }
   void begin () { getHeap()->begin(); }
-  void checkandcommit () { getHeap()->checkandcommit(); }
+  void commit (void) { getHeap()->commit(); }
+
+  /// Check the buffer overflow.
+  bool sanitycheckPerform() { return getHeap()->sanitycheckPerform(); }
 
   void stats () { getHeap()->stats(); }
 
@@ -50,6 +54,7 @@ public:
   // Get heap start and end, this is used to check range.
   void * getHeapStart(void) { getHeap()->getHeapStart(); }
   void * getHeapEnd(void) { getHeap()->getHeapEnd(); }
+  void * getHeapPosition(void) { getHeap()->getHeapPosition(); }
   
   // Now we don't support inRange anymore since it will be handled in the first level. 
   //bool inRange (void * ptr) { return getHeap()->inRange(ptr); }

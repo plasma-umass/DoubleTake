@@ -35,55 +35,65 @@
 #include "adapt.h"
 #include "sllist.h"
 #include "dllist.h"
-#include "sanitycheckheap.h"
 #include "zoneheap.h"
 #include "objectheader.h"
-
+#include "sanitycheckheap.h"
 #include "spinlock.h"
+
+// Implemented for stopgap to check buffer overflow
+#include "sanitycheck.h"
 
 template <class SourceHeap>
 class NewSourceHeap : public SourceHeap {
+
 public:
   void * malloc (size_t sz) {
 
-    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader));
+    // We are adding one objectHeader and two "canary" words along the object
+    // The layout will be:  objectHeader + "canary" + Object + "canary".
+    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
     if (!ptr) {
       return NULL;
     }
-   
-    //fprintf(stderr, "sz is %x - %d\n", sz, sz); 
-#if 0 // ALIGN_TO_PAGE
-    if (sz >= 4096 - sizeof(objectHeader)) {
-      ptr = (void *) (((((size_t) ptr) + 4095) & ~4095) - sizeof(objectHeader));
-    }
-#endif
+  
+  //  fprintf(stderr, "NewSourceHeap: sz is %d, actual size %d, sizeof size_t is %d\n", sz, sz+sizeof(objectHeader), sizeof(size_t)); 
+    // Set the objectHeader
     objectHeader * o = new (ptr) objectHeader (sz);
-    void * newptr = getPointer(o);
+
+    // Now we are adding two sentinels and mark them on the shared bitmap.
+    sanitycheck::getInstance().setupSentinels(ptr, sz); 
+   
+    void * newptr = getRealPointer(o);
 
     assert (getSize(newptr) >= sz);
    // fprintf(stderr, "NEWSOURCEHEAP: sz is %x - %d, newptr %p\n", sz, sz, newptr); 
     return newptr;
   }
+
   void free (void * ptr) {
-    SourceHeap::free ((void *) getObject(ptr));
+    SourceHeap::free ((void *) getObjectHeader(ptr));
   }
+
   size_t getSize (void * ptr) {
-    objectHeader * o = getObject(ptr);
+    objectHeader * o = getObjectHeader(ptr);
     size_t sz = o->getSize();
     if (sz == 0) {
       PRFATAL ("Object size error, can't be 0");
     }
     return sz;
   }
+
 private:
 
-  static objectHeader * getObject (void * ptr) {
-    objectHeader * o = (objectHeader *) ptr;
-    return (o - 1);
+  // Get the object header when object is free
+  static objectHeader * getObjectHeader (void * ptr) {
+    objectHeader * o = (objectHeader *)((intptr_t)ptr - sizeof(objectHeader) - xdefines::SENTINEL_SIZE);
+    return o;
   }
 
-  static void * getPointer (objectHeader * o) {
-    return (void *) (o + 1);
+  // It is called to get the start address of actual object 
+  static void * getRealPointer (void * ptr) {
+    return (void *) ((intptr_t)ptr + sizeof(objectHeader) + xdefines::SENTINEL_SIZE);
   }
 };
 
@@ -191,14 +201,31 @@ public:
     }
     _heap = new (base) SuperHeap;
     
-
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
     _heapEnd = SourceHeap::getHeapEnd();
+
+    _sanitycheckStart = (void *) ((intptr_t)(_heapStart) + metasize);
+    _sanitycheckSize = xdefines::PROTECTEDHEAP_SIZE -  metasize;
     //fprintf(stderr, "XPHEAP: size %d base %p at %p\n", metasize, _heap, &_heap);
   }
 
-  void * malloc(int heapid, int size) {
+
+  // Initialization for sanity check.
+  void sanitycheckInitialize(void) {
+    sanitycheck::getInstance().initialize(_sanitycheckStart, _sanitycheckSize);
+  }
+
+#if 1
+  // Performing the actual sanity check.
+  bool sanitycheckPerform(void) {
+    void * heapEnd =(void *)SourceHeap::getHeapPosition();
+    sanitycheck::getInstance().setHeapPosition(heapEnd);
+    return SourceHeap::sanitycheckPerform();
+  }
+#endif
+
+  void * malloc(int heapid, size_t size) {
     _heap->malloc(heapid, size);
   }
 
@@ -218,6 +245,10 @@ private:
   SuperHeap * _heap;
   void * _heapStart;
   void * _heapEnd; 
+
+  // Sanity check related information
+  void * _sanitycheckStart;
+  size_t _sanitycheckSize;
 };
 
 #endif // _XPHEAP_H_

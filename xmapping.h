@@ -56,17 +56,28 @@
 #include "xplock.h"
 #include "xdefines.h"
 #include "xpageentry.h"
-#include "xpagestore.h"
 
 #include "mm.h"
+#include "sanitycheck.h"
 
 class xmapping {
 public:
+  typedef std::pair<int, struct pageinfo *> dirtyPagePair;
+
   // The objects are pairs, mapping void * pointers to sizes.
-  typedef HL::STLAllocator<struct pageinfo *, PrivateHeap> dirtyPageTypeAllocator;
+  typedef HL::STLAllocator<dirtyPagePair, PrivateHeap> dirtyPageTypeAllocator;
+
+  typedef std::less<int> dirtyPageComparator;
 
   /// A map of pointers to objects and their allocated sizes.
-  typedef std::list<struct pageinfo *, dirtyPageTypeAllocator> dirtyListType;
+  typedef std::map<int, struct pageinfo *, dirtyPageComparator, dirtyPageTypeAllocator> dirtyListType;
+  
+#if 0
+  typedef HL::STLAllocator<int pageNo, struct pageinfo *, PrivateHeap> dirtyPageTypeAllocator;
+
+  /// A map of pointers to objects and their allocated sizes.
+  typedef std::map<int pageNo, struct pageinfo *, dirtyPageTypeAllocator> dirtyListType;
+#endif
 
   xmapping() 
     : _startaddr (NULL),
@@ -90,9 +101,6 @@ public:
       PRFATAL("Wrong size %lx, should be page aligned.\n", size);
     }
 
-    // Calculate how many pages totally.
-    _totalPages = size/xdefines::PageSize;
-     
     // Get a temporary file name (which had better not be NFS-mounted...).
     char _backingFname[L_tmpnam];
     sprintf (_backingFname, "/tmp/stopgapMXXXXXX");
@@ -110,25 +118,6 @@ public:
     
 	  // Get rid of the files when we exit.
     unlink (_backingFname);
-
-    char _versionsFname[L_tmpnam];
-    // Get another temporary file name (which had better not be NFS-mounted...).
-    sprintf (_versionsFname, "/tmp/stopgapVXXXXXX");
-    _versionsFd = mkstemp (_versionsFname);
-    
-	  if (_versionsFd == -1) {
-      fprintf (stderr, "Failed to make persistent file.\n");
-      ::abort();
-    }
-
-	  if(ftruncate(_versionsFd, _totalPages * sizeof(unsigned long))) {
-      // Some sort of mysterious error.
-      // Adios.
-      fprintf (stderr, "Mysterious error with ftruncate.\n");
-      ::abort();
-    }
-
-    unlink (_versionsFname);
 
     //
     // Establish two maps to the backing file.
@@ -155,20 +144,12 @@ public:
     _transientMemory = 
       (char *) MM::mmapAllocateShared(_startsize, _backingFd, _startaddr);
  
-   _isProtected = false;
 
     _startaddr = (void *)_transientMemory;
     _endaddr = (void *)((intptr_t)_transientMemory + _startsize);
 #ifndef NDEBUG
     fprintf (stderr, "transient = %p, persistent = %p, size = %lx, _startaddr %p, _endaddr %p\n", _transientMemory, _persistentMemory, _startsize, _startaddr, _endaddr);
 #endif
-
-    // Finally, map the version numbers.
-    _persistentVersions = 
-      (unsigned long *) MM::mmapAllocateShared(_totalPages * sizeof(unsigned long), _versionsFd);
-
-	  _pageUsers =
-      (unsigned long *) MM::mmapAllocateShared(_totalPages * sizeof(unsigned long), -1);
 
 #ifdef SSE_SUPPORT	
     // A string of one bits.
@@ -185,8 +166,6 @@ public:
     munmap (_transientMemory, size());
     munmap (_persistentMemory, size());
     close (_versionsFd);
-    munmap (_persistentVersions, _totalPages * sizeof(unsigned long));
-    munmap (_pageUsers, _totalPages * sizeof(unsigned long));
 #endif
   }
 
@@ -279,14 +258,12 @@ public:
   void openProtection (void) {
     mmapRdPrivate(base(), size());
 	//  fprintf(stderr, "%d : protected %p with size %x\n", getpid(), base(), size());
-    _isProtected = true;
   }
 
   // Can we change a block of memory to the shared mapping??
   // FIXME: if all memory has been committed, then it is safe to do this.
   void closeProtection(void) {
     mmapRwShared(base(), size());
-    _isProtected = false;
   }
 
  
@@ -323,7 +300,6 @@ public:
     struct pageinfo * curr = xpageentry::getInstance().alloc();
 	  curr->pageNo = pageNo;
 	  curr->pageStart = pageStart;
-	  curr->alloced = false;
 
 	  // Get current page's version number. 
 	  // Trick here: we have to get version number before the force of copy-on-write.
@@ -332,8 +308,8 @@ public:
     // to do word-by-word commit. 
     // Getting old version can means unnecessary to do the a word-by-word commit, but it is 
     // safe to do this.
-    curr->pageVersion = _persistentVersions[pageNo];
-     
+    
+#if 0 
 	  // Force the copy-on-write of kernel by writing to this address directly
  #if defined(X86_32BIT)
     asm volatile ("movl %0, %1 \n\t"
@@ -351,16 +327,8 @@ public:
 
     // Create the "twinPage" from _transientMemory.
 	  memcpy(curr->twinPage, pageStart, xdefines::PageSize);
-
-	  // We will update the users of this page.
-	  origUsers = atomic::increment_and_return(&_pageUsers[pageNo]);
-	  if(origUsers != 0) {
-		  curr->shared = true;
-	  }
-	  else {
-		  curr->shared = false;
-	  }
-	  _dirtiedPagesList.push_back (curr);
+#endif
+	  _dirtiedPagesList.insert (dirtyPagePair(pageNo,curr));
   }
 
   /// @brief Start a transaction.
@@ -374,7 +342,6 @@ public:
   }
 
   inline void writePageDiffs (const void * local, const void * twin, void * dest) {
-  #if SSE_SUPPORT
     __m128i * localbuf = (__m128i *) local;
     __m128i * twinbuf  = (__m128i *) twin;
     __m128i * destbuf  = (__m128i *) dest;
@@ -395,71 +362,78 @@ public:
       // Write local pieces into destbuf everywhere diffs.
       _mm_maskmoveu_si128 (localChunk, neqChunk, (char *) &destbuf[i]);
     }
-  #else
-    unsigned long * mylocal = (unsigned long *)local;
-    unsigned long * mytwin = (unsigned long *)twin;
-    unsigned long * mydest = (unsigned long *)dest;
-    
-    for(int i = 0; i < xdefines::PageSize/sizeof(unsigned long); i++) {
-  		if(mylocal[i] != mytwin[i]) {
-  			checkCommitWord((char *)&mylocal[i], (char *)&mytwin[i], (char *)&mydest[i]);	
-  		}
-    }
-  	
- #endif
- }
-
-  inline void checkCommitWord(char * local, char * twin, char * share) {
-    int i = 0;
-    while(i < sizeof(unsigned long)) {
-  		if(local[i] != twin[i]) {
-  			share[i] = local[i];
-  		}
-      i++;
-    }
   }
 
-  inline void checkandcommit(void) {
+  /// Check the heap overflow. 
+  inline bool sanitycheckPerform() {
+    // Currently, we only need to check the heap overflow 
+    assert(_isHeap == true);
+
+  	struct pageinfo * pageinfo = NULL;
+  	int pageNo;
+  	unsigned long * persistent;
+    bool hasOverflow = false;
+
+    unsigned int lastpage = 0xFFFFFF00;
+    void * batchedStart = NULL;
+    int    batchedPages = 0;
+
+    // We only check if there are some dirty pages.  
+  	if(_dirtiedPagesList.size() != 0) {
+      // Commit those private pages by change the page's version number and decrement the user counter.
+      for (dirtyListType::iterator i = _dirtiedPagesList.begin(); i != _dirtiedPagesList.end(); ++i) {
+  	    pageNo = i->first;
+
+        if(pageNo == lastpage + 1) {
+          batchedPages++; 
+        }
+        else {
+          if(batchedPages != 0) {
+            // How to check the overflow error.
+            hasOverflow = sanitycheck::getInstance().checkHeapIntegrity
+                              (batchedStart, batchedPages * xdefines::PageSize);
+
+            if(hasOverflow) {
+              break;
+            }
+          }
+          batchedPages = 1;
+          lastpage = pageNo;
+          batchedStart = i->second->pageStart;
+        }
+  	 //   persistent = (unsigned long *) ((intptr_t)_persistentMemory + xdefines::PageSize * pageNo);
+      }
+    }
+
+    // Now we are doing the last one checking.
+    if(hasOverflow == false && batchedPages != 0) {
+      hasOverflow = sanitycheck::getInstance().checkHeapIntegrity
+                              (batchedStart, batchedPages * xdefines::PageSize);
+    }
+
+    return hasOverflow;
+  }
+ 
+  // Commit all private pages to the shared mapping 
+  inline void commit(void) {
   	struct pageinfo * pageinfo = NULL;
   	int pageNo;
   	unsigned long * persistent;
   
-  #ifdef GET_CHARACTERISTICS
-      _pageprof.updateCommitInfo(_dirtiedPagesList.size());
-  #endif
-//  	fprintf(stderr, "%d commit with page %d\n", getpid(), _dirtiedPagesList.size());
   	if(_dirtiedPagesList.size() == 0) {
       return;
 	  }
 
     // Commit those private pages by change the page's version number and decrement the user counter.
     for (dirtyListType::iterator i = _dirtiedPagesList.begin(); i != _dirtiedPagesList.end(); ++i) {
-  	  pageinfo = (*i);
+  	  pageinfo = i->second;
   	  pageNo = pageinfo->pageNo;
   
   	  persistent = (unsigned long *) ((intptr_t)_persistentMemory + xdefines::PageSize * pageNo);
-#if 0
-      // Actually the faster commit is not safe. If two threads are trying to 
-      // commit in the same time, they may use the faster commit. However,
-      // since we are copying the whole page, then some modifications of first
-      // thread can be overlapped by the second thread. 
-      // It is only safe if we are using page-based lock!!!!!
-      // That is, we have to acquire a page-based lock when we are trying to commit.
-  	  if(pageinfo->pageVersion == _persistentVersions[pageNo]) {
-    		// Faster commit
-    		memcpy(persistent, pageinfo->pageStart, xdefines::PageSize);
-  	  }
-  	  else {
-  	  	// Slower commit of one page.
-  		  writePageDiffs(pageinfo->pageStart, pageinfo->twinPage, persistent);
-  	  }
-#else 
-  		writePageDiffs(pageinfo->pageStart, pageinfo->twinPage, persistent);
-#endif
-  
-  	  _persistentVersions[pageNo]++;
+ 
+      // For single thread program, we can use the memcpy to commit a page.
+      memcpy(persistent, pageinfo->pageStart, xdefines::PageSize);
 	  }
-
   }
   /// @brief Update every page frame from the backing file.
   /// Change to this function so that it will deallocate those backup pages. Previous way
@@ -468,20 +442,36 @@ public:
   void updateAll (void) {
     // Dump the now-unnecessary page frames, reducing space overhead.
     dirtyListType::iterator i;
-    int index = 0;
-    //fprintf(stderr, "ATOMICBEGIN: isHeap %d Dirty pages %d\n", _isHeap, _dirtiedPagesList.size());
+    unsigned int lastpage = 0xFFFFFF00;
+    void * batchedStart = NULL;
+    int    batchedPages = 0;
+    int pageNo;
+
     for (i = _dirtiedPagesList.begin(); i != _dirtiedPagesList.end(); ++i) {
-	    struct pageinfo * pageinfo = (*i);
-     
-      //fprintf(stderr, "Dirty page %d: pageNo %d at %p\n", index++, pageinfo->pageNo, pageinfo->pageStart);
-      updatePage(pageinfo->pageStart);
+      pageNo = i->first;
+
+      if(pageNo == lastpage + 1) {
+        batchedPages++; 
+      }
+      else {
+        if(batchedPages != 0) {
+          updatePages(batchedStart, batchedPages);
+        }
+        batchedPages = 1;
+        lastpage = pageNo;
+        batchedStart = i->second->pageStart;
+      }
     }
-    
+   
+    // Now we are doing the last one checking.
+    if(batchedPages != 0) {
+      updatePages(batchedStart, batchedPages);
+    }
+ 
 	  _dirtiedPagesList.clear();
     
 	  // Clean up those page entries.
     xpageentry::getInstance().cleanup();
-  	xpagestore::getInstance().cleanup();
   }
 
 
@@ -497,11 +487,13 @@ private:
   }
 
   /// @brief Update the given page frame from the backing file.
-  void updatePage (void * local) {
-    madvise (local, xdefines::PageSize, MADV_DONTNEED);
+  void updatePages (void * local, int pages) {
+    size_t size = xdefines::PageSize * pages;
+
+    madvise (local, size, MADV_DONTNEED);
 
 	  // Set this page to PROT_READ again.
-	  mprotect (local, xdefines::PageSize, PROT_READ);
+	  mprotect (local, size, PROT_READ);
   }
  
   /// True if current xmapping.h is a heap.
@@ -528,20 +520,8 @@ private:
   /// The persistent (backed to disk) memory.
   char * _persistentMemory;
 
-  bool _isProtected;
-  
-  /// The file descriptor for the versions.
-  int _versionsFd;
-
-  /// The version numbers that are backed to disk.
-  unsigned long * _persistentVersions;
-
-  unsigned long * _pageUsers;
-
-  unsigned long   _totalPages; 
-
-  // A string of one bits.
 #ifdef SSE_SUPPORT
+  // A string of one bits, only useful when we are having SSE_SUPPORT.
   __m128i allones;
 #endif
 

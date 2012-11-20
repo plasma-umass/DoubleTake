@@ -1,9 +1,7 @@
 // -*- C++ -*-
 
 /*
-  Author: Emery Berger, http://www.cs.umass.edu/~emery
- 
-  Copyright (c) 2007-8 Emery Berger, University of Massachusetts Amherst.
+  Copyright (c) 2012, University of Massachusetts Amherst.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -118,7 +116,8 @@ public:
 #if 1
     if(_hasRollbacked == false) {
       // NOTE: only for the test
-      rollback();
+      atomicEnd();
+     // rollback();
     }
 #endif
     // If the tid was set, it means that this instance was
@@ -134,7 +133,7 @@ public:
       openMemoryProtection();
     }  
 
-    _memory.begin();    
+    _memory.atomicBegin();    
 
     // Now we may try to save context.
     _context.saveContext(); 
@@ -322,7 +321,7 @@ public:
     //fflush(stdout);
 
     // Now start.
-    _memory.begin();
+    _memory.atomicBegin();
   }
 
   /// @brief End a transaction, aborting it if necessary.
@@ -331,7 +330,11 @@ public:
       return;
  
     // First, attempt to commit.
-    atomicCommit();
+    bool hasOverflow = _memory.atomicEnd();
+    if(hasOverflow) {
+      // Install watch point
+      rollback();
+    }
 
     // Flush the stdout.
     fflush(stdout);
@@ -342,11 +345,6 @@ private:
 
   typedef enum { FAILED, SUCCEEDED } commitResult;
 
-
-  /// @brief Check consistency and commit atomically (if consistent).
-  inline void atomicCommit (void) {
-    _memory.commit();
-  }
 
   xthread    _thread;
 

@@ -19,8 +19,8 @@
 
 */
 
-#ifndef SHERIFF_OBJECTHEADER_H
-#define SHERIFF_OBJECTHEADER_H
+#ifndef _OBJECTHEADER_H
+#define _OBJECTHEADER_H
 
 /*
  * @file   objectheader.h
@@ -31,44 +31,17 @@
 
 class objectHeader {
 public:
-  enum { MAGIC = 0xCAFEBABE };
 
   objectHeader (size_t sz)
-    : _size (sz),
-      _magic (MAGIC)
+    : _size (sz)
   {
   }
 
-  size_t getSize () { sanityCheck(); return _size; }
-
-  bool isValidObject() {
-    bool ret = false;
-    ret = sanityCheck();
-    if (ret) {
-      // FIXME: _size should be multiple of 8s according to our heap implementation.
-      ret = (_size % 8 == 0)? true : false;
-    }
-    return ret;		
-  }
-
-  bool verifyMagic() {
-    return (_magic == MAGIC);
-  }
+  size_t getSize () { return _size; }
 
 private:
 
-  bool sanityCheck (void) {
-#ifndef NDEBUG
-    if (_magic != MAGIC) {
-      fprintf (stderr, "Sanity check failed in process %d. Current _magic %x at %p\n", getpid(), _magic, &_magic);
-      ::abort();
-    }
-#endif
-    return true;
-  }
-
-  size_t _magic;
   size_t _size;
 };
 
-#endif /* SHERIFF_OBJECTHEADER_H */
+#endif /* _OBJECTHEADER_H */

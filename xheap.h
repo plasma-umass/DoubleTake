@@ -110,11 +110,14 @@ public:
     return (void *)_end;
   }
 
-  inline void * getend(void) {
+  // Get current heap position
+  // We only need to do the sanity check until current position.
+  inline void * getHeapPosition(void) {
 	  return  *_position;
   }
 
-  // We need to page-aligned size, we don't need two different threads are using the same page here.
+  // We need to page-aligned size, we don't want that
+  // two different threads are using the same page here.
   inline void * malloc (size_t sz) {
     sanityCheck();
 
@@ -137,6 +140,9 @@ public:
 
 	  _lock->unlock();
 
+    // We must cleanup corresponding bitmap 
+    sanitycheck::getInstance().cleanup(p, sz);
+    // Now we cleanup the corresponding 
     //fprintf(stderr, "XHEAP malloc: ptr %p size %x\n", p, sz);
     return p;
   }

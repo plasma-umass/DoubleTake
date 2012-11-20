@@ -87,10 +87,10 @@ public:
     }
   }
 
-  // Check and commit all regions in the end of each transaction.
-  void checkandcommit(void) {
+  // Commit all regions in the end of each transaction.
+  void commit(void) {
     for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].checkandcommit();
+      _maps[i].commit();
     }
   }
 
