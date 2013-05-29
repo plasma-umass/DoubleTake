@@ -32,45 +32,32 @@
 template <class SourceHeap>
 class xoneheap {
 public:
+  enum { Alignment = 16 };
 
   void initialize(void * ptr, size_t size) { getHeap()->initialize(ptr, size); }
   void sanitycheckInitialize(void * ptr, size_t size) { getHeap()->sanitycheckInitialize(ptr, size); }
   void finalize () { getHeap()->finalize(); }
-  void begin () { getHeap()->begin(); }
-  void commit (void) { getHeap()->commit(); }
+  
+  void recoverMemory(void * ptr) { getHeap()->recoverMemory(ptr); }
+  void backup (void * end) { getHeap()->backup(end); }
 
   /// Check the buffer overflow.
-  bool sanitycheckPerform() { return getHeap()->sanitycheckPerform(); }
+  bool checkHeapOverflow() { return getHeap()->checkHeapOverflow(); }
 
   void stats () { getHeap()->stats(); }
-
-  void openProtection () { getHeap()->openProtection(); }
-  void closeProtection() { getHeap()->closeProtection(); }
 
   // Handling those metadata for rollback purpose 
   void recoverHeapMetadata () { getHeap()->recoverHeapMetadata(); }
   void saveHeapMetadata() { getHeap()->saveHeapMetadata(); }
 
   // Get heap start and end, this is used to check range.
-  void * getHeapStart(void) { getHeap()->getHeapStart(); }
-  void * getHeapEnd(void) { getHeap()->getHeapEnd(); }
-  void * getHeapPosition(void) { getHeap()->getHeapPosition(); }
+  void * getHeapStart(void) { return getHeap()->getHeapStart(); }
+  void * getHeapEnd(void) { return getHeap()->getHeapEnd(); }
+  void * getHeapPosition(void) { return getHeap()->getHeapPosition(); }
   
-  // Now we don't support inRange anymore since it will be handled in the first level. 
-  //bool inRange (void * ptr) { return getHeap()->inRange(ptr); }
-  void handleWrite (void * ptr) { getHeap()->handleWrite(ptr); }
-
   void * malloc (size_t sz) { return getHeap()->malloc(sz); }
   void free (void * ptr) { getHeap()->free(ptr); }
   size_t getSize (void * ptr) { return getHeap()->getSize(ptr); }
-
-  void sharemem_write_word(void * dest, unsigned long val) {
-    getHeap()->sharemem_write_word(dest, val);
-  }
-
-  unsigned sharemem_read_word(void * dest) {
-    return getHeap()->sharemem_read_word(dest);
-  }
 
 private:
 

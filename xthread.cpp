@@ -1,173 +1,76 @@
-#include <pthread.h>
-#include <syscall.h>
+// -*- C++ -*-
+/*
+  Copyright (c) 2012, University of Massachusetts Amherst.
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+*/
+
+/*
+ * @file   xthread.cpp
+ * @brief  Handle Thread related information.
+ * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
+ */
+
+#include "xdefines.h"
 #include "xthread.h"
 #include "xrun.h"
-
-void * xthread::spawn (xrun * runner,
-		       threadFunction * fn,
-		       void * arg)
-{
-
-	if(!_protected) {
-		runner->openMemoryProtection();
-  		runner->atomicBegin();
-		_protected = true;
-	}
-    
-	runner->atomicEnd();
-//	fprintf(stderr, "%d : spawn\n", getpid());
-  // Allocate an object to hold the thread's return value.
-  void * buf = allocateSharedObject (4096);
-  HL::sassert<(4096 > sizeof(ThreadStatus))> checkSize;
-  ThreadStatus * t = new (buf) ThreadStatus;
-
-  return forkSpawn (runner, fn, t, arg);
-}
+#include "syscalls.h"
+#include "threadmap.h"
 
 
-/// @brief Do pthread_join.
-void xthread::join (xrun * runner,
-            void * v,
-            void ** result)
-{
+// Global lock used when joining and exiting a thread.
+//threadmap::threadHashMap threadmap::_xmap;
+//list_t threadmap::_alivethreads;
 
-  // Return immediately if the thread argument is NULL.
-  if (v == NULL) {
-    return;
+//bool xthread::_isRollbackPhase;
+//list_t xthread::_deadSyncVars;
+__thread thread_t * current;
+threadmap::threadHashMap threadmap::_xmap;
+list_t threadmap::_alivethreads;
+
+int getThreadIndex(void) {
+  if(!globalinfo::getInstance().isInitPhase()) {
+  //  PRWRN("current %p\n", current);
+    return current->index;
   }
-
-  ThreadStatus * t = (ThreadStatus *) v;
- 
-  runner->atomicEnd();
-//  fprintf(stderr, "%d: joining thread %d\n", getpid(), t->tid);
-  
-  // FIXME: I should wait until the child thread has been finished.
-  int status;
-  waitpid(t->tid, &status, 0);
-
-  // Grab the thread result from the status structure (set by the thread),
-  // reclaim the memory, and return that result.
-  if (result != NULL) {
-    *result = t->retval;
-  }
-  
-  // Free the shared object held by this thread.
-  freeSharedObject(t, 4096);
-
-  // JOIN means one child is closed here. If no other threads, we can close
-  // the memory protection to improve the performance.
-  if(getpid() == runner->main_id()) {
-	// Check whether main thread is the only alive one. If it is, we maybe don't 
-    // need protection anymore.
-	if(waitpid(-1, NULL, WNOHANG) == -1 && errno == ECHILD) {
-		runner->closeMemoryProtection();
-    runner->resetThreadIndex();
-		_protected = false;
-		//fprintf(stderr, "return %d and errno %s", ret, strerror(errno));
-	    return;
-	}
-  }
-
-  runner->atomicBegin();
-}
-
-/// @brief Cancel one thread. We just send out a SIGKILL signal to that thread
-void xthread::cancel (xrun * runner, void *v)
-{
-  ThreadStatus * t = (ThreadStatus *) v;
-  //fprintf(stderr, "KILL thread %d\n", t->tid);
-  kill(t->tid, SIGKILL); 
-  
-  // Free the shared object held by this thread.
-  freeSharedObject(t, 4096);
-
-}
-
-int forkWithFS (void) {
-  return syscall(SYS_clone, CLONE_FS|CLONE_FILES|SIGCHLD, (void*) 0 );
- // return fork();
-}
-
-
-void * xthread::forkSpawn (xrun * runner,
-			   threadFunction * fn,
-			   ThreadStatus * t,
-			   void * arg) 
-{
-  // Use fork to create the effect of a thread spawn.
-
-  // FIXME:: For current process, we should close share. 
-  // children to use MAP_PRIVATE mapping. Or just let child to do that in the beginning.
-  int child = forkWithFS();
-  
-  if (child) {
-    // I'm the parent (caller of spawn).
-
-    // Store the tid so I can later sync on this thread.
-#ifndef NDEBUG
-  	//fprintf(stderr, "%d : Creating CHILD %d\n", getpid(), child);
-#endif
-    t->tid = child;
-  
-    // Start a new atomic section and return the thread info.
-    runner->atomicBegin();
-    return (void *) t;
-      
-  } else {
-    // I'm the spawned child who will run the thread function.
-    // Astoundingly, glibc caches getpid(), and that value is invalid
-    // now (it always refers to the parent), so we have to explicitly
-    // make the system call here. See man clone(2).
-    pid_t mypid = syscall(SYS_getpid);
-    
-    // Set "thread_self".
-    setId (mypid);
-
-    // Register to the system, we will set the heapid for myself.
-    runner->threadRegister();
-
-    // We're in...
-    _nestingLevel++;
-
-#ifdef MULTITHREAD_SUPPORT
-	// Create those helpers.
-	runner->creatHelpers();
-#endif
-
-#ifdef EXCLUSIVE_HEAP_USAGE
-	// Close those parent's share blocks since child need to protect those areas.
-    runner->closeParentSharedBlocks();
-#endif
-
-    // Run the thread...
-    run_thread (runner, fn, t, arg);
-
-//  	fprintf(stderr, "%d : EXIT thread\n", getId());
-    // and we're out.
-    _nestingLevel--;
-
-    // And that's the end of this "thread".
-    _exit (0);
-
-    // Avoid complaints.
-    return NULL;
+  else { 
+    return 0;
   }
 }
 
-// @brief Execute the thread.
-void xthread::run_thread (xrun * runner,
-			  threadFunction * fn,
-			  ThreadStatus * t,
-			  void * arg) 
-{
-  // Run the thread inside a transaction.
-//  fprintf(stderr, "%d : trying to run atomicBegin\n", getpid());
-  runner->atomicBegin();
-//  fprintf(stderr, "%d : after atomicBegin and fn %p\n", getpid(), fn);
-  void * result = fn (arg);
+char * getThreadBuffer(void) {
+  int index = getThreadIndex();
 
-//  fprintf(stderr, "%d : before atomicEnd\n", getpid());
-  runner->atomicEnd();
-  // We're done. Write the return value.
-  t->retval = result;
+  return threadinfo::getInstance().getThreadBuffer(index);
+}
+
+void xthread::invokeCommit(void) {
+  xrun::getInstance().epochEnd();
+  xrun::getInstance().epochBegin();
+}
+  
+void xthread::prepareRollback(void) {
+    syscalls::getInstance().prepareRollback();
+
+    // We only prepare the rollback for multithreading program.
+    if(!globalinfo::getInstance().isMultithreading()) {
+      return;
+    }
+
+    // Try to create the semaphores for all threads and 
+    // backup all thread context.
+    _thread.prepareRollback();
 }

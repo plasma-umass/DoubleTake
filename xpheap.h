@@ -44,38 +44,42 @@
 #include "sanitycheck.h"
 
 template <class SourceHeap>
-class NewSourceHeap : public SourceHeap {
+class AdaptAppHeap : public SourceHeap {
 
 public:
   void * malloc (size_t sz) {
 
     // We are adding one objectHeader and two "canary" words along the object
     // The layout will be:  objectHeader + "canary" + Object + "canary".
-    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
+    //fprintf(stderr, "AdaptAppHeap before malloc sz %d\n", sz);
+    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);
     if (!ptr) {
       return NULL;
     }
   
-  //  fprintf(stderr, "NewSourceHeap: sz is %d, actual size %d, sizeof size_t is %d\n", sz, sz+sizeof(objectHeader), sizeof(size_t)); 
-    // Set the objectHeader
+    // Set the objectHeader. 
     objectHeader * o = new (ptr) objectHeader (sz);
+    void * newptr = getPointer(o);
 
     // Now we are adding two sentinels and mark them on the shared bitmap.
-    sanitycheck::getInstance().setupSentinels(ptr, sz); 
-   
-    void * newptr = getRealPointer(o);
+    //fprintf(stderr, "AdaptAppHeap setup sentinels\n");
+    //printf("AdaptAppHeap: sz is %lx, actual size %lx. ptr %p newptr %p\n", sz, sz+sizeof(objectHeader)+xdefines::SENTINEL_SIZE, ptr, newptr);
+#ifdef DETECT_OVERFLOW 
+    sanitycheck::getInstance().setupSentinels(newptr, sz); 
+#endif
 
-    assert (getSize(newptr) >= sz);
-   // fprintf(stderr, "NEWSOURCEHEAP: sz is %x - %d, newptr %p\n", sz, sz, newptr); 
+    assert (getSize(newptr) == sz);
+
+  //  fprintf(stderr, "NEWSOURCEHEAP: sz is %x - %d, newptr %p\n", sz, sz, newptr); 
     return newptr;
   }
 
   void free (void * ptr) {
-    SourceHeap::free ((void *) getObjectHeader(ptr));
+    SourceHeap::free ((void *) getObject(ptr));
   }
 
   size_t getSize (void * ptr) {
-    objectHeader * o = getObjectHeader(ptr);
+    objectHeader * o = getObject(ptr);
     size_t sz = o->getSize();
     if (sz == 0) {
       PRFATAL ("Object size error, can't be 0");
@@ -84,16 +88,13 @@ public:
   }
 
 private:
-
-  // Get the object header when object is free
-  static objectHeader * getObjectHeader (void * ptr) {
-    objectHeader * o = (objectHeader *)((intptr_t)ptr - sizeof(objectHeader) - xdefines::SENTINEL_SIZE);
-    return o;
+  static objectHeader * getObject (void * ptr) {
+    objectHeader * o = (objectHeader *) ptr;
+    return (o - 1);
   }
 
-  // It is called to get the start address of actual object 
-  static void * getRealPointer (void * ptr) {
-    return (void *) ((intptr_t)ptr + sizeof(objectHeader) + xdefines::SENTINEL_SIZE);
+  static void * getPointer (objectHeader * o) {
+    return (void *) (o + 1);
   }
 };
 
@@ -104,8 +105,8 @@ class KingsleyStyleHeap :
   HL::StrictSegHeap<Kingsley::NUMBINS,
 		    Kingsley::size2Class,
 		    Kingsley::class2Size,
-		    HL::AdaptHeap<HL::SLList, NewSourceHeap<SourceHeap> >,
-		    NewSourceHeap<HL::ZoneHeap<SourceHeap, Chunky> > > >
+		    HL::AdaptHeap<HL::SLList, AdaptAppHeap<SourceHeap> >,
+		    AdaptAppHeap<HL::ZoneHeap<SourceHeap, Chunky> > > >
 {
 private:
 
@@ -114,17 +115,12 @@ private:
   HL::StrictSegHeap<Kingsley::NUMBINS,
 		    Kingsley::size2Class,
 		    Kingsley::class2Size,
-		    HL::AdaptHeap<HL::SLList, NewSourceHeap<SourceHeap> >,
-		    NewSourceHeap<HL::ZoneHeap<SourceHeap, Chunky> > > >
+		    HL::AdaptHeap<HL::SLList, AdaptAppHeap<SourceHeap> >,
+		    AdaptAppHeap<HL::ZoneHeap<SourceHeap, Chunky> > > >
   SuperHeap;
 
 public:
   KingsleyStyleHeap (void) {
-  }
-
-  void * malloc (size_t sz) {
-    void * ptr = SuperHeap::malloc (sz);
-    return ptr;
   }
 
 private:
@@ -134,22 +130,19 @@ private:
 };
 
 // Different processes will have a different heap.
-//class PerProcessHeap : public TheHeapType {
+//class PerThreadHeap : public TheHeapType {
 template <int NumHeaps,
 	  class TheHeapType>
-class PerProcessHeap {
+class PerThreadHeap {
 public:
-  PerProcessHeap (void)
+  PerThreadHeap (void)
   {
-#if 0
-    fprintf(stderr, "sizeof TheHeapType is %lx\n", sizeof(TheHeapType));
-    for(int i = 0; i < NumHeaps;i++)
-    fprintf(stderr, "PERPROCESSHEAP: %d _heap  is at %p. _heap itself %p\n",i, &_heap[i], &_heap);
-#endif 
+  //  fprintf(stderr, "TheHeapType size is %ld\n", sizeof(TheHeapType)); 
   }
 
   void * malloc (int ind, size_t sz)
   {
+   // printf("PerThreadheap malloc ind %d sz %d _heap[ind] %p\n", ind, sz, &_heap[ind]);
     // Try to get memory from the local heap first.
     void * ptr = _heap[ind].malloc (sz);
     return ptr;
@@ -180,7 +173,7 @@ private:
 template <class SourceHeap>
 class xpheap : public SourceHeap 
 {
-  typedef PerProcessHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::PHEAP_CHUNK> >
+  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::PHEAP_CHUNK> >
   SuperHeap;
 
 public: 
@@ -195,38 +188,50 @@ public:
 
     char * base;
 
+    //printf("xpheap calling sourceHeap::malloc size %d\n", metasize);
     base = (char *)SourceHeap::malloc(metasize);
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
+  //  fprintf(stderr, "\n\nInitialize the superheap\n\n");
     _heap = new (base) SuperHeap;
     
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
     _heapEnd = SourceHeap::getHeapEnd();
 
-    _sanitycheckStart = (void *) ((intptr_t)(_heapStart) + metasize);
-    _sanitycheckSize = xdefines::PROTECTEDHEAP_SIZE -  metasize;
-    //fprintf(stderr, "XPHEAP: size %d base %p at %p\n", metasize, _heap, &_heap);
+    // Sanity check related information
+    void * sanitycheckStart;
+    size_t sanitycheckSize;
+    sanitycheckStart = (void *) ((intptr_t)(_heapStart) + metasize);
+    sanitycheckSize = xdefines::PROTECTEDHEAP_SIZE -  metasize;
+    //printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::PROTECTEDHEAP_SIZE);
+    sanitycheck::getInstance().initialize(sanitycheckStart, sanitycheckSize);
+   // base = (char *)malloc(0, 4); 
   }
 
 
-  // Initialization for sanity check.
-  void sanitycheckInitialize(void) {
-    sanitycheck::getInstance().initialize(_sanitycheckStart, _sanitycheckSize);
-  }
-
-#if 1
   // Performing the actual sanity check.
-  bool sanitycheckPerform(void) {
+  bool checkHeapOverflow(void) {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
+    //fprintf(stderr, "****heapEnd %p\n", heapEnd);
     sanitycheck::getInstance().setHeapPosition(heapEnd);
-    return SourceHeap::sanitycheckPerform();
+    return SourceHeap::checkHeapOverflow();
   }
-#endif
 
+  void recoverMemory(void) {
+    void * heapEnd =(void *)SourceHeap::getHeapPosition();
+    return SourceHeap::recoverMemory(heapEnd);
+  }
+
+  void backup(void) {
+    void * heapEnd =(void *)SourceHeap::getHeapPosition();
+    return SourceHeap::backup(heapEnd);
+  }
+  
   void * malloc(int heapid, size_t size) {
-    _heap->malloc(heapid, size);
+    //printf("malloc in xpheap with size %d\n", size);
+    return _heap->malloc(heapid, size);
   }
 
   void free(int heapid, void * ptr) {
@@ -246,9 +251,6 @@ private:
   void * _heapStart;
   void * _heapEnd; 
 
-  // Sanity check related information
-  void * _sanitycheckStart;
-  size_t _sanitycheckSize;
 };
 
 #endif // _XPHEAP_H_

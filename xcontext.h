@@ -26,8 +26,8 @@
 #include <stdio.h>
 
 #include <ucontext.h>
-
-#include "selfmap.h"
+#include "xdefines.h"
+#include "internalheap.h"
 
 /**
  * @class xcontext
@@ -42,38 +42,19 @@ public:
   xcontext() {
   }
 
-  /// @brief Initialize this with the highest pointer possible on the stack.
-  void initialize (void) {
-    // First, we must get the stack corresponding information.
-    selfmap::getStackInformation(&_stackBottom, &_stackTop);  
-
-    // Never need to check the stack beyond this.
-    _maxStackSize = _stackBottom - _stackTop;
-  
-    // Calculate the bottom of temporary stack.
-    _tempStackBottom = (intptr_t)&_tempstack + xdefines::TEMP_STACK_SIZE;
- 
-//    fprintf(stderr, "stackbottom 0x%lx stacktop 0x%lx, _tempstack address %p to 0x%lx\n", _stackBottom, _stackTop,  &_tempstack, _tempStackBottom);
-//    while (1);
+  void setupBackup(void * ptr) {
+    _backup = ptr;
   }
 
-
-  /// @brief Save current calling context (i.e., current continuation).
-  void saveContext (void) {
-    volatile unsigned long tos;
-
-    // Now, save the stack. FIXME...
-    // Actually, we may not save all stack from _stackBottom to current place.
-    // Then we can save some time to save this stack.
-    saveStack((unsigned long *)_stackBottom, (unsigned long *) &tos);
-   
-    // Now, save the context.
-    getcontext(&_context);
-    // When we rollback, we will return here.
+  //void initialize(void * privateStart, void * privateTop, size_t totalPrivateSize, size_t backupSize) 
+  void setupStackInfo(void * privateTop, size_t stackSize) 
+  {
+    _privateTop = privateTop;
+    _stackSize  = stackSize;
   }
 
-  /// @brief Restore the previously saved context.
-  void rollback (void) {
+#if 0
+  void rollback (bool stop) {
     /** There are two steps for this function.
      * First, we must recover the stack.
      * Second, we will setcontext to the saved context.
@@ -111,24 +92,21 @@ public:
 
     // Calculate the offset to stack bottom for ebp and esp register. 
     // Since we know that we are still using the original stack.
-    espoffset = _stackBottom - esp;
-    ebpoffset = _stackBottom - ebp;
+    espoffset = _stackTop - esp;
+    ebpoffset = _stackTop - ebp;
 
     // Check whether we can utilize the temporary stack.
     if(espoffset > xdefines::TEMP_STACK_SIZE) {
-      fprintf(stderr, "Now we can't use the reserved temporary stack, espoffset %lx temporary stack size %lx\n", xdefines::TEMP_STACK_SIZE, espoffset);
+      PRDBG("Now esp %lx ebp %lx, stackbottom %lx\n", esp, ebp, _stackTop);
+      PRDBG("Now we can't use the reserved temporary stack, espoffset %lx temporary stack size %lx\n", espoffset, xdefines::TEMP_STACK_SIZE);
       // FIXME: we might use some malloced memory, but not now.
       abort();
     }
 
-
-//    fprintf(stderr, "%d: ebp %lx esp %lx espofset %lx\n", getpid(), ebp, esp, espoffset);
     // Calculate the new ebp and esp registers. 
     // We will set ebp to the bottom of temporary stack. 
     newebp = _tempStackBottom - ebpoffset;
     newesp = _tempStackBottom - espoffset;
-
-//    fprintf(stderr, "%d: before swtiching stack,  new ebp %lx esp %lx espofset %lx\n", getpid(), newebp, newesp, espoffset);
 
     // Copy the existing stack to the temporary stack.
     // Otherwise, we can not locate those global variables???
@@ -156,56 +134,215 @@ public:
     );
 #endif 
 
- //   fprintf(stderr, "%d: new ebp %lx esp %lx espofset %lx\n", getpid(), newebp, newesp, espoffset);
- //   fprintf(stderr, "%d: after switch\n", getpid());
- //   fprintf(stderr, "%d: _pstackTopSaved %p _stack %p _stacksize %lx\n", getpid(), _pstackTopSaved, &_stack, _stackSize);
-    //fprintf(stderr, "%d: _pstackTopSaved %p _stack %p _stacksize %lx\n", getpid(), _pstackTopSaved, &_stack, _stackSize);
-    // Now we are running in a different stack now.  
     // The recovery of stack are safe no matter how large of the original stack
     memcpy(_pstackTopSaved, &_stack, _stackSize);
+    
+    if(stop) {
+      while(1) ;
+    }
 
     // After recovery of the stack, we can call setcontext to switch to original stack. 
     setcontext (&_context);
   } 
+#endif
 
-private:
-
-  // Save the stack locally using the memcpy
-  void saveStack (unsigned long *pbos, unsigned long *ptos) {
-    _pstackTopSaved = ptos;
-    _stackSize = (intptr_t)pbos - (intptr_t)ptos;
-
-    // Using memcpy to save the stack since it is faster.  
-    memcpy(_stack, _pstackTopSaved, _stackSize);
-/*
-    int i;
-    n = pbos-ptos;
-    _stackSize = n;
-  
-    for (i = 0; i < n; ++i) 
-    {
-      _stack[i] = pbos[-i];
-   }
-*/
+  // Now we need to save the context
+  inline void saveContext() {
+    size_t size;
+   // PRDBG("SAVECONTEXT: Current %p _privateTop %p at %p _backup %p\n", getpid(), _privateTop, &_privateTop, _backup);
+    // Save the stack at first.
+    _privateStart = &size;
+    size = size_t((intptr_t)_privateTop - (intptr_t)_privateStart);
+    _backupSize = size;
+    
+    if(size >= _stackSize) {
+      PRDBG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
+              size, _privateTop, _privateStart, _stackSize);
+      WRAP(exit)(-1);
+    }
+    memcpy(_backup, _privateStart, size);
+    // We are trying to save context at first
+    getcontext(&_context);
   }
 
-  /// A pointer to the base (highest address) of the stack.
-  unsigned long _stackBottom;
-  unsigned long _stackTop;
+  // We already have context. How we can save this context.
+  inline void saveSpecifiedContext(ucontext_t *context) {
+    // Find out the esp pointer.
+    size_t size;
+
+    // Save the stack at first.
+    _privateStart = (void *)getStackPointer(context);
+    size = size_t((intptr_t)_privateTop - (intptr_t)_privateStart);
+    _backupSize = size;
+    
+    if(size >= _stackSize) {
+      PRDBG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
+              size, _privateTop, _privateStart, _stackSize);
+      EXIT;
+    }
+
+    memcpy(_backup, _privateStart, size);
+
+    // We are trying to save context at first
+    memcpy(&_context, context, sizeof(ucontext_t));
+  }
+
+  /* Finish the following tasks here:
+    a. Change current stack to the stack of newContext. We have to utilize
+       a temporary stack to host current stack.
+    b. Copy the stack from newContext to current stack. 
+    c. Switch back from the temporary stack to current stack.
+    d. Copy the stack and context from newContext to oldContext.
+    f. setcontext to the context of newContext.
+   */ 
+  inline static void resetContexts(xcontext * oldContext, xcontext * newContext) {
+    // We can only do this when these two contexts are for the same thread.
+    assert(oldContext->getPrivateTop() == newContext->getPrivateTop());
+
+    // We will backup the stack and context from newContext at first.
+    oldContext->backupStackAndContext(newContext);
+
+    restoreContext(oldContext, newContext); 
+  }
+
+  // Copy the stack from newContext to oldContext.
+  void backupStackAndContext(xcontext * newContext) {
+    // We first backup the context.
+    _privateStart = newContext->getPrivateStart();
+    _backupSize = newContext->getBackupSize();
+   
+    memcpy(_backup, newContext->getBackupStart(), _backupSize);
+
+    // Now we will backup the context.
+    memcpy(&_context, newContext->getContext(), sizeof(ucontext_t));
+  }
+
+  // Restore context from specified context.
+  /* Finish the following tasks here:
+    a. Change current stack to the stack of newContext. We have to utilize
+       a temporary stack to host current stack.
+    b. Copy the stack from current context to current stack. 
+    c. setcontext to the context of newContext.
+   */ 
+  inline static void restoreContext(xcontext * oldContext, xcontext * newContext) {
+    // We can only do this when these two contexts are for the same thread.
+    assert(oldContext->getPrivateTop() == newContext->getPrivateTop());
+
+    // Now we can messed up with newContext now.
+    unsigned long ebp, esp;
+
+    // The offset to the stack bottom.
+    unsigned long espoffset, ebpoffset;
+    unsigned long stackTop, newStackTop; 
+    unsigned long newebp, newesp;
+    unsigned long stackStart;
+    unsigned long offset;
+    // Get current esp and ebp
+#if defined(X86_32BIT)
+    asm volatile(
+      "movl %%ebp,%0\n" \
+      "movl %%esp,%1\n" \
+      :"=r"(ebp), "=r"(esp)
+    );
+#else
+    asm volatile(
+      "movq %%rbp,%0\n" \
+      "movq %%rsp, %1\n" \
+      :"=r"(ebp), "=r"(esp)
+    );
+#endif
+
+    // Calculate the offset to stack bottom for ebp and esp register. 
+    // Since we know that we are still using the original stack.
+    stackTop = (unsigned long)newContext->getPrivateTop();
+    espoffset = stackTop - esp;
+    ebpoffset = stackTop - ebp;
+
+    // Check whether we can utilize the temporary stack.
+    if(espoffset > xdefines::TEMP_STACK_SIZE) {
+      PRERR("Now we can't use the reserved temporary stack, espoffset %lx temporary stack size %lx\n", espoffset, xdefines::TEMP_STACK_SIZE);
+      // FIXME: we might use some malloced memory, but not now.
+      abort();
+    }
+
+    // Calculate the new ebp and esp registers. 
+    // We will set ebp to the bottom of temporary stack.
+    newStackTop = (intptr_t)newContext->getBackupStart() + newContext->getStackSize(); 
+    newebp = newStackTop - ebpoffset;
+    newesp = newStackTop - espoffset;
+
+    // Copy the existing stack to the temporary stack.
+    // Otherwise, we can not locate those global variables???
+    memcpy((void *)newesp, (void *)esp, espoffset);
+
+    // Switch the stack manually. 
+    // It is important to switch in this place (not using a function call), otherwise, the lowest
+    // level of frame will be poped out and the stack will return back to the original one
+    // Then techniquely we cann't switch successfully. 
+    // What we want is that new frames are using the new stack, but we will recover
+    // the stack in the same function later to void problems!!!
+#if defined(X86_32BIT)
+    asm volatile(
+      // Set ebp and esp to new pointer
+      "movl %0, %%ebp\n"
+      "movl %1, %%esp\n"
+      : : "r" (newebp), "r" (newesp)
+    );
+#else
+    asm volatile(
+      // Set ebp and esp to new pointer
+      "movq %0,%%rbp\n"
+      "movq %1,%%rsp\n"
+      : : "r" (newebp), "r" (newesp)
+    );
+#endif 
+
+    // Now we will recover the stack from the saved oldContext.
+    memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(), oldContext->getBackupSize());
+
+    // After recovery of the stack, we can call setcontext to switch to original stack. 
+    setcontext(oldContext->getContext());
+  }
+
+private:
+  ucontext_t * getContext(void) {
+    return &_context;
+  }
+   
+  void * getPrivateStart(void) {
+    return _privateStart;
+  }
+
+  void * getPrivateTop(void) {
+    return _privateTop;
+  }
   
-  // Saved stack top
-  void * _pstackTopSaved;
+  size_t getBackupSize(void) {
+    return _backupSize;
+  }
+
+  size_t getStackSize(void) {
+    return _stackSize;
+  }
+
+  void * getBackupStart(void) {
+    return _backup;
+  }
+  // How to get ESP/RSP from the specified context.
+  unsigned long getStackPointer(ucontext * context) {
+  #ifndef X86_32BITS
+    return context->uc_mcontext.gregs[REG_RSP];
+  #else
+    return context->uc_mcontext.gregs[REG_ESP];
+  #endif
+  }
 
   /// The saved registers, etc.
   ucontext_t _context;
-
-  /// Current saved stack size.
-  int _stackSize;
-  int _maxStackSize;
-
-  /// The saved stack contents, now it is inside the globals of library.
-  char _stack[xdefines::MAX_STACK_SIZE];
-  char _tempstack[xdefines::TEMP_STACK_SIZE];
-  unsigned long _tempStackBottom;
+  void * _backup; // Where to _backup those thread private information.
+  void * _privateStart;
+  void * _privateTop;
+  size_t _stackSize;
+  size_t _backupSize;
 };
 #endif

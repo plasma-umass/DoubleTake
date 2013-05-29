@@ -31,20 +31,27 @@
 #include <sys/resource.h>
 #include <iostream>
 #include <fstream>
+#include <execinfo.h>
 
+//#include <libunwind-ptrace.h>
+//#include <sys/ptrace.h>
+
+#define MAX_BUF_SIZE 4096
 #include "xdefines.h"
 #include "regioninfo.h"
-
-extern "C" {
-  extern char __data_start;
-};
-
 using namespace std;
+
 class selfmap {
 
 public:
+  static selfmap& getInstance (void) {
+    static char buf[sizeof(selfmap)];
+    static selfmap * theOneTrueObject = new (buf) selfmap();
+    return *theOneTrueObject;
+  }
+
   // We may use a inode attribute to analyze whether we need to do this.
-  static void getRegionInfo(std::string & mapentry, void ** start, void ** end) {
+  void getRegionInfo(std::string & curentry, void ** start, void ** end) {
 
     // Now this entry is about globals of libc.so.
     string::size_type pos = 0;
@@ -54,17 +61,17 @@ public:
     // "00797000-00798000 rw-p ...."
     string beginstr, endstr;
 
-    while(mapentry[pos] != '-') pos++;
+    while(curentry[pos] != '-') pos++;
 
-    beginstr = mapentry.substr(0, pos);
+    beginstr = curentry.substr(0, pos);
   
     // Skip the '-' character
     pos++;
     endpos = pos;
     
     // Now pos should point to a space or '\t'.
-    while(!isspace(mapentry[pos])) pos++;
-    endstr = mapentry.substr(endpos, pos-endpos);
+    while(!isspace(curentry[pos])) pos++;
+    endstr = curentry.substr(endpos, pos-endpos);
 
     // Save this entry to the passed regions.
     *start = (void *)strtoul(beginstr.c_str(), NULL, 16);
@@ -72,83 +79,239 @@ public:
 
     return;
   }
- 
+  
   // Trying to get information about global regions. 
-  static void getGlobalRegions(regioninfo * regions, int * regionNumb) {
-    using namespace std;
+  void getTextRegions(void) {
     ifstream iMapfile;
-    string mapentry;
-
-    //#define PAGE_ALIGN_DOWN(x) (((size_t) (x)) & ~xdefines::PAGE_SIZE_MASK)
-    //static void * globalstart = (void *)PAGE_ALIGN_DOWN(&__data_start);
+    string curentry;
 
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
-      fprintf(stderr, "can't open /proc/self/maps, exit now\n");
+      PRDBG("can't open /proc/self/maps, exit now\n");
       abort();
     } 
 
     // Now we analyze each line of this maps file.
-    static bool toCheckNextEntry = false;
-    
     void * startaddr, * endaddr;
-    while(getline(iMapfile, mapentry)) {
-      // Check the globals for libc.so
-#if 0      
-      if(mapentry.find("libc-", 0) != string::npos) {
-        toCheckNextEntry = true;
-      }
-      else if((toCheckNextEntry == true) && (mapentry.find(" 00:00 ", 0) != string::npos) && (mapentry.find(" rw-p ") != string::npos)) {
-#endif
-      if((mapentry.find("libc-", 0) != string::npos) && (mapentry.find(" 08:06 ", 0) != string::npos) && (mapentry.find(" rw-p ") != string::npos)) {
+    bool   hasLibStart = false;
+    while(getline(iMapfile, curentry)) {
+      // Check whether this entry is the text segment of application.
+      if((curentry.find(" r-xp ", 0) != string::npos) 
+        && (curentry.find(" 08:0b ", 0) != string::npos)) {
+        getRegionInfo(curentry, &startaddr, &endaddr);
 
-        // Save this entry to the passed regions.
-        getRegionInfo(mapentry, &startaddr, &endaddr);
+        // Check whether this is stopgap or application
+        if(curentry.find("libstopgap", 0) != string::npos) {
+          stopgapStart = startaddr;
+          stopgapEnd = endaddr;
+          break;
+        }
+        else {
+          appTextStart = startaddr;
+          appTextEnd = endaddr;
+        } 
+      }
+      else if((curentry.find(" r-xp ") != string::npos) 
+              && (curentry.find("lib", 0) != string::npos) 
+              && (curentry.find(" 08:06 ") != string::npos)) {
+        // Now it is start of global of applications
+        getRegionInfo(curentry, &startaddr, &endaddr);
+
+        if(hasLibStart == false) {
+          libraryStart = startaddr;
+          libraryEnd = endaddr;
+          hasLibStart = true;
+        }    
+        else {
+          libraryEnd = endaddr;
+        }
+      }
+    }
+    iMapfile.close();
+
+    int    count;
+
+    /* Get current executable file name. */
+    count= WRAP(readlink)("/proc/self/exe", filename, MAX_BUF_SIZE);
+    if (count <= 0 || count >= MAX_BUF_SIZE)
+    {
+      PRDBG("Failed to get current executable file name\n" );
+      exit(1);
+    }
+    filename[count] = '\0';
+
+    //PRDBG("INITIALIZATION: textStart %p textEnd %p stopgapStart %p stopgapEnd %p libStart %p libEnd %p\n", appTextStart, appTextEnd, stopgapStart, stopgapEnd, libraryStart, libraryEnd);
+  } 
+
+  // Check whether an address is inside the stopgap library itself
+  bool isStopgapLibrary(void * pcaddr) {
+    if(pcaddr >= stopgapStart && pcaddr <= stopgapEnd) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  bool isApplication(void * pcaddr) {
+    if(pcaddr >= appTextStart && pcaddr <= appTextEnd) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  /* Get the stack frame inside the tracer.
+   * We can not simply use backtrace to get corresponding information
+   * since it will give us the call stack of signal handler.
+   * Not the watching processes that we need.
+   * According to http://stackoverflow.com/questions/7258273/how-to-get-a-backtrace-like-gdb-using-only-ptrace-linux-x86-x86-64,
+   * The following link can give us some clues to use libunwind.
+    http://git.savannah.gnu.org/cgit/libunwind.git/plain/tests/test-ptrace.c?h=v1.0-stable
+    http://git.savannah.gnu.org/cgit/libunwind.git/plain/tests/test-ptrace.c?h=v1.0-stable
+
+   */
+  // Print out the code information about an eipaddress
+  // Also try to print out stack trace of given pcaddr.
+  void printCallStack(ucontext_t * context, void * addr, bool isOverflow) {
+    void * array[10];
+    int size;
+    int skip = 0;
+
+    PRDBG("Try to get backtrace with array %p\n", array);
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+    PRDBG("After get backtrace with array %p\n", array);
+
+    for(int i = 0; i < size; i++) {
+      if(isStopgapLibrary(array[i])) {
+        skip++;
+      } 
+      else {
+        break;
+      }
+    }
+
+    backtrace_symbols_fd(&array[skip], size-skip, 2);
+
+    // Print out the source code information if it is a overflow site.
+    if(isOverflow) {
+      PRDBG("\nSource code information about overflow site:\n");
+      char buf[MAX_BUF_SIZE];
+
+      for(int i = skip; i < size-skip; i++) {
+        if(isApplication(array[i])) {
+          PRDBG("callstack frame %d: ", i);
+          // Print out the corresponding source code information
+          sprintf(buf, "addr2line -e %s %x", filename,  (unsigned long)array[i]-2);
+          system(buf);
+        }
+      }
+    }
+
+    PRDBG("\n\n");
+      // We don't care about the address in the libraries.
       
+      // We must traverse back to find the address in the application.
+//      PRDBG("pcaddr %p is a library address\n", pcaddr);   
+     // backtrace_symbols_fd(length, frames, 2);
+      //for(int i = 0; i < frames; i++) {
+      //  PRDBG("i %d pc %p\n", i, buf[i]);
+      //}
+  }
+ 
+  // Trying to get information about global regions. 
+  void getGlobalRegions(regioninfo * regions, int * regionNumb) {
+    using namespace std;
+    ifstream iMapfile;
+    string curentry;
+
+    //#define PAGE_ALIGN_DOWN(x) (((size_t) (x)) & ~xdefines::PAGE_SIZE_MASK)
+    //void * globalstart = (void *)PAGE_ALIGN_DOWN(&__data_start);
+
+    try {
+      iMapfile.open("/proc/self/maps");
+    } catch(...) {
+      PRDBG("can't open /proc/self/maps, exit now\n");
+      abort();
+    } 
+
+    // Now we analyze each line of this maps file.
+    bool toExit = false;
+    bool toSaveRegion = false;
+ 
+    void * startaddr, * endaddr;
+    string nextentry;
+    void * newstart;
+    bool foundGlobals = false;
+
+    while(getline(iMapfile, curentry)) {
+      // Check the globals for the application. It is at the first entry
+      if(foundGlobals == false && (curentry.find(" rw-p ") != string::npos)) {
+        // Now it is start of global of applications
+        getRegionInfo(curentry, &startaddr, &endaddr);
+   
+        getline(iMapfile, nextentry);
+
+        void * newstart;
+        // Check whether next entry should be also included or not.
+        if(nextentry.find("lib", 0) == string::npos) {
+          getRegionInfo(nextentry, &newstart, &endaddr);
+        }
+        foundGlobals = true;
+        toSaveRegion = true;
+      }
+      // Check the globals for libc.so
+      else if((curentry.find("libc-", 0) != string::npos && (curentry.find(" rw-p ") != string::npos))) {
+        getRegionInfo(curentry, &startaddr, &endaddr);
+        getline(iMapfile, nextentry);
+        getRegionInfo(nextentry, &newstart, &endaddr);
+        toSaveRegion = true;
+      }
+#if 0
+      // Check the globals for libpthread-***.so
+      else if((curentry.find("libpthread-", 0) != string::npos && (curentry.find(" rw-p ") != string::npos))) {
+        // The first entry can not intercepted since it includes the PLT table of mmap?
+        getRegionInfo(curentry, &startaddr, &endaddr);
+        getline(iMapfile, nextentry);
+        getRegionInfo(nextentry, &newstart, &endaddr);
+        toSaveRegion = true;
+      }
+#endif
+      else {
+        toSaveRegion = false;
+      }
+ 
+      if(toSaveRegion) { 
+        //PRDBG("start startaddr %p endaddr %p\n", startaddr, endaddr); 
         regions[*regionNumb].start = startaddr;
         regions[*regionNumb].end = endaddr;
         (*regionNumb)++;
-        fprintf(stderr, "Haha, selfmap entry start %p end %p\n", startaddr, endaddr);
-      }
-      else if((mapentry.find(" 08:0b ", 0) != string::npos) && (mapentry.find(" rw-p ") != string::npos)&& (mapentry.find("lib", 0) == string::npos)) {
-        getRegionInfo(mapentry, &startaddr, &endaddr);
-     
-        // Check whether it is the applications' global region.
-        //if(globalstart >= startaddr && globalstart <= endaddr) { 
-          // When it is done, now we can exit.
-          regions[*regionNumb].start = startaddr;
-          regions[*regionNumb].end = endaddr;
-          fprintf(stderr, "selfmap entry start %p end %p\n", startaddr, endaddr);
-          (*regionNumb)++;
-//          break;
-        //}
-      }
-      else {
-        toCheckNextEntry = false;
       }
     }
     iMapfile.close();
   } 
   
   // Trying to get stack information. 
-  static void getStackInformation(unsigned long* stackBottom, unsigned long * stackTop) {
+  void getStackInformation(void** stackBottom, void ** stackTop) {
     using namespace std;
     ifstream iMapfile;
-    string mapentry;
+    string curentry;
 
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
-      fprintf(stderr, "can't open /proc/self/maps, exit now\n");
+      PRDBG("can't open /proc/self/maps, exit now\n");
       abort();
     } 
 
     // Now we analyze each line of this maps file.
-    while(getline(iMapfile, mapentry)) {
+    while(getline(iMapfile, curentry)) {
 
       // Find the entry for stack information.
-      if(mapentry.find("[stack]", 0) != string::npos) {
+      if(curentry.find("[stack]", 0) != string::npos) {
         string::size_type pos = 0;
         string::size_type endpos = 0;
         // Get the starting address and end address of this entry.
@@ -156,24 +319,33 @@ public:
         // ffce9000-ffcfe000 rw-p 7ffffffe9000 00:00 0   [stack]
         string beginstr, endstr;
 
-        while(mapentry[pos] != '-') pos++;
-          beginstr = mapentry.substr(0, pos);
+        while(curentry[pos] != '-') pos++;
+          beginstr = curentry.substr(0, pos);
   
           // Skip the '-' character
           pos++;
           endpos = pos;
         
           // Now pos should point to a space or '\t'.
-          while(!isspace(mapentry[pos])) pos++;
-          endstr = mapentry.substr(endpos, pos-endpos);
+          while(!isspace(curentry[pos])) pos++;
+          endstr = curentry.substr(endpos, pos-endpos);
 
           // Now we get the start address of stack and end address
-          *stackTop = strtoul(beginstr.c_str(), NULL, 16);
-          *stackBottom = strtoul(endstr.c_str(), NULL, 16);
+          *stackBottom = (void *)strtoul(beginstr.c_str(), NULL, 16);
+          *stackTop = (void *)strtoul(endstr.c_str(), NULL, 16);
       }
     }
     iMapfile.close();
-  } 
+  }
+
+private:
+  char filename[MAX_BUF_SIZE];
+  void * appTextStart;
+  void * appTextEnd;
+  void * libraryStart;
+  void * libraryEnd;
+  void * stopgapStart;
+  void * stopgapEnd; 
 };
 
 #endif

@@ -30,9 +30,14 @@
 #define _LOG_H_
 
 #include <stdio.h>
-
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
 #include <assert.h>
+#include "xdefines.h"
 
+extern "C" {
+#if 1
 #define NORMAL_CYAN "\033[36m"
 #define NORMAL_MAGENTA "\033[35m"
 #define NORMAL_BLUE "\033[34m"
@@ -59,57 +64,98 @@
 #define ESC_WRN  NORMAL_RED
 #define ESC_ERR  BRIGHT_RED
 #define ESC_END  "\033[0m"
+#else
+#define NORMAL_CYAN ""
+#define NORMAL_MAGENTA ""
+#define NORMAL_BLUE ""
+#define NORMAL_YELLOW ""
+#define NORMAL_GREEN ""
+#define NORMAL_RED ""
 
+#define BRIGHT ""
+#define NORMAL ""
 
+#define BRIGHT_CYAN ""
+#define BRIGHT_MAGENTA ""
+#define BRIGHT_BLUE ""
+#define BRIGHT_YELLOW ""
+#define BRIGHT_GREEN ""
+#define BRIGHT_RED ""
+
+#define WHITE_ON_RED ""
+#define WHITE_ON_GREEN ""
+
+#define ESC_INF  NORMAL_CYAN
+#define ESC_LOG  NORMAL_GREEN
+#define ESC_DBG  BRIGHT_CYAN
+#define ESC_WRN  NORMAL_RED
+#define ESC_ERR  BRIGHT_RED
+#define ESC_END  ""
+#endif
+extern int outfd;
+
+#define OUTPUT 
+#define LOG_SIZE 4096
+//#define OUTPUT write
 /**
  * Print status-information message: level 0
  */
 #define PRINF(fmt, ...) \
-  {	if(DEBUG_LEVEL < 1) \
-      ::fprintf(stderr, ESC_INF "%d [PROTO]: %20s:%-4d: " fmt ESC_END "\n", \
-                getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); }
+  {	if(DEBUG_LEVEL < 1) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_INF "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+
+
+/**
+ * Print debug message: level 1
+ */
+#define PRDBG(fmt, ...) \
+  {	if(DEBUG_LEVEL < 2) { \
+	    ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_DBG "%lx [PROTO-DBG]: %20s:%-4d: " fmt ESC_END "\n",  \
+	              pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
 /**
  * Print log message: level 1
  */
 #define PRLOG(fmt, ...) \
-  {	if(DEBUG_LEVEL < 2) \
-	    ::fprintf(stderr, ESC_LOG "%d [PROTO]: %20s:%-4d: " fmt ESC_END "\n", \
-                getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); }
-
-/**
- * Print debug message: level 2
- */
-#define PRDBG(fmt, ...) \
-  {	if(DEBUG_LEVEL < 3) \
-	    ::fprintf(stderr, ESC_DBG "%d [PROTO-DBG]: %20s:%-4d: " fmt ESC_END "\n",  \
-	              getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); }
-
+  {	if(DEBUG_LEVEL < 2) { \
+	    ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_LOG "%lx [PROTO-LOG]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
 
 /**
- * Print warning message: level 3
+ * Print warning message: level 2
  */
 #define PRWRN(fmt, ...) \
-  {	if(DEBUG_LEVEL < 4) \
-	    ::fprintf(stderr, ESC_WRN "%d [PROTO-WARNING]: %20s:%-4d: " fmt ESC_END "\n", \
-                getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); }
+  {	if(DEBUG_LEVEL < 3) { \
+	    ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_WRN "%lx [PROTO-WARNING]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
 /**
- * Print error message: level 4
+ * Print error message: level 3
  */
 #define PRERR(fmt, ...) \
-  {	if(DEBUG_LEVEL < 5) \
-	    ::fprintf(stderr, ESC_ERR "%d [PROTO-ERROR]: %20s:%-4d: " fmt ESC_END "\n", \
-                getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); }
+  {	if(DEBUG_LEVEL < 4) { \
+	    ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-ERROR]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
 
 /**
  * Print fatal error message, the program is going to exit.
  */
 #define PRFATAL(fmt, ...) \
-  {	if(DEBUG_LEVEL < 5) \
-	    ::fprintf(stderr, ESC_ERR "%d [PROTO-ERROR]: %20s:%-4d: " fmt ESC_END "\n", \
-                getpid(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); }
+  {	  ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
+//                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
+
+};
 
 #endif /* _ */

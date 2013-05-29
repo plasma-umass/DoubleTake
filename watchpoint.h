@@ -21,9 +21,9 @@
 
 /*
  * @file   watchpoint.h
- * @brief  Watch point handler.
+ * @brief  Watch point handler, we are relying the dr.c to add watchpoint and detect the condition of 
+ *         watch point, dr.c is adopted from GDB-7.5/gdb/i386-nat.c.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
- *         Adopt the code from http://stackoverflow.com/questions/8941711/is-is-possible-to-set-a-gdb-watchpoint-programatically, the original code is written by .
  */
 
 #ifndef _WATCHPOINT_H_
@@ -39,161 +39,182 @@
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <linux/user.h>
+#include <sys/user.h>
+#include <execinfo.h>
 #include <ucontext.h>
-#include "xdefines.h"
 
-extern "C" {
-  typedef struct {
-    char l0:1;
-    char g0:1;
-    char l1:1;
-    char g1:1;
-    char l2:1;
-    char g2:1;
-    char l3:1;
-    char g3:1;
-    char le:1;
-    char ge:1;
-    char pad1:3;
-    char gd:1;
-    char pad2:2;
-    char rw0:2;
-    char len0:2;
-    char rw1:2;
-    char len1:2;
-    char rw2:2;
-    char len2:2;
-    char rw3:2;
-    char len3:2;
-  } dr7_t;
-};
+#include "xdefines.h"
+#include "libfuncs.h"
+#include "dr.h"
+#include "selfmap.h"
 
 class watchpoint {
-  enum {
-    DR7_BREAK_ON_EXEC  = 0,
-    DR7_BREAK_ON_WRITE = 1,
-    DR7_BREAK_ON_RW    = 3,
-  };
-
-  enum {
-    DR7_LEN_1 = 0,
-    DR7_LEN_2 = 1,
-    DR7_LEN_4 = 3,
-  };
-
   watchpoint() {
     _numWatchpoints = 0;
   }
 
   ~watchpoint() {
-
   }
 
 public:
-  // The singleton
+
+  class watching {
+    public:
+      size_t * addr;
+      size_t   faultvalue;
+      bool     hasOverflowed;
+  };
+      
   static watchpoint& getInstance (void) {
     static char buf[sizeof(watchpoint)];
     static watchpoint * theOneTrueObject = new (buf) watchpoint();
     return *theOneTrueObject;
   }
 
+  void initialize(void) {
+    init_debug_registers();
+  }
 
-  // Add a watch point to watchpoint list.
-  void addWatchpoint(void * addr) {
+  // Add a watch point with its value to watchpoint list.
+  void addWatchpoint(void * addr, size_t value ) {
+
+    fprintf(stderr, "CAUGHT: problematic address %p with value 0x%lx!!!!!\n", addr, value);
     if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
       // Watch
-      _watchpoints[_numWatchpoints] = addr;
+      _wp[_numWatchpoints].addr = (size_t *)addr;
+      _wp[_numWatchpoints].faultvalue = value;
+      _wp[_numWatchpoints].hasOverflowed = false;
       _numWatchpoints++;
     } 
   }
 
-  // Set a watch point for an specified address
-  int installWatchpoints(void)
-  {
-    pid_t child;
-    pid_t parent = getpid();
-    struct sigaction trap_action;
-    int child_stat = 0;
-
-    // Now we are setting a trap handler.
-    sigaction(SIGTRAP, NULL, &trap_action);
-    trap_action.sa_sigaction = watchpoint::trapHandler;
-    trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
-    sigaction(SIGTRAP, &trap_action, NULL);
-
-    // Creating a child, then setup the watchpoint.
-    // Then child can exit now.
-    if((child = fork()) == 0)
-    {
-        // Now the child will ptrace its parent.
-        int retval = EXIT_SUCCESS;
-
-        dr7_t dr7 = {0};
-        dr7.l0 = 1;
-        //dr7.rw0 = DR7_BREAK_ON_RW;
-        dr7.rw0 = DR7_BREAK_ON_WRITE;
-        dr7.len0 = DR7_LEN_4;
-
-        if (ptrace(PTRACE_ATTACH, parent, NULL, NULL))
-        {
-            exit(EXIT_FAILURE);
-        }
-
-        sleep(1);
-        fprintf(stderr, "child after usleep\n");
-
-        int i;
-        for(int i = 0; i < _numWatchpoints; i++) {
-          fprintf(stderr, "Installing watchpoint %d: %p\n", i, _watchpoints[i]);
-          if (ptrace(PTRACE_POKEUSER, parent, offsetof(struct user, u_debugreg[0]), _watchpoints[i]))
-          {
-            retval = EXIT_FAILURE;
-          }
-
-          if (ptrace(PTRACE_POKEUSER, parent, offsetof(struct user, u_debugreg[7]), dr7))
-          {
-            retval = EXIT_FAILURE;
-          }
-        }
-
-        if (ptrace(PTRACE_DETACH, parent, NULL, NULL))
-        {
-            retval = EXIT_FAILURE;
-        }
-
-        fprintf(stderr, "child exit\n");
-        exit(retval);
-    }
-
-    // Wait for the children to setup
-    waitpid(child, &child_stat, 0);
-    if (WEXITSTATUS(child_stat))
-    {
-        fprintf(stderr, "child exit now!0\n");
-        return 1;
-    }
-
-    return 0;
+  bool hasToRollback(void) {
+    return (_numWatchpoints > 0 ? true : false);
   }
 
+  // Set all watch points before rollback. 
+  void installWatchpoints(void)
+  {
+    pid_t child;
+    struct sigaction trap_action;
+    int status = 0;
+    pid_t parent = getpid();
+    
+    // Initialize those debug registers. 
+    init_debug_registers();
+
+    // Now we are setting a trap handler.
+    WRAP(sigaction)(SIGTRAP, NULL, &trap_action);
+    trap_action.sa_sigaction = watchpoint::trapHandler;
+    trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
+    WRAP(sigaction)(SIGTRAP, &trap_action, NULL);
+
+    // Creating a child to setup the watchpoints for the parent.
+    child = WRAP(fork)();
+    if(child == 0)
+    {
+      // Now the child will setup the debug register for its parent.
+      if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
+      {
+        fprintf(stderr, "Child can not trace the parent %d\n", parent);
+        exit(-1);
+      }
+      //fprintf(stderr, "child install watchpoints now, before sleep\n");
+
+      // Child will wait the parent to stop.
+      sleep(1);
+
+     // fprintf(stderr, "child install watchpoints now\n");
+
+      // Install all watchpoints now.
+      for(int i = 0; i < _numWatchpoints; i++) {
+    //    fprintf(stderr, "child install watchpoints %d at %p\n", i, _watchAddrs[i]);
+        insert_watchpoint ((unsigned long)_wp[i].addr, sizeof(void *), hw_write, parent);
+      } 
+      
+      // Now we will deteach the parent.      
+      if(ptrace(PTRACE_DETACH, parent, NULL, NULL))
+      {
+        fprintf(stderr, "Child can not detach the parent %d\n", parent);
+        exit(-1);
+      }
+      exit(0);
+    }
+    else if(child > 0) {
+      // Wait for the children to setup
+      waitpid(child, &status, 0);
+      if(WEXITSTATUS(status))
+      {
+        fprintf(stderr, "child exit now!0\n");
+        exit(-1);
+      }
+    }
+  }
+
+  // How many watchpoints that we should care about.
+  int getWatchpointsNumber(void) {
+    return _numWatchpoints;
+  }
+
+  
+  bool printWatchpoints(void) {
+    bool isOverflowing = false;
+    bool hasOverflowed = false;
+
+    for(int i = 0; i < _numWatchpoints; i++) {
+      size_t value = *_wp[i].addr;
+      isOverflowing = false;
+      
+      // Check whether now overflow actually happens
+      if(value == _wp[i].faultvalue && _wp[i].hasOverflowed == false) {
+        _wp[i].hasOverflowed = true;
+        isOverflowing = true;
+        hasOverflowed = true;
+      }
+
+      if(!isOverflowing) {
+        fprintf(stderr, "\tNow watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
+      }
+      else {
+        fprintf(stderr, "\tOVERFLOW NOW!!!!Watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
+      }
+    } 
+
+    return hasOverflowed;
+  }
+
+  // Handle those traps on watchpoints now.  
   static void trapHandler(int sig, siginfo_t* siginfo, void* context)
   {
     ucontext_t * trapcontext = (ucontext_t *)context;
-     void * addr = siginfo->si_addr; // address of access
+    size_t * addr = (size_t *)trapcontext->uc_mcontext.gregs[REG_RIP]; // address of access
+    bool isOverflow = false;
 
     // check the address of trap
     // Get correponding ip information.
-#ifdef X86_32BIT    
-    fprintf(stderr, "CAPTURING write at %p: %lx at ip %lx\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_EIP]);
-#else
-    fprintf(stderr, "CAPTURING write at %p: %lx at ip %lx\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_RIP]);
+    //fprintf(stderr, "CAPTURING write at %p: %lx at ip %lx. sivalue %d address %p, signal code %d\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_RIP], siginfo->si_value, siginfo->si_ptr, siginfo->si_code);
+    // We omit those modifications by stopgap library itself.
+    if(selfmap::getInstance().isStopgapLibrary(addr)) {
+      return;
+    }
+    
+    fprintf(stderr, "\n\n\nCAPTURING writes at watchpoints from ip %p, detailed information:\n", addr);
+    isOverflow = watchpoint::getInstance().printWatchpoints();
+    selfmap::getInstance().printCallStack(trapcontext, addr, isOverflow);
+#ifdef STOP_AT_OVERFLOW
+    if(isOverflow) {
+      while(1) ;
+    }
 #endif
   }
-
+ 
 private:
-  int    _numWatchpoints; 
-  void * _watchpoints[xdefines::MAX_WATCHPOINTS]; 
+  int    _numWatchpoints;
+  pid_t  _mypid; //temporary
+
+  watching _wp[xdefines::MAX_WATCHPOINTS]; 
+  pid_t  _watchedProcess;
+  bool   _gotFirstTrap;
 };
 
 #endif

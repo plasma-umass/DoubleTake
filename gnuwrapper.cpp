@@ -1,29 +1,3 @@
-/*
-  Copyright (C) 2011 University of Massachusetts Amherst.
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-*/
-
-/*
- * @file   Gnuwrapper.cpp  
- * @brief
- * @author Emery Berger <http://www.cs.umass.edu/~emery>
- */ 
-    
-
 #ifndef __GNUC__
 #error "This file requires the GNU compiler."
 #endif
@@ -33,24 +7,15 @@
 #include <stdio.h>
 #include <malloc.h>
 
-
-#ifndef CUSTOM_PREFIX
-#define CUSTOM_PREFIX
-#endif
-
-#define CUSTOM_MALLOC(x)     CUSTOM_PREFIX(malloc)(x)
-#define CUSTOM_FREE(x)       CUSTOM_PREFIX(free)(x)
-#define CUSTOM_REALLOC(x,y)  CUSTOM_PREFIX(realloc)(x,y)
-#define CUSTOM_MEMALIGN(x,y) CUSTOM_PREFIX(memalign)(x,y)
-
+#define CUSTOM_PREFIX(n) _custom##n
+#include "libhoard.cpp"
 
 extern "C" {
 
-  void * CUSTOM_MALLOC(size_t);
-  void * CUSTOM_CALLOC(size_t, size_t);
-  void CUSTOM_FREE(void *);
-  void * CUSTOM_REALLOC(void *, size_t);
-  void * CUSTOM_MEMALIGN(size_t, size_t);
+  void * CUSTOM_PREFIX(malloc) (size_t);
+  void CUSTOM_PREFIX(free) (void *);
+  void * CUSTOM_PREFIX(realloc) (void *, size_t);
+  void * CUSTOM_PREFIX(memalign) (size_t, size_t);
 
   static void my_init_hook (void);
 
@@ -66,11 +31,7 @@ extern "C" {
   static void *(*old_realloc_hook)(void *ptr, size_t size, const void *caller);
   static void *(*old_memalign_hook)(size_t alignment, size_t size, const void *caller);
 
-#ifndef __MALLOC_HOOK_VOLATILE
-#define __MALLOC_HOOK_VOLATILE
-#endif
-
-  void (* __MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = my_init_hook;
+  void (*__malloc_initialize_hook) (void) = my_init_hook;
 
   static void my_init_hook (void) {
     // Store the old hooks.
@@ -87,21 +48,30 @@ extern "C" {
 
   }
 
-  static void * my_malloc_hook (size_t size, const void *) {
-    void * result = CUSTOM_MALLOC(size);
+  //  static size_t counter = 0;
+
+  static void * my_malloc_hook (size_t size, const void * caller) {
+    void * result;
+    //    fprintf (stderr, "malloc\n");
+#if 0
+    counter++;
+    if (counter > 900000)
+      abort();
+#endif
+    result = CUSTOM_PREFIX(malloc) (size);
     return result;
   }
 
-  static void my_free_hook (void * ptr, const void *) {
-    CUSTOM_FREE(ptr);
+  static void my_free_hook (void * ptr, const void * caller) {
+    CUSTOM_PREFIX(free) (ptr);
   }
 
-  static void * my_realloc_hook (void * ptr, size_t size, const void *) {
-    return CUSTOM_REALLOC(ptr, size);
+  static void * my_realloc_hook (void * ptr, size_t size, const void * caller) {
+    return CUSTOM_PREFIX(realloc) (ptr, size);
   }
 
-  static void * my_memalign_hook (size_t size, size_t alignment, const void *) {
-    return CUSTOM_MEMALIGN(size, alignment);
+  static void * my_memalign_hook (size_t size, size_t alignment, const void * caller) {
+    return CUSTOM_PREFIX(memalign) (size, alignment);
   }
 
 #if 0

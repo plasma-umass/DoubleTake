@@ -24,7 +24,10 @@
 
 /*
  * @file   objectheader.h
- * @brief  Heap object header, keeping track of size and callsite.
+ * @brief  Heap object header, including size information and sentinels.
+ *         Since all memory blocks are ligned to 8bytes at 32bits machine and 16bytes for 64bits.
+ *         We also add some padding here. See 
+           http://www.gnu.org/software/libc/manual/html_node/Aligned-Memory-Blocks.html.
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
@@ -33,15 +36,42 @@ class objectHeader {
 public:
 
   objectHeader (size_t sz)
-    : _size (sz)
+    : _blockSize (sz)
   {
   }
 
-  size_t getSize () { return _size; }
+  size_t getSize () { return (size_t)_blockSize; }
 
+  size_t getObjectSize() { return(size_t)_objectSize; } 
+
+  size_t setObjectSize(size_t sz) {  _objectSize = sz; }
+
+  bool isGoodObject() { 
+    return (_sentinel == xdefines::SENTINEL_WORD ? true : false );
+  }
+
+  void * getStartPtr() { 
+    return ((void *)((intptr_t)&_sentinel + xdefines::SENTINEL_SIZE));
+  }
+
+  void setObjectFree() {
+    _objectSize = 0;
+  }
+
+  bool isObjectFree() {
+    return (_objectSize == 0);
+  }
+ 
 private:
 
-  size_t _size;
+  // If a block is larger than 4G, we can't support 
+  unsigned int  _blockSize;
+  unsigned int  _objectSize;
+  
+#ifdef X86_32BIT
+  int _padding;
+#endif
+  size_t _sentinel;
 };
 
 #endif /* _OBJECTHEADER_H */

@@ -45,23 +45,26 @@ public:
 
   void * malloc (size_t) {
     if (_alreadyMalloced) {
+      //PRWRN("SourceInternalHeap: ****** _alreadyMalloced\n");
       return NULL;
     } else {
       void * start;
 #if defined(__SVR4)
-      start = WRAP(mmap) (NULL, xdefines::INTERNALHEAP_SIZE, PROT_READ | PROT_WRITE, 
+      start = WRAP(mmap) (NULL, xdefines::INTERNAL_HEAP_SIZE, PROT_READ | PROT_WRITE, 
       MAP_SHARED | MAP_ANON, -1, 0);
 #else
       // Create a MAP_SHARED memory
-      start = WRAP(mmap)(NULL, xdefines::INTERNALHEAP_SIZE, PROT_READ | PROT_WRITE, 
+      start = WRAP(mmap)(NULL, xdefines::INTERNAL_HEAP_SIZE, PROT_READ | PROT_WRITE, 
       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 #endif
       if(start == NULL) {
         fprintf(stderr, "Failed to create a internal share heap.\n");
         exit(1);
       }
+      //PRWRN("SourceInternalHeap: start %p\n", start);
       
-//      fprintf(stderr, "Internal heap start %p to %lx\n", start, (intptr_t)start + xdefines::INTERNALHEAP_SIZE);  
+      //fprintf(stderr, "Internal heap start %p to %lx\n", start, (intptr_t)start + xdefines::INTERNALHEAP_SIZE);  
+//      PRERR("Internal heap start %p to %lx\n", start, (intptr_t)start + xdefines::INTERNAL_HEAP_SIZE);  
       _alreadyMalloced = true;
       return(start);
     }
@@ -83,10 +86,11 @@ public:
     if (!ptr) {
       return NULL;
     }
-
+    
     // There is no need to get callsite information here.
     objectHeader * o = new (ptr) objectHeader (sz);
     void * newptr = getPointer(o);
+    //PRWRN("NewAdaptHeap: newptr %p size %d\n", newptr, sz);
 	
     assert (getSize(newptr) >= sz);
     return newptr;
@@ -100,7 +104,7 @@ public:
     objectHeader * o = getObject(ptr);
     size_t sz = o->getSize();
     if (sz == 0) {
-      printf ("error!\n");
+      fprintf (stderr, "getSize error at ptr %p!\n", ptr);
     }
     return sz;
   }
@@ -123,7 +127,7 @@ class InternalHeap :
         Kingsley::size2Class,
         Kingsley::class2Size,
         HL::AdaptHeap<HL::SLList, NewAdaptHeap<SourceInternalHeap> >,
-        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNALHEAP_SIZE> > > >
+        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNAL_HEAP_SIZE> > > >
 
 {
   typedef   HL::ANSIWrapper<
@@ -131,7 +135,7 @@ class InternalHeap :
         Kingsley::size2Class,
         Kingsley::class2Size,
         HL::AdaptHeap<HL::SLList, NewAdaptHeap<SourceInternalHeap> >,
-        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNALHEAP_SIZE> > > >
+        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNAL_HEAP_SIZE> > > >
   SuperHeap;
 
 public:
@@ -144,8 +148,12 @@ public:
     WRAP(pthread_mutexattr_init)(&attr);
     pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
 
+    void * ptr;
+
+    ptr = WRAP(mmap)(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+;
     // Allocate a lock to use internally
-    _lock = new (mmap (NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0)) pthread_mutex_t;
+    _lock = new (ptr) pthread_mutex_t;
     if(_lock == NULL) {
       printf("Fail to initialize an internal lock for monitor map\n");
       _exit(-1);
@@ -176,10 +184,14 @@ public:
     unlock();
   
     if(!ptr) {
-      fprintf(stderr, "%d : SHAREHEAP is exhausted, exit now!!!\n", getpid());
+      PRERR("%d : SHAREHEAP is exhausted, exit now!!!", getpid());
       assert(ptr != NULL);
     }
-    //fprintf(stderr, "%d : SHAREHEAP allocate %p with sz %x\n", getpid(), ptr, sz);
+#if 0
+    else {
+      PRLOG("%d : SHAREHEAP allocate %p with sz %x", getpid(), ptr, sz);
+    }
+#endif
   
     return ptr;
   }
@@ -208,11 +220,19 @@ private:
 
 class InternalHeapAllocator {
 public:
-  void * malloc (size_t sz) {
+  static void * malloc (size_t sz) {
     return InternalHeap::getInstance().malloc(sz);
   }
   
-  void free (void * ptr) {
+  static void free (void * ptr) {
+    return InternalHeap::getInstance().free(ptr);
+  }
+
+  static void *allocate(size_t sz) {
+    return InternalHeap::getInstance().malloc(sz);
+  }
+  
+  static void deallocate (void * ptr) {
     return InternalHeap::getInstance().free(ptr);
   }
 };

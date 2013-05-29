@@ -50,82 +50,45 @@ public:
     // We check those mappings to find out existing globals.
     int numb;
     int i;
+    
+    // Trying to get information about different text segmensts.
+    selfmap::getInstance().getTextRegions();
 
     // Trying to get the information of global regions
-    selfmap::getGlobalRegions(&_regions[0], &_numbRegions);
+    selfmap::getInstance().getGlobalRegions(&_regions[0], &_numbRegions);
 
+//    _numbRegions = 0;
+//    _numbRegions = 2;
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
-   // for(int i = 1; i < _numbRegions; i++) {
-      _maps[i].initialize(_regions[i].start, 
-                          (size_t)((intptr_t)_regions[i].end - (intptr_t)_regions[i].start));
+//      PRWRN("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
+      _maps[i].initialize(_regions[i].start, (size_t)((intptr_t)_regions[i].end - (intptr_t)_regions[i].start));
     }
+
+    //while(1); 
   }
 
   void finalize(void) {
     // Nothing need to do here.
   }
 
-  // Handling the protection for all regions.
-  void openProtection(void) {
+  void recoverMemory(void) {
     for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].openProtection();
+      //fprintf(stderr, "Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
+      _maps[i].recoverMemory(NULL);
     }
-  }
 
-  void closeProtection(void) {
-    for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].closeProtection();
-    }
-  }
-
-
-  // Release all temporary pages of all regions in the begin of each transaction.
-  void begin(void) {
-    for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].begin();
-    }
   }
 
   // Commit all regions in the end of each transaction.
-  void commit(void) {
+  void backup(void) {
     for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].commit();
+      _maps[i].backup(NULL);
     }
   }
 
-  // Check whether the address is inside the 
-  // range of globals. We are using the index to identify
-  // which region of globals since there are multiple global regions.
-  bool inRange(void * addr, int * index) {
-    int i;
-    bool isFound = false;
-
-    // Check whether the given address is in one of regions.
-    for(i = 0; i < _numbRegions; i++)  {
-      if(addr >= _regions[i].start && addr <= _regions[i].end) {
-        *index = i;
-        isFound = true;
-        break;
-      } 
-    } 
-  
-  //  printf("addr %p in index %d\n", addr, *index);
-    return isFound;
-  }
-
-  void handleWrite(void * addr, int index) {
-    //printf("addr %p is in index %d\n", addr, index);
-    _maps[index].handleWrite(addr);
-  }
-
-
-  unsigned long sharemem_read_word(void * dest, int index) {
-    return _maps[index].sharemem_read_word(dest);
-  }
-
-  void sharemem_write_word(void * dest, unsigned long val, int index) {
-    return _maps[index].sharemem_write_word(dest, val);
+  void commit(void * start, size_t size, int index) {
+    _maps[index].commit(start, size);
   }
 
 private:

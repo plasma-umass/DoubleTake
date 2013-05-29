@@ -1,261 +1,556 @@
-#ifndef _XSYNC_H_
-#define _XSYNC_H_
+// -*- C++ -*-
 
-#include <map>
+/*
+ Copyright (c) 2007-2013 , University of Massachusetts Amherst.
 
-#if !defined(_WIN32)
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <dlfcn.h>
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-#include "xdefines.h"
-#include "xmemory.h"
-#include "mm.h"
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-/**
- * @class xbarrier
- * @brief Manage the cross-process barrier.
- *  Here, we will do some tricks since we can not use the passed barrier because it is a global variable(protected by us). 
- *  We don't want to introduce the additional read/write set. That will cause some confuse. 
- *
  */
-class xsync {
-public:
 
+/*
+ * @file   xsync.h
+ * @brief  Mapping between pthread_t and internal thread information.
+ * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
+ */
+
+#ifndef _SYNCMAP_H_
+#define _SYNCMAP_H_
+
+#include <sys/types.h>
+#include <syscall.h>
+#include <sys/syscall.h>
+#include "xdefines.h"
+#include "hashmap.h"
+#include "hashfuncs.h"
+#include "threadmap.h"
+#include "spinlock.h"
+#include "semaphore.h"
+#include "globalinfo.h"
+
+class xsync {
+
+public:
   xsync()
   {
-    WRAP(pthread_mutexattr_init)(&_mutex_attr);
-    pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_SHARED);
+  }
+  
+  void initialize() {
+    _smap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::SYNCMAP_SIZE);
 
-    WRAP(pthread_condattr_init)(&_cond_attr);
-    pthread_condattr_setpshared (&_cond_attr, PTHREAD_PROCESS_SHARED);
+    // initialize the global event list.
+    listInit(&_glist.list);
+    _glist.syncVariable = NULL;
+    _glist.syncCmd = E_SYNC_SPAWN;
 
-    pthread_barrierattr_init(&_barrier_attr);
-    pthread_barrierattr_setpshared (&_barrier_attr, PTHREAD_PROCESS_SHARED);
+    WRAP(pthread_mutex_init)(&_glist.lock, NULL);
+  } 
+
+  void insertSyncMap(void * key, struct syncEventList * list) {
+    _smap.insert(key, sizeof(key), list);
   }
 
-  inline void * allocSyncEntry(void *origentry, int size) {
-    void * entry = ((void *)MM::mallocShared(size));
-  //  fprintf(stderr, "alloc sync entry with size %x finished\n", size);
-    setSyncEntry(origentry, entry);
+  // Allocate a new synchronization event list
+  struct syncEventList * allocateSyncEventList(void * var, thrSyncCmd synccmd) {
+    struct syncEventList * list = NULL;
+    
+    // Create an synchronziation event.
+    list = (struct syncEventList *)InternalHeap::getInstance().malloc(sizeof(*list));
 
-    return entry; 
+    // Initialize the sequence number   
+    list->syncVariable = var;
+    list->syncCmd = synccmd;
+    listInit(&list->list);
+
+    WRAP(pthread_mutex_init)(&list->lock, NULL);
+
+    // Add this event list into the map.
+    insertSyncMap(var, list);
+    return list;
   }
 
-  inline void deallocSyncEntry(void *ptr) {
-    void * realentry = getSyncEntry(ptr);
+  // Record a synchronization event
+  void recordSyncEvent(void * var, thrSyncCmd synccmd) {
+    struct syncEventList * list = NULL;
 
-    assert(realentry);
-    MM::freeShared(realentry);
+    if(synccmd == E_SYNC_SPAWN) {
+      list = &_glist;
+    }
+    else {
+      assert(var != NULL);
+
+      if(!_smap.find(var, sizeof(void *), &list)) {
+        //PRDBG("need to allocation a syncEventList\n");
+        list = allocateSyncEventList(var, synccmd);
+      }
+    }
+
+    assert(list != NULL);
+    struct syncEvent * event;
+    event = (struct syncEvent *)InternalHeap::getInstance().malloc(sizeof(struct syncEvent));
+    
+    if(event == NULL) {
+      PRDBG("InsertSyncEventList failed because we do not have enough memory?\n");
+      WRAP(exit)(-1);
+    }
+  
+    listInit(&event->list);
+    listInit(&event->threadlist);
+
+    // Change the event there.
+    event->thread = current;
+    event->eventlist = list;
+    PRDBG("RECORDING: syncCmd %d on variable %p event %p thread %p (THREAD%d)", synccmd, var, event, event->thread, current->index);
+
+    if(synccmd != E_SYNC_LOCK) {    
+      WRAP(pthread_mutex_lock)(&list->lock);
+      listInsertTail(&event->list, &list->list);
+      WRAP(pthread_mutex_unlock)(&list->lock);
+    }
+    else {
+      // We only record synchronization inside critical section.
+      // so there is no need to acquire another lock.
+      listInsertTail(&event->list, &list->list);
+    }
+
+    // Insert to thread sync list. No need to lock since only this thread
+    // will insert events to this list
+    listInsertTail(&event->threadlist, &current->syncevents.list);
   }
 
-  /// @brief Initialize the lock.
-  inline pthread_mutex_t * mutex_init(pthread_mutex_t * lck, bool needProtect) {
-    int result; 
-    pthread_mutex_t * realMutex = NULL;
 
-    if(needProtect) {
-      lock();
-      realMutex = (pthread_mutex_t *)getSyncEntry_sharemem(lck); 
+  /*
+   Unpdate synchronization event in the rollback phase.
+   Normally, this function will update two list: 
+     The synchronization variable's correponding event list.
+     The thread's event list.
+  */
+  void updateSyncEvent(void * var, thrSyncCmd synccmd) {
+    struct syncEventList * eventlist = NULL;
+
+    global_lock();
+
+    if(synccmd == E_SYNC_SPAWN) {
+      eventlist = &_glist;
+    }
+    else {
+      assert(var != NULL);
+
+      if(!_smap.find(var, sizeof(void *), &eventlist)) {
+        assert(eventlist != NULL);
+      }
+    }
+    
+    PRWRN("UPDATING before: eventlist current event %p, thread event %p. variable %p eventlist variable %p\n", eventlist->curentry, getThreadEvent(current->syncevents.curentry), var, eventlist->syncVariable);
+    assert(eventlist->curentry == (list_t *)getThreadEvent(current->syncevents.curentry));
+
+    if(eventlist->syncVariable != var) {
+      fprintf(stderr, "assert, eventlist syncVariable %p var %p\n", eventlist->syncVariable, var);
+      assert(0);
+    }
+   //  struct syncEvent * curEvent = (struct syncEvent *)eventlist->curentry;
+
+    // Whether next synchronization in this eventlist is still on the same thread?
+    struct syncEvent * nextEventOfList = NULL;
+    struct syncEvent * nextEventOfThread = NULL;
+    list_t * nextEntry = NULL;
+    //nextEvent = updateSyncEventList(eventlist);
+    // Update next event of eventlist.
+    nextEventOfList = (struct syncEvent *)updateNextEvent(eventlist);
+    
+    // Update next event of thread eventlist.
+    nextEntry = updateNextEvent(&current->syncevents);
+    if(nextEntry != NULL) {
+      nextEventOfThread = getThreadEvent(nextEntry);
+    }
+
+    // if next event of list existing, signal next thread.
+    if(nextEventOfList) {
+      PRLOG("calling signalNextThread");
+      //PRLOG("calling signalNextThread, nextEventOfList %p nextEventofThread %p", nextEventOfList, nextEventOfThread);
+      // Signal next thread on the event list 
+      signalNextThread(nextEventOfList);
     }
    
-//    fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
-    if(!realMutex) {
- //     fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
-      realMutex = (pthread_mutex_t *)allocSyncEntry(lck, sizeof(pthread_mutex_t));
-    
-      // Initialize the mutex that shared by different processes
-      WRAP(pthread_mutex_init)(realMutex, &_mutex_attr);
+    // When nextEventOfThread is equal to nextEventOfList, there is no need 
+    // to signal since signalNextThread should already signal myself
+    if(nextEventOfThread && (nextEventOfThread != nextEventOfList)) {   
+      PRLOG("calling signalCurrentThread");
+      // Send semaphore to myself if some pending events becomes the top of my list.
+      signalCurrentThread(nextEventOfThread);
     }
     
-    if(needProtect) {
-      unlock();
-    }
-    
-    return realMutex;
-//    fprintf(stderr, "lockini\n");
-  }
+    PRWRN("UPDATING after: eventlist next event %p, next thread event %p\n", nextEventOfList, nextEventOfThread);
 
-  /// @brief Lock the lock.
-  inline int mutex_lock (pthread_mutex_t * lck) {
-    pthread_mutex_t * realMutex = getRealMutex(lck);
-  
-    assert(realMutex != NULL);
-    // Now lock it.
-   // fprintf(stderr, "%d: HOLDING the lock with %p from %p\n", getpid(), realMutex, lck);
-
-    return WRAP(pthread_mutex_lock) (realMutex);
-  }
-
-  /// @brief Unlock the lock.
-  inline int mutex_unlock (pthread_mutex_t * lck) {
-    pthread_mutex_t * realMutex = getRealMutex(lck);
-    assert(realMutex != NULL);
-    return WRAP(pthread_mutex_unlock) (realMutex);
-  }
-  
-  /// @brief Destroy the lock.
-  inline int mutex_destroy (pthread_mutex_t * lck) {
-    deallocSyncEntry(lck);
-  }
-
-  inline pthread_mutex_t * getRealMutex(void * lck) {
-    pthread_mutex_t * mutex = (pthread_mutex_t *)getSyncEntry(lck);
-
-    if(mutex ==NULL) {
-  //    fprintf(stderr, "getMutex %p with lck %p\n", mutex, lck);
-      // Whenever it is not allocated, then we will try to allocate one.
-      mutex = mutex_init((pthread_mutex_t *)lck, true);
-    }
-//  fprintf(stderr, "getMutex %p with lck %p\n", mutex, lck);
-    return mutex; 
-  }
-
-  pthread_cond_t * cond_init(void * cond, bool needProtect) {
-    pthread_cond_t * realCond = NULL;
-
-    if(needProtect) {
-      lock();
-      realCond = (pthread_cond_t *)getSyncEntry_sharemem(cond); 
-    }
-   
-    if(realCond == NULL) {
-      realCond = (pthread_cond_t *)allocSyncEntry(cond, sizeof(pthread_cond_t));
-    // Initialize the mutex that shared by different processes
-      WRAP(pthread_cond_init)(realCond, &_cond_attr);
-    }
-
-    if(needProtect) {
-      unlock();
-    }
-
-    return realCond;
-  }
-
-  void cond_destroy(void * cond) {
-    deallocSyncEntry(cond);
-  }
-
-  int cond_wait (void * cond, void * lck) {
-    // Look for this cond in the map of initialized condes.
-    pthread_cond_t * realCond = getRealCond(cond);
-    pthread_mutex_t * realMutex = getRealMutex(lck);
-
-  //fprintf(stderr, "%d: condwait %p(on %p) and %p(on %p)\n", getpid(), realCond, cond, realMutex,lck); 
-    return WRAP(pthread_cond_wait) (realCond, realMutex);
-  }
-
-  /// @brief Unblock at least one thread waiting on the cond.
-  int cond_signal (void * cond) {
-    pthread_cond_t * realCond = getRealCond(cond);
-  
-    return WRAP(pthread_cond_signal)(realCond);
-  }
-
-  /// @brief Unblock all threads waiting on the cond.
-  int cond_broadcast (void * cond) {
-    pthread_cond_t * realCond = getRealCond(cond);
-    return WRAP(pthread_cond_broadcast)(realCond);
+//    PRWRN("Updating: eventlist current event %p, thread event %p before updating syncevents\n", eventlist->curentry, getThreadEvent(current->syncevents.curentry));
+    global_unlock();
   }
  
-  inline pthread_cond_t * getRealCond(void * cond) {
-    pthread_cond_t * realcond = (pthread_cond_t *)getSyncEntry(cond);
+  // Signal next thread on the same synchronization variable.
+  void signalNextThread(struct syncEvent * event) {
+    thread_t * thread = NULL;
 
-    if(!realcond) {
-      // Whenever it is not allocated, then we will try to allocate one.
-      realcond = cond_init(cond, true);
-    } 
-    return realcond;
-  }
-  /// @brief Initialize the barrier.
-  int barrier_init(void * barrier, unsigned int count) {
+    thread = event->thread;
 
-    // Look for this barrier in the map of initialized barrieres.
-    pthread_barrier_t * realBarrier=(pthread_barrier_t *)allocSyncEntry(barrier,sizeof(pthread_barrier_t));
-
-    // Set this entry to be process-shared.
-    WRAP(pthread_barrier_init)(realBarrier, &_barrier_attr, count);
-
-    // Initialize the barrier that shared by different processes
-    return 0;
-  }
-
-  int barrier_wait (void * barrier) {
-    // Look for this barrier in the map of initialized barrieres.
-    pthread_barrier_t * realBarrier = (pthread_barrier_t *)getSyncEntry(barrier);
-
-    // barrier must be initialized explicitly.
-    assert(realBarrier);  
-
-    return WRAP(pthread_barrier_wait)(realBarrier);
-  }
-
-  /// @brief Destroy the barrier.
-  int barrier_destroy (void * barrier) {
-    // Release this part of memory.
-    deallocSyncEntry(barrier);
-    return 0;
-  }
-
-  void clearSyncEntry(void * origentry) {
-    void **dest = (void**)origentry;
-
-    *dest = NULL;
-
-    // Update the shared copy in the same time. 
-    xmemory::getInstance().sharemem_write_word(origentry, 0);
-  }
-
-  void setSyncEntry(void * origentry, void * newentry) {
-    void **dest = (void**)origentry;
-
-    *dest = newentry;
-
- //   fprintf(stderr, "origentry %p dest %p *dest %p newentry %p\n", origentry, dest, *dest, newentry);
-    // Update the shared copy in the same time. 
-    xmemory::getInstance().sharemem_write_word(origentry, (unsigned long)newentry);
-  }
-
-  void * getSyncEntry(void * entry) {
-    void ** ptr = (void **)entry;
-//    fprintf(stderr, "%d: entry %p and synentry 0x%x. ptr %p\n", getpid(), entry, *((int *)entry), *ptr);   
-    return(*ptr);
-  }
-
-  void * getSyncEntry_sharemem(void * entry) {
-    void * result = (void *)xmemory::getInstance().sharemem_read_word(entry);
-    if(result) {
-      // Now some one has already initialized this entry, we should set this one.
-      void **dest = (void**)entry;
-      *dest = result;
+    // We should check whether this event is on the top of thread.
+    if(isThreadNextEvent(event, thread)) {
+      signalThread(thread);
+      PRWRN("THREAD%d actually signal next thread %d on event %p", current->index, thread->index, event);
     }
-    return result;
+    else {
+      PRWRN("THREAD%d adding pending event to next thread %d on event %p", current->index, thread->index, event);
+      addPendingSyncEvent(event, thread);
+    }
+  }
+  
+  // Signal current thread if next event is the top on its list.
+  void signalCurrentThread(struct syncEvent * event) {
+    thread_t * thread = event->thread;
+    struct syncEventList * eventlist = &thread->pendingSyncevents;
+    
+    assert(thread == current);
+
+    PRWRN("singalCurrentThread: event %p on variable %p command %d", event, event->eventlist->syncVariable, event->eventlist->syncCmd); 
+    //PRWRN("singalCurrentThread: event %p on variable %p command %d thread %p, current %p\n", event, event->eventlist->syncVariable, event->eventlist->syncCmd, thread, current); 
+
+    if(!isListEmpty(&eventlist->list)) {
+ //     PRWRN("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event, thread); 
+      // Only signal itself when current event is first event of this thread.
+      struct pendingSyncEvent * pe = NULL; 
+
+      // Search the whole list for given tid.
+      pe = (struct pendingSyncEvent *)nextEntry(&eventlist->list);
+ //     PRLOG("singalCurrentThread: event %p thread %p, pending list is not empty, pe->event %p!!!\n", event, thread, pe->event); 
+      while(true) {
+        // We found this event
+        if(pe->event == event) {
+          PRLOG("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event, pe->event); 
+          // Remove this event from the list.
+          listRemoveNode(&pe->list);
+          
+          // Release corresponding memory to avoid memory leakage.
+          InternalHeap::getInstance().free(pe);
+
+          // Now signal current thread.
+          signalThread(thread);
+          break;
+        }
+ 
+        // Update to the next thread.
+        if(isListTail(&pe->list, &eventlist->list)) {
+          break;
+        }
+        else {
+          pe = (struct pendingSyncEvent *)nextEntry(&pe->list);
+        } 
+      } // while (true)
+    } 
+    else {
+      PRLOG("thread pending list is empty now!!!");
+    }
+  }
+ 
+  // Update the current event entry in an event lsit.
+  list_t * updateNextEvent(struct syncEventList * list) {
+    list_t * curentry = list->curentry;
+
+    if(!isListTail(curentry, &list->list)) {
+    // (stderr, "Not tail, UpdateNextEvent curentry %p, list->list %p", curentry, &list->list);
+      list->curentry = nextEntry(curentry);
+    }
+    else {
+     // PRDBG("tail, UpdateNextEvent curentry %p, list->list %p", curentry, &list->list);
+      list->curentry = NULL;
+    }
+
+    return list->curentry;
+  }
+ 
+  // Get event from the thread event list 
+  inline void updateMutexSyncList(pthread_mutex_t * mutex) {
+    struct syncEventList * eventlist = NULL;
+
+    global_lock();
+
+    assert(mutex != NULL);
+
+    if(!_smap.find((void *)mutex, sizeof(void *), &eventlist)) {
+      assert(eventlist != NULL);
+    }
+    
+    if(eventlist->syncVariable != (void *)mutex) {
+      fprintf(stderr, "assert, eventlist syncVariable %p var %p\n", eventlist->syncVariable, mutex);
+      assert(0);
+    }
+
+    // Whether next synchronization in this eventlist is still on the same thread?
+    struct syncEvent * nextEvent = NULL;
+    // Update next event of eventlist.
+    nextEvent = (struct syncEvent *)updateNextEvent(eventlist);
+   
+    // if next event of list existing, signal next thread.
+    if(nextEvent) {
+      PRLOG("calling signalNextThread");
+      // Signal next thread on the event list 
+      signalNextThread(nextEvent);
+      // FIXME
+      // Since we haven't look at 
+      //FIXME
+      //we may already later than thread event? How to fix this?
+    }
+   
+//    PRWRN("Updating: eventlist current event %p, thread event %p before updating syncevents\n", eventlist->curentry, getThreadEvent(current->syncevents.curentry));
+    global_unlock();
   }
 
+  inline void updateThreadSyncList(pthread_mutex_t *  mutex) {
+    list_t * nextEntry = NULL;
+    
+    global_lock();
+    // Update next event of thread eventlist.
+    nextEntry = updateNextEvent(&current->syncevents);
+    if(nextEntry != NULL) {
+      struct syncEvent * nextEventOfThread = NULL;
+      nextEventOfThread = getThreadEvent(nextEntry);
+
+      signalCurrentThread(nextEventOfThread); 
+    }
+    global_unlock();
+  }
+
+  // How to return a thread event from specified entry.
+  inline struct syncEvent * getThreadEvent(list_t * entry) {
+    // FIXME: if we changed the structure of syncEvent.
+    static int threadEventOffset = sizeof(list_t);
+    
+    return(struct syncEvent *)((intptr_t)entry - threadEventOffset);
+  }
+
+  // Update the current event entry in an event lsit.
+  struct syncEvent * updateSyncEventList(struct syncEventList * list) {
+    bool hasUpdated = false;
+    struct syncEvent * event = NULL;
+    event = (struct syncEvent *)updateNextEvent(list);
+    if(event) {
+      // Signal next thread  
+      signalNextThread(event);
+    }
+
+    return event;
+  }
+
+  void cleanupSynchronizations(void) {
+    // we are going to make sure that there is no problem caused by synchronzation.
+
+    // We will try to put semaphores for those threads acquiring the same synchronization.
+
+    // Also, we might try to increment the semaphore for current thread too.
+  }
+
+  /*
+   How to reproduce the synchronization - using the semaphore to do this:
+     a. One thread only have one semaphore but multiple synchronization variable. And we donot have
+     one global order for all synchronization because we want to avoid the performance 
+     bottleneck caused by the global order in the recording phase.
+     But we want to avoid wrong order of synchronization.
+     For example, in a system with only 3 threads.
+     T1: lock1(S1)                       lock1(S5),
+     T2:       lock1(S2), lock2(S3),
+     T3:                           lock2(S4)
+     T4: lock3
+     lock1: S1, S2, S5
+     lock2: S3, S4
+     
+     Initially, only T1 can acquire the semaphore that is because of the following rule. We are trying
+     to check all synchronization variables one by one. Initially, we only increment the semaphore 
+     of a thread when the following two conditions meet.
+        a. The thread is the first thread on one synchronization variable.
+        b. This synchronization is the first synchronization for this thread.
+     For the above case, T2's semaphore and T3 semaphore won't be incremented, but T1 and T4 should. 
+     For T2, lock2 is not the first synchronization on T2. 
+     For T3, T3 is not the first thread on lock2.
+ 
+     Second step for T1: 
+     We can find out the T2(S2) will acquire lock1, so it increment the semaphore for T2.
+
+     Second step for T2:
+     After T2 acquire the semaphore, it will check two things:
+     a. What's the next thread to work on current synchronization variable. 
+        it will try to increment the semaphore for T1.
+     b. What's next synchronization of current thread and whether it is the head of this variable. 
+        For example, S2 is next statement and it is located
+     in the head of list. Then it also increment the semaphore of T2 so that T2 can acquire lock2.
+   */
+
+  struct syncEventList * getSyncEventList(void * var) {
+    struct syncEventList * list = NULL;
+    _smap.find(var, sizeof(void *), &list);
+    return list;
+  } 
+ 
+  void deleteMap(void * key) {
+    _smap.erase(key, sizeof(void*));
+  }
+
+  // cleanup all events in a list.
+  void cleanEventList(struct syncEventList * eventlist) {
+    list_t * head = &eventlist->list;
+    list_t * entry = NULL;
+
+    while((entry = listRetrieveItem(head)) != NULL) {
+      InternalHeap::getInstance().free(entry);
+    }
+
+    listInit(head);
+  }
+
+  void cleanSyncEvents() {
+    // Remove all events in the global map and event list.
+    syncHashMap::iterator i;
+    struct syncEventList * eventlist;
+
+    for(i = _smap.begin(); i != _smap.end(); i++) {
+      eventlist = (struct syncEventList *)i.getData();
+
+      cleanEventList(eventlist);
+    }
+
+    cleanEventList(&_glist);
+  }
+
+  /*
+   Prepare rollback. Only one thread can call this function.
+   It basically check every synchronization variable.
+   If a synchronization variable is in the head of a thread, then
+   we try to UP corresponding thread's semaphore.
+   */
+  void prepareRollback() {
+    syncHashMap::iterator i;
+    struct syncEventList * eventlist;
+    struct syncEvent * event;
+    thread_t * thread;
+
+    for(i = _smap.begin(); i != _smap.end(); i++) {
+      eventlist = (struct syncEventList *)i.getData();
+      
+      prepareEventListRollback(eventlist);
+    }
+
+    prepareEventListRollback(&_glist);
+  }
+
+  /*
+    Prepare the rollback for an event list.
+    It will check whether the first event in the event list is also the head of specific 
+    thread. If yes, then we will signal specific thread so that this thread can acquire
+    the semaphore immediately.
+   */
+  void prepareEventListRollback(struct syncEventList * eventlist) {
+    struct syncEvent * event;
+    thread_t * thread = NULL;
+
+    if(!isListEmpty(&eventlist->list)) {
+      event = (struct syncEvent *)nextEntry(&eventlist->list); 
+      thread = event->thread;
+  
+      // Make current entry pointing to the first entry    
+      eventlist->curentry = (list_t *)event;
+      
+      // Check whether this event is first event of corresponding thread
+      if(isThreadNextEvent(event, thread)) {
+        signalThread(thread);
+      }
+      else {
+        PRLOG("Synchronization varible %p commdn %d: Add pending synchronization event %p to THREAD %d\n", eventlist->syncVariable, eventlist->syncCmd, event, thread->index);
+        addPendingSyncEvent(event, thread);
+      }
+    }
+  }
+
+  // Add one synchronization event into the pending list of a thread.  
+  void addPendingSyncEvent(struct syncEvent * event, thread_t * thread) {
+    struct pendingSyncEvent * pendingEvent = NULL;
+
+    pendingEvent = (struct pendingSyncEvent *)InternalHeap::getInstance().malloc(sizeof(struct pendingSyncEvent));
+
+    listInit(&pendingEvent->list);
+    pendingEvent->event = event;
+
+    // Add this pending event into corresponding thread.
+    listInsertTail(&pendingEvent->list, &thread->pendingSyncevents.list);
+  }
+
+  // Check whether this event is the first event of corresponding thread.
+  bool isThreadNextEvent(struct syncEvent * event, thread_t * thread) {
+    struct syncEventList * eventlist = &thread->syncevents;
+    
+    return (&event->threadlist == eventlist->curentry);
+  }
+  
+/* 
+  bool isListNextEvent(struct syncEvent * event, struct syncEventList * eventlist) {
+    return (prevEntry(&event->threadlist) == eventlist->curentry);
+  }
+*/
+
+  void signalThread(thread_t * thread) {
+    semaphore * sema = &thread->sema;
+    PRDBG("Signal semaphore %p to thread%d (at %p)\n", sema, thread->index, thread);
+    sema->put();
+  }
 
 private:
-  void lock(void) {
-    _global_sync_lock.lock();
+  void global_lock() {
+    globalinfo::getInstance().lock();
+  }
+  
+  void global_unlock() {
+    globalinfo::getInstance().unlock();
   }
 
-  void unlock(void) {
-    _global_sync_lock.unlock();
+  size_t getThreadSyncSeqNum() {
+    return 0;
   }
 
-  /// The barrier's attributes.
-  pthread_barrierattr_t _barrier_attr;
-  pthread_condattr_t _cond_attr;
-  pthread_mutexattr_t _mutex_attr;
+  semaphore * getThreadSemaphore(thread_t * thread) {
+    return &thread->sema;
+  }
 
-  xplock _global_sync_lock;
+#if 0
+  // Get the first thread on this synchronization event list.
+  thread_t * getFirstThread(struct syncEventList * eventlist) {
+    struct syncEvent * event;
+    thread_t * firstthread = NULL; 
+    if(!isListEmpty(&eventlist->list)) {
+      event = (struct syncEvent *)nextEntry(&eventlist->list); 
+
+      firstthread = event->thread;
+    }
+
+    return firstthread;
+  }
+#endif
+
+  // We are maintainning a private hash map for each thread.
+  typedef HashMap<void *, struct syncEventList *, spinlock, InternalHeapAllocator> syncHashMap;
+
+  // Synchronization related to different sync variable should be recorded into
+  // the synchronization variable related list.
+  syncHashMap _smap;
+
+  // Thread spawning should go into this global list.
+  struct syncEventList _glist;
 };
-
 
 #endif

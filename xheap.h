@@ -58,14 +58,16 @@ public:
 	  char * base;
 
 	  // Allocate a share page to hold all heap metadata.
-    
     base = (char *)MM::mmapAllocateShared(xdefines::PageSize, -1);
 
 	  // Put all "heap metadata" in this page.
     _position   = (char **)base;
     _remaining  = (size_t *)(base + 1 * sizeof(void *));
     _magic      = (size_t *)(base + 2 * sizeof(void *));
-	  _lock       = new (base + 3*sizeof(void *)) xplock;
+	  _lock       = new (base + 3*sizeof(void *)) pthread_mutex_t;
+
+    // Initialize the lock.
+    pthread_mutex_init(_lock, NULL);
 	
 	  // Initialize the following content according the values of xpersist class.
     _start      = parent::base();
@@ -73,9 +75,8 @@ public:
     *_position  = (char *)_start;
     *_remaining = parent::size();
     *_magic     = 0xCAFEBABE;
-    //fprintf(stderr, "XHEAP:_start %p end is %p remaining %p-%x, position %p-%x. OFFSET %x\n", _start, _end, _remaining, *_remaining, _position, *_position, (unsigned long)*_position-(intptr_t)_start);
-    printf("XHEAP:_start %p end is %p remaining %p-%x, position %p-%x. OFFSET %x\n", _start, _end, _remaining, *_remaining, _position, *_position, (unsigned long)*_position-(intptr_t)_start);
-  //  fprintf(stderr, "XHEAP:_start at %p end at %p\n", &_start, &_end);
+    //PRDBG("XHEAP:_start %p end is %p remaining %p-%lx, position %p-%x. OFFSET %x\n", _start, _end, _remaining, *_remaining, _position, *_position, (unsigned long)*_position-(intptr_t)_start);
+    // PRDBG("XHEAP:_start at %p end at %p mutexlock %p\n", &_start, &_end, _lock);
   }
 
   /*
@@ -92,6 +93,7 @@ public:
   inline void saveHeapMetadata(void) {
     _positionBackup = *_position;
     _remainingBackup = *_remaining;
+    //PRDBG("save heap metadata, _position %p remaining 0x%lx\n", *_position, *_remaining);
   }
 
   /// We will overlap the metadata with the saved ones
@@ -99,10 +101,11 @@ public:
   inline void recoverHeapMetadata(void) {
     *_position = _positionBackup;
     *_remaining = _remainingBackup;
-  //  fprintf(stderr, "in recover, now _position %p remaining 0x%lx\n", *_position, *_remaining);
+    //PRDBG("in recover, now _position %p remaining 0x%lx\n", *_position, *_remaining);
   }
 
   inline void * getHeapStart(void) {
+    //PRDBG("*****XHEAP:_start %p*****\n", _start);
     return (void *)_start;
   }
 
@@ -121,14 +124,14 @@ public:
   inline void * malloc (size_t sz) {
     sanityCheck();
 
-    //fprintf(stderr, "xheap malloc");
     // Roud up the size to page aligned.
 	  sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
 
-	  _lock->lock();
+	  lock();
 
     if (*_remaining < sz) { 
-      fprintf (stderr, "Fatal error: out of memory for private heap.\n");
+      fprintf (stderr, "Fatal error: out of memory for heap.\n");
+      fprintf (stderr, "Fatal error: remaining %lx sz %lx\n", *_remaining, sz);
       exit (-1);
     }
 
@@ -138,12 +141,16 @@ public:
     *_remaining -= sz;
     *_position += sz;
 
-	  _lock->unlock();
-
+    //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
+    //fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
+	  unlock();
+    
+#ifdef DETECT_OVERFLOW
     // We must cleanup corresponding bitmap 
-    sanitycheck::getInstance().cleanup(p, sz);
+   sanitycheck::getInstance().cleanup(p, sz);
+#endif
     // Now we cleanup the corresponding 
-    //fprintf(stderr, "XHEAP malloc: ptr %p size %x\n", p, sz);
+    //printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x\n", getpid(),  p, (intptr_t)p + sz,  sz);
     return p;
   }
 
@@ -153,10 +160,17 @@ public:
 
 private:
 
+  void lock() {
+    pthread_mutex_lock(_lock);
+  }
+
+  void unlock() {
+    pthread_mutex_unlock(_lock);
+  }
+
   void sanityCheck (void) {
     if (*_magic != 0xCAFEBABE) {
-      fprintf (stderr, "%d : WTF!\n", getpid());
-      ::abort();
+      PRFATAL("Sanitycheck failed for xheap\n");
     }
   }
 
@@ -183,7 +197,7 @@ private:
   size_t*  _magic;
 
   // This lock guards allocation requests from different threads.
-  xplock* _lock;
+  pthread_mutex_t* _lock;
 };
 
 #endif

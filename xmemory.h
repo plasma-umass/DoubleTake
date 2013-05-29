@@ -42,34 +42,23 @@
 #include <set>
 
 #include "xglobals.h"
-#include "xrun.h"
 
-// Heap Layers
-#include "privateheap.h"
-#include "stlallocator.h"
-//#include "warpheap.h"
 #include "xpheap.h"
 
-#include "sourcesharedheap.h"
-#include "internalheap.h"
 #include "xoneheap.h"
 #include "xheap.h"
 
-#include "xplock.h"
-#include "xpageentry.h"
-#include "xpagestore.h"
 #include "objectheader.h"
-
+#include "finetime.h"
 #include "watchpoint.h"
+#include "globalinfo.h"
 
 // Encapsulates all memory spaces (globals & heap).
-
 class xmemory {
 private:
 
   // Private on purpose. See getInstance(), below.
   xmemory (void) 
-   : _internalheap (InternalHeap::getInstance())
   {
   }
 
@@ -84,20 +73,13 @@ public:
   }
 
   void initialize(void) {
-    // Install a handler to ntercept SEGV signals (used for trapping initial reads and
+    // Install a handler to intercept SEGV signals (used for trapping initial reads and
     // writes to pages).
     installSignalHandler();
-	
+
     // Call _pheap so that xheap.h can be initialized at first and then can work normally.
     _pheap.initialize();
 	  _globals.initialize();
-	  xpageentry::getInstance().initialize();
-	  xpagestore::getInstance().initialize();
-
-    // Now we can initialize the part about sanity checking.
-    // Why we are doing this because we try to avoid the checking 
-    // on the metadata of heaps.
-    _pheap.sanitycheckInitialize();
   }
 
   void finalize(void) {
@@ -106,37 +88,244 @@ public:
   }
 
   // Intercepting those allocations
-  inline void *malloc (size_t sz) {
-  	void * ptr;
-  
-    ptr = _pheap.malloc (_heapid, sz);
- 
-    //printf("malloc with sz %d ptr %p\n", sz, ptr);
+  inline void *malloc (int heapid, size_t sz) {
+  	unsigned char * ptr = NULL;
+    int mysize = sz;
+
+#ifndef X86_32BIT
+    if(sz < 16) {
+      mysize = 16;
+    }
+#endif
+    ptr = (unsigned char *)_pheap.malloc (heapid, mysize);
+//    PRWRN("malloc size %d ptr %p\n", sz, ptr);
+    //fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+#ifdef DETECT_OVERFLOW
+    objectHeader * o = getObject (ptr);
+
+    // Get the block size
+    size_t size = o->getSize();
+    
+    // Set actual size there.
+    o->setObjectSize(sz);
+
+    assert(size >= sz);
+
+    // Add another guard zone if block size is larger than actual size
+    // in order to capture the 1 byte overflow.
+    if(size > sz) {
+      size_t offset = size - sz;
+
+      // We are using the ptr to varify the size
+      unsigned char * p = (unsigned char *)((intptr_t)ptr + sz);
+
+      // If everything is aligned, add the guardzone.
+      size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
+      if(nonAlignedBytes == 0) {
+        //  PRINF("************size%x sz %x ptr %p, p %p nonAlignedBytes %d\n", size, sz, ptr, p, nonAlignedBytes);      
+        sanitycheck::getInstance().setSentinelAt(p);
+      } 
+      else {
+        // For those less than one word access, maybe we do not care since memory block is 
+        // always returned by 8bytes aligned or 16bytes aligned.
+        // However, some weird test cases has this overflow. So we should detect this now.
+        void * startp = (void *)((intptr_t)p - nonAlignedBytes);
+        size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes; 
+        // Check how much magic bytes we should put there. 
+        // The first byte of this is to specify how many bytes there.
+        // For example, at 64bit, when nonAlignedBytes is 5,
+        // Totally, we should put 3 bytes there.
+        // We are using the first byte to mark the size of magic bytes.
+        // It will end up with (02eeee).
+        p[0] = setBytes - 1;
+        for(int i = 1; i < setBytes; i++) {
+          p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
+        }
+        sanitycheck::getInstance().markSentinelAt(startp);
+    
+        // We actually setup a next word to capture the next word
+        if(offset > xdefines::WORD_SIZE) {
+          void * nextp = (void *)((intptr_t)p + setBytes);
+          sanitycheck::getInstance().setSentinelAt(nextp);
+        }
+      }
+    }
+    // We donot need to do anything if size is equal to sz
+    //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
+#endif
     return ptr;
   }
 
+  // We are trying to find the aligned address starting from ptr
+  // to ptr+boundary.
+  inline void * getAlignedAddress(void * ptr, size_t boundary) {
+    return (void *)(((intptr_t)ptr + boundary) & (~(boundary - 1)));
+  }
 
-  inline void * realloc(void * ptr, size_t sz) {
-    size_t s = getSize (ptr);
+  inline void * memalign(int heapid, size_t boundary, size_t sz) {
+    // Actually, malloc is easy. Just have more memory at first.
+    void * ptr = malloc(heapid, boundary + sz);
 
-    void * newptr =  malloc(sz);
-    if (newptr && s != 0) {
-      size_t copySz = (s < sz) ? s : sz;
-      memcpy (newptr, ptr, copySz);
+    // Since the returned ptr is not aligned, return next aligned address
+    void * newptr = getAlignedAddress(ptr, boundary); 
+
+    // check offset between newptr and ptr
+    size_t offset = (intptr_t)newptr - (intptr_t)ptr;
+    if(offset == 0) {
+      newptr = (void *) ((intptr_t)newptr + boundary);
+      offset = boundary;
     }
 
-	  free(ptr);
-	  return newptr;
+    // Check whether the offset is valid?
+    assert(offset >= 2 * sizeof(size_t));
+
+    // Put a sentinel before the this memory block.
+    sanitycheck::getInstance().setMemalignSentinelAt((void *)((intptr_t)newptr - sizeof(size_t)));
+
+    // Put the offset before the sentinel too
+    void ** origptr = (void **)((intptr_t)newptr - 2 * sizeof(size_t)); 
+    *origptr = ptr;
+
+//    PRINF("offset is %x ptr %p and newptr %p\n", offset, ptr, newptr);
+    return newptr;
+  }
+
+#ifdef DETECT_OVERFLOW
+  bool isObjectOverflow(void * ptr) {
+    bool isOverflow = false;
+
+    if(ptr == NULL) {
+      return true;
+    }
+
+    // Check overflows for this object
+    objectHeader * o = getObject (ptr);
+
+    // Get the block size
+    size_t size = o->getSize();
+
+    // Set actual size there.
+    size_t sz = o->getObjectSize();
+
+    if(size < sz) {
+      PRINF("Free isObjectOverflow size %x sz %x\n", size, sz);
+      assert(size >= sz);
+    }
+    // Add another guard zone if block size is larger than actual size
+    // in order to capture those 1 byte overflow.
+    if(size > sz) {
+      size_t offset = size - sz;
+
+      // We are using the ptr to varify the size
+      unsigned char * p = (unsigned char *)((intptr_t)ptr + sz);
+      
+      size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
+      if(nonAlignedBytes == 0) {
+        // This is the easist thing
+        // check up whether the sentinel is intact or not.
+        if(sanitycheck::getInstance().checkAndClearSentinel(p) != true) {
+          // Add this address to watchpoint
+          PRINF("xmemory: checkandclearsentinal now\n");
+          watchpoint::getInstance().addWatchpoint(p, *((size_t*)p)); 
+          isOverflow = true;
+        }
+      } 
+      else {
+        // For those less than one word access, maybe we do not care since memory block is 
+        // always returned by 8bytes aligned or 16bytes aligned.
+        // However, some weird test cases has this overflow. So we should detect this now.
+        void * startp = (void *)((intptr_t)p - nonAlignedBytes);
+        size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes; 
+        if((int)p[0] == (setBytes - 1)) {
+          for(int i = 1; i < setBytes; i++) {
+            if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
+              isOverflow = true;
+              break;
+            }
+          }
+        }
+        else {
+          isOverflow = true;
+        }
+        if(isOverflow) {
+          //PRINF("xmemory: checkandclearsentinal now 222\n");
+          watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
+        }
+        sanitycheck::getInstance().clearSentinelAt(startp);
+    
+        // We actually setup a next word to capture the next word
+        if(offset > xdefines::WORD_SIZE) {
+          void * nextp = (void *)((intptr_t)p - nonAlignedBytes + xdefines::WORD_SIZE);
+          if(sanitycheck::getInstance().checkAndClearSentinel(nextp) != true) {
+            // Add this address to watchpoint
+            watchpoint::getInstance().addWatchpoint(nextp, *((size_t *)nextp)); 
+            isOverflow = true;
+          }
+        }
+      }
+    }  
+
+    return isOverflow;
+  }
+#endif
+
+  // Get the actual pointer of memory block
+  // Since we are putting a special magic number before this pointer
+  // we can check the magic number.
+  // If the magic number is corrupted, then we can find out later.
+  void * getObjectPtrAtFree(void * ptr) {
+    size_t * prevPtr = (size_t *)((intptr_t)ptr - sizeof(size_t));
+    void * origptr = ptr;
+
+    if(*prevPtr == xdefines::MEMALIGN_SENTINEL_WORD) {
+      void ** ppPtr = (void **)((intptr_t)ptr - 2 *sizeof(size_t));
+#ifdef DETECT_OVERFLOW
+      // Now we will cleanup the sentinel word.
+      sanitycheck::getInstance().clearSentinelAt(prevPtr);
+#endif
+      origptr = *ppPtr;
+    } 
+    return origptr;
   }
 
   // We should mark this whole objects with 
   // some canary words.
   // Change the free operation to put into the tail of  
   // list.
-  inline void free (void * ptr) {
-    size_t s = getSize (ptr);
-		_pheap.free(_heapid, ptr);
+   void free (int heapid, void * ptr) {
+    void * origptr;
+    
+    if(!_pheap.inRange(ptr)) {
+      return;
+    }
 
+    // Check whether this is an memaligned object.
+    origptr = getObjectPtrAtFree(ptr);
+#ifdef DETECT_OVERFLOW
+    //printf("free ptr %p\n", ptr);
+    // If this object has a overflow, we donot need to free this object
+    if(isObjectOverflow(origptr)) {
+      return;
+    }
+
+    if(origptr) {
+      objectHeader * o = getObject (origptr);
+		
+      // Check for double free
+      if(o->isObjectFree() || !o->isGoodObject()) {
+        PRINF("Caught double free or invalid free error\n");
+        printCallsite();
+        abort();
+      }
+#endif
+
+      _pheap.free(heapid, origptr);
+
+#ifdef DETECT_OVERFLOW
+      // We only remove the size 
+      o->setObjectFree();
+    }
+#endif
     // Cleanup this object with sentinel except the first word. 
   }
 
@@ -145,145 +334,113 @@ public:
     // Just pass the pointer along to the heap.
     return _pheap.getSize (ptr);
   }
- 
-  void openProtection(void) {
-   // fprintf(stderr, "open Protection\n");
-    _globals.openProtection();
-    _pheap.openProtection();
-  }
 
-  void closeProtection(void) {
-    // memory spaces (globals and heap).
-    _globals.closeProtection();
-    _pheap.closeProtection();
+  // Commit something without check the heap overflow
+  void atomicCommit(void * addr, size_t size) {
+    int index;
+#if 0
+    if (_pheap.inRange (addr)) {
+      _pheap.commit (addr, size);
+    }
+    else if (_globals.inRange (addr, &index)) {
+      _globals.commit(addr, size, index);
+    }
+    else {
+      assert(0);
+    }
+#endif
   }
 
   /// Called when a thread need to rollback.
   inline void rollback(void) {
-    // Now those watchpoints should be saved successfully,
-    // We might have to install the watchpoints now.
-    watchpoint::getInstance().installWatchpoints();
-
-    // Save the heapmeta data.
     _pheap.recoverHeapMetadata(); 
 
     // Release all private pages.
-    _globals.begin();
-    _pheap.begin();
+    PRWRN("Recoverring the global memory\n");
+    _globals.recoverMemory();
+    _pheap.recoverMemory();
+   
+    // Now those watchpoints should be saved successfully,
+    // We might have to install the watchpoints now.
+    watchpoint::getInstance().installWatchpoints();
+  }
+
+  /// Rollback only without install watchpoints.
+  inline void rollbackonly(void) {
+    _pheap.recoverHeapMetadata(); 
+
+    // Release all private pages.
+    _globals.recoverMemory();
+    _pheap.recoverMemory();
+   
+    // We do not need to install watch points if we only rollback.
+  //  watchpoint::getInstance().installWatchpoints();
+ } 
+  
+  inline void printCallsite(void) {
+    selfmap::getInstance().getInstance().printCallStack(NULL, NULL, true);
+    PRINF("Program exit becaue of double free or invalid free.\n");
+    exit(-1);
   }
 
   /// Transaction begins.
-  inline void atomicBegin (void) {
-    // Reset global and heap protection.
-    _globals.begin();
-    _pheap.begin();
+  inline void epochBegin (void) {
+    _pheap.saveHeapMetadata();
 
-    // Save the heapmeta data.
-    _pheap.saveHeapMetadata(); 
+    // Backup all existing data. 
+		_pheap.backup();
+		_globals.backup();
   }
 
-  inline void handleWrite (void * addr) {
-    int index;
-    if (_pheap.inRange (addr)) {
-      _pheap.handleWrite (addr);
+#ifdef DETECT_OVERFLOW
+  // This function is called before the system call is issued.
+  inline bool checkOverflowBeforehand(void * start, size_t size) {
+    bool hasProblem = false;
+
+    // If it is not at heap, we do not care.
+    if (_pheap.inRange(start)) {
+      // Now we will check whether the final position should be in 
+      // the heap too.
+      void * end = (void *)((intptr_t)start + size);
+      if(_pheap.inRange(end)) {
+        // check the possible overflow now.
+        // We simply check whether this area has sentinels or not.
+        // If there exists some sentinels there, it is a possible overflow.
+        hasProblem = sanitycheck::getInstance().hasSentinels(start, size);
+        PRINF("CAN NOT write to an area with sentinels\n");
+      }
+      else {
+        hasProblem = true;
+      }
     }
-    else if (_globals.inRange (addr, &index)) {
-      _globals.handleWrite (addr, index);
-    }
-    // None of the above - something is wrong.
-#ifndef NDEBUG
-    else { 
-      printf ("out of range!\n");
-    }
+
+    return hasProblem;
+  }
 #endif
-  }
 
-  // Check and commit in the end of transaction.  
-  // We are using two phases here:
-  // First, we will check whether there is some overflow error or not.
-  // Second, if there is no overflow, then we can start to commit the
-  // changes.
-  inline bool atomicEnd (void) {
+  // Check and commit in the end of transaction. 
+  inline bool checkHeapOverflow() {
     bool hasOverflow = false; 
-    // Check whether there are some overflow here.
-    //if(_pheap.sanitycheckPerform(&watchpoints[0]) == false) {
-    hasOverflow = _pheap.sanitycheckPerform();
-    if(hasOverflow == false) {
-	  	fprintf(stderr, "%d : atomic commit, NO OVERFLOW\n", getpid());
-      // Commit if there is no overflow.
-		  _pheap.commit();
-		  _globals.commit();
-    }
-    else {
-	  	fprintf(stderr, "%d : OVERFLOW!!!!\n", getpid());
 
+    // Whether it is a rollback phase
+    if(globalinfo::getInstance().isRollback()) {
+      return false;
+    }
+
+ #ifdef DETECT_OVERFLOW 
+    hasOverflow = _pheap.checkHeapOverflow();
+ #endif
+    //double elapse = stop(&startTime, NULL);
+    if(hasOverflow == false) {
+      // Check whether overflows and underflows has been detected
+      // in the normal execution phase, like free()
+      if(watchpoint::getInstance().hasToRollback()) {
+        hasOverflow = true;
+      }
     }
     return hasOverflow;
   }
-
-  // We will check the overflow in the end.
-  // There is no need to commit those changes,
-  // we only need to check whether there is some overflow.
-  // If no overflow, then we don't need to do anything.
-  // If some overflows, then we have to rollback.
-  inline void programEnd(void) {
-    bool hasOverflow = false; 
-	//	fprintf(stderr, "%d : atomic commit\n", getpid());
-    // Check whether there are some overflow here.
-    //if(_pheap.sanitycheckPerform(&watchpoints[0]) == false) {
-    hasOverflow = _pheap.sanitycheckPerform();
-    
-  }
-
-#if 0
-  inline void write_lock (void) {
-	  _lock.lock();
-  }
-
-  inline void unlock (void) {	_lock.unlock(); }
-#endif
-
-  unsigned long sharemem_read_word(void * dest) {
-    int index;
-    if(_pheap.inRange(dest)) {
-      return _pheap.sharemem_read_word(dest);
-    } 
-    else if(_globals.inRange(dest, &index)) {
-      return _globals.sharemem_read_word(dest, index);
-    } 
-#ifndef NDEBUG
-    else { 
-      printf ("Read a word from %p, but it is out of range!\n", dest);
-    }
-#endif
-  }
-
-  void sharemem_write_word(void * dest, unsigned long val) {
-    int index;
-    if(_pheap.inRange(dest)) {
-      _pheap.sharemem_write_word(dest, val);
-    } 
-    else if(_globals.inRange(dest, &index)) {
-      _globals.sharemem_write_word(dest, val, index);
-    }
-#ifndef NDEBUG
-    else { 
-      printf ("Write a word at %p, but it is out of range!\n", dest);
-    }
-#endif
-  }
-
-  void setHeapId(int index) {
-    _heapid = index;
-  }
-
-  inline int setThreadIndex(int heapid) {
-    //fprintf(stderr, "%d: setheapid %d\n", getpid(), heapid);
-    _heapid = heapid%xdefines::NUM_HEAPS;
-  }
-
-
-private:
+ 
   objectHeader * getObjectHeader (void * ptr) {
     objectHeader * o = (objectHeader *) ptr;
     return (o - 1);
@@ -291,6 +448,19 @@ private:
 
 public:
 
+  static objectHeader * getObject (void * ptr) {
+    objectHeader * o = (objectHeader *) ptr;
+    return (o - 1);
+  }
+
+#ifdef DETECT_OVERFLOW
+  static bool checkHeapOverflow(void) {
+    return _pheap.checkHeapOverflow();
+  }
+#endif
+
+  /// Rollback to previous 
+  static void handleSegFault();
   /* Signal-related functions for tracking page accesses. */
 
   /// @brief Signal handler to trap SEGVs.
@@ -298,26 +468,14 @@ public:
   {
     void * addr = siginfo->si_addr; // address of access
 
-    // Check if this was a SEGV that we are supposed to trap.
-    if (siginfo->si_code == SEGV_ACCERR) {
-      // Compute the page that holds this address.
-      void * page = (void *) (((size_t) addr) & ~(xdefines::PageSize-1));
+    //PRDBG("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    fprintf(stderr, "%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    selfmap::getInstance().printCallStack(NULL, NULL, true);
 
-      // Unprotect the page and record the write.
-      mprotect ((char *) page,
-                xdefines::PageSize,
-                PROT_READ | PROT_WRITE);
-
-	    // It is a write operation. Handle that.
-      xmemory::getInstance().handleWrite (addr);
-    } else if (siginfo->si_code == SEGV_MAPERR) {
-      fprintf (stderr, "%d : map error with addr %p!\n", getpid(), addr);
-      ::abort();
-    } else {
-
-      fprintf (stderr, "%d : other access error with addr %p.\n", getpid(), addr);
-      ::abort();
-    }
+//    WRAP(exit)(-1);
+    // Set the context to handleSegFault
+    jumpToFunction((ucontext_t *)context, (unsigned long)xmemory::getInstance().handleSegFault);   
+//    xmemory::getInstance().handleSegFault ();
   }
 
   /// @brief Install a handler for SEGV signals.
@@ -329,7 +487,7 @@ public:
     _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ, -1);
     _sigstk.ss_size = SIGSTKSZ;
     _sigstk.ss_flags = 0;
-    sigaltstack (&_sigstk, (stack_t *) 0);
+    WRAP(sigaltstack)(&_sigstk, (stack_t *) 0);
 #endif
     // Now set up a signal handler for SIGSEGV events.
     struct sigaction siga;
@@ -338,7 +496,7 @@ public:
     // Set the following signals to a set 
     sigaddset (&siga.sa_mask, SIGSEGV);
 
-    sigprocmask (SIG_BLOCK, &siga.sa_mask, NULL);
+    WRAP(sigprocmask)(SIG_BLOCK, &siga.sa_mask, NULL);
 
     // Point to the handler function.
 #if defined(linux)
@@ -348,12 +506,12 @@ public:
 #endif
 
     siga.sa_sigaction = xmemory::segvHandle;
-    if (sigaction (SIGSEGV, &siga, NULL) == -1) {
+    if (WRAP(sigaction)(SIGSEGV, &siga, NULL) == -1) {
       printf ("sfug.\n");
       exit (-1);
     }
 
-    sigprocmask (SIG_UNBLOCK, &siga.sa_mask, NULL);
+    WRAP(sigprocmask) (SIG_UNBLOCK, &siga.sa_mask, NULL);
   }
 
 private:
@@ -362,28 +520,7 @@ private:
   xglobals   _globals;
 
   /// The protected heap used to satisfy small objects requirement. Less than 256 bytes now.
-#if 0  
-  warpheap<xdefines::NUM_HEAPS, xdefines::PROTECTEDHEAP_CHUNK, xoneheap<xheap<xdefines::PROTECTEDHEAP_SIZE> > > _pheap;
-#endif
-  //xpheap<xoneheap<xheap<xdefines::PROTECTEDHEAP_SIZE> > > _pheap;
-  xpheap<xoneheap<xheap > > _pheap;
- 
-  
-//  warpheap<xdefines::NUM_HEAPS, xdefines::SHAREDHEAP_CHUNK, 
-//	xoneheap<SourceSharedHeap<xdefines::SHAREDHEAP_SIZE> > > _sheap;
-
-  typedef std::set<void *, less<void *>,
-		   HL::STLAllocator<void *, PrivateHeap> > // myHeap> >
-  pagesetType;
-
-  /// Internal share heap.
-  InternalHeap 		_internalheap;
-
-  /// A signal stack, for catching signals.
-
-  /// A lock that protect the global area.
-  xplock _lock;
-  int _heapid;
+  static xpheap<xoneheap<xheap > > _pheap;
 };
 
 #endif

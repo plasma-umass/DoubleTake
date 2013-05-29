@@ -96,6 +96,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
       inline void * malloc (const size_t sz) {
 	void * ptr = NULL;
+    
 	if (sz > maxObjectSize) {
 	  goto GET_MEMORY;
 	}
@@ -136,6 +137,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	      idx++;
 	      bit <<= 1;
 	    } else {
+    fprintf(stderr, "SEGHEAP: from littleHeap malloc sz %d\n", sz); 
 	      return ptr;
 	    }
 	  }
@@ -147,7 +149,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	  // Get some memory.
 	  ptr = bigheap.malloc (sz);
 	}
-    
+   
+    fprintf(stderr, "SEGHEAP: malloc sz %d\n", sz); 
 	return ptr;
       }
 
@@ -312,6 +315,7 @@ namespace HL {
 
     inline void * malloc (const size_t sz) {
       void * ptr = NULL;
+//      fprintf(stderr, "SEGHEAP: sz %ld %lx max %lx\n", sz, sz, super::maxObjectSize);
       if (sz <= super::maxObjectSize) {
 	const int sizeClass = ((scFunction) getSizeClass) (sz);
 	const size_t objectSize = ((csFunction) getClassMaxSize) (sizeClass);
@@ -319,9 +323,12 @@ namespace HL {
 	assert (((scFunction) getSizeClass)(objectSize) == sizeClass);
 	assert (sizeClass >= 0);
 	assert (sizeClass < NumBins);
+  //    fprintf(stderr, "SEGHEAP: sz %d from littleHeap\n", sz);
 	ptr = super::myLittleHeap[sizeClass].malloc (objectSize);
 	if (!ptr) {
+      //fprintf(stderr, "SEGHEAP: sz %d from beigHeap\n", sz);
 	  ptr = super::bigheap.malloc (objectSize);
+      //fprintf(stderr, "SEGHEAP: sz %d from beigHeap, ptr %p!!!!!\n", sz, ptr);
 	}
       } else {
 	ptr = super::bigheap.malloc (sz);
