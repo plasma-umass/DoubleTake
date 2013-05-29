@@ -101,9 +101,9 @@ void xrun::epochEnd (void) {
   stopAllThreads();
 
 #ifdef DEBUG_ROLLBACK
-//  rollback();
+  rollback();
 
-//  assert(0);
+  assert(0);
 #endif
 
   bool hasOverflow = _memory.checkHeapOverflow();
