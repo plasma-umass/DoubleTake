@@ -105,7 +105,7 @@ public:
   }
 
   void rollback(void) {
-    _phase = E_SYS_ROLLBACK;
+    setRollback();
 
     // Wakeup all other threads.
     WRAP(pthread_cond_broadcast)(&_cond);
@@ -146,7 +146,29 @@ public:
     unlock();
   }
 
-  
+  void checkWaiters(void) {
+    assert(_waiters == 0);
+  }
+
+  void incrementWaiters(void) {
+    lock();
+    PRDBG("waitForNotification _waiters %d totalWaiters %d\n", _waiters, _waitersTotal);
+
+    _waiters++;
+    if(_waiters == _waitersTotal) {
+      WRAP(pthread_cond_broadcast)(&_cond); 
+    }
+
+    unlock();
+  }
+
+  void decrementWaiters(void) {
+    lock();
+    _waiters--;
+    unlock();
+  }
+ 
+  // Notify the commiter and wait on the global conditional variable 
   void waitForNotification(void) {
     assert(isEpochEnd() == true);
 

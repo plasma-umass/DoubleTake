@@ -30,9 +30,16 @@
 #include "globalinfo.h"
 #include "threadmap.h"
 
-void xrun::setRollback(void) {
-  // Now we are going to rollback.
+void xrun::startRollback(void) {
+  // Now we are going to rollback. Wakup all threads
+  // waiting on the shared conditional variable
   globalinfo::getInstance().rollback();
+
+  PRWRN("Starting rollback for other threads\n");
+  // Set context for current thread.
+  // Since the new context is not valid, how to 
+  // rollback?
+  xthread::getInstance().rollback();
 }
 
 void xrun::syscallsInitialize(void) {
@@ -41,7 +48,7 @@ void xrun::syscallsInitialize(void) {
 
 void xrun::rollbackandstop(void) {
     // Now we are going to rollback.
-    setRollback();
+    startRollback();
 
     PRDBG("\n\nNOW ROLLING BACK\n\n\n");
   
@@ -68,25 +75,45 @@ void xrun::rollback(void) {
   // Rollback all memory before rolling back the context.
   _memory.rollback();
 
-  // Now we are going to rollback.
-  setRollback();
+  PRDBG("\n\nset rollback\n\n\n");
 
-  xthread::getInstance().rollback();
+  // Now we are going to rollback
+  startRollback();
 
+  assert(0);
+  // FIXME: how to start those temporary stopped threads.
   // Setcontext
-//  PRDBG("\n\nNOW ROLLING BACK after thread rollback\n\n\n");
 }
 
 /// @brief Start a new epoch.
 void xrun::epochBegin (void) {
-  PRDBG("getpid %d: xrun::epochBegin\n", getpid());
+  PRDBG("getpid %d: xrun::epochBegin. changed\n", getpid());
+
+  threadmap::aliveThreadIterator i;
+  for(i = threadmap::getInstance().begin(); 
+      i != threadmap::getInstance().end(); i++)
+  {
+    thread_t * thread = i.getThread();
+
+    if(thread != current) {
+      // Wakenup those newly spawned threads.
+      WRAP(pthread_mutex_lock)(&thread->mutex);
+      WRAP(pthread_cond_signal)(&thread->cond);
+      WRAP(pthread_mutex_unlock)(&thread->mutex);
+        
+      if(thread->status == E_THREAD_WAITFOR_REAPING) {
+        WRAP(pthread_join)(thread->self, NULL);
+      }
+    }
+  }
+
   // Saving the context of the memory.
   _memory.epochBegin();
-
+  xthread::getInstance().runDeferredSyncs();
+  
   // Now waken up all other threads then threads can do its cleanup.
   globalinfo::getInstance().epochBegin();
 
-  PRDBG("getpid %d: xrun::epochBegin\n", getpid());
   // Start the new epoch for current thread 
   syscalls::getInstance().cleanupRecords();
 
@@ -101,9 +128,8 @@ void xrun::epochEnd (void) {
   stopAllThreads();
 
 #ifdef DEBUG_ROLLBACK
-  rollback();
-
-  assert(0);
+ // rollback();
+ // assert(0);
 #endif
 
   bool hasOverflow = _memory.checkHeapOverflow();
@@ -117,9 +143,6 @@ void xrun::epochEnd (void) {
     //fprintf(stderr, "getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
-
-    // Reaping those threads
-    //reapThreads(); 
   }
 }
 
@@ -136,6 +159,8 @@ void xrun::stopAllThreads(void) {
 
   //threadmap::getInstance().traverseAllThreads();
 
+  globalinfo::getInstance().checkWaiters();
+
   // In order to avoid this problem, we may avoid the thread spawning in this phase.
   xthread::getInstance().global_lock();
 
@@ -149,27 +174,22 @@ void xrun::stopAllThreads(void) {
   {
     thread_t * thread = i.getThread();
 
-   // WRAP(pthread_mutex_lock)(&thread->mutex);
-   // if(thread->status == 0) {
-   //   fprintf(stderr, "Checking  THREAD%d at %p, status %d\n", thread->index, thread, thread->status);
-   // }
-  
-    // FIXME, maybe we should check the status of a thread,
-    // If a thread is already in the cond_wait, or barrier_wait,
-    // maybe we should try to use different approach?
-    // We signal SIGUSR2 to other threads, not myself.
+//    fprintf(stderr, "in epochend, thread%d mutex is %p\n", thread->index, &thread->mutex);
+
     if(thread != current) {
+      WRAP(pthread_mutex_lock)(&thread->mutex);
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
       // if(thread->status != ) {
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
         // If the thread is in cond_wait or barrier_wait, 
-        fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
+  //      fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
       //  fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
         WRAP(pthread_kill)(thread->self, SIGUSR2);
         waiters++;
       }
+    
+      WRAP(pthread_mutex_unlock)(&thread->mutex);
     }
-  //  WRAP(pthread_mutex_unlock)(&thread->mutex);
     count++;
   }
 
@@ -179,6 +199,10 @@ void xrun::stopAllThreads(void) {
    
   // Wait until all other threads are stopped.  
   globalinfo::getInstance().waitThreadsStops();
+}
+
+bool isNewThread(void) {
+  return current->isNewlySpawned;
 }
 
 /**
@@ -196,22 +220,55 @@ void xrun::stopAllThreads(void) {
 */
 void afterSignalHandler(void)  {
   //PRDBG("%p after signal handler.\n", pthread_self());
-  // Wait on the global conditional variable.
-  globalinfo::getInstance().waitForNotification();
+  if(isNewThread()) {
+    WRAP(pthread_mutex_lock)(&current->mutex);
 
-  // Check what is the current phase: rollback or resume
-  if(globalinfo::getInstance().isEpochBegin()) {
-    PRDBG("%p wakeup from notification.\n", pthread_self());
-   // PRDBG("%p reset contexts~~~~~\n", pthread_self());
-    syscalls::getInstance().cleanupRecords();
+    // Notify the commit thread without waiting.
+    globalinfo::getInstance().incrementWaiters();
+
+    WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
     
-    xthread::getInstance().resetContexts();
+    globalinfo::getInstance().decrementWaiters();
+    //wait here. So that we can check what is the status
+    //We can rollback or switch to new context.
+    if(current->status == E_THREAD_ROLLBACK) {
+      //fprintf(stderr, "THREAD%d (at %p) is wakenup\n", current->index, current);
+      WRAP(pthread_mutex_unlock)(&current->mutex);
+
+      // Rollback: has the possible race conditions. FIXME
+      // Since it is possible that we copy back everything after the join, then
+      // Some thread data maybe overlapped by this rollback.
+      // Especially those current->joiner, then we may have a wrong status.
+      PRWRN("THREAD%d (at %p) is rollngback now\n", current->index, current);
+      xthread::getInstance().rollback();
+
+      // We will never reach here
+      assert(0);
+    }
+    else {
+      WRAP(pthread_mutex_unlock)(&current->mutex);
+      syscalls::getInstance().cleanupRecords();
+      xthread::getInstance().resetContexts();
+    }
   }
   else {
-    assert(globalinfo::getInstance().isRollback() == true);
+    // Wait on the global conditional variable.
+    globalinfo::getInstance().waitForNotification();
+
+    // Check what is the current phase: rollback or resume
+    if(globalinfo::getInstance().isEpochBegin()) {
+      PRDBG("%p wakeup from notification.\n", pthread_self());
+    // PRDBG("%p reset contexts~~~~~\n", pthread_self());
+      syscalls::getInstance().cleanupRecords();
+    
+      xthread::getInstance().resetContexts();
+    }
+    else {
+      assert(globalinfo::getInstance().isRollback() == true);
   
-    xthread::getInstance().rollback();
-  } 
+      xthread::getInstance().rollback();
+    }
+  }
 
 }
 

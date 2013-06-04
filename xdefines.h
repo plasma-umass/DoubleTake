@@ -104,7 +104,8 @@ public:
   // We can only supported 128 threads simultaneously
   enum { MAX_ALIVE_THREADS = 1 }; 
 #else 
-  enum { MAX_ALIVE_THREADS = 128 }; 
+  enum { MAX_ALIVE_THREADS = 64 }; 
+  //enum { MAX_ALIVE_THREADS = 128 }; 
 #endif
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 }; 

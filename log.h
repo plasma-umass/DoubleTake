@@ -94,9 +94,9 @@ extern "C" {
 #endif
 extern int outfd;
 
-#define OUTPUT 
+//#define OUTPUT 
 #define LOG_SIZE 4096
-//#define OUTPUT write
+#define OUTPUT write
 /**
  * Print status-information message: level 0
  */

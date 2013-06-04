@@ -363,6 +363,7 @@ public:
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
+    PRWRN("Recoverring the global memory, after install watchpoints\n");
   }
 
   /// Rollback only without install watchpoints.
@@ -469,7 +470,7 @@ public:
     void * addr = siginfo->si_addr; // address of access
 
     //PRDBG("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    fprintf(stderr, "%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+//    fprintf(stderr, "%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     selfmap::getInstance().printCallStack(NULL, NULL, true);
 
 //    WRAP(exit)(-1);

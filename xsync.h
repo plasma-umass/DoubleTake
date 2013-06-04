@@ -314,7 +314,7 @@ public:
     global_unlock();
   }
 
-  inline void updateThreadSyncList(pthread_mutex_t *  mutex) {
+  void updateThreadSyncList(pthread_mutex_t *  mutex) {
     list_t * nextEntry = NULL;
     
     global_lock();

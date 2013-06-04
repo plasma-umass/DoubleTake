@@ -300,6 +300,7 @@ public:
     // Now we will recover the stack from the saved oldContext.
     memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(), oldContext->getBackupSize());
 
+    //PRDBG("thread %p is calling actual setcontext", pthread_self());
     // After recovery of the stack, we can call setcontext to switch to original stack. 
     setcontext(oldContext->getContext());
   }

@@ -230,12 +230,12 @@ public:
     if(!isRollback()) {
       // We only record these mmap requests.
       ret = WRAP(mmap)(start, length, prot, flags, fd, offset);
-      PRWRN("in execution, ret %p length %lx\n", ret, length);
+//      PRWRN("in execution, ret %p length %lx\n", ret, length);
       getRecord()->recordMmapOps(ret); 
     }
     else {
       getRecord()->getMmapOps(&ret);
-      PRWRN("in rollback, ret %p length %lx\n", ret, length);
+  //    PRWRN("in rollback, ret %p length %lx\n", ret, length);
     }
 #if 0 // Used to test epochBegin
     epochEnd();

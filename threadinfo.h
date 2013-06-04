@@ -136,6 +136,8 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex+1)%_totalThreads;
+        WRAP(pthread_mutex_init)(&thread->mutex, NULL);
+        WRAP(pthread_cond_init)(&thread->cond, NULL);
     
 //        fprintf(stderr, "origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
         break;
@@ -199,8 +201,8 @@ public:
     _sync.prepareRollback();
   }
 
-  inline void insertAliveThread(thread_t * thread) {
-    _xmap.insertAliveThread(thread);
+  inline void insertAliveThread(thread_t * thread, pthread_t tid) {
+    _xmap.insertAliveThread(thread, tid);
   }
 
   inline void insertDeadThread(thread_t *thread) {

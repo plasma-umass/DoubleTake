@@ -113,6 +113,7 @@ extern "C" {
 
     outbuf = outputbuf;
     outbuf2 = outputbuf2;
+
     // temprary allocation
     init_real_functions();
 
@@ -530,7 +531,7 @@ extern "C" {
  FILE * fopen64(const char * filename, const char * modes) {
     if (!initialized) {
 #ifndef X86_32BIT
-      WRAP(fopen64) = (typeof(WRAP(fopen64)))0x39812630e0;
+//      WRAP(fopen64) = (typeof(WRAP(fopen64)))0x39812630e0;
 #endif
       return WRAP(fopen64)(filename, modes);
     }

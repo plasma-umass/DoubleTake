@@ -251,7 +251,7 @@ private:
 
 
   // Notify the system call handler about rollback phase
-  void setRollback();
+  void startRollback();
 
   int getIndex() {
     return _thread.getIndex();

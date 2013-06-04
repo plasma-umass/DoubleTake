@@ -77,14 +77,10 @@ public:
   // need to rollback anymore 
   // tnrere are three types of events here.
   void epochEndWell(void) {
-    // Those sync variables: _deadSyncVars 
-    runDeferredSyncs();
+  //  runDeferredSyncs();
 
     // The global syncrecord
     cleanSyncEvents();
-
-    // Cleanup those threads which need to be reaped.
-    
   }
 
   // Register initial thread
@@ -98,13 +94,12 @@ public:
     current->joiner = NULL;
     current->index = tindex;
     current->parent = NULL;
-    current->self = pthread_self();
     
+    insertAliveThread(current, pthread_self());
+
     // Setup tindex for initial thread. 
     threadRegister(true);
-      
-    // Add current thread into alive threads.
-    insertAliveThread(current);
+    current->isNewlySpawned = false;
   }
 
   /// Handling the specific thread event.
@@ -142,13 +137,14 @@ public:
         global_unlock();
         
         invokeCommit();
-      
+ 
         global_lock();
         tindex = allocThreadIndex();
         if(tindex == -1) {
           PRDBG("System can support %d simultaneously: xdefines::MAX_ALIVE_THREADS to a larger number\n", xdefines::MAX_ALIVE_THREADS);
           EXIT;
         }
+        fprintf(stderr, "AFTER commit now******* tindex %d\n", tindex);     
       }
 
       // Record spawning event
@@ -191,25 +187,26 @@ public:
         WRAP(exit)(-1);
       }
     
-      children->self = *tid;
     //  PRDBG("Creating the thread %p\n", *tid);
       getRecord()->recordCloneOps(result, *tid);
 
-      // Add newly created thread into alive threads.
-      insertAliveThread(children);
+      if(result == 0) {
+        insertAliveThread(children, *tid);
+      }
 
       global_unlock();
       
       //fprintf(stderr, "Creating THREAD%d at %p self %p\n", tindex, children, children->self); 
-
-      // Waiting for the finish of registering children thread.
-      WRAP(pthread_mutex_lock)(&children->mutex);
-      while(children->status == E_THREAD_STARTING) {
-      //  fprintf(stderr, "Children %d status %d waiting\n", children->index, children->status);
-        WRAP(pthread_cond_wait)(&children->cond, &children->mutex);
-      //  fprintf(stderr, "Children %d status %d. now wakenup\n", children->index, children->status);
+      if(result == 0) {
+        // Waiting for the finish of registering children thread.
+        WRAP(pthread_mutex_lock)(&children->mutex);
+        while(children->status == E_THREAD_STARTING) {
+          fprintf(stderr, "Children %d status %d waiting at %p. Holding lock %p\n", children->index, children->status, &children->cond, &children->mutex);
+          WRAP(pthread_cond_wait)(&children->cond, &children->mutex);
+         fprintf(stderr, "Children %d status %d. now wakenup\n", children->index, children->status);
+        }
+        WRAP(pthread_mutex_unlock)(&children->mutex);
       }
-      WRAP(pthread_mutex_unlock)(&children->mutex);
     }
     else {
       PRDBG("process %d is before thread_create now\n", current->index); 
@@ -518,7 +515,7 @@ public:
   };
 
   inline static void restoreContext() {
-    //PRDBG("restore context now\n");
+    PRDBG("restore context now\n");
     xcontext::restoreContext(&current->oldContext, &current->newContext);
   };
 
@@ -542,6 +539,12 @@ public:
   inline static bool threadSpawning() {
     return current->isSpawning == true;
   }
+  
+  // Run those deferred synchronization.
+  inline static void runDeferredSyncs() {
+    threadinfo::getInstance().runDeferredSyncs();
+  }
+
 
   void invokeCommit(void);
 
@@ -591,15 +594,18 @@ private:
     void * privateTop;
     size_t stackSize = __max_stack_size;
 
-    // Initialize corresponding cond and mutex.
-    listInit(&current->list);
-  
+    current->self = WRAP(pthread_self)();
+
     // Lock the mutex for this thread.
     WRAP(pthread_mutex_lock)(&current->mutex);
     
+    // Initialize corresponding cond and mutex.
+    listInit(&current->list);
+ 
     current->tid = tid;
     current->status = E_THREAD_RUNNING;
-
+    current->isNewlySpawned = true;
+  
     // FIXME: problem
     current->joiner = NULL;
 
@@ -648,6 +654,7 @@ private:
     // Now we can wakeup the parent since the parent must wait for the register
     WRAP(pthread_cond_signal)(&current->cond);
 
+    fprintf(stderr, "THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n", current->index, current->self, current, current->status, &current->cond, &current->mutex);
     WRAP(pthread_mutex_unlock)(&current->mutex);
 
     PRWRN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
@@ -705,8 +712,8 @@ private:
     _thread.updateMutexSyncList(mutex);
   }
  
-  inline void insertAliveThread(thread_t * thread) {
-    _thread.insertAliveThread(thread);
+  inline void insertAliveThread(thread_t * thread, pthread_t tid) {
+    _thread.insertAliveThread(thread, tid);
   }
 
   inline static void insertDeadThread(thread_t * thread) {
@@ -727,11 +734,6 @@ private:
     }
   }
 
-  // Run those deferred synchronization.
-  inline static void runDeferredSyncs() {
-    threadinfo::getInstance().runDeferredSyncs();
-  }
-
   // @Global entry of all entry function.
   static void * startThread(void * arg) {
     void * result;
@@ -746,6 +748,10 @@ private:
     // We actually get those parameter about new created thread
     // from the TLS storage.
     result = current->startRoutine(current->startArg);
+
+    // Insert dead list now so that the corresponding entry can be cleaned up if
+    // there is no need to rollback.
+    insertDeadThread(current);    
 
     // Lock the mutex for this thread.
     WRAP(pthread_mutex_lock)(&current->mutex);
@@ -782,29 +788,23 @@ private:
 
     current->status = E_THREAD_WAITFOR_REAPING;
 
-    // Insert dead list now so that the corresponding entry can be cleaned up if
-    // there is no need to rollback.
-    insertDeadThread(current);    
- 
     // At commit points, if no heap overflow is detected, then the thread
     // should set the status to E_THREAD_EXITING, otherwise it should 
     // be set to E_THREAD_ROLLBACK 
-    while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {     
+    //while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {     
+    while(current->status == E_THREAD_WAITFOR_REAPING) {
+// && current->status != E_THREAD_ROLLBACK) {     
       //PRDBG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       //fprintf(stderr, "DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
-//      PRDBG("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
+      PRDBG("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
-    // Now somebody else in the commit point tell me to exiting safely.
-    WRAP(pthread_mutex_unlock)(&current->mutex);
-    
     // What to do in the end of a thread? Who will send out this message? 
     // When heap overflow occurs 
     if(current->status == E_THREAD_ROLLBACK) {
 //      PRWRN("THREAD%d (at %p) is wakenup\n", current->index, current);
-      fprintf(stderr, "THREAD%d (at %p) is wakenup\n", current->index, current);
-      WRAP(pthread_mutex_lock)(&current->mutex);
+      //fprintf(stderr, "THREAD%d (at %p) is wakenup\n", current->index, current);
       current->status = E_THREAD_RUNNING;
       WRAP(pthread_mutex_unlock)(&current->mutex);
 
@@ -819,12 +819,9 @@ private:
       assert(0);
     }
     else {
-      if(!isThreadDetached()) {
-        // Call pthread_detach in order to release resource held by current thread.
-        WRAP(pthread_detach)(pthread_self());
-      }
 
-      WRAP(pthread_exit)(NULL);
+      PRWRN("THREAD%d (at %p) is exiting now\n", current->index, current);
+      WRAP(pthread_mutex_unlock)(&current->mutex);
     }
   }
   

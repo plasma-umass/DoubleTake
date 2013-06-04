@@ -45,6 +45,9 @@ extern "C" {
     E_THREAD_RUNNING,
     E_THREAD_JOINING, // The thread is trying to join other threads.
     E_THREAD_EXITING, // The thread is exiting.
+    E_THREAD_EXITED, // The thread is exiting.
+  //  E_THREAD_SIGNALED, // The thread has been signaled, waiting for the instruction
+  //  E_THREAD_CONTINUE, // The thread should move forward.
     E_THREAD_ROLLBACK,
     E_THREAD_WAITFOR_JOINING, // The thread has finished and wait for the joining.
   
@@ -89,14 +92,14 @@ extern "C" {
 #endif
 
   typedef struct thread {
-    bool      available; // True: the thread index is free. 
+    bool      available; // True: the thread index is free.
+    bool      isSpawning; // Whether a new thread is spawning?  
+    bool      isNewlySpawned;  // whether this thread is spawned in this epoch?
     int       index;
     pid_t     tid; // Current process id of this thread.
     pthread_t self; // Results of pthread_self
     thrStatus status;
-//    size_t    syncSeqNum; // The localized sequence number for each thread.
 
-    bool      isSpawning; // Whether a new thread is spawning?  
     // We will use this to link this thread to other lists. 
     list_t   list;
 
@@ -197,7 +200,7 @@ public:
 
   // Destroy all semaphores
   void finalize() {
-    fprintf(stderr, "Destroy all semaphores NOOOOOOOOO!\n");
+    //fprintf(stderr, "Destroy all semaphores NOOOOOOOOO!\n");
     destroyAllSemaphores();
   }
 
@@ -212,7 +215,7 @@ public:
     _xmap.erase((void *)thread, sizeof(void*));
   }
 
-  void insertAliveThread(thread_t * thread) {
+  void insertAliveThread(thread_t * thread, pthread_t tid) {
     // Malloc 
     struct aliveThread * ath = (struct aliveThread *)InternalHeap::getInstance().malloc(sizeof(struct aliveThread));
 
@@ -222,7 +225,7 @@ public:
     //PRDBG("Insert alive thread %lx\n", thread);
     listInsertTail(&ath->list, &_alivethreads);
 
-    _xmap.insert((void *)thread->self, sizeof(void *), thread);
+    _xmap.insert((void *)tid, sizeof(void *), thread);
   }
 
   void removeAliveThread(thread_t * thread) {
