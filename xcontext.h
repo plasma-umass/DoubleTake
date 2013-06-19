@@ -206,15 +206,22 @@ public:
   }
 
   // Copy the stack from newContext to oldContext.
-  void backupStackAndContext(xcontext * newContext) {
+  void backupStackAndContext(xcontext * context) {
     // We first backup the context.
-    _privateStart = newContext->getPrivateStart();
-    _backupSize = newContext->getBackupSize();
+    _privateStart = context->getPrivateStart();
+    _backupSize = context->getBackupSize();
    
-    memcpy(_backup, newContext->getBackupStart(), _backupSize);
+    memcpy(_backup, context->getBackupStart(), _backupSize);
 
     // Now we will backup the context.
-    memcpy(&_context, newContext->getContext(), sizeof(ucontext_t));
+    memcpy(&_context, context->getContext(), sizeof(ucontext_t));
+  }
+
+  static void rollbackInsideSignalHandler(ucontext_t * context, xcontext * oldContext) {
+    // We first rollback the stack.
+    memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(), oldContext->getBackupSize()); 
+
+    memcpy(context, oldContext->getContext(), sizeof(ucontext_t));   
   }
 
   // Restore context from specified context.

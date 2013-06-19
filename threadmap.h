@@ -45,7 +45,7 @@ extern "C" {
     E_THREAD_RUNNING,
     E_THREAD_JOINING, // The thread is trying to join other threads.
     E_THREAD_EXITING, // The thread is exiting.
-    E_THREAD_EXITED, // The thread is exiting.
+//    E_THREAD_EXITED, // The thread is exiting.
   //  E_THREAD_SIGNALED, // The thread has been signaled, waiting for the instruction
   //  E_THREAD_CONTINUE, // The thread should move forward.
     E_THREAD_ROLLBACK,
@@ -95,6 +95,11 @@ extern "C" {
     bool      available; // True: the thread index is free.
     bool      isSpawning; // Whether a new thread is spawning?  
     bool      isNewlySpawned;  // whether this thread is spawned in this epoch?
+    // Whether this thread has been joined or not. 
+    // If the thread has not been joined, then we can't reap this thread.
+    // Otherwise, pthread_join may crash since the thread has exited/released.
+    bool      hasJoined;
+    int       isSafe; // whether a thread is safe to be interrupted 
     int       index;
     pid_t     tid; // Current process id of this thread.
     pthread_t self; // Results of pthread_self

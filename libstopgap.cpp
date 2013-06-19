@@ -85,7 +85,7 @@
 
 extern "C" {
   extern void callAtomicEnd(void);
-#define fprintf(stderr, ...) 
+//#define fprintf(stderr, ...) 
 #if defined(__GNUG__)
   void initializer (void) __attribute__((constructor));
   void finalizer (void)   __attribute__((destructor));
@@ -500,7 +500,7 @@ extern "C" {
 
 
   int close(int fd) {
-    fprintf(stderr, "close ****** in libstopgap\n");
+    fprintf(stderr, "close fd %d ****** in libstopgap\n", fd);
     if (!initialized) {
       return WRAP(close)(fd);
     }
@@ -519,7 +519,7 @@ extern "C" {
     fprintf(stderr, "fopen in libstopgap\n");
     if (!initialized) {
 #ifndef X86_32BIT
-    WRAP(fopen64) = (typeof(WRAP(fopen64)))0x3ce3e62cf0;
+  //  WRAP(fopen64) = (typeof(WRAP(fopen64)))0x3ce3e62cf0;
 #endif
       return WRAP(fopen)(filename, modes);
     }
@@ -540,7 +540,7 @@ extern "C" {
   } 
 
   size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-    fprintf(stderr, " fread in stopgap at %d\n", __LINE__);
+//    fprintf(stderr, " fread in stopgap at %d\n", __LINE__);
     return syscalls::getInstance().fread(ptr, size, nmemb, stream);
   }
 
@@ -563,7 +563,7 @@ extern "C" {
     if (!initialized) {
       return WRAP(fclose)(fp);
     }
-    //fprintf(stderr, "********fclose is intercepted\n");
+    fprintf(stderr, "********fclose is intercepted\n");
     return syscalls::getInstance().fclose(fp);
   }
 
@@ -1188,9 +1188,9 @@ extern "C" {
 #endif
 
   clock_t times(struct tms *buf){
-    fprintf(stderr, "times is not supported\n");
-    return 0;
-//    return syscalls::getInstance().times(buf);
+    fprintf(stderr, "calling times now\n");
+ //   return 0;
+    return syscalls::getInstance().times(buf);
   }
 
 //  long ptrace(enum __ptrace_request request, pid_t pid,

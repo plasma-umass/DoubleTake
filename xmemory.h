@@ -314,6 +314,7 @@ public:
       // Check for double free
       if(o->isObjectFree() || !o->isGoodObject()) {
         PRINF("Caught double free or invalid free error\n");
+        fprintf(stderr, "Caught double free or invalid free error\n");
         printCallsite();
         abort();
       }
@@ -469,8 +470,9 @@ public:
   {
     void * addr = siginfo->si_addr; // address of access
 
+//    while(1) ;
     //PRDBG("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-//    fprintf(stderr, "%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    fprintf(stderr, "Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     selfmap::getInstance().printCallStack(NULL, NULL, true);
 
 //    WRAP(exit)(-1);

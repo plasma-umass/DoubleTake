@@ -25,8 +25,8 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#ifndef _SYNCMAP_H_
-#define _SYNCMAP_H_
+#ifndef _XSYNC_H_
+#define _XSYNC_H_
 
 #include <sys/types.h>
 #include <syscall.h>

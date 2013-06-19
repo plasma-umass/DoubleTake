@@ -230,6 +230,14 @@ private:
   void installSignalHandler (void) {
     struct sigaction sigusr2;
 
+    static stack_t _sigstk;
+
+    // Set up an alternate signal stack.
+    _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ, -1);
+    _sigstk.ss_size = SIGSTKSZ;
+    _sigstk.ss_flags = 0;
+    WRAP(sigaltstack)(&_sigstk, (stack_t *) 0);
+
     sigemptyset (&sigusr2.sa_mask);
 
     /** 
@@ -240,7 +248,7 @@ private:
                    tion should be set instead of sa_handler.
                    So, we can acquire the user context inside the signal handler 
     */
-    sigusr2.sa_flags = SA_SIGINFO | SA_RESTART;
+    sigusr2.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
     sigusr2.sa_sigaction = xrun::sigusr2Handler;
     if (WRAP(sigaction)(SIGUSR2, &sigusr2, NULL) == -1) {

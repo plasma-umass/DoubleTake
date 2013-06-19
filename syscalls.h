@@ -348,13 +348,13 @@ public:
    
 #ifdef REPRODUCIBLE_FDS 
     if(!isRollback()) { 
-      //fprintf(stderr, "fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = WRAP(fopen)(filename, modes);
       if(ret != NULL) {
         // Commit those local changes now.
         //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
         // Save current fd
         _fops.saveFopen(ret);
+        fprintf(stderr, "fopeeeeeeeeee fd %d\n", ret->_fileno);
      // fprintf(stderr, "OPEN fd %d\n", ret->_fileno);    
       }
       else {
@@ -372,6 +372,7 @@ public:
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
       // Save current fd
+      fprintf(stderr, "fopeeeeeeeeee fd %d\n", ret->_fileno);
       _fops.saveFopen(ret);
     }
 #endif
@@ -1487,10 +1488,17 @@ public:
 
   clock_t times(struct tms *buf){
     clock_t ret;
-    epochEnd();
-
-    ret = WRAP(times)(buf);
-    epochBegin();
+    
+    if(!isRollback()) {
+      ret = WRAP(times)(buf);
+      // Add this to the record list.
+      getRecord()->recordTimesOps(ret, buf); 
+    }
+    else {
+      if(!getRecord()->getTimesOps(&ret, buf)) {
+        assert(0);
+      }
+    }
     return ret;
   }
 

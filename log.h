@@ -94,9 +94,11 @@ extern "C" {
 #endif
 extern int outfd;
 
-//#define OUTPUT 
 #define LOG_SIZE 4096
+
 #define OUTPUT write
+
+#if 0
 /**
  * Print status-information message: level 0
  */
@@ -152,10 +154,14 @@ extern int outfd;
   {	  ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
       OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
-//                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
-
+#else
+#define PRINF(fmt, ...)
+#define PRDBG(fmt, ...) 
+#define PRLOG(fmt, ...) 
+#define PRWRN(fmt, ...) 
+#define PRERR(fmt, ...) 
+#define PRFATAL(fmt, ...) 
+#endif
 };
 
 #endif /* _ */

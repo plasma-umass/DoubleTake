@@ -470,6 +470,7 @@ public:
     // Try to get corresponding entry in the hashmap.
     fileInfo * thisFile;
 
+    //fprintf(stderr, "close file %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
       
     // The file should be in

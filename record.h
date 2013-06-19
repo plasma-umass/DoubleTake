@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/times.h>
 
 #include "xdefines.h"
 #include "internalheap.h"
@@ -76,6 +77,12 @@ class Record {
     struct timezone tzone;
   };
 
+  struct recordTimes {
+    list_t list;
+    clock_t ret;
+    struct tms buf; 
+  };
+
   struct recordClone {
     list_t list;
     int    ret;
@@ -99,6 +106,7 @@ public:
     E_OP_MUNMAP,
     E_OP_TIME,
     E_OP_GETTIMEOFDAY,
+    E_OP_TIMES,
     E_OP_CLONE,
     E_OP_MAX
   } e_recordOps;
@@ -269,6 +277,41 @@ public:
         memcpy(tz, &rt->tzone, sizeof(struct timezone));
       }
       *ret = rt->ret;
+
+      isFound = true;
+    }
+
+    return isFound;
+  }
+  
+  // record time results
+  void recordTimesOps(clock_t ret, struct tms * buf) { 
+    e_recordOps op = E_OP_TIMES; 
+    struct recordTimes * rt = (struct recordTimes *)malloc(sizeof(*rt));
+    
+    // Save those tv and tz
+    rt->ret = ret;
+    if(ret != -1) {
+      memcpy(&rt->buf, buf, sizeof(struct tms));
+    }
+    listInit(&rt->list);
+
+    // Insert to the list
+    insertList(op, (list_t *)&rt->list); 
+  }
+
+  // Get the first time results
+  bool getTimesOps(clock_t * ret, struct tms * buf) {
+    e_recordOps op = E_OP_TIMES; 
+    struct recordTimes * rt = (struct recordTimes *)getNextEntry(op);
+    bool isFound = false;
+
+    if(rt) {
+      // memcpy
+      *ret = rt->ret;
+      if(buf) { 
+        memcpy(buf, &rt->buf, sizeof(struct tms));
+      }
 
       isFound = true;
     }
