@@ -41,8 +41,6 @@ void xrun::startRollback(void) {
   // Since the new context is not valid, how to 
   // rollback?
   xthread::getInstance().rollback();
-
-  
 }
 
 void xrun::syscallsInitialize(void) {
@@ -59,7 +57,8 @@ void xrun::rollbackandstop(void) {
     _memory.rollbackonly();
 }
 
-    // We are rollback the child process 
+
+// We are rollback the child process 
 void xrun::rollback(void) {
   PRDBG("\n\nNOW ROLLING BACK\n\n\n");
   fprintf(stderr, "\n\nNOW ROLLING BACK\n\n\n");
@@ -172,14 +171,15 @@ void xrun::stopAllThreads(void) {
 
   globalinfo::getInstance().checkWaiters();
 
-  // In order to avoid this problem, we may avoid the thread spawning in this phase.
-  xthread::getInstance().global_lock();
-
   // Used to tell other threads about normal epoch end because of one have to commit.
   // pthread_kill can not support additional signal value except signal number
   globalinfo::getInstance().setEpochEnd();
 
-  fprintf(stderr, "EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
+  // In order to avoid this problem, we may avoid the thread spawning in this phase.
+  xthread::getInstance().global_lock();
+
+  //fprintf(stderr, "EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
+  //fprintf(stderr, "EPOCHEBD:Current thread at %p THREAD%d self %p\n", current, current->index, pthread_self());
 #if 1  
   for(i = threadmap::getInstance().begin(); 
       i != threadmap::getInstance().end(); i++)

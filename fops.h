@@ -198,7 +198,7 @@ public:
     getRecord()->recordDirOps(Record::E_OP_DIR_OPEN, dir);   
 #endif
 
-    //fprintf(stderr, "saveDir %p\n", dir);
+    fprintf(stderr, "saveDir %p\n", dir);
     // Only save to the dirmap when a dir is valid. 
     if(dir != NULL) {
       dirInfo * thisDir = (dirInfo *)InternalHeap::getInstance().malloc(sizeof(dirInfo));

@@ -31,7 +31,7 @@
 
 //#ifdef HANDLE_SYSCALL
 #include <sys/types.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <grp.h>
 #include <sched.h>
 #include <signal.h>
@@ -85,7 +85,7 @@
 
 extern "C" {
   extern void callAtomicEnd(void);
-//#define fprintf(stderr, ...) 
+#define fprintf(stderr, ...) 
 #if defined(__GNUG__)
   void initializer (void) __attribute__((constructor));
   void finalizer (void)   __attribute__((destructor));
@@ -474,8 +474,8 @@ extern "C" {
     return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
     //return WRAP(mmap)(start, length, prot, flags, fd, offset);
   }
-  
 
+  //int open(const char *pathname, int flags, mode_t mode) {
   int open(const char *pathname, int flags, ...) {
     int mode;
 
@@ -489,15 +489,17 @@ extern "C" {
     else {
       mode = 0;
     }
-    
-    fprintf(stderr, "open in stopgap at %d mod %d\n", __LINE__, mode);
-
+    fprintf(stderr, "**********open in stopgap at %d mod %d\n", __LINE__, mode);
     if (!initialized) {
       return WRAP(open)(pathname, flags, mode);
     }
     return syscalls::getInstance().open(pathname, flags, mode);
   }
 
+  FILE *freopen(const char *path, const char *mode, FILE *stream) {
+    fprintf(stderr, "freopen %d ****** in libstopgap not supported\n", __LINE__);
+    assert(0);
+  }
 
   int close(int fd) {
     fprintf(stderr, "close fd %d ****** in libstopgap\n", fd);
@@ -1003,7 +1005,7 @@ extern "C" {
     va_list ap;
     va_start(ap, cmd);
     long arg = va_arg(ap, long);
-    fprintf(stderr, " in stopgap at %d cmd %d\n", __LINE__, cmd);
+    fprintf(stderr, " in stopgap at %d cmd %d))))))))))\n", __LINE__, cmd);
     return syscalls::getInstance().fcntl(fd, cmd, arg);
   }
 
@@ -1099,6 +1101,7 @@ extern "C" {
 
   int creat(const char *pathname, mode_t mode){
     fprintf(stderr, " in stopgap at %d\n", __LINE__);
+    fprintf(stderr, "&&&&&&&&&&&&&&&creat&&&&&&&&&&&&&&&&& is not supported.\n");
     return syscalls::getInstance().creat(pathname, mode);
   }
 

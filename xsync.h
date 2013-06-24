@@ -314,10 +314,26 @@ public:
     global_unlock();
   }
 
+  void checkCurrentEvent(struct syncEvent * event, void * variable, thrSyncCmd cmd) {
+    if(event->thread != current) {
+      fprintf(stderr, "This event is not thread %p, but %p \n", current->self, event->thread);
+      assert(0);
+    }
+    struct syncEventList * eventlist = event->eventlist;
+    if(eventlist->syncCmd != cmd || eventlist->syncVariable != variable) {
+      fprintf(stderr, "This event cmd is %d variable %p, however, current cmd %d variable %p\n", eventlist->syncCmd, eventlist->syncVariable, cmd, variable);
+      assert(0);
+    }
+  }
+
+  // Update the synchronization list.
   void updateThreadSyncList(pthread_mutex_t *  mutex) {
     list_t * nextEntry = NULL;
     
     global_lock();
+
+    //checkCurrentEvent(getThreadEvent(current->syncevents.curentry), mutex, E_SYNC_LOCK);
+
     // Update next event of thread eventlist.
     nextEntry = updateNextEvent(&current->syncevents);
     if(nextEntry != NULL) {
@@ -337,6 +353,7 @@ public:
     return(struct syncEvent *)((intptr_t)entry - threadEventOffset);
   }
 
+#if 0
   // Update the current event entry in an event lsit.
   struct syncEvent * updateSyncEventList(struct syncEventList * list) {
     bool hasUpdated = false;
@@ -349,6 +366,7 @@ public:
 
     return event;
   }
+#endif
 
   void cleanupSynchronizations(void) {
     // we are going to make sure that there is no problem caused by synchronzation.

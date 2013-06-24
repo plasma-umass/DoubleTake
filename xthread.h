@@ -123,6 +123,7 @@ public:
     int result;
 
 //   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
+    globalinfo::getInstance().setMultithreading();
 
     if(!isRollback()) {
       // Lock and record
@@ -216,7 +217,8 @@ public:
       }
     }
     else {
-      PRDBG("process %d is before thread_create now\n", current->index); 
+      PRDBG("process %d is before thread_create now\n", current->index);
+      //checkSyncEvent(NULL, E_SYNC_SPAWN); 
       waitSemaphore();
       
       getRecord()->getCloneOps(tid, &result);
@@ -237,7 +239,6 @@ public:
      // PRDBG("process %d after updateSyncEvent now\n", current->index); 
     }
 
-//    Syscalls();
     return result;
   }
 
@@ -340,6 +341,7 @@ public:
       recordSyncEvent((void *)mutex, E_SYNC_LOCK);
     }
     else {
+      //checkSyncEvent(NULL, E_SYNC_SPAWN); 
       waitSemaphore();
 
       // Update thread synchronization event in order to handle the nesting lock.
@@ -428,20 +430,23 @@ public:
   // Add the barrier support.
   int barrier_wait(pthread_barrier_t *barrier) {
     int ret;
-
+#ifdef NO_BARRIER_SUPPORT
+    ret = WRAP(pthread_barrier_wait)(barrier);
+#else
     if(!isRollback()) {
       // Since we do not have a lock here, which can not guarantee that
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
       ret = WRAP(pthread_barrier_wait)(barrier);
       recordSyncEvent((void *)barrier, E_SYNC_BARRIER);
-      return ret;
     }
     else {
       waitSemaphore();
+      //checkSyncEvent(barrier, E_SYNC_BARRIER); 
       updateSyncEvent(barrier, E_SYNC_BARRIER);
       ret = WRAP(pthread_barrier_wait)(barrier);
     }
+#endif
       
     return ret;
   }
@@ -577,9 +582,10 @@ private:
   // Acquire the semaphore for myself.
   // If it is my turn, I should get the semaphore.
   static void waitSemaphore() {
-    semaphore * sema = &current->sema;
-   // PRDBG("thread index %d is waiting on semaphore\n", current->index); 
-    sema->get();
+    if(globalinfo::getInstance().isMultithreading()) {
+      semaphore * sema = &current->sema;
+      sema->get();
+    }
   }
 
   semaphore * getSemaphore(void) {
@@ -712,8 +718,12 @@ private:
     return _thread.getThread(thread);
   }
 
+  // Optimization: do not need to record the synchronization event when there is only one thread
+  // Mostly, we can save a lot of pthread calls.
   inline void recordSyncEvent(void * var, thrSyncCmd synccmd) {
-    _thread.recordSyncEvent(var, synccmd);
+    if(globalinfo::getInstance().isMultithreading()) {
+      _thread.recordSyncEvent(var, synccmd);
+    }
   }
 
   inline void allocSyncEventList(void * var, thrSyncCmd synccmd) {
@@ -721,16 +731,22 @@ private:
   }
 
   inline void updateSyncEvent(void * var, thrSyncCmd synccmd) {
-    _thread.updateSyncEvent(var, synccmd);
+    if(globalinfo::getInstance().isMultithreading()) {
+      _thread.updateSyncEvent(var, synccmd);
+    }
   }
 
   // Only mutex_lock can call this function. 
   inline void updateThreadSyncList(pthread_mutex_t *  mutex) {
-    _thread.updateThreadSyncList(mutex);
+    if(globalinfo::getInstance().isMultithreading()) {
+      _thread.updateThreadSyncList(mutex);
+    }
   }
  
   inline void updateMutexSyncList(pthread_mutex_t * mutex) {
-    _thread.updateMutexSyncList(mutex);
+    if(globalinfo::getInstance().isMultithreading()) {
+      _thread.updateMutexSyncList(mutex);
+    }
   }
  
   inline void insertAliveThread(thread_t * thread, pthread_t tid) {

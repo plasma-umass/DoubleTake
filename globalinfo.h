@@ -59,23 +59,24 @@ public:
     _isRollback = false;
     _hasRollbacked = false;
     _phase = E_SYS_INIT;
+    _numOfEnds = 0;
 
     WRAP(pthread_mutex_init)(&_mutex, NULL);
     WRAP(pthread_cond_init)(&_cond, NULL);
 
-    if(xdefines::MAX_ALIVE_THREADS > 1) {
-      _isMultithreading = true;
-    }
-    else {
-      _isMultithreading = false;
-    }
+    _isMultithreading = false;
   }
  
   bool isMultithreading(void) {
     return _isMultithreading;
   }
-   
+  
+  void setMultithreading(void) {
+    _isMultithreading = true;
+  }
+ 
   void setEpochEnd(void) {
+    _numOfEnds++;
     _phase = E_SYS_EPOCH_END;
   }
 
@@ -100,11 +101,19 @@ public:
     _hasRollbacked = true;
   }
 
+  void confirmMultithreading(void) {
+    if(_numOfEnds == 1 && _isMultithreading == true) {
+      _isMultithreading = false;
+    }
+  }
+
   bool hasRollbacked(void) {
     return _hasRollbacked;
   }
 
   void rollback(void) {
+    confirmMultithreading();
+
     setRollback();
 
     // Wakeup all other threads.
@@ -196,6 +205,7 @@ private:
   bool _isRollback;
   bool _hasRollbacked;
   bool _isMultithreading;
+  int  _numOfEnds;
   enum SystemPhase _phase; 
   pthread_cond_t _cond;
   pthread_mutex_t _mutex;

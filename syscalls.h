@@ -30,6 +30,7 @@
 
 #include "xdefines.h"
 //#include "xrun.h"
+#include "selfmap.h"
 #include "record.h"
 #include "fops.h"
 
@@ -39,7 +40,7 @@ private:
 
   syscalls (void)
   {
-  //fprintf(stderr, "syscalls constructor\n");
+  //PRINF("syscalls constructor\n");
   }
 
 public:
@@ -135,13 +136,13 @@ public:
     // Make those pages writable, otherwise, read may fail
     makeWritable(start, size);
 /*
-    fprintf(stderr, "CHECK whether system call can overflow\n");
+    PRINF("CHECK whether system call can overflow\n");
     if(_memory.checkOverflowBeforehand(start, size)) {
-      fprintf(stderr, "System call can overflow, start %p size %x\n", start, size);
+      PRINF("System call can overflow, start %p size %x\n", start, size);
       _memory.printCallsite();
       assert(0);
     }
-    fprintf(stderr, "CHECK whether system call can overflow done!!!!!\n");
+    PRINF("CHECK whether system call can overflow done!!!!!\n");
 */
   }
 
@@ -151,7 +152,7 @@ public:
     long pages = count/xdefines::PageSize;
 
     if(pages >= 1) {
-    //  fprintf(stderr, "fd %d buf %p count %d\n", fd, buf, count);
+    //  PRINF("fd %d buf %p count %d\n", fd, buf, count);
     // Trying to read on those pages, thus there won't be a segmenation fault in 
     // the system call.
       for(long i = 0; i < pages; i++) {
@@ -169,13 +170,13 @@ public:
     // Make those pages writable, otherwise, read may fail
     makeWritable(buf, count);
 
-    //fprintf(stderr, "read on fd %d\n", fd);
+    //PRINF("read on fd %d\n", fd);
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
       ret = WRAP(read)(fd, buf, count);
     }
     else {
-//      fprintf(stderr, "Reading special file\n");
+//      PRINF("Reading special file\n");
       epochEnd();
       ret = WRAP(read)(fd, buf, count);
       epochBegin();
@@ -241,10 +242,16 @@ public:
     epochEnd();
     ret = WRAP(mmap)(start, length, prot, flags, fd, offset);
     epochBegin();
-    fprintf(stderr, "in the end of mmap, ret %p length %lx\n", ret, length);
+    PRINF("in the end of mmap, ret %p length %lx\n", ret, length);
 #endif
     return ret;
   }
+  
+#if 0
+  int open(const char *pathname, int flags);
+  int open(const char *pathname, int flags, mode_t mode);
+  int creat(const char *pathname, mode_t mode); 
+#endif
 
   // We may record fd in order replay that.
   int open(const char *pathname, int flags) {
@@ -272,13 +279,14 @@ public:
     _fops.saveFd(ret, NULL);
 #endif
 
-    //fprintf(stderr, "OPEN fd %d\n", ret);    
+    //PRINF("OPEN fd %d\n", ret);    
     return ret;
   }
 
   int close(int fd) {
     int ret;
 
+      PRINF("close fd %d at line %d\n", fd, __LINE__);
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call 
@@ -295,6 +303,8 @@ public:
     }
 #endif
     else {
+//      PRINF("close fd %d at line %d\n", fd, __LINE__);
+      selfmap::getInstance().printCallStack(NULL, NULL, true);
       epochEnd();
       ret = WRAP(close)(fd);
       epochBegin();
@@ -321,8 +331,8 @@ public:
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveDir(ret);
 #endif
+    PRINF("(((((((((((((((OPEN dir %s)))))))))\n", name);    
 
-    //fprintf(stderr, "OPEN fd %d\n", ret);    
     return ret;
   }
 
@@ -354,8 +364,8 @@ public:
         //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
         // Save current fd
         _fops.saveFopen(ret);
-        fprintf(stderr, "fopeeeeeeeeee fd %d\n", ret->_fileno);
-     // fprintf(stderr, "OPEN fd %d\n", ret->_fileno);    
+        PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
+     // PRINF("OPEN fd %d\n", ret->_fileno);    
       }
       else {
         _fops.saveFd(-1, NULL);
@@ -364,7 +374,7 @@ public:
     else {
       // rollback phase
       ret = _fops.getFopen();
-//      fprintf(stderr, "fopen ret %p fileno %d\n", ret, ret->_fileno);
+//      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
     }
 #else
     ret = WRAP(fopen)(filename, modes);
@@ -372,7 +382,7 @@ public:
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
       // Save current fd
-      fprintf(stderr, "fopeeeeeeeeee fd %d\n", ret->_fileno);
+      PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
       _fops.saveFopen(ret);
     }
 #endif
@@ -385,12 +395,14 @@ public:
     
 #ifdef REPRODUCIBLE_FDS 
     if(!isRollback()) { 
-      //fprintf(stderr, "fopeeeeeeeeee %x\n", sizeof(FILE));
+      //PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = WRAP(fopen64)(filename, modes);
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
-      //fprintf(stderr, "OPEN fd %d\n", ret->_fileno);    
+      selfmap::getInstance().printCallStack(NULL, NULL, true);
+        PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
+      //PRINF("OPEN fd %d\n", ret->_fileno);    
       }
       else {
         _fops.saveFd(-1, NULL);
@@ -402,6 +414,7 @@ public:
     }
 #else
     ret = WRAP(fopen64)(filename, modes);
+    PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
     if(ret != NULL) {
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
@@ -570,7 +583,7 @@ public:
       ret = WRAP(fread)(ptr, size, nmemb, stream);
     }
     else {
-      //fprintf(stderr, "fd %d has no permisson for read\n", fd);
+      //PRINF("fd %d has no permisson for read\n", fd);
       epochEnd();
       ret = WRAP(fread)(ptr, size, nmemb, stream);
       epochBegin();
@@ -597,7 +610,7 @@ public:
       epochBegin();
     }
 
-    //fprintf(stderr, " in stopgap at %d\n", __LINE__);
+    //PRINF(" in stopgap at %d\n", __LINE__);
     return ret;
   }
 
@@ -792,7 +805,7 @@ public:
         ret = _fops.getFdAtOpen();
       }
       else {
-      //  fprintf(stderr, "before, dup oldfd %d newfd %d\n", oldfd, ret);
+      //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
         ret = WRAP(dup)(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -1202,7 +1215,7 @@ public:
         break;
       } 
     }
-    //fprintf(stderr, "cmd is 
+    //PRINF("cmd is 
     return ret;
   }
 
@@ -2785,7 +2798,7 @@ public:
 
   long keyctl(int cmd, ...){
     // FIXME
-    fprintf(stderr, "keyctl is not supported now\n");
+    PRINF("keyctl is not supported now\n");
     return 0;
   }
 #endif

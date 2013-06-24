@@ -84,7 +84,7 @@ public:
   enum { SHAREDHEAP_CHUNK = 1048576};
   enum { LARGE_CHUNK = 1024 };
   //enum { INTERNAL_HEAP_SIZE = 1048576UL * 2048 };
-  enum { INTERNAL_HEAP_SIZE = 1048576UL * 1024 };
+  enum { INTERNAL_HEAP_SIZE = 1048576UL * 2048 };
 
   // Reserve how many bitmap segment for each process
   // Now consider that we wil have 512M data, for each page,
