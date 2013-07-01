@@ -250,7 +250,6 @@ private:
   SuperHeap * _heap;
   void * _heapStart;
   void * _heapEnd; 
-
 };
 
 #endif // _XPHEAP_H_

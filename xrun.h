@@ -50,9 +50,7 @@ private:
   : 
     _hasRollbacked(false), 
     _memory (xmemory::getInstance()),
-#ifdef MULTI_THREAD
     _thread (xthread::getInstance()),
-#endif
     _watchpoint (watchpoint::getInstance())
   {
   //PRINF("xrun constructor\n");
@@ -81,6 +79,7 @@ public:
     
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
+    fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;
@@ -95,9 +94,13 @@ public:
 
     
     installSignalHandler();
+    
+    InternalHeap::getInstance().initialize();
+
     // Initialize the internal heap at first.
     //InternalHeap::getInstance().malloc(8);
     _thread.initialize();
+
       
     // Initialize the memory (install the memory handler)
     _memory.initialize();
@@ -111,7 +114,7 @@ public:
     _main_id = pid;
 
     PRDBG("starting!!!!!\n");
-    //fprintf(stderr, "starting!!!!!\n");
+    fprintf(stderr, "starting!!!!!\n");
     epochBegin();
   }
   

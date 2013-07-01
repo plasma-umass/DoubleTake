@@ -110,20 +110,21 @@ extern "C" {
     // before initialized.
     // We can not use stack variable here since different process
     // may use this to share information.
+    if(!initialized) {
+      outbuf = outputbuf;
+      outbuf2 = outputbuf2;
 
-    outbuf = outputbuf;
-    outbuf2 = outputbuf2;
+      // temprary allocation
+      init_real_functions();
 
-    // temprary allocation
-    init_real_functions();
-
-    xrun::getInstance().initialize();
+      xrun::getInstance().initialize();
     
-    initialized = true;
-    
+      initialized = true;
+    }
+
     // Start our first transaction.
 #ifndef NDEBUG
-    //    printf ("we're gonna begin now.\n"); fflush (stdout);
+     printf ("we're gonna begin now.\n"); fflush (stdout);
 #endif
   }
 
@@ -139,11 +140,12 @@ extern "C" {
   static void * tempmalloc(int size) {
     void * ptr = NULL;
     if(remainning < size) {
+      fprintf(stderr, "tempmalloc is not enough\n", size);
       // complaining. Tried to set to larger
       exit(-1);
     }
     else {
-//      fprintf(stderr, "tempmalloc size %x\n", size);
+      fprintf(stderr, "tempmalloc size %x\n", size);
       ptr = (void *)tempalloced;
       tempalloced += size;
       remainning -= size;
@@ -157,8 +159,9 @@ extern "C" {
     if (!initialized) {
       ptr = tempmalloc(sz);
     } else {
-      //printf("stopgapmalloc sz %d\n", sz);
+//      printf("stopgapmalloc sz %d\n", sz);
       ptr = xrun::getInstance().malloc (sz);
+//      printf("stopgapmalloc sz %d ptr %p\n", sz, ptr);
     }
     if (ptr == NULL) {
       fprintf (stderr, "Out of memory!\n");
@@ -168,8 +171,10 @@ extern "C" {
   }
   
   void * stopgap_calloc (size_t nmemb, size_t sz) {
-    void * ptr;
+    void * ptr = NULL;
+  //  printf("stopgap_calloc line %d ptr %p\n", __LINE__, ptr);
     ptr = stopgap_malloc(nmemb *sz);
+    printf("stopgap_calloc line %d ptr %p\n", __LINE__, ptr);
 	  memset(ptr, 0, sz*nmemb);
     return ptr;
   }
@@ -218,6 +223,7 @@ extern "C" {
   }
 
   void * calloc (size_t nmemb, size_t sz) throw() {
+   // printf("calloc %d: nmemb %lx each size %lx\n", __LINE__, nmemb, sz);
     return stopgap_calloc(nmemb, sz);
   }
 
@@ -237,6 +243,10 @@ extern "C" {
   /// Threads's synchronization functions.
   // Mutex related functions 
   int pthread_mutex_init (pthread_mutex_t * mutex, const pthread_mutexattr_t* attr) {    
+    if (!initialized) {
+      initializer();
+    }
+
     return xthread::getInstance().mutex_init (mutex, attr);
   }
   

@@ -286,7 +286,7 @@ public:
   int close(int fd) {
     int ret;
 
-      PRINF("close fd %d at line %d\n", fd, __LINE__);
+     fprintf(stderr, "close fd %d at line %d\n", fd, __LINE__);
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call 
@@ -303,11 +303,11 @@ public:
     }
 #endif
     else {
-//      PRINF("close fd %d at line %d\n", fd, __LINE__);
-      selfmap::getInstance().printCallStack(NULL, NULL, true);
-      epochEnd();
+      fprintf(stderr, "close fd %d at line %d problem\n", fd, __LINE__);
+      //selfmap::getInstance().printCallStack(NULL, NULL, true);
+      //epochEnd();
       ret = WRAP(close)(fd);
-      epochBegin();
+    //  epochBegin();
     }
 
     return ret;
