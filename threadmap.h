@@ -168,6 +168,7 @@ extern "C" {
     // Which thread is performing synchronization? 
     thread_t*  thread;
     struct syncEventList * eventlist;
+    int        lockret; // used for mutex_lock
   };
 
   // A pending synchronization event needed to be handled by corresponding

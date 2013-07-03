@@ -94,7 +94,8 @@ extern "C" {
 
   #define INITIAL_MALLOC_SIZE (4096 * 10240)
 //  #define LOGBUF_SIZE (4096)
-  //static bool *initialized;
+  //static bool *funcInitialized;
+  bool funcInitialized = false;
   bool initialized = false;
   static int remainning = INITIAL_MALLOC_SIZE;
   static char tempbuf[INITIAL_MALLOC_SIZE];
@@ -110,15 +111,15 @@ extern "C" {
     // before initialized.
     // We can not use stack variable here since different process
     // may use this to share information.
-    if(!initialized) {
+    if(!funcInitialized) {
       outbuf = outputbuf;
       outbuf2 = outputbuf2;
 
       // temprary allocation
       init_real_functions();
 
+      funcInitialized = true;
       xrun::getInstance().initialize();
-    
       initialized = true;
     }
 
@@ -132,7 +133,7 @@ extern "C" {
 
   }
   void finalizer (void) {
-    initialized = false;
+    funcInitialized = false;
     xrun::getInstance().finalize();
   }
 
@@ -243,7 +244,7 @@ extern "C" {
   /// Threads's synchronization functions.
   // Mutex related functions 
   int pthread_mutex_init (pthread_mutex_t * mutex, const pthread_mutexattr_t* attr) {    
-    if (!initialized) {
+    if (!funcInitialized) {
       initializer();
     }
 
@@ -252,13 +253,15 @@ extern "C" {
   
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
     if (initialized) 
-      xthread::getInstance().mutex_lock (mutex);
+      return xthread::getInstance().mutex_lock (mutex);
 
     return 0;
   }
 
   // FIXME: add support for trylock
   int pthread_mutex_trylock(pthread_mutex_t * mutex) {
+    if (initialized) 
+      return xthread::getInstance().mutex_trylock (mutex);
     return 0;
   }
   

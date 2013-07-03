@@ -330,15 +330,13 @@ public:
     return 0;
   }
 
-  void mutex_lock(pthread_mutex_t * mutex) {
+  int mutex_lock(pthread_mutex_t * mutex) {
+    int ret; 
     if(!isRollback()) {
-      WRAP(pthread_mutex_lock) (mutex);
+      ret = WRAP(pthread_mutex_lock) (mutex);
 
-     // if(current->index == 0) 
-      //  PRDBG("mutexlock for thread 0, mutex %p\n", mutex);
-//      PRDBG("mutex_lock %p for thread %d\n", mutex, current->index);
       // Record this event 
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK);
+      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
     }
     else {
       //checkSyncEvent(NULL, E_SYNC_SPAWN); 
@@ -348,16 +346,41 @@ public:
       updateThreadSyncList(mutex);
     }
   }
+  
+  int mutex_trylock(pthread_mutex_t * mutex) {
+    int ret;
 
-  void mutex_unlock(pthread_mutex_t * mutex) {
     if(!isRollback()) {
-      WRAP(pthread_mutex_unlock) (mutex);
+      ret = WRAP(pthread_mutex_trylock) (mutex);
+
+      // Record this event 
+      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+    }
+    else {
+//      if((ret = checkMutexSyncEvent(mutex, E_SYNC_LOCK)) == 0) { 
+      {
+        waitSemaphore();
+      }
+
+      // Update thread synchronization event in order to handle the nesting lock.
+      updateThreadSyncList(mutex);
+    }
+
+    return ret;
+  }
+
+  int mutex_unlock(pthread_mutex_t * mutex) {
+    int ret;
+
+    if(!isRollback()) {
+      ret = WRAP(pthread_mutex_unlock) (mutex);
     }
     else {
   //    PRWRN("Update the sync event on lock (UNLOCK)\n");
       updateMutexSyncList(mutex); 
       //updateSyncEvent(mutex, E_SYNC_LOCK); 
     }
+    return ret;
   }
 
   // Add this event into the destory list.
