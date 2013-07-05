@@ -168,7 +168,7 @@ extern "C" {
     // Which thread is performing synchronization? 
     thread_t*  thread;
     struct syncEventList * eventlist;
-    int        lockret; // used for mutex_lock
+    int        ret; // used for mutex_lock
   };
 
   // A pending synchronization event needed to be handled by corresponding
@@ -199,6 +199,7 @@ public:
   }
  
   void initialize() {
+    fprintf(stderr, "xmap initializeNNNNNNNNNNNNNN\n");
     _xmap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::THREAD_MAP_SIZE);
     
     listInit(&_alivethreads);

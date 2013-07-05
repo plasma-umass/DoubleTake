@@ -122,10 +122,11 @@ public:
     int tindex;
     int result;
 
-//   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     globalinfo::getInstance().setMultithreading();
 
+//   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!isRollback()) {
+   //fprintf(stderr, "****in the beginning of thread_create, *tid is %lx\n", *tid);
       // Lock and record
       global_lock();
 
@@ -153,8 +154,6 @@ public:
         PRDBG("AFTER commit now******* tindex %d\n", tindex);     
       }
 
-      // Record spawning event
-      recordSyncEvent(NULL, E_SYNC_SPAWN);
 
       //PRDBG("thread creation with index %d\n", tindex);
       // WRAP up the actual thread function.
@@ -195,7 +194,8 @@ public:
         WRAP(exit)(-1);
       }
     
-    //  PRDBG("Creating the thread %p\n", *tid);
+      // Record spawning event
+      recordSyncEvent(NULL, E_SYNC_SPAWN, result);
       getRecord()->recordCloneOps(result, *tid);
 
       if(result == 0) {
@@ -218,12 +218,13 @@ public:
     }
     else {
       PRDBG("process %d is before thread_create now\n", current->index);
-      //checkSyncEvent(NULL, E_SYNC_SPAWN); 
-      waitSemaphore();
-      
+      result = peekSyncEvent(NULL, E_SYNC_SPAWN);
       getRecord()->getCloneOps(tid, &result);
-      //PRWRN("process %d in creation, result %d\n", current->index, result);
+      PRWRN("process %d in creation, result %d\n", current->index, result);
       if(result == 0) { 
+        waitSemaphore();
+        PRWRN("process %d is after waitsemaphore\n", current->index, result);
+
         // Wakeup correponding thread, now they can move on.  
         thread_t * thread = getThread(*tid);
         PRWRN("Waken up *tid %p thread %p child %d in thread_creation\n", *tid, thread, thread->index);
@@ -235,8 +236,8 @@ public:
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
+     PRDBG("#############process %d before updateSyncEvent now\n", current->index); 
       updateSyncEvent(NULL, E_SYNC_SPAWN); 
-     // PRDBG("process %d after updateSyncEvent now\n", current->index); 
     }
 
     return result;
@@ -313,8 +314,12 @@ public:
   
   /// @brief Do a pthread_cancel
   inline int thread_cancel(pthread_t thread) {
-    assert(0);
-    return WRAP(pthread_cancel)(thread);
+    int retval;
+    invokeCommit();
+    retval= WRAP(pthread_cancel)(thread);
+    if(retval == 0) {
+      threadinfo::getInstance().cancelAliveThread(thread);
+    }
   }
 
   inline int thread_kill(pthread_t thread, int sig) {
@@ -331,54 +336,73 @@ public:
   }
 
   int mutex_lock(pthread_mutex_t * mutex) {
-    int ret; 
-    if(!isRollback()) {
-      ret = WRAP(pthread_mutex_lock) (mutex);
+    int ret;
+ 
+    if(globalinfo::getInstance().isMultithreading()) {
+      if(!isRollback()) {
+        ret = WRAP(pthread_mutex_lock) (mutex);
 
-      // Record this event 
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+        // Record this event 
+        recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+      }
+      else {
+        ret = peekSyncEvent(mutex, E_SYNC_LOCK);
+        if(ret == 0) { 
+          waitSemaphore();
+        }
+
+        // Update thread synchronization event in order to handle the nesting lock.
+        updateThreadSyncList(mutex);
+      }
     }
     else {
-      //checkSyncEvent(NULL, E_SYNC_SPAWN); 
-      waitSemaphore();
-
-      // Update thread synchronization event in order to handle the nesting lock.
-      updateThreadSyncList(mutex);
+      ret = WRAP(pthread_mutex_lock) (mutex);
     }
+    return ret;
   }
   
   int mutex_trylock(pthread_mutex_t * mutex) {
     int ret;
 
-    if(!isRollback()) {
-      ret = WRAP(pthread_mutex_trylock) (mutex);
+    if(globalinfo::getInstance().isMultithreading()) {
+      if(!isRollback()) {
+        ret = WRAP(pthread_mutex_trylock) (mutex);
 
-      // Record this event 
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+        // Record this event 
+        recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+      }
+      else {
+        ret = peekSyncEvent(mutex, E_SYNC_LOCK);
+        if(ret == 0) { 
+          waitSemaphore();
+        }
+
+        // Update thread synchronization event in order to handle the nesting lock.
+        updateThreadSyncList(mutex);
+      }
     }
     else {
-//      if((ret = checkMutexSyncEvent(mutex, E_SYNC_LOCK)) == 0) { 
-      {
-        waitSemaphore();
-      }
-
-      // Update thread synchronization event in order to handle the nesting lock.
-      updateThreadSyncList(mutex);
+      ret = WRAP(pthread_mutex_trylock) (mutex);
     }
 
     return ret;
   }
 
   int mutex_unlock(pthread_mutex_t * mutex) {
-    int ret;
+    int ret = 0;
 
-    if(!isRollback()) {
-      ret = WRAP(pthread_mutex_unlock) (mutex);
+    if(globalinfo::getInstance().isMultithreading()) {
+      if(!isRollback()) {
+        ret = WRAP(pthread_mutex_unlock) (mutex);
+      }
+      else {
+  //    PRWRN("Update the sync event on lock (UNLOCK)\n");
+        updateMutexSyncList(mutex); 
+      //updateSyncEvent(mutex, E_SYNC_LOCK); 
+      }
     }
     else {
-  //    PRWRN("Update the sync event on lock (UNLOCK)\n");
-      updateMutexSyncList(mutex); 
-      //updateSyncEvent(mutex, E_SYNC_LOCK); 
+      ret = WRAP(pthread_mutex_unlock) (mutex);
     }
     return ret;
   }
@@ -401,33 +425,40 @@ public:
 
   // Condwait: since we usually get the mutex before this. So there is 
   // no need to check mutex any more.
-  void cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex) {
+  int cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex) {
+    int ret; 
+
     if(!isRollback()) {
       //PRDBG("cond_wait for thread %d\n", current->index);
       // Add the event into eventlist
-      WRAP(pthread_cond_wait) (cond, mutex);
+      ret = WRAP(pthread_cond_wait) (cond, mutex);
       PRDBG("cond_wait wakendup for thread %d, another mutex_lock\n", current->index);
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK);
+      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
     }
     else {
       // Actually, we will wakeup next thread on the event list.
       // Since cond_wait will call unlock at first.
-      //updateSyncEvent(mutex, E_SYNC_LOCK); 
+      ret = peekSyncEvent((void *)mutex, E_SYNC_LOCK);
       updateMutexSyncList(mutex);
 
       // Then we will try to get semaphore in order to proceed.
       // It tried to acquire mutex_lock when waken up.
-      waitSemaphore();
+      if(ret == 0) {
+        waitSemaphore();
+      }
+
       updateThreadSyncList(mutex);
     }
+
+    return ret;
   }
   
-  void cond_broadcast(pthread_cond_t * cond) {
-    WRAP(pthread_cond_broadcast)(cond);
+  int cond_broadcast(pthread_cond_t * cond) {
+    return WRAP(pthread_cond_broadcast)(cond);
   }
 
-  void cond_signal(pthread_cond_t * cond) {
-    WRAP(pthread_cond_signal)(cond);
+  int cond_signal(pthread_cond_t * cond) {
+    return WRAP(pthread_cond_signal)(cond);
   }
   
   // Barrier support
@@ -461,13 +492,20 @@ public:
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
       ret = WRAP(pthread_barrier_wait)(barrier);
-      recordSyncEvent((void *)barrier, E_SYNC_BARRIER);
+      recordSyncEvent((void *)barrier, E_SYNC_BARRIER, ret);
     }
     else {
-      waitSemaphore();
+      ret = peekSyncEvent((void *)barrier, E_SYNC_BARRIER);
+
+      if(ret == 0) {
+        waitSemaphore();
+      }
+
       //checkSyncEvent(barrier, E_SYNC_BARRIER); 
       updateSyncEvent(barrier, E_SYNC_BARRIER);
-      ret = WRAP(pthread_barrier_wait)(barrier);
+      if(ret == 0) {
+        ret = WRAP(pthread_barrier_wait)(barrier);
+      }
     }
 #endif
       
@@ -597,7 +635,6 @@ public:
   void invokeCommit(void);
 
 private:
-
   static Record * getRecord() {
     return (Record *)current->record;
   }
@@ -605,10 +642,8 @@ private:
   // Acquire the semaphore for myself.
   // If it is my turn, I should get the semaphore.
   static void waitSemaphore() {
-    if(globalinfo::getInstance().isMultithreading()) {
-      semaphore * sema = &current->sema;
-      sema->get();
-    }
+    semaphore * sema = &current->sema;
+    sema->get();
   }
 
   semaphore * getSemaphore(void) {
@@ -743,10 +778,12 @@ private:
 
   // Optimization: do not need to record the synchronization event when there is only one thread
   // Mostly, we can save a lot of pthread calls.
-  inline void recordSyncEvent(void * var, thrSyncCmd synccmd) {
-    if(globalinfo::getInstance().isMultithreading()) {
-      _thread.recordSyncEvent(var, synccmd);
-    }
+  inline void recordSyncEvent(void * var, thrSyncCmd synccmd, int ret) {
+    _thread.recordSyncEvent(var, synccmd, ret);
+  }
+
+  inline int peekSyncEvent(void * var, thrSyncCmd synccmd) {
+    return _thread.peekSyncEvent(var, synccmd);
   }
 
   inline void allocSyncEventList(void * var, thrSyncCmd synccmd) {
@@ -754,22 +791,16 @@ private:
   }
 
   inline void updateSyncEvent(void * var, thrSyncCmd synccmd) {
-    if(globalinfo::getInstance().isMultithreading()) {
-      _thread.updateSyncEvent(var, synccmd);
-    }
+    _thread.updateSyncEvent(var, synccmd);
   }
 
   // Only mutex_lock can call this function. 
   inline void updateThreadSyncList(pthread_mutex_t *  mutex) {
-    if(globalinfo::getInstance().isMultithreading()) {
-      _thread.updateThreadSyncList(mutex);
-    }
+    _thread.updateThreadSyncList(mutex);
   }
  
   inline void updateMutexSyncList(pthread_mutex_t * mutex) {
-    if(globalinfo::getInstance().isMultithreading()) {
-      _thread.updateMutexSyncList(mutex);
-    }
+    _thread.updateMutexSyncList(mutex);
   }
  
   inline void insertAliveThread(thread_t * thread, pthread_t tid) {
@@ -885,14 +916,6 @@ private:
       assert(current->status == E_THREAD_EXITING);
       PRWRN("THREAD%d (at %p) is exiting now\n", current->index, current);
       WRAP(pthread_mutex_unlock)(&current->mutex);
-     #if 0 
-      if(!isThreadDetached()) {
-        // Call pthread_detach in order to release resource held by current thread.
-        WRAP(pthread_detach)(current->self);
-      }
-
-      WRAP(pthread_exit)(NULL);
-      #endif
     }
   }
   

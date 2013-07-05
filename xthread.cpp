@@ -63,16 +63,11 @@ void xthread::invokeCommit(void) {
 }
   
 void xthread::prepareRollback(void) {
-    syscalls::getInstance().prepareRollback();
+  syscalls::getInstance().prepareRollback();
 
-    // We only prepare the rollback for multithreading program.
-    if(!globalinfo::getInstance().isMultithreading()) {
-      return;
-    }
-
-    // Try to create the semaphores for all threads and 
-    // backup all thread context.
-    _thread.prepareRollback();
+  // Try to create the semaphores for all threads and 
+  // backup all thread context.
+  _thread.prepareRollback();
 }
 
 

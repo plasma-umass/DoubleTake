@@ -318,7 +318,8 @@ public:
 
     return isFound;
   }
-    
+
+#if 1    
   // record time results
   void recordCloneOps(int ret, pthread_t tid) {
     struct recordClone * rc = (struct recordClone *)malloc(sizeof(*rc));
@@ -345,7 +346,7 @@ public:
 
     return isFound;
   }
- 
+#endif 
    
   // For some list, we donot need to search one by one.
   // We can clear the whole list.

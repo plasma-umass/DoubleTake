@@ -177,8 +177,12 @@ public:
     return _xmap.getThreadInfo(thread);
   }
 
-  inline void recordSyncEvent(void * var, thrSyncCmd synccmd) {
-    _sync.recordSyncEvent(var, synccmd);
+  inline void recordSyncEvent(void * var, thrSyncCmd synccmd, int result) {
+    _sync.recordSyncEvent(var, synccmd, result);
+  }
+
+  inline int peekSyncEvent(void * var, thrSyncCmd synccmd) {
+    return _sync.peekSyncEvent(var, synccmd);
   }
 
   inline void allocSyncEventList(void * var, thrSyncCmd synccmd) {
@@ -244,6 +248,16 @@ public:
     globalinfo::getInstance().unlock();
   }
 
+  void cancelAliveThread(pthread_t  thread) {
+    thread_t * deadThread = getThread(thread);
+
+    globalinfo::getInstance().lock();
+    
+    _xmap.removeAliveThread(deadThread);
+    _aliveThreads--;
+    _reapableThreads--;
+    globalinfo::getInstance().unlock();
+  }
 
     // We actually get those parameter about new created thread
 /* 

@@ -81,7 +81,7 @@ public:
   }
 
   // Record a synchronization event
-  void recordSyncEvent(void * var, thrSyncCmd synccmd) {
+  void recordSyncEvent(void * var, thrSyncCmd synccmd, int ret) {
     struct syncEventList * list = NULL;
 
     if(synccmd == E_SYNC_SPAWN) {
@@ -111,6 +111,7 @@ public:
     // Change the event there.
     event->thread = current;
     event->eventlist = list;
+    event->ret = ret;
     PRDBG("RECORDING: syncCmd %d on variable %p event %p thread %p (THREAD%d)", synccmd, var, event, event->thread, current->index);
 
     if(synccmd != E_SYNC_LOCK) {    
@@ -129,7 +130,31 @@ public:
     listInsertTail(&event->threadlist, &current->syncevents.list);
   }
 
+  // peekSyncEvent will return the saved event value for current synchronization.
+  int peekSyncEvent(void * var, thrSyncCmd synccmd) {
+    int result;
+    struct syncEventList * eventlist = NULL;
 
+    global_lock();
+
+    if(synccmd == E_SYNC_SPAWN) {
+      eventlist = &_glist;
+    }
+    else {
+      assert(var != NULL);
+
+      if(!_smap.find(var, sizeof(void *), &eventlist)) {
+        assert(eventlist != NULL);
+      }
+    }
+  
+    struct syncEvent * event = (struct syncEvent *)eventlist->curentry;
+    result = event->ret;
+
+    global_unlock();
+
+    return result;
+  }
   /*
    Unpdate synchronization event in the rollback phase.
    Normally, this function will update two list: 
@@ -152,7 +177,6 @@ public:
       }
     }
     
-    PRWRN("UPDATING before: eventlist current event %p, thread event %p. variable %p eventlist variable %p\n", eventlist->curentry, getThreadEvent(current->syncevents.curentry), var, eventlist->syncVariable);
     assert(eventlist->curentry == (list_t *)getThreadEvent(current->syncevents.curentry));
 
     if(eventlist->syncVariable != var) {
@@ -165,7 +189,7 @@ public:
     struct syncEvent * nextEventOfList = NULL;
     struct syncEvent * nextEventOfThread = NULL;
     list_t * nextEntry = NULL;
-    //nextEvent = updateSyncEventList(eventlist);
+   // nextEvent = updateSyncEventList(eventlist);
     // Update next event of eventlist.
     nextEventOfList = (struct syncEvent *)updateNextEvent(eventlist);
     
@@ -266,7 +290,6 @@ public:
     list_t * curentry = list->curentry;
 
     if(!isListTail(curentry, &list->list)) {
-    // (stderr, "Not tail, UpdateNextEvent curentry %p, list->list %p", curentry, &list->list);
       list->curentry = nextEntry(curentry);
     }
     else {

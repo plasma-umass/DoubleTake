@@ -125,7 +125,7 @@ extern "C" {
 
     // Start our first transaction.
 #ifndef NDEBUG
-     printf ("we're gonna begin now.\n"); fflush (stdout);
+    // printf ("we're gonna begin now.\n"); fflush (stdout);
 #endif
   }
 
@@ -175,7 +175,7 @@ extern "C" {
     void * ptr = NULL;
   //  printf("stopgap_calloc line %d ptr %p\n", __LINE__, ptr);
     ptr = stopgap_malloc(nmemb *sz);
-    printf("stopgap_calloc line %d ptr %p\n", __LINE__, ptr);
+    //printf("stopgap_calloc line %d ptr %p\n", __LINE__, ptr);
 	  memset(ptr, 0, sz*nmemb);
     return ptr;
   }
@@ -247,8 +247,9 @@ extern "C" {
     if (!funcInitialized) {
       initializer();
     }
-
-    return xthread::getInstance().mutex_init (mutex, attr);
+    if(initialized)
+      return xthread::getInstance().mutex_init (mutex, attr);
+    return 0;
   }
   
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
@@ -286,19 +287,19 @@ extern "C" {
   int pthread_cond_broadcast (pthread_cond_t * cond)
   {
     if (initialized) 
-      xthread::getInstance().cond_broadcast (cond);
+      return xthread::getInstance().cond_broadcast (cond);
     return 0;
   }
 
   int pthread_cond_signal (pthread_cond_t * cond) {
     if (initialized) 
-      xthread::getInstance().cond_signal (cond);
+      return xthread::getInstance().cond_signal (cond);
     return 0;
   }
 
   int pthread_cond_wait (pthread_cond_t * cond, pthread_mutex_t * mutex) {
     if (initialized) 
-      xthread::getInstance().cond_wait (cond, mutex);
+      return xthread::getInstance().cond_wait (cond, mutex);
     return 0;
   }
 
