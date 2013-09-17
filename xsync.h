@@ -44,7 +44,7 @@ class xsync {
 /* At original syschronization variable,
    there exists a
  */ 
-struct variable {
+struct syncVariable {
   void * realVariable; // Where is real sync variable
   struct syncEventList * list; 
 };
@@ -68,23 +68,12 @@ public:
     _smap.insert(key, sizeof(key), list);
   }
 
-  // Allocate a new synchronization event list
-  struct syncEventList * allocSyncEventList(void * var, thrSyncCmd synccmd) {
-    struct syncEventList * list = NULL;
-    
-    // Create an synchronziation event.
-    list = (struct syncEventList *)InternalHeap::getInstance().malloc(sizeof(*list));
-
+  // Initialize a new synchronization event list
+  void initSyncEventList(struct syncEventList *list) {
     // Initialize the sequence number   
-    list->syncVariable = var;
-    list->syncCmd = synccmd;
     listInit(&list->list);
-
     WRAP(pthread_mutex_init)(&list->lock, NULL);
-
-    // Add this event list into the map.
-    insertSyncMap(var, list);
-    return list;
+    list->curentry = NULL;
   }
 
   // Record a synchronization event

@@ -75,8 +75,6 @@ extern "C" {
   struct syncEventList {
     list_t list;
     pthread_mutex_t lock;
-    void     * syncVariable; 
-    thrSyncCmd syncCmd;
     list_t   * curentry; // Used to traverse all entries of this list.
   };
 

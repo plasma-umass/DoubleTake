@@ -339,19 +339,21 @@ public:
 
   }
 
+  void initRealMmutex(pthread_mutex_t * mutex) {
+
+  }
   /// Save those actual mutex address in original mutex.
   int mutex_init(pthread_mutex_t * mutex, const pthread_mutexattr_t *attr) {
     pthread_mutex_t * realMutex = NULL;
-    struct syncEventList * syncList;
     bool result = false;
 
     if(!isRollback()) {
-      realMutex = (pthread_mutex_t *)InternalHeap::getInstance().malloc(sizeof(pthread_mutex_t));
-      assert(realMutex != NULL);
+      // Allocate a real mutex.
+      realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t));
       WRAP(pthread_mutex_init)(realMutex, attr);
 
       // Allocate synchronization list now.
-      syncList = _sync.allocSyncEventList(mutex, E_SYNC_LOCK);
+      syncList=_sync.allocSyncEventList(mutex, E_SYNC_LOCK);
 
       // Now we are setting the synchronization list at first.
       result &= setSyncEventList(mutex, syncList);    
@@ -656,6 +658,32 @@ public:
   void invokeCommit(void);
 
 private:
+  inline void * getSyncEntry(void * entry) {
+    void ** ptr = (void **)entry;
+    return(*ptr);
+  }
+
+  inline void * allocSyncEntry(void *origentry, int size) {
+    struct syncEventList * syncList;
+    
+    // We allocate a synchorniation event list here and attach to this real 
+    // synchronziation variable so that they can be deleted in the same time.
+    void * entry = ((void *)InternalHeap::getInstance().malloc(size + sizeof(struct syncEventList)));
+    assert(entry != NULL);
+
+    syncList = (struct syncEventList *)((intptr_t)entry + size);
+    _sync.initSyncEventList(syncList);
+    return entry;
+  }
+
+  inline void deallocSyncEntry(void *ptr) {
+    void * realentry = getSyncEntry(ptr);
+
+    assert(realentry);
+    InternalHeap::getInstance().free(realentry);
+  } 
+
+  
   static Record * getRecord() {
     return (Record *)current->record;
   }
