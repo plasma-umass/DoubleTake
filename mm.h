@@ -1,8 +1,7 @@
 // -*- C++ -*-
 
-
 /*
-  Copyright (c) 2007-8 Emery Berger, University of Massachusetts Amherst.
+  Copyright (c) 2012 , University of Massachusetts Amherst.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -25,34 +24,17 @@
 #include <syscall.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
-
-#include "internalheap.h"
-#include "privateheap.h"
+#include "libfuncs.h"
 
 class MM {
 public:
   #define ALIGN_TO_CACHELINE(size) (size%64 == 0 ? size:(size+64)/64*64)
 
-  static void * mallocShared(size_t sz) {
-    return (InternalHeap::getInstance().malloc(sz));
-  } 
-
-  static void freeShared(void *ptr) {
-    InternalHeap::getInstance().free(ptr);
-  }
-
-  static void * mallocPrivate(size_t sz) {
-    return (PrivateHeap::malloc(sz)); 
-  } 
-
-  static void freePrivate(void *ptr) {
-    PrivateHeap::free(ptr);
-  }
-
   static void mmapDeallocate (void * ptr, size_t sz) {
-    munmap(ptr, sz);
+    WRAP(munmap)(ptr, sz);
   }
 
   static void * mmapAllocateShared (size_t sz,
@@ -81,10 +63,10 @@ private:
     sharedInfo     |= ((fd == -1) ? MAP_ANONYMOUS : 0);
     sharedInfo     |= ((startaddr != NULL) ? MAP_FIXED : 0);
 
-    void * ptr =  mmap (startaddr, sz, protInfo,
+    void * ptr =  WRAP(mmap) (startaddr, sz, protInfo,
 		                    sharedInfo, fd, 0);
     if(ptr == MAP_FAILED) {
-      fprintf(stderr, "Couldn't do mmap: startaddr %p, sz %lx\n", startaddr, sz);
+      fprintf(stderr, "Couldn't do mmap %s : startaddr %p, sz %lx\n", strerror(errno), startaddr, sz);
       abort();
     }
 

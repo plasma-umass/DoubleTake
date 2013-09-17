@@ -23,138 +23,78 @@
 #define _INTERNALHEAP_H_
 
 #include "xdefines.h"
-#include "objectheader.h"
-#include "ansiwrapper.h"
-#include "kingsleyheap.h"
-#include "adapt.h"
-#include "sllist.h"
-#include "dllist.h"
-#include "sanitycheckheap.h"
-#include "zoneheap.h"
+#include "xpheap.h"
+#include "xoneheap.h"
+#include "sourceinternalheap.h"
 /**
  * @file InternalHeap.h
  * @brief A share heap for internal allocation needs.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  *
  */
-class SourceInternalHeap {
-public:
-  SourceInternalHeap (void)
-    : _alreadyMalloced (false)
-  {}
-
-  void * malloc (size_t) {
-    if (_alreadyMalloced) {
-      return NULL;
-    } else {
-      void * start;
-#if defined(__SVR4)
-      start = WRAP(mmap) (NULL, xdefines::INTERNALHEAP_SIZE, PROT_READ | PROT_WRITE, 
-      MAP_SHARED | MAP_ANON, -1, 0);
-#else
-      // Create a MAP_SHARED memory
-      start = WRAP(mmap)(NULL, xdefines::INTERNALHEAP_SIZE, PROT_READ | PROT_WRITE, 
-      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-#endif
-      if(start == NULL) {
-        fprintf(stderr, "Failed to create a internal share heap.\n");
-        exit(1);
-      }
-      
-//      fprintf(stderr, "Internal heap start %p to %lx\n", start, (intptr_t)start + xdefines::INTERNALHEAP_SIZE);  
-      _alreadyMalloced = true;
-      return(start);
-    }
-  }
-  
-  void free (void * addr) {}
-
-private:
-
-  bool _alreadyMalloced;  
-
-};
-
 template <class SourceHeap>
-class NewAdaptHeap : public SourceHeap {
-public:
-  void * malloc (size_t sz) {
-    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader));
-    if (!ptr) {
-      return NULL;
-    }
+class perheap : public SourceHeap 
+{
+  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::PHEAP_CHUNK> >
+  SuperHeap;
 
-    // There is no need to get callsite information here.
-    objectHeader * o = new (ptr) objectHeader (sz);
-    void * newptr = getPointer(o);
-	
-    assert (getSize(newptr) >= sz);
-    return newptr;
+public: 
+  perheap() {
   }
 
-  void free (void * ptr) {
-    SourceHeap::free ((void *) getObject(ptr));
+  void initialize(void) {
+    // Initialize the SourceHeap before malloc from there.
+    SourceHeap::initialize(NULL, xdefines::INTERNAL_HEAP_SIZE);
+
+    int  metasize = sizeof(SuperHeap);
+
+    char * base;
+
+    //printf("xpheap calling sourceHeap::malloc size %d\n", metasize);
+    base = (char *)SourceHeap::malloc(metasize);
+    if(base == NULL) {
+      PRFATAL("Failed to allocate memory for heap metadata.");
+    }
+  //  fprintf(stderr, "\n\nInitialize the superheap\n\n");
+    _heap = new (base) SuperHeap;
+    
+    // Get the heap start and heap end;
+    _heapStart = SourceHeap::getHeapStart();
+    _heapEnd = SourceHeap::getHeapEnd();
+  }
+
+  void * malloc(int heapid, size_t size) {
+    return _heap->malloc(heapid, size);
+  }
+
+  void free(int heapid, void * ptr) {
+    _heap->free(heapid, ptr);
   }
 
   size_t getSize (void * ptr) {
-    objectHeader * o = getObject(ptr);
-    size_t sz = o->getSize();
-    if (sz == 0) {
-      printf ("error!\n");
-    }
-    return sz;
+    return _heap->getSize (ptr);
   }
+
+  bool inRange(void * addr) {
+    return ((addr >= _heapStart) && (addr <= _heapEnd)) ? true : false;
+  }
+ 
 private:
-
-  static objectHeader * getObject (void * ptr) {
-    objectHeader * o = (objectHeader *) ptr;
-    return (o - 1);
-  }
-
-  static void * getPointer (objectHeader * o) {
-    return (void *) (o + 1);
-  }
+  SuperHeap * _heap;
+  void * _heapStart;
+  void * _heapEnd; 
 };
 
-class InternalHeap : 
-  public 
-  HL::ANSIWrapper<
-  HL::StrictSegHeap<Kingsley::NUMBINS,
-        Kingsley::size2Class,
-        Kingsley::class2Size,
-        HL::AdaptHeap<HL::SLList, NewAdaptHeap<SourceInternalHeap> >,
-        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNALHEAP_SIZE> > > >
 
-{
-  typedef   HL::ANSIWrapper<
-  HL::StrictSegHeap<Kingsley::NUMBINS,
-        Kingsley::size2Class,
-        Kingsley::class2Size,
-        HL::AdaptHeap<HL::SLList, NewAdaptHeap<SourceInternalHeap> >,
-        NewAdaptHeap<HL::ZoneHeap<SourceInternalHeap, xdefines::INTERNALHEAP_SIZE> > > >
-  SuperHeap;
+class InternalHeap { 
 
 public:
 
-  InternalHeap()
+  InternalHeap() {}
+
+  void initialize()
   {
-    pthread_mutexattr_t attr;
-
-    // Set up the lock with a shared attribute.
-    WRAP(pthread_mutexattr_init)(&attr);
-    pthread_mutexattr_setpshared (&attr, PTHREAD_PROCESS_SHARED);
-
-    // Allocate a lock to use internally
-    _lock = new (mmap (NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0)) pthread_mutex_t;
-    if(_lock == NULL) {
-      printf("Fail to initialize an internal lock for monitor map\n");
-      _exit(-1);
-    }
-
-    WRAP(pthread_mutex_init) (_lock, &attr);
-    
-    // Do an initialized malloc in order to do allocation before spawning.
-    malloc(8);
+    _heap.initialize();
   }
  
   virtual ~InternalHeap (void) {}
@@ -163,56 +103,47 @@ public:
   // and we want access to it neatly encapsulated here, for use by the
   // signal handler.
   static InternalHeap& getInstance (void) {
-    static void * buf = WRAP(mmap) (NULL, sizeof(InternalHeap), PROT_READ | PROT_WRITE, 
-          MAP_SHARED | MAP_ANON, -1, 0);
+    static char buf[sizeof(InternalHeap)];
     static InternalHeap * theOneTrueObject = new (buf) InternalHeap();
     return *theOneTrueObject;
   }
   
   void * malloc (size_t sz) {
     void * ptr = NULL;
-    lock(); 
-    ptr = SuperHeap::malloc (sz);
-    unlock();
+    ptr = _heap.malloc (getThreadIndex(), sz);
   
     if(!ptr) {
-      fprintf(stderr, "%d : SHAREHEAP is exhausted, exit now!!!\n", getpid());
+      PRERR("%d : SHAREHEAP is exhausted, exit now!!!", getpid());
       assert(ptr != NULL);
     }
-    //fprintf(stderr, "%d : SHAREHEAP allocate %p with sz %x\n", getpid(), ptr, sz);
   
     return ptr;
   }
   
   void free (void * ptr) {
-    lock(); 
-    SuperHeap::free (ptr);
-    unlock();
+    _heap.free (getThreadIndex(), ptr);
   }
   
 private:
-  
-  // The lock is used to protect the update on global _monitors
-  void lock(void) {
-    WRAP(pthread_mutex_lock) (_lock);
-  }
-  
-  void unlock(void) {
-    WRAP(pthread_mutex_unlock) (_lock);
-  }
-  
-  // Internal lock
-  pthread_mutex_t * _lock; 
+  perheap<xoneheap<SourceInternalHeap > >  _heap;  
 };
 
 
 class InternalHeapAllocator {
 public:
-  void * malloc (size_t sz) {
+  static void * malloc (size_t sz) {
     return InternalHeap::getInstance().malloc(sz);
   }
   
-  void free (void * ptr) {
+  static void free (void * ptr) {
+    return InternalHeap::getInstance().free(ptr);
+  }
+
+  static void *allocate(size_t sz) {
+    return InternalHeap::getInstance().malloc(sz);
+  }
+  
+  static void deallocate (void * ptr) {
     return InternalHeap::getInstance().free(ptr);
   }
 };

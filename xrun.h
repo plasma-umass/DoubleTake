@@ -31,34 +31,29 @@
 
 #include "xdefines.h"
 
-// threads
-#include "xthread.h"
-
 // memory
+#include "internalheap.h"
 #include "xmemory.h"
-
-// Heap Layers
-#include "util/sassert.h"
-
-#include "xsync.h"
-
-// Stack 
-#include "xcontext.h"
 
 // Grace utilities
 #include "atomic.h"
+
+#include "libfuncs.h"
+
+#include "xthread.h"
 
 class xrun {
 
 private:
 
   xrun (void)
-  : _isInitialized (false),
-    _isProtected (false),
+  : 
     _hasRollbacked(false), 
-    _memory (xmemory::getInstance())
+    _memory (xmemory::getInstance()),
+    _thread (xthread::getInstance()),
+    _watchpoint (watchpoint::getInstance())
   {
-  //fprintf(stderr, "xrun constructor\n");
+  //PRINF("xrun constructor\n");
   }
 
 public:
@@ -72,141 +67,118 @@ public:
   /// @brief Initialize the system.
   void initialize (void)
   {
+    //current = NULL;
     pid_t pid = syscall(SYS_getpid);
- 
-    if (!_isInitialized) {
-      _isInitialized = true;
+    struct rlimit rl;
 
-      // Initialize the xcontext.
-      _context.initialize();
-            
-      // Initialize the memory (install the memory handler)
-      _memory.initialize();
+    // Get the stack size.
+    if (WRAP(getrlimit)(RLIMIT_STACK, &rl) != 0) {
+      PRINF("Get the stack size failed.\n");
+      WRAP(exit)(-1);
+    }
+    
+    // Check the stack size.
+    __max_stack_size = rl.rlim_cur;
+    fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
+#if 0 
+    rl.rlim_cur = 524288;
+    rl.rlim_max = 1048576;
+    if(WRAP(setrlimit)(RLIMIT_NOFILE, &rl)) {
+      fprintf(stderr, "change limit failed, error %s\n", strerror(errno));
+    }
+    fprintf(stderr, "NUMBER files limit %d\n", rl.rlim_cur);
 
-      // Set the current _tid to our process id.
-      _thread.setId (pid);
+    while(1);
+#endif
+    globalinfo::getInstance().initialize();
+
+    
+    installSignalHandler();
+    
+    InternalHeap::getInstance().initialize();
+
+    // Initialize the internal heap at first.
+    //InternalHeap::getInstance().malloc(8);
+    _thread.initialize();
+
       
-      _tid = pid;
-      _memory.setThreadIndex(0);
+    // Initialize the memory (install the memory handler)
+    _memory.initialize();
 
-      // Save context. NOTE: only for the test
-      saveContext();
-      fprintf(stderr, "%d : initialize\n", getpid());
-   } else {
-      fprintf(stderr, "%d : OH NOES\n", getpid());
-      ::abort();
-      // We should only initialize ONCE.
-    }
+    _watchpoint.initialize();
+
+    syscallsInitialize();
+
+    // Set the current _tid to our process id.
+    _pid = pid;
+    _main_id = pid;
+
+    PRDBG("starting!!!!!\n");
+    fprintf(stderr, "starting!!!!!\n");
+    epochBegin();
   }
-
-  void openMemoryProtection(void) {
-    if(_isProtected == false) {
-      _memory.openProtection();
-      _isProtected = true;
-    }
-  }
-
-  void closeMemoryProtection(void) {
-    _memory.closeProtection();
-    _isProtected = false;
-  }
-
+  
   void finalize (void)
   {
-#if 1
-    if(_hasRollbacked == false) {
-      // NOTE: only for the test
-      atomicEnd();
-     // rollback();
+    if(mainId() != getpid()) {
+      return;
     }
-#endif
-    // If the tid was set, it means that this instance was
-    // initialized: end the transaction (at the end of main()).
-    _memory.finalize();
+
+    //fprintf(stderr, "In the end of finalize function\n");
+    //PRINF("%d: finalize now !!!!!\n", getpid());
+    // If we are not in rollback phase, then we should check buffer overflow.
+    if(!globalinfo::getInstance().isRollback())
+      epochEnd();
+
+    PRINF("%d: finalize now !!!!!\n", getpid());
+    // Now we have to cleanup all semaphores.
+    _thread.finalize();
+    
+  }
+
+  // Simply commit specified memory block
+  void atomicCommit(void * addr, size_t size) {
+    _memory.atomicCommit(addr, size);
+  }
+
+  int mainId() {
+    return _main_id;
   }
 
   /* Transaction-related functions. */
   void saveContext(void) {
-    // check whether we have opened the protection or not
-    // If not, then we should do this before saving the context.
-    if(_isProtected == false) {
-      openMemoryProtection();
-    }  
-
-    _memory.atomicBegin();    
-
-    // Now we may try to save context.
-    _context.saveContext(); 
+    _thread.saveContext();
   }
 
+  /// Rollback to previous saved point 
+  void rollback(void);
+   
   /// Rollback to previous 
-  void rollback(void) {
-    _hasRollbacked = true;
+  void rollbackandstop(void);
 
-    fprintf(stderr, "\n\nNOW ROLLING BACK\n\n\n");
-    
-    // Rollback all memory before rolling back the context.
-    _memory.rollback();
-
-    _context.rollback();
+  inline void setpid(int pid) {
+    _pid = pid;
   }
-  
-  /* Thread-related functions. */
-  inline void threadRegister (void) {
-    int threadindex;
-      
-    threadindex = atomic::increment_and_return(global_thread_index);
  
-    // Since we are a new thread, we need to use the new heap.
-    _memory.setThreadIndex(threadindex+1);
-
-    //fprintf(stderr, "%d: threadindex %d, global_thread_index %d\n", getpid(), threadindex+1, *global_thread_index);
-    return;
-  }   
-
-  inline void resetThreadIndex(void) {
-   *global_thread_index = 0;
+  /// @ Return current pid.
+  inline int getpid(void) {
+    return _pid;
   }
-
-  /// @ Return the main thread's id.
-  inline int main_id(void) {
-  return _tid;
-  }
-
-  /// @return the "thread" id.
-  inline int id (void) const {
-    return _thread.getId();
-  }
-
-  /// @brief Spawn a thread.
-  /// @return an opaque object used by sync.
-  inline void * spawn (threadFunction * fn, void * arg)
-  {
-    void * ptr = _thread.spawn (this, fn, arg);
-
-    return ptr;
-  }
-
-  /// @brief Wait for a thread.
-  inline void join (void * v, void ** result) {
-    _thread.join (this, v, result);
-  }
-
-  /// @brief Do a pthread_cancel
-  inline void cancel(void *v) {
-    _thread.cancel(this, v);
-  }
-
-  inline void thread_kill(void *v, int sig) {
-    atomicEnd();
-    //_thread.thread_kill(this, v, sig);
-    atomicBegin();
-  } 
 
   /* Heap-related functions. */
   inline void * malloc (size_t sz) {
-    void * ptr = _memory.malloc (sz);
+    void * ptr;
+    if(xthread::getInstance().threadSpawning()) {
+      ptr = InternalHeap::getInstance().malloc(sz);
+    }
+    else {
+      ptr = _memory.malloc (getIndex(), sz);
+    }
     return ptr;
+  }
+
+  inline void * memalign(size_t boundary, size_t sz) {
+    return _memory.memalign(getIndex(), boundary, sz);
   }
 
   inline void * calloc (size_t nmemb, size_t sz) {
@@ -216,7 +188,7 @@ public:
 
   // In fact, we can delay to open its information about heap.
   inline void free (void * ptr) {
-    _memory.free (ptr);
+    _memory.free (getIndex(), ptr);
   }
 
   inline size_t getSize (void * ptr) {
@@ -224,141 +196,93 @@ public:
   }
 
   inline void * realloc(void * ptr, size_t sz) {
-    void * newptr;
-    //fprintf(stderr, "realloc ptr %p sz %x\n", ptr, sz);
-    if (ptr == NULL) {
-      newptr = malloc(sz);
-      return newptr;
-    }
     if (sz == 0) {
       free (ptr);
       return NULL;
     }
 
-    newptr = _memory.realloc (ptr, sz);
-    //fprintf(stderr, "realloc ptr %p sz %x\n", newptr, sz);
+    // Do actual allocation
+    void * newptr = malloc(sz);
+    //PRINF("realloc ptr %p sz %x\n", ptr, sz);
+    if (ptr == NULL) {
+      return newptr;
+    }
+
+    size_t os = getSize (ptr);
+    if (newptr && os != 0) {
+      size_t copySz = (os < sz) ? os : sz;
+      memcpy (newptr, ptr, copySz);
+    }
+
+    free(ptr);
     return newptr;
   }
 
-  ///// conditional variable functions.
-  void cond_init (void * cond) {
-    _sync.cond_init(cond, false);
-  }
-
-  void cond_destroy (void * cond) {
-    _sync.cond_destroy(cond);
-  }
-
-  // Barrier support
-  int barrier_init(pthread_barrier_t  *barrier, unsigned int count) {
-    return _sync.barrier_init(barrier, count);
-  }
-
-  int barrier_destroy(pthread_barrier_t *barrier) {
-    _sync.barrier_destroy(barrier);
-    return 0;
-  }
-
-  ///// mutex functions
-  /// FIXME: maybe it is better to save those actual mutex address in original mutex.
-  int mutex_init(pthread_mutex_t * mutex) {
-    _sync.mutex_init(mutex, false);
-    return 0;
-  }
-
-  // FIXME: if we are trying to remove atomicEnd() before mutex_sync(),
-  // we should unlock() this lock if abort(), otherwise, it will
-  // cause the dead-lock().
-  void mutex_lock(pthread_mutex_t * mutex) {
-//  fprintf(stderr, "%d : mutex lock\n", getpid());
-    atomicEnd();
-    _sync.mutex_lock(mutex);
-    atomicBegin();
-  }
-
-  void mutex_unlock(pthread_mutex_t * mutex) {
-    atomicEnd();
-    _sync.mutex_unlock(mutex);
-    atomicBegin();
-  }
-
-  int mutex_destroy(pthread_mutex_t * mutex) {
-    return _sync.mutex_destroy(mutex);
-  }
-
-
-  int barrier_wait(pthread_barrier_t *barrier) {
-    atomicEnd();
-    _sync.barrier_wait(barrier);
-    atomicBegin();
-    return 0;
-  }
-
-
-  /// FIXME: whether we can using the order like this.
-  void cond_wait(void * cond, void * lock) {
-    atomicEnd();
-    _sync.cond_wait (cond, lock);
-    atomicBegin();
-  }
-
-  void cond_broadcast (void * cond) {
-    atomicEnd();
-    _sync.cond_broadcast (cond);
-    atomicBegin();
-  }
-
-  void cond_signal (void * cond) {
-    atomicEnd();
-    _sync.cond_signal (cond);
-    atomicBegin();
-  }
-
-  /// @brief Start a transaction.
-  void atomicBegin (void) {
-    if(!_isProtected)
-      return;
-    //fflush(stdout);
-
-    // Now start.
-    _memory.atomicBegin();
-  }
-
-  /// @brief End a transaction, aborting it if necessary.
-  void atomicEnd (void) {
-    if(!_isProtected)
-      return;
- 
-    // First, attempt to commit.
-    bool hasOverflow = _memory.atomicEnd();
-    if(hasOverflow) {
-      // Install watch point
-      rollback();
-    }
-
-    // Flush the stdout.
-    fflush(stdout);
-  }
-
+  void epochBegin (void);
+  void epochEnd (void);
 private:
+  void syscallsInitialize(void);
+  void stopAllThreads(void);
 
+
+  // Handling the signal SIGUSR2
+  static void sigusr2Handler(int signum, siginfo_t * siginfo, void * context); 
+
+  /// @brief Install a handler for SIGUSR2 signals.
+  /// We are using the SIGUSR2 to stop all other threads.
+  void installSignalHandler (void) {
+    struct sigaction sigusr2;
+
+    static stack_t _sigstk;
+
+    // Set up an alternate signal stack.
+    _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ, -1);
+    _sigstk.ss_size = SIGSTKSZ;
+    _sigstk.ss_flags = 0;
+    WRAP(sigaltstack)(&_sigstk, (stack_t *) 0);
+
+    // We don't want to receive SIGUSR2 again when a thread is inside signal handler.
+    sigemptyset (&sigusr2.sa_mask);
+    sigaddset(&sigusr2.sa_mask, SIGUSR2);
+    WRAP(sigprocmask) (SIG_BLOCK, &sigusr2.sa_mask, NULL);
+    /** 
+      Some parameters used here:
+       SA_RESTART: Provide behaviour compatible with BSD signal 
+                   semantics by making certain system calls restartable across signals.
+       SA_SIGINFO: The  signal handler takes 3 arguments, not one.  In this case, sa_sigac-
+                   tion should be set instead of sa_handler.
+                   So, we can acquire the user context inside the signal handler 
+    */
+    sigusr2.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+
+    sigusr2.sa_sigaction = xrun::sigusr2Handler;
+    if (WRAP(sigaction)(SIGUSR2, &sigusr2, NULL) == -1) {
+      fprintf (stderr, "setting signal handler SIGUSR2 failed.\n");
+      EXIT;
+    }
+  }
+
+
+  // Notify the system call handler about rollback phase
+  void startRollback();
+
+  int getIndex() {
+    return _thread.getIndex();
+  }
 
   typedef enum { FAILED, SUCCEEDED } commitResult;
 
-
-  xthread    _thread;
-
-  xsync  _sync;
+  xthread&  _thread;
 
   /// The memory manager (for both heap and globals).
   xmemory&     _memory;
+  watchpoint&     _watchpoint;
 
-  xcontext _context;
-
-  volatile  bool   _isInitialized;
-  volatile  bool   _isProtected;
   volatile  bool   _hasRollbacked;
-  int   _tid; //The first process's id.
+ 
+//  int   _rollbackStatus; 
+  int   _pid; //The first process's id.
+  int   _main_id;
 };
 
 
