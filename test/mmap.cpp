@@ -15,11 +15,18 @@ int main()
              -1,
              0);
 
+  printf("In the beginning, mmap at  %p!\n", ptr);
+  
+  ptr = (int *)mmap (NULL,
+             4096,
+             PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS,
+             -1,
+             0);
 
-  *ptr = 5;
-  temp = *ptr; 
+  printf("In the end, mmap at  %p!\n", ptr);
 
-  printf("In the middle, temp(global) %d, ptr(heap) is %d at %p!\n", temp, *ptr, ptr);
+  while(1);
 
 //  munmap(ptr, 4096);
 

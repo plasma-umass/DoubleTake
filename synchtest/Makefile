@@ -1,7 +1,7 @@
 CC = gcc
 CXX= g++
 CFLAGS = -m32 -Wall -g -O3 
-#CFLAGS = -Wall -g -O3 
+CFLAGS = -Wall -g -O0
 #-T../dthreads.ld
 #CFLAGS = -Wall -g -O3 -T../dthreads64.ld
 LIBS = -lm -lrt -ldl
@@ -16,9 +16,9 @@ PTHREAD_LIBS += $(LIBS) -lpthread
 PTHREAD_OBJS := $(addsuffix -pthread, $(TESTS))
 
 #DTHREAD_LIBS = $(LIBS) -rdynamic ../source-no-determsync/libdthread.so
-DTHREAD_LIBS = $(LIBS) -rdynamic ../../libstopgap64.so
-#DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/stopgap/glibc/build/nptl/libpthread.so
-#DTHREAD_LIBS = $(LIBS) -rdynamic ../libstopgap64.so
+#DTHREAD_LIBS = $(LIBS) -rdynamic ../libstopgap32.so
+#DTHREAD_LIBS = $(LIBS) -L../ -lstopgap64
+DTHREAD_LIBS = $(LIBS) -rdynamic ../libstopgap64.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/determ/libgrace.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/stopgap/libgrace.so
 DTHREAD_OBJS := $(addsuffix -dthread, $(TESTS))
@@ -28,6 +28,7 @@ COMPILE = $(CXX) $(CFLAGS)
 
 .PHONY : default all clean
 default: all
+#all:$(DTHREAD_OBJS)
 all:$(PTHREAD_OBJS) $(DTHREAD_OBJS)
 clean:
 	rm -f $(PTHREAD_OBJS) $(DTHREAD_OBJS) 

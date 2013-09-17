@@ -45,6 +45,7 @@ namespace HL {
 
     inline void * malloc (size_t sz) {
       void * ptr = zoneMalloc (sz);
+      //fprintf(stderr, "zoneheap: zonemalloc sz %d ptr %p\n", sz, ptr);
       return ptr;
     }
 
@@ -57,7 +58,7 @@ namespace HL {
 
   private:
 
-    inline static size_t align (int sz) {
+    inline static size_t align (size_t sz) {
       return (sz + (sizeof(double) - 1)) & ~(sizeof(double) - 1);
     }
 
@@ -89,7 +90,9 @@ namespace HL {
       if (allocSize < sz) {
 	allocSize = sz;
       }
+      //fprintf(stderr, "slowMALLOC buf in zoneheap: sizeofAreana %x allocSize %x\n", sizeof(Arena), allocSize);
       void * buf = Super::malloc (sizeof(Arena) + allocSize);
+      //printf("slowMALLOC zoneheap&&&&&&&&&&&&%p\n", buf);
       if (buf == NULL) {
 	return NULL;
       }
@@ -124,10 +127,11 @@ namespace HL {
     private:
       size_t _remaining;
       Arena * _nextArena;
-      union {
+     // union {
 	char * _arenaSpace;
-	double _dummy; // For alignment.
-      };
+	//double _dummy; // For alignment.
+  //    };
+      size_t _dummy;
     };
     
     /// The current arena.
