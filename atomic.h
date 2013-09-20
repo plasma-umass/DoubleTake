@@ -30,6 +30,10 @@
 
 #ifndef __ATOMIC_H
 #define __ATOMIC_H
+  inline bool atomic_compare_and_swap(volatile unsigned long * ptr, unsigned long oldval, unsigned long newval) {
+    return __sync_bool_compare_and_swap(ptr, oldval, newval);
+  }
+
 
   inline unsigned long atomic_exchange(volatile unsigned long * oldval,
       unsigned long newval) {

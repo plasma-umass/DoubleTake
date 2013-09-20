@@ -32,6 +32,7 @@
 
 #include <stdlib.h>
 #include "threadmap.h"
+#include "threadstruct.h"
 #include "xdefines.h"
 
 class globalinfo {

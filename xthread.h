@@ -41,6 +41,7 @@
 //#include "syscalls.h"
 #include "threadmap.h"
 #include "record.h"
+#include "synceventlist.h"
 #include "list.h"
 
 class xthread {
@@ -67,7 +68,16 @@ public:
     _sync.initialize();
     threadmap::getInstance().initialize();
  
-    PRWRN("threadinit"); 
+    PRWRN("threadinit");
+
+    // Initialize the global list for spawning operations 
+    void * ptr = ((void *)InternalHeap::getInstance().malloc(sizeof(SyncEventList)));
+    _spawningList = new (ptr) SyncEventList(NULL, E_SYNC_SPAWN);
+   
+    // We do not know whether NULL can be support or not, so we use
+    // fake variable name _spawningList here 
+    _sync.insertSyncMap((void *)_spawningList, _spawningList); 
+
     // Register the first thread 
     initialThreadRegister();
     current->isSafe = true;
@@ -186,8 +196,8 @@ public:
       // It is impossible to let newly spawned child to set this correctly since
       // the parent may already sleep on that.
       children->joiner = NULL;
+      
 
-//      PRDBG("*********%d: before creating a thread\n", getpid());
       // Now we are going to record this spawning event.
       setThreadSpawning();
       result =  WRAP(pthread_create)(tid, attr, xthread::startThread, (void *)children);
@@ -198,7 +208,7 @@ public:
       }
     
       // Record spawning event
-      recordSyncEvent(NULL, E_SYNC_SPAWN, result);
+      _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
       getRecord()->recordCloneOps(result, *tid);
 
       if(result == 0) {
@@ -221,7 +231,8 @@ public:
     }
     else {
       PRDBG("process %d is before thread_create now\n", current->index);
-      result = peekSyncEvent(NULL, E_SYNC_SPAWN);
+      result = _spawningList->peekSyncEvent();
+
       getRecord()->getCloneOps(tid, &result);
       PRWRN("process %d in creation, result %d\n", current->index, result);
       if(result == 0) { 
@@ -239,8 +250,9 @@ public:
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
-     PRDBG("#############process %d before updateSyncEvent now\n", current->index); 
-      updateSyncEvent(NULL, E_SYNC_SPAWN); 
+     PRDBG("#############process %d before updateSyncEvent now\n", current->index);
+      updateSyncEvent(_spawningList); 
+//      _spawningList->advanceSyncEvent(); 
     }
 
     return result;
@@ -339,81 +351,82 @@ public:
 
   }
 
-  void initRealMmutex(pthread_mutex_t * mutex) {
-
-  }
   /// Save those actual mutex address in original mutex.
   int mutex_init(pthread_mutex_t * mutex, const pthread_mutexattr_t *attr) {
     pthread_mutex_t * realMutex = NULL;
-    bool result = false;
+    int result = 0;
 
     if(!isRollback()) {
       // Allocate a real mutex.
-      realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t));
-      WRAP(pthread_mutex_init)(realMutex, attr);
+      realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
-      // Allocate synchronization list now.
-      syncList=_sync.allocSyncEventList(mutex, E_SYNC_LOCK);
+      // Actually initialize this mutex
+      result = WRAP(pthread_mutex_init)(realMutex, attr);
 
-      // Now we are setting the synchronization list at first.
-      result &= setSyncEventList(mutex, syncList);    
-   //   result &= setRealSyncVariable(mutex, realMutex);    
-      if(!result) {
-        InternalHeap::getInstance().free(syncList);
-      } 
+      // If we can't setup this entry, that means that this variable has been initialized.
+      setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
+    }
+    // In the rollback state, maybe we should reset the state of lock
+    else {
+     //FIXME 
+
     }
 
-#if 0
-    WRAP(pthread_mutex_init)(mutex, attr);
-    if(!isRollback()) {
-      
-      allocSyncEventList((void *)mutex, E_SYNC_LOCK);
-    }
-#endif
-    return 0;
+    return result;
   }
 
-  int mutex_lock(pthread_mutex_t * mutex) {
+
+  int do_mutex_lock(void * mutex, thrSyncCmd synccmd) {
     int ret;
+    pthread_mutex_t * realMutex = NULL;
+    SyncEventList * list = NULL;
  
     if(!isRollback()) {
-      ret = WRAP(pthread_mutex_lock) (mutex);
+      realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+      if(realMutex == NULL) {
+        mutex_init((pthread_mutex_t *)mutex, NULL);
+        realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+      }
+      
+      assert(realMutex != NULL);
 
-      // Record this event 
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+      switch(synccmd) {
+        case E_SYNC_MUTEX_LOCK:
+          ret = WRAP(pthread_mutex_lock)(realMutex);
+          break;
+
+        case E_SYNC_MUTEX_TRY_LOCK:
+          ret = WRAP(pthread_mutex_trylock) (realMutex);
+          break;
+
+        default:
+          break;
+      }
+
+      // Record this event
+      list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
+      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
-      ret = peekSyncEvent(mutex, E_SYNC_LOCK);
+      list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+      assert(list != NULL);
+      ret = list->peekSyncEvent();
       if(ret == 0) { 
         waitSemaphore();
       }
 
       // Update thread synchronization event in order to handle the nesting lock.
-      updateThreadSyncList(mutex);
+      _sync.advanceThreadSyncList();
     }
     return ret;
   }
   
+  int mutex_lock(pthread_mutex_t * mutex) {
+   return do_mutex_lock(mutex, E_SYNC_MUTEX_LOCK);
+  }
+  
   int mutex_trylock(pthread_mutex_t * mutex) {
-    int ret;
-
-    if(!isRollback()) {
-      ret = WRAP(pthread_mutex_trylock) (mutex);
-
-      // Record this event 
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
-    }
-    else {
-      ret = peekSyncEvent(mutex, E_SYNC_LOCK);
-      if(ret == 0) { 
-        waitSemaphore();
-      }
-
-      // Update thread synchronization event in order to handle the nesting lock.
-      updateThreadSyncList(mutex);
-    }
-
-    return ret;
+   return do_mutex_lock(mutex, E_SYNC_MUTEX_TRY_LOCK);
   }
 
   int mutex_unlock(pthread_mutex_t * mutex) {
@@ -423,9 +436,11 @@ public:
       ret = WRAP(pthread_mutex_unlock) (mutex);
     }
     else {
-    //  PRWRN("Update the sync event on lock (UNLOCK)\n");
-      updateMutexSyncList(mutex); 
-    //updateSyncEvent(mutex, E_SYNC_LOCK); 
+      SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
+      struct syncEvent * nextEvent = list->advanceSyncEvent();
+      if(nextEvent) {
+        _sync.signalNextThread(nextEvent);
+      }
     }
     return ret;
   }
@@ -438,7 +453,6 @@ public:
   ///// conditional variable functions.
   void cond_init(pthread_cond_t * cond, const pthread_condattr_t * attr) {
     WRAP(pthread_cond_init)(cond, attr);
-    //allocSyncEventList((void *)cond);
   }
 
   // Add this into destoyed list.
@@ -450,27 +464,36 @@ public:
   // no need to check mutex any more.
   int cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex) {
     int ret; 
+    SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
+    assert(list != NULL);
 
     if(!isRollback()) {
+      pthread_mutex_t * realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+      assert(realMutex != NULL);
+
       //PRDBG("cond_wait for thread %d\n", current->index);
       // Add the event into eventlist
-      ret = WRAP(pthread_cond_wait) (cond, mutex);
-      PRDBG("cond_wait wakendup for thread %d, another mutex_lock\n", current->index);
-      recordSyncEvent((void *)mutex, E_SYNC_LOCK, ret);
+      ret = WRAP(pthread_cond_wait) (cond, realMutex);
+      
+      // Record the waking up of conditional variable
+      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
-      // Actually, we will wakeup next thread on the event list.
-      // Since cond_wait will call unlock at first.
-      ret = peekSyncEvent((void *)mutex, E_SYNC_LOCK);
-      updateMutexSyncList(mutex);
-
-      // Then we will try to get semaphore in order to proceed.
-      // It tried to acquire mutex_lock when waken up.
+      ret = list->peekSyncEvent();
+      
       if(ret == 0) {
+        struct syncEvent * event = list->advanceSyncEvent();
+        if(event) {
+          // Actually, we will wakeup next thread on the event list.
+          // Since cond_wait will call unlock at first.
+          _sync.signalNextThread(event);
+        }
+
+        // Now waiting for the lock
         waitSemaphore();
       }
 
-      updateThreadSyncList(mutex);
+      _sync.advanceThreadSyncList();
     }
 
     return ret;
@@ -486,19 +509,29 @@ public:
   
   // Barrier support
   int barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t * attr, unsigned int count) {
+    int result = 0;
+#ifndef BARRIER_SUPPORT
     // Look for this barrier in the map of initialized barrieres.
-    int result = WRAP(pthread_barrier_init)(barrier, attr, count);
+    result = WRAP(pthread_barrier_init)(barrier, attr, count);
+#else
+    pthread_barrier_t * realBarrier = NULL;
 
     if(!isRollback()) {
-      allocSyncEventList((void *)barrier, E_SYNC_BARRIER);
+      // Allocate a real mutex.
+      realBarrier=(pthread_barrier_t *)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
+
+      // Actually initialize this mutex
+      result = WRAP(pthread_barrier_init)(realBarrier, attr);
+
+      // If we can't setup this entry, that means that this variable has been initialized.
+      setSyncEntry(barrier, realBarrier, sizeof(pthread_barrier_t));
     }
-    return 0;
+#endif
+    return result;
   }
 
   int barrier_destroy(pthread_barrier_t *barrier) {
     deferSync((void *)barrier, E_SYNCVAR_BARRIER);
-    //PRDBG("Destory varrier barrier %p\n", barrier);
- //   WRAP(pthread_barrier_destroy)(barrier);
     return 0;
   }
 
@@ -507,27 +540,33 @@ public:
   // Add the barrier support.
   int barrier_wait(pthread_barrier_t *barrier) {
     int ret;
-#ifdef NO_BARRIER_SUPPORT
+#ifndef BARRIER_SUPPORT
     ret = WRAP(pthread_barrier_wait)(barrier);
 #else
+    pthread_barrier_t * realBarrier = NULL;
+    SyncEventList * list = NULL;
+
+    realBarrier = (pthread_barrier_t *)getSyncEntry(barrier);
+    assert(realBarrier != NULL);
+    list = getSyncEventList(var, sizeof(pthread_barrier_t)); 
+
     if(!isRollback()) {
       // Since we do not have a lock here, which can not guarantee that
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
-      ret = WRAP(pthread_barrier_wait)(barrier);
-      recordSyncEvent((void *)barrier, E_SYNC_BARRIER, ret);
+      ret = WRAP(pthread_barrier_wait)(realBarrier);
+      list->recordSyncEvent(E_SYNC_BARRIER, ret);
     }
     else {
-      ret = peekSyncEvent((void *)barrier, E_SYNC_BARRIER);
-
+      ret = list->peekSyncEvent();
       if(ret == 0) {
         waitSemaphore();
       }
 
-      //checkSyncEvent(barrier, E_SYNC_BARRIER); 
-      updateSyncEvent(barrier, E_SYNC_BARRIER);
+      updateSyncEvent(list);
+
       if(ret == 0) {
-        ret = WRAP(pthread_barrier_wait)(barrier);
+        ret = WRAP(pthread_barrier_wait)(realBarrier);
       }
     }
 #endif
@@ -663,24 +702,42 @@ private:
     return(*ptr);
   }
 
-  inline void * allocSyncEntry(void *origentry, int size) {
-    struct syncEventList * syncList;
+  inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
+    void ** entry = (void **)ptr;
+    return (SyncEventList *)((intptr_t)(*entry) + size);
+  }
+
+  inline void setSyncEntry(void * syncvar, void * realvar, size_t size) {
+    if(!atomic_compare_and_swap((unsigned long *)syncvar, 0, (unsigned long)realvar)) {
+      deallocSyncEntry(realvar);
+    }
+    else {
+      // It is always safe to add this list into corresponding map since
+      // only those passed the CAS instruction can call this.
+      // Thus, it is not existing two lists corresponding to the same synchronization variable.
+      SyncEventList * list = getSyncEventList(syncvar, size);
+
+      // Adding this entry to global synchronization map
+      _sync.insertSyncMap((void *)syncvar, list); 
+    }
+  }
+
+  inline void * allocSyncEntry(int size, thrSyncCmd synccmd) {
+    SyncEventList * syncList;
     
     // We allocate a synchorniation event list here and attach to this real 
     // synchronziation variable so that they can be deleted in the same time.
-    void * entry = ((void *)InternalHeap::getInstance().malloc(size + sizeof(struct syncEventList)));
+    void * entry = ((void *)InternalHeap::getInstance().malloc(size + sizeof(SyncEventList)));
     assert(entry != NULL);
+    void * ptr = (void *)((intptr_t)entry + size);
 
-    syncList = (struct syncEventList *)((intptr_t)entry + size);
-    _sync.initSyncEventList(syncList);
+    // Using placement new here
+    syncList = new (ptr) SyncEventList(entry, synccmd);
     return entry;
   }
 
   inline void deallocSyncEntry(void *ptr) {
-    void * realentry = getSyncEntry(ptr);
-
-    assert(realentry);
-    InternalHeap::getInstance().free(realentry);
+    InternalHeap::getInstance().free(ptr);
   } 
 
   
@@ -712,14 +769,6 @@ private:
     return syscall(SYS_gettid);
   }
     
-  static void initThreadSyncEventList(struct syncEventList * eventlist) {
-    listInit(&eventlist->list);
-    eventlist->syncCmd = E_SYNC_THREAD;
-    eventlist->syncVariable = current; // Thread
-    WRAP(pthread_mutex_init)(&eventlist->lock, NULL); 
-  }
-
-
   // Newly created thread should call this.
   inline static void threadRegister(bool isMainThread) {
     pid_t pid = syscall(SYS_getpid);
@@ -728,6 +777,10 @@ private:
     size_t stackSize = __max_stack_size;
 
     current->self = WRAP(pthread_self)();
+
+    // Initialize event pool for this thread.
+    current->syncevents.initialize();
+    listInit(&current->pendingSyncevents);
 
     // Lock the mutex for this thread.
     WRAP(pthread_mutex_lock)(&current->mutex);
@@ -741,13 +794,6 @@ private:
   
     // FIXME: problem
     current->joiner = NULL;
-
-    initThreadSyncEventList(&current->syncevents);
-    
-    // Although this pendingSyncevents can be never used,
-    // we still initialize here since it should not cost too much
-    // because of limited amount of threads
-    initThreadSyncEventList(&current->pendingSyncevents);
 
     // Initially, we should set to check system calls.
     unsetThreadSpawning();
@@ -825,33 +871,19 @@ private:
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
-  // Optimization: do not need to record the synchronization event when there is only one thread
-  // Mostly, we can save a lot of pthread calls.
-  inline void recordSyncEvent(void * var, thrSyncCmd synccmd, int ret) {
-    _sync.recordSyncEvent(var, synccmd, ret);
+  // Actually calling both pdate both thread event list and sync event list.
+  inline void updateSyncEvent(SyncEventList * list) {
+    // First step, advance thread's list
+    _sync.advanceThreadSyncList();
+
+    struct syncEvent * event = list->advanceSyncEvent();
+    if(event) {
+      // Actually, we will wakeup next thread on the event list.
+      // Since cond_wait will call unlock at first.
+      _sync.signalNextThread(event);
+    }
   }
 
-  inline int peekSyncEvent(void * var, thrSyncCmd synccmd) {
-    return _sync.peekSyncEvent(var, synccmd);
-  }
-
-  inline void allocSyncEventList(void * var, thrSyncCmd synccmd) {
-    _sync.allocSyncEventList(var, synccmd);
-  }
-
-  inline void updateSyncEvent(void * var, thrSyncCmd synccmd) {
-    _sync.updateSyncEvent(var, synccmd);
-  }
-
-  // Only mutex_lock can call this function. 
-  inline void updateThreadSyncList(pthread_mutex_t *  mutex) {
-    _sync.updateThreadSyncList(mutex);
-  }
- 
-  inline void updateMutexSyncList(pthread_mutex_t * mutex) {
-    _sync.updateMutexSyncList(mutex);
-  }
- 
   inline void insertAliveThread(thread_t * thread, pthread_t tid) {
     threadmap::getInstance().insertAliveThread(thread, tid);
   }
@@ -963,6 +995,7 @@ private:
     }
     else {
       assert(current->status == E_THREAD_EXITING);
+      current->syncevents.finalize();
       PRWRN("THREAD%d (at %p) is exiting now\n", current->index, current);
       WRAP(pthread_mutex_unlock)(&current->mutex);
     }
@@ -972,6 +1005,7 @@ private:
   // want to create an xthread.cpp
   xsync _sync;
   threadinfo & _thread;
+  SyncEventList * _spawningList;
 };
 
 #endif

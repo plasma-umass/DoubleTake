@@ -68,6 +68,15 @@ extern "C" {
   extern char * getThreadBuffer();
   extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
   #define EXIT (WRAP(exit)(-1))
+
+  inline size_t alignup(size_t size, size_t alignto) {
+    return ((size + (alignto - 1)) & ~(alignto -1));
+  }
+
+  inline size_t aligndown(size_t addr, size_t alignto) {
+    return (addr & ~(alignto -1));
+  }
+
 };
 
 class xdefines {
@@ -130,6 +139,8 @@ public:
   enum { FOPEN_ALLOC_SIZE = 0x238 };
   enum { DIRS_MAP_SIZE = 1024 }; 
   enum { DIROPEN_ALLOC_SIZE = 0x8038 };
+
+  enum { SYNCEVENT_POOL_ENTRIES = 0x100000 };
 
 #ifdef X86_32BIT
   enum {SENTINEL_WORD = 0xCAFEBABE };
