@@ -79,7 +79,7 @@ public:
     
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
-    fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
+//    fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;

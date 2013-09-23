@@ -103,7 +103,7 @@ public:
 
     // bitmap bits
 #ifndef NDEBUG
-   //fprintf (stderr, "transient = %p, persistent = %p, size = %lx, _startaddr %p, _endaddr %p\n", _userMemory, _backupMemory, _startsize, _startaddr, _endaddr);
+   //fprintf (stderr, "transient = %p, size = %lx, _startaddr %p, _endaddr %p\n", _userMemory, _startsize, _startaddr, _endaddr);
 #endif
 
 #ifdef SSE_SUPPORT	

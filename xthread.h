@@ -360,6 +360,7 @@ public:
       // Allocate a real mutex.
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
+    //  fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
       // Actually initialize this mutex
       result = WRAP(pthread_mutex_init)(realMutex, attr);
 
@@ -380,12 +381,16 @@ public:
     int ret;
     pthread_mutex_t * realMutex = NULL;
     SyncEventList * list = NULL;
- 
+
+    //fprintf(stderr, "do_mutex_lock\n"); 
     if(!isRollback()) {
+     // fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+     // fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       if(realMutex == NULL) {
         mutex_init((pthread_mutex_t *)mutex, NULL);
         realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+     //   fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       }
       
       assert(realMutex != NULL);
@@ -404,6 +409,7 @@ public:
       }
 
       // Record this event
+    //  fprintf(stderr, "do_mutex_lock before recording\n"); 
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
@@ -431,9 +437,11 @@ public:
 
   int mutex_unlock(pthread_mutex_t * mutex) {
     int ret = 0;
+    pthread_mutex_t * realMutex = NULL;
 
     if(!isRollback()) {
-      ret = WRAP(pthread_mutex_unlock) (mutex);
+      realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
+      ret = WRAP(pthread_mutex_unlock)(realMutex);
     }
     else {
       SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
@@ -442,6 +450,7 @@ public:
         _sync.signalNextThread(nextEvent);
       }
     }
+   // PRWRN("mutex_unlock mutex %p\n", mutex);
     return ret;
   }
 

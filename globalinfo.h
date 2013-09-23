@@ -193,7 +193,6 @@ public:
     }
     PRDBG("waitForNotification decrement waiters. status %d\n", _phase);
       
-//    WRAP(pthread_cond_broadcast)(&_cond); 
     unlock();
   }
 

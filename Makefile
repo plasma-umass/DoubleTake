@@ -6,6 +6,7 @@ SRCS =  libstopgap.cpp \
         xrun.cpp       \
         xmemory.cpp    \
 	      gnuwrapper.cpp \
+        internalsyncs.cpp \
 				prof.cpp       
 
 INCS =  xmapping.h     \
@@ -27,6 +28,8 @@ INCS =  xmapping.h     \
         selfmap.h      \
         bitmap.h       \
         sanitycheck.h  \
+        synceventlist.h \
+        synceventpool.h \
         watchpoint.h \
         syscalls.h \
         fops.h 
@@ -52,7 +55,7 @@ CXX = g++
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DSINGLE_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DSINGLE_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_NONALIGNED_OVERFLOW -DHANDLE_SYSCALL -DSINGLE_THREAD
-CFLAGS   = -g -O0 -DSSE_SUPPORT -fno-omit-frame-pointer -DMULTI_THREAD -DHANDLE_SYSCALL
+CFLAGS   = -g -O0 -DSSE_SUPPORT -fno-omit-frame-pointer -DMULTI_THREAD -DHANDLE_SYSCALL 
 #-DDETECT_OVERFLOW
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_OVERFLOW -DDETECT_RACES -DHANDLE_SYSCALL -DMULTI_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_NONALIGNED_OVERFLOW -DHANDLE_SYSCALL -DSINGLE_THREAD -DSTOP_AT_OVERFLOW

@@ -85,7 +85,7 @@
 
 extern "C" {
   extern void callAtomicEnd(void);
-//#define fprintf(stderr, ...) 
+#define fprintf(stderr, ...) 
 #if defined(__GNUG__)
   void initializer (void) __attribute__((constructor));
   void finalizer (void)   __attribute__((destructor));
@@ -251,7 +251,7 @@ extern "C" {
       return xthread::getInstance().mutex_init (mutex, attr);
     return 0;
   }
-  
+ 
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
     if (initialized) 
       return xthread::getInstance().mutex_lock (mutex);

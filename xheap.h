@@ -142,8 +142,8 @@ public:
     *_position += sz;
 
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
-    //fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
 	  unlock();
+  //  fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
     
 #ifdef DETECT_OVERFLOW
     // We must cleanup corresponding bitmap 

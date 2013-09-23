@@ -97,8 +97,9 @@ public:
       mysize = 16;
     }
 #endif
-//    printf("THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+  //  fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
     ptr = (unsigned char *)_pheap.malloc (heapid, mysize);
+  //  fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
 //    PRWRN("malloc size %d ptr %p\n", sz, ptr);
  //   printf("THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
 #ifdef DETECT_OVERFLOW
@@ -456,12 +457,6 @@ public:
     objectHeader * o = (objectHeader *) ptr;
     return (o - 1);
   }
-
-#ifdef DETECT_OVERFLOW
-  static bool checkHeapOverflow(void) {
-    return _pheap.checkHeapOverflow();
-  }
-#endif
 
   /// Rollback to previous 
   static void handleSegFault();

@@ -142,7 +142,7 @@ public:
 
   void * malloc (int ind, size_t sz)
   {
-   // printf("PerThreadheap malloc ind %d sz %d _heap[ind] %p\n", ind, sz, &_heap[ind]);
+//    fprintf(stderr, "PerThreadheap malloc ind %d sz %d _heap[ind] %p\n", ind, sz, &_heap[ind]);
     // Try to get memory from the local heap first.
     void * ptr = _heap[ind].malloc (sz);
     return ptr;

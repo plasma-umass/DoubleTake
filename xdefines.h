@@ -32,6 +32,8 @@
 #include "log.h"
 #include "libfuncs.h"
 #include "prof.h"
+#include "internalsyncs.h"
+
 
 /*
  * @file   xdefines.h   
@@ -84,6 +86,7 @@ public:
 #ifdef X86_32BIT
   enum { PROTECTEDHEAP_SIZE = 1048576UL * 512 };
 #else
+  //enum { PROTECTEDHEAP_SIZE = 1048576UL * 1024 };
   enum { PROTECTEDHEAP_SIZE = 1048576UL * 8192 };
   //enum { PROTECTEDHEAP_SIZE = 1048576UL * 4096 };
 #endif
@@ -140,7 +143,8 @@ public:
   enum { DIRS_MAP_SIZE = 1024 }; 
   enum { DIROPEN_ALLOC_SIZE = 0x8038 };
 
-  enum { SYNCEVENT_POOL_ENTRIES = 0x100000 };
+//  enum { SYNCEVENT_POOL_ENTRIES = 0x1000 };
+  enum { SYNCEVENT_POOL_ENTRIES = 0x1000000 };
 
 #ifdef X86_32BIT
   enum {SENTINEL_WORD = 0xCAFEBABE };

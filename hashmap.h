@@ -115,7 +115,7 @@ public:
   HashMap() 
   : _initialized(false)
   {
-    printf("RESET hashmap at %p\n", &_initialized);
+//    printf("RESET hashmap at %p\n", &_initialized);
   }
 
   void initialize(hashFuncPtr hfunc, keycmpFuncPtr kcmp, const size_t size = 4096) 
@@ -135,7 +135,7 @@ public:
  
     // Allocated predefined size.
     _entries = (struct HashEntry *)SourceHeap::allocate(size * sizeof(struct HashEntry));
-    fprintf(stderr, "hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(), getThreadIndex());
+//    fprintf(stderr, "hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(), getThreadIndex());
 //    fprintf(stderr, "hashmap initialization _entries %p\n", _entries);
 
     // Initialize all of these _entries. 

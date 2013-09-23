@@ -98,7 +98,7 @@ extern int outfd;
 
 #define OUTPUT write
 
-#if 1
+#if 0
 /**
  * Print status-information message: level 0
  */

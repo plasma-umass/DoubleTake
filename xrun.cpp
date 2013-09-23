@@ -167,9 +167,7 @@ void xrun::stopAllThreads(void) {
      function would have to be called while the thread is executing
      fork, it would have to happen in a signal handler.  But this is
      no allowed, pthread_kill is not guaranteed to be async-safe.  */
-
   //threadmap::getInstance().traverseAllThreads();
-
   globalinfo::getInstance().checkWaiters();
 
   // Used to tell other threads about normal epoch end because of one have to commit.
@@ -194,8 +192,11 @@ void xrun::stopAllThreads(void) {
         if(thread->isSafe) {
         // If the thread is in cond_wait or barrier_wait, 
           PRDBG("in epochend, stopping thread %p self %p status %d\n", thread, thread->self, thread->status);
-      //  fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
+          fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
           WRAP(pthread_kill)(thread->self, SIGUSR2);
+        }
+        else {
+          fprintf(stderr, "in epochend, thread %p self %p status %d not safeeeeeee\n", thread, thread->self, thread->status);
         }
         // Else, if thread is not safe, the thread can wait by itself.
         waiters++;

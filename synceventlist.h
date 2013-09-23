@@ -84,7 +84,7 @@ public:
     event->thread = current;
     event->eventlist = this;
     event->ret = ret;
-    PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
+  //  PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
 
     if(synccmd != E_SYNC_MUTEX_LOCK) {    
       WRAP(pthread_mutex_lock)(&this->lock);
@@ -96,6 +96,7 @@ public:
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);
     }
+   // PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
   }
 
   // peekSyncEvent return the saved event value for current synchronization.
