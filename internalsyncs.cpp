@@ -25,17 +25,32 @@
  */
 #include "libfuncs.h"
 #include "internalsyncs.h"
+#include "globalinfo.h"
+
 extern "C" {
 
-int internal_mutex_lock(pthread_mutex_t*) {
+  void lock_thread(thread_t * thread) {
+    WRAP(pthread_mutex_lock)(&thread->mutex); 
+  }
+  
+  void unlock_thread(thread_t* thread) {
+    WRAP(pthread_mutex_unlock)(&thread->mutex); 
+  }
+  
+  void lock_global(void) {
+    globalinfo::getInstance().lock();  
+  }
+  
+  void unlock_global(void) {
+    globalinfo::getInstance().unlock();
+  }
 
+  void wait_thread(thread_t*thread) {
+    WRAP(pthread_cond_wait)(&thread->cond, &thread->mutex); 
+  }
 
-}
-
-
-int internal_mutex_unlock(pthread_mutex_t*);
-extern int internal_cond_wait(pthread_cond_t*, pthread_mutex_t*);
-extern int internal_cond_signal(pthread_cond_t*);
-extern int internal_cond_broadcast(pthread_cond_t*);
+  void signal_thread(thread_t*thread) {
+    WRAP(pthread_cond_broadcast)(&thread->cond); 
+  }
 
 };

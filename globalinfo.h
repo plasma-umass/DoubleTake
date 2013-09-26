@@ -62,7 +62,9 @@ public:
     _phase = E_SYS_INIT;
     _numOfEnds = 0;
 
+    fprintf(stderr, "global initializee............\n");
     WRAP(pthread_mutex_init)(&_mutex, NULL);
+    WRAP(pthread_mutex_init)(&_mutexSignalhandler, NULL);
     WRAP(pthread_cond_init)(&_condCommitter, NULL);
     WRAP(pthread_cond_init)(&_condWaiters, NULL);
   }
@@ -105,7 +107,7 @@ public:
   }
 
   void epochBegin(void) {
-    lock();
+    lockInsideSignalhandler();
     _phase = E_SYS_EPOCH_BEGIN;
 
     PRDBG("waken up all waiters\n");
@@ -113,9 +115,9 @@ public:
     WRAP(pthread_cond_broadcast)(&_condWaiters);
 
     if(_waiters != 0) {
-      WRAP(pthread_cond_wait)(&_condCommitter, &_mutex);
+      WRAP(pthread_cond_wait)(&_condCommitter, &_mutexSignalhandler);
     }
-    unlock();
+    unlockInsideSignalhandler();
   }
 
   thread_t * getCurrent(void) {
@@ -129,52 +131,42 @@ public:
   void unlock(void) {
     WRAP(pthread_mutex_unlock)(&_mutex);
   } 
-
-  void setWaiters(int totalwaiters) {
-    _waitersTotal = totalwaiters;
+  
+  void lockInsideSignalhandler(void) {
+    WRAP(pthread_mutex_lock)(&_mutexSignalhandler);
   }
 
-  // Waiting for the stops of threads.
-  void waitThreadsStops(void) {
-    lock();
+  void unlockInsideSignalhandler(void) {
+    WRAP(pthread_mutex_unlock)(&_mutexSignalhandler);
+  }
+
+  // Waiting for the stops of threads, no need to hold the lock.
+  void waitThreadsStops(int totalwaiters) {
+    lockInsideSignalhandler();
+    _waitersTotal = totalwaiters;
+//    fprintf(stderr, "During waiting: _waiters %d _waitersTotal %d\n", _waiters, _waitersTotal);
     while(_waiters != _waitersTotal) {
-      WRAP(pthread_cond_wait)(&_condCommitter, &_mutex);
+      WRAP(pthread_cond_wait)(&_condCommitter, &_mutexSignalhandler);
     }
-    unlock();
+    unlockInsideSignalhandler();
   }
 
   void checkWaiters(void) {
     assert(_waiters == 0);
   }
 
-  void incrementWaiters(void) {
-    lock();
-    PRDBG("waitForNotification _waiters %d totalWaiters %d\n", _waiters, _waitersTotal);
-
-    _waiters++;
-    if(_waiters == _waitersTotal) {
-      WRAP(pthread_cond_signal)(&_condCommitter); 
-    }
-
-    unlock();
-  }
-
-  void decrementWaiters(void) {
-    lock();
-    _waiters--;
-    unlock();
-  }
- 
   // Notify the commiter and wait on the global conditional variable 
   void waitForNotification(void) {
     assert(isEpochEnd() == true);
-
-    lock();
+    
+//    printf("waitForNotification, waiters is %d at thread %p\n", _waiters, pthread_self());
+    lockInsideSignalhandler();
     PRDBG("waitForNotification _waiters %d totalWaiters %d\n", _waiters, _waitersTotal);
 
     _waiters++;
 
     if(_waiters == _waitersTotal) {
+      //printf("NNNNNNNNNN, waiters is %d at thread %p. WWWWWWWWWWWWWWWWWWWWWWWWWWW\n", _waiters, pthread_self());
       WRAP(pthread_cond_signal)(&_condCommitter); 
       PRDBG("waitForNotification after calling cond_broadcast\n");
     }
@@ -182,7 +174,7 @@ public:
     // Only waken up when it is not the end of epoch anymore.
     while(isEpochEnd()) {
       PRDBG("waitForNotification before waiting again\n");
-      WRAP(pthread_cond_wait)(&_condWaiters, &_mutex);
+      WRAP(pthread_cond_wait)(&_condWaiters, &_mutexSignalhandler);
       PRDBG("waitForNotification after waken up. isEpochEnd() %d \n", isEpochEnd());
     }
 
@@ -193,8 +185,9 @@ public:
     }
     PRDBG("waitForNotification decrement waiters. status %d\n", _phase);
       
-    unlock();
+    unlockInsideSignalhandler();
   }
+
 
 private:
   bool _isRollback;
@@ -205,6 +198,7 @@ private:
   pthread_cond_t _condCommitter;
   pthread_cond_t _condWaiters;
   pthread_mutex_t _mutex;
+  pthread_mutex_t _mutexSignalhandler;
   int _waiters;  
   int _waitersTotal;  
 };

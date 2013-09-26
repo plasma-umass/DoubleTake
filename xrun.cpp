@@ -99,16 +99,16 @@ void xrun::epochBegin (void) {
 
     if(thread != current) {
       // There is no need to acquire lock since other threads are waiting somewhere.
-      WRAP(pthread_mutex_lock)(&thread->mutex);
+      lock_thread(thread);
         
       if(thread->hasJoined == true) {
         thread->status = E_THREAD_EXITING;
         WRAP(pthread_cond_signal)(&thread->cond);
-        WRAP(pthread_mutex_unlock)(&thread->mutex);
+        unlock_thread(thread);
         WRAP(pthread_join)(thread->self, NULL);
       }
       else {
-        WRAP(pthread_mutex_unlock)(&thread->mutex);
+        unlock_thread(thread);
       }
     }
   }
@@ -175,7 +175,7 @@ void xrun::stopAllThreads(void) {
   globalinfo::getInstance().setEpochEnd();
 
   // In order to avoid this problem, we may avoid the thread spawning in this phase.
-  xthread::getInstance().global_lock();
+  lock_global();
 
   //fprintf(stderr, "EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
   PRDBG("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. Stopping other threads\n", current, current->index, pthread_self());
@@ -184,94 +184,47 @@ void xrun::stopAllThreads(void) {
   {
     thread_t * thread = i.getThread();
 
-//    fprintf(stderr, "in epochend, thread%d mutex is %p\n", thread->index, &thread->mutex);
+    //fprintf(stderr, "in epochend, thread%d mutex is %p\n", thread->index, &thread->mutex);
     if(thread != current) {
-      WRAP(pthread_mutex_lock)(&thread->mutex);
+      lock_thread(thread);
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
         if(thread->isSafe) {
         // If the thread is in cond_wait or barrier_wait, 
           PRDBG("in epochend, stopping thread %p self %p status %d\n", thread, thread->self, thread->status);
-          fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
+          //fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
+          waiters++;
           WRAP(pthread_kill)(thread->self, SIGUSR2);
         }
         else {
-          fprintf(stderr, "in epochend, thread %p self %p status %d not safeeeeeee\n", thread, thread->self, thread->status);
+          //fprintf(stderr, "NOTSAFE!!! Thread %p self %p status %d\n", thread, thread->self, thread->status);
+          thread->waitSafe = true;
+          while(!thread->isSafe) {
+            wait_thread(thread);
+          }
+          if(thread->status != E_THREAD_WAITFOR_REAPING) {
+            WRAP(pthread_kill)(thread->self, SIGUSR2);
+            waiters++;
+          }
         }
         // Else, if thread is not safe, the thread can wait by itself.
-        waiters++;
       }
     
-      WRAP(pthread_mutex_unlock)(&thread->mutex);
+      unlock_thread(thread);
     }
     count++;
   }
 
   if(waiters != 0) {
-    globalinfo::getInstance().setWaiters(waiters);
+    globalinfo::getInstance().waitThreadsStops(waiters);
   }
-
-  xthread::getInstance().global_unlock();
-   
-  // Wait until all other threads are stopped.  
-  if(waiters != 0) {
-    globalinfo::getInstance().waitThreadsStops();
-  }
+    
+  unlock_global();
 }
 
 bool isNewThread(void) {
   return current->isNewlySpawned;
 }
-
-#if 0
-/**
-   Those threads being signaled are going to call this function.
-   Notice that it is outside the signal handler so that we don't worry 
-   about the exiting of signal handler.
-   There are two possible results after signal handler.
-     1. Continue the execution when no overflow. So we may have to cleanup
-        those recording information at first. Then current thread can continue
-        the execution. 
-        In this case, we copy the newContext to oldContext and set myself to newContext.
-     2. When there is some overflow, we have to rollback. We will not cleanup
-        those recording information. In this case, we will discard the newContext
-        and set the context to oldContext. 
-*/
-void afterSignalHandler(void)  {
-#if MYDEBUG
-  //PRDBG("%p after signal handler.\n", pthread_self());
-  // Wait on the global conditional variable.
-  globalinfo::getInstance().waitForNotification();
-
-  // Check what is the current phase: rollback or resume
-  if(globalinfo::getInstance().isEpochBegin()) {
-    PRDBG("%p wakeup from notification.\n", pthread_self());
-  // PRDBG("%p reset contexts~~~~~\n", pthread_self());
-    syscalls::getInstance().cleanupRecords();
-  
-    xthread::getInstance().resetContexts();
-  }
-  else {
-    assert(globalinfo::getInstance().isRollback() == true);
-  
-    if(isNewThread()) {
-      WRAP(pthread_mutex_lock)(&current->mutex);
-
-      // Waiting for the waking up from the committing thread
-      while(current->status != E_THREAD_ROLLBACK) {
-        WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
-      }
-        
-      //fprintf(stderr, "THREAD%d (at %p) is wakenup\n", current->index, current);
-      WRAP(pthread_mutex_unlock)(&current->mutex);
-    }
-    xthread::getInstance().rollback();
-  }
-#else
-    xthread::getInstance().resetContexts();
-#endif
-}
-#endif
 
 void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr) {
     PRDBG("%p: inside signal handler %lx.\n", pthread_self(), cxt->uc_mcontext.gregs[REG_RIP]);
@@ -289,6 +242,7 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
   // current thread is going to stop execution in order to commit or rollback.
   assert(globalinfo::getInstance().isEpochEnd() == true);
 
+  //printf("Thread %p in sigusr2Handler %d\n", pthread_self(), __LINE__);
   // Wait for notification from the commiter 
   globalinfo::getInstance().waitForNotification();
 
@@ -307,20 +261,18 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
     assert(globalinfo::getInstance().isRollback() == true);
   
     if(isNewThread()) {
-      WRAP(pthread_mutex_lock)(&current->mutex);
+      lock_thread(current);
 
-      // Waiting for the waking up from the committing thread
+      // Waiting for the waking up from the its parent thread
       while(current->status != E_THREAD_ROLLBACK) {
         WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
       }
         
-      //fprintf(stderr, "THREAD%d (at %p) is wakenup\n", current->index, current);
-      WRAP(pthread_mutex_unlock)(&current->mutex);
+      unlock_thread(current);
     }
     // Rollback inside signal handler is different
     xthread::getInstance().rollbackInsideSignalHandler((ucontext_t *)context);
   }
   // Jump to a function and wait for the instruction of the committer thread.
-  // Set the context to handleSegFault
   //jumpToFunction((ucontext_t *)context, (unsigned long)afterSignalHandler);
 }

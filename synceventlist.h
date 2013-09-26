@@ -86,7 +86,7 @@ public:
     event->ret = ret;
   //  PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
 
-    if(synccmd != E_SYNC_MUTEX_LOCK) {    
+    if(synccmd != E_SYNC_MUTEX_LOCK) {   
       WRAP(pthread_mutex_lock)(&this->lock);
       listInsertTail(&event->list, &this->list);
       WRAP(pthread_mutex_unlock)(&this->lock);

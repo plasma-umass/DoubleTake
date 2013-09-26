@@ -76,36 +76,11 @@ void xthread::prepareRollback(void) {
 
 void xthread::setThreadSafe(void) {
     bool toRollback = false;
-    WRAP(pthread_mutex_lock)(&current->mutex);
+    lock_thread(current);
     current->isSafe = true;
-    WRAP(pthread_mutex_unlock)(&current->mutex);
 
-    global_lock();
-    // Now check the state of global, if now it is at epoch end, 
-    if(globalinfo::getInstance().isEpochEnd()) {
-      global_unlock();
-
-      // Wait on global mutex until all threads are waiting there;
-      globalinfo::getInstance().waitForNotification();
-
-      // check whether we should rollback?    
-      global_lock();
-      toRollback = globalinfo::getInstance().isRollback();
-      global_unlock();
- 
-      if(toRollback) {
-        WRAP(pthread_mutex_lock)(&current->mutex);
-
-        // Waiting for the waking up from the committing thread
-        while(current->status != E_THREAD_ROLLBACK) {
-          WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
-        }
-      
-        WRAP(pthread_mutex_unlock)(&current->mutex);
-      }
-      // When we do not need to rollback, move forward now. 
+    if(current->waitSafe) {
+      signal_thread(current);
     }
-    else {
-      global_unlock();
-    }
+    unlock_thread(current);
 }

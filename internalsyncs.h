@@ -26,14 +26,16 @@
 #ifndef _INTERNALSYNCS_H_
 #define _INTERNALSYNCS_H_
 #include<pthread.h>
+#include "threadstruct.h"
 
 extern "C" {
 
-extern int internal_mutex_lock(pthread_mutex_t*);
-extern int internal_mutex_unlock(pthread_mutex_t*);
-extern int internal_cond_wait(pthread_cond_t*, pthread_mutex_t*);
-extern int internal_cond_signal(pthread_cond_t*);
-extern int internal_cond_broadcast(pthread_cond_t*);
+extern void lock_thread(thread_t* thread);
+extern void unlock_thread(thread_t* thread);
+extern void lock_global(void);
+extern void unlock_global(void);
+extern void wait_thread(thread_t*thread);
+extern void signal_thread(thread_t*thread);
 
 };
 

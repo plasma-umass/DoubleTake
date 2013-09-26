@@ -93,6 +93,7 @@ public:
   }
 
 	void cleanup(void) {
+    _iter = 0;
 		_cur = 0;
   }
 

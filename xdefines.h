@@ -31,8 +31,9 @@
 
 #include "log.h"
 #include "libfuncs.h"
+#include "list.h"
 #include "prof.h"
-#include "internalsyncs.h"
+//#include "internalsyncs.h"
 
 
 /*
@@ -116,8 +117,8 @@ public:
   // We can only supported 128 threads simultaneously
   enum { MAX_ALIVE_THREADS = 1 }; 
 #else 
-  enum { MAX_ALIVE_THREADS = 64 }; 
-  //enum { MAX_ALIVE_THREADS = 128 }; 
+  enum { MAX_ALIVE_THREADS = 16 }; 
+//  enum { MAX_ALIVE_THREADS = 64 }; 
 #endif
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 }; 

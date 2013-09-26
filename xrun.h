@@ -244,7 +244,7 @@ private:
     // We don't want to receive SIGUSR2 again when a thread is inside signal handler.
     sigemptyset (&sigusr2.sa_mask);
     sigaddset(&sigusr2.sa_mask, SIGUSR2);
-    WRAP(sigprocmask) (SIG_BLOCK, &sigusr2.sa_mask, NULL);
+  //  WRAP(sigprocmask) (SIG_BLOCK, &sigusr2.sa_mask, NULL);
     /** 
       Some parameters used here:
        SA_RESTART: Provide behaviour compatible with BSD signal 

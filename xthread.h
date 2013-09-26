@@ -42,6 +42,7 @@
 #include "threadmap.h"
 #include "record.h"
 #include "synceventlist.h"
+#include "internalsyncs.h"
 #include "list.h"
 
 class xthread {
@@ -139,9 +140,8 @@ public:
 
 //   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!isRollback()) {
-   //fprintf(stderr, "****in the beginning of thread_create, *tid is %lx\n", *tid);
       // Lock and record
-      global_lock();
+      lock_global();
 
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
@@ -154,14 +154,14 @@ public:
           PRERR("xdefines::MAX_ALIVE_THREADS is set to too small\n");
           EXIT;
         }
-        global_unlock();
+        unlock_global();
         
         invokeCommit();
  
-        global_lock();
+        lock_global();
         tindex = allocThreadIndex();
         if(tindex == -1) {
-          PRDBG("System can support %d simultaneously: xdefines::MAX_ALIVE_THREADS to a larger number\n", xdefines::MAX_ALIVE_THREADS);
+          PRDBG("System can support %d threadds: xdefines::MAX_ALIVE_THREADS to a larger number\n", xdefines::MAX_ALIVE_THREADS);
           EXIT;
         }
         PRDBG("AFTER commit now******* tindex %d\n", tindex);     
@@ -215,18 +215,18 @@ public:
         insertAliveThread(children, *tid);
       }
 
-      global_unlock();
+      unlock_global();
       
       //PRDBG("Creating THREAD%d at %p self %p\n", tindex, children, children->self); 
       if(result == 0) {
         // Waiting for the finish of registering children thread.
-        WRAP(pthread_mutex_lock)(&children->mutex);
+        lock_thread(children);
+
         while(children->status == E_THREAD_STARTING) {
-      //    PRDBG("Children %d (at %p) status %d waiting at %p. Holding lock %p\n", children->index, *tid, children->status, &children->cond, &children->mutex);
-          WRAP(pthread_cond_wait)(&children->cond, &children->mutex);
+          wait_thread(children);
     //     PRDBG("Children %d status %d. now wakenup\n", children->index, children->status);
         }
-        WRAP(pthread_mutex_unlock)(&children->mutex);
+        unlock_thread(children);
       }
     }
     else {
@@ -246,7 +246,7 @@ public:
         // Wakeup corresponding thread
         thread->joiner = NULL;
         thread->status = E_THREAD_ROLLBACK;
-        WRAP(pthread_cond_signal)(&thread->cond);
+        signal_thread(thread);
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
@@ -272,7 +272,7 @@ public:
 //    PRDBG("thread_join, joinee is 0x%lx thread %p thread->status %d*****\n", joinee, thread, thread->status); 
 
     // Now the thread has finished the register
-    WRAP(pthread_mutex_lock)(&thread->mutex);
+    lock_thread(thread);
    
     if(thread->status != E_THREAD_WAITFOR_REAPING) {
       //PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
@@ -286,7 +286,7 @@ public:
       //  PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
       //  PRDBG("thread_join, current %p status %d, waiting on joinee %d (at %p, thread %p). thread->joiner %p at %p*****\n", current, current->status, thread->index, thread, thread->self, thread->joiner, &thread->joiner); 
         // Wait for the joinee to wake me up
-        WRAP(pthread_cond_wait)(&thread->cond, &thread->mutex);
+        wait_thread(thread);
       //  PRDBG("thread_join status %d, wakenup by thread %d*****\n", current->status, thread->index); 
       }
       
@@ -303,7 +303,7 @@ public:
     }
 
     // Now we unlock and proceed
-    WRAP(pthread_mutex_unlock)(&thread->mutex);
+    unlock_thread(thread);
     
     insertDeadThread(thread);    
 
@@ -320,9 +320,9 @@ public:
 
     assert(threadinfo != NULL);
 
-    WRAP(pthread_mutex_lock)(&threadinfo->mutex);
+    lock_thread(threadinfo);
     threadinfo->isDetached = true;
-    WRAP(pthread_mutex_unlock)(&threadinfo->mutex);
+    unlock_thread(threadinfo);
     
     assert(0);
   }
@@ -653,16 +653,6 @@ public:
     return WRAP(pthread_self)();
   }
 
-  
-  // The global lock
-  static void global_lock(void) {
-    globalinfo::getInstance().lock();
-  }
-
-  static void global_unlock(void) {
-    globalinfo::getInstance().unlock();
-  }
-
   inline static void saveContext() {
     current->oldContext.saveContext();
   };
@@ -792,7 +782,7 @@ private:
     listInit(&current->pendingSyncevents);
 
     // Lock the mutex for this thread.
-    WRAP(pthread_mutex_lock)(&current->mutex);
+    lock_thread(current);
     
     // Initialize corresponding cond and mutex.
     listInit(&current->list);
@@ -839,12 +829,12 @@ private:
     current->stackTop = privateTop;
     current->stackBottom = (void *)((intptr_t)privateTop - stackSize);
       
-    // Now we can wakeup the parent since the parent must wait for the register
-    WRAP(pthread_cond_signal)(&current->cond);
+    // Now we can wakeup the parent since the parent must wait for the registe
+    signal_thread(current);
 
     PRDBG("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n", current->index, current->self, current, current->status, &current->cond, &current->mutex);
-    
-    WRAP(pthread_mutex_unlock)(&current->mutex);
+   
+    unlock_thread(current); 
     if(!isMainThread) {
       // Save the context for non-main thread.
       saveContext();
@@ -939,7 +929,7 @@ private:
     // there is no need to rollback.
 
     // Lock the mutex for this thread.
-    WRAP(pthread_mutex_lock)(&current->mutex);
+    lock_thread(current);
     
     current->result = result;
 
@@ -949,21 +939,13 @@ private:
       // Check the state of joinning thread.
       joiner = current->joiner; 
 
-#if 0
-      if(joiner) {
-        PRWRN("Thread %p (index %d) is not detachedi, joiner %p (THREAD%d) with status %d!!!\n", current, current->index, joiner->self, joiner->index, joiner->status);
-      }
-      else {
-        PRWRN("Thread %p (index %d) is not detached, joiner %p is not existing!!!\n", current, current->index, joiner);
-      }
-#endif
       // Check the state of joiner.
       if(joiner) {
         assert(joiner->status == E_THREAD_JOINING);
         joiner->status = E_THREAD_RUNNING;
         PRWRN("Waking up the joiner %p!!!\n", joiner->self);
         // Now we can wakeup the joiner.
-        WRAP(pthread_cond_signal)(&current->cond);
+        signal_thread(current);
       }
     }
     else {
@@ -978,10 +960,9 @@ private:
     // be set to E_THREAD_ROLLBACK 
     //while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {     
     while(current->status == E_THREAD_WAITFOR_REAPING) {
-// && current->status != E_THREAD_ROLLBACK) {     
       //PRDBG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       //PRDBG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
-      WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
+      wait_thread(current);
 //      PRDBG("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
@@ -990,7 +971,7 @@ private:
     if(current->status == E_THREAD_ROLLBACK) {
       //PRDBG("THREAD%d (at %p) is wakenup\n", current->index, current);
       current->status = E_THREAD_RUNNING;
-      WRAP(pthread_mutex_unlock)(&current->mutex);
+      unlock_thread(current);
 
       // Rollback: has the possible race conditions. FIXME
       // Since it is possible that we copy back everything after the join, then
@@ -1006,7 +987,7 @@ private:
       assert(current->status == E_THREAD_EXITING);
       current->syncevents.finalize();
       PRWRN("THREAD%d (at %p) is exiting now\n", current->index, current);
-      WRAP(pthread_mutex_unlock)(&current->mutex);
+      unlock_thread(current);
     }
   }
   

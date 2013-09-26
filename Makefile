@@ -17,6 +17,7 @@ INCS =  xmapping.h     \
         xoneheap.h     \
         xpheap.h     \
 	      xglobals.h     \
+	      globalinfo.h     \
 	      xmemory.h      \
 	      xrun.h         \
 	      objectheader.h \
@@ -55,7 +56,8 @@ CXX = g++
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DSINGLE_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DSINGLE_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_NONALIGNED_OVERFLOW -DHANDLE_SYSCALL -DSINGLE_THREAD
-CFLAGS   = -g -O0 -DSSE_SUPPORT -fno-omit-frame-pointer -DMULTI_THREAD -DHANDLE_SYSCALL 
+CFLAGS   = -g -O0 -DSSE_SUPPORT -fno-omit-frame-pointer -DMULTI_THREAD 
+#CFLAGS   = -g -O0 -DSSE_SUPPORT -fno-omit-frame-pointer -DMULTI_THREAD -DHANDLE_SYSCALL 
 #-DDETECT_OVERFLOW
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_OVERFLOW -DDETECT_RACES -DHANDLE_SYSCALL -DMULTI_THREAD
 #CFLAGS   = -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer -DDETECT_NONALIGNED_OVERFLOW -DHANDLE_SYSCALL -DSINGLE_THREAD -DSTOP_AT_OVERFLOW

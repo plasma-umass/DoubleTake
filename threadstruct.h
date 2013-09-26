@@ -26,6 +26,9 @@
 #ifndef _THREADSTRUCT_H_
 #define _THREADSTRUCT_H_
 
+#include <ucontext.h>
+#include "xcontext.h"
+#include "semaphore.h"
 #include "synceventpool.h"
 
 extern "C" {
@@ -54,7 +57,8 @@ extern "C" {
     // If the thread has not been joined, then we can't reap this thread.
     // Otherwise, pthread_join may crash since the thread has exited/released.
     bool      hasJoined;
-    int       isSafe; // whether a thread is safe to be interrupted 
+    bool      isSafe; // whether a thread is safe to be interrupted 
+    bool      waitSafe; // whether a thread is safe to be interrupted 
     int       index;
     pid_t     tid; // Current process id of this thread.
     pthread_t self; // Results of pthread_self
