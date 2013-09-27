@@ -36,67 +36,12 @@
 #include <sys/times.h>
 
 #include "xdefines.h"
+#include "recordentries.h"
 #include "internalheap.h"
 
 class Record {
-
-  struct recordHeader {
-    list_t list;
-    list_t * curentry;  // Used to traverse the list in rollback.
-  };
-
-  /** 
-   * In order to handle these record information uniformly, the first item is "list_t"
-   */
-  struct recordFile {
-    list_t list;
-    int fd;
-  };
-
-  struct recordMmap {
-    list_t list;
-    void * addr;
-  };
-  
-  struct recordMunmap {
-    list_t list;
-    void * addr;
-    size_t length;
-  };
-
-
-  struct recordTime {
-    list_t list;
-    time_t time;
-  };
-
-  struct recordTimeofday {
-    list_t list;
-    int    ret;
-    struct timeval tvalue;
-    struct timezone tzone;
-  };
-
-  struct recordTimes {
-    list_t list;
-    clock_t ret;
-    struct tms buf; 
-  };
-
-  struct recordClone {
-    list_t list;
-    int    ret;
-    pthread_t tid;
-  };
-
-  struct recordDir {
-    list_t list;
-    DIR * dir;
-  };
-
 public:
-
-  typedef enum recordOps {
+  typedef enum e_recordOps {
     E_OP_FILE_OPEN = 0,
     E_OP_FILE_CLOSE,
     E_OP_FILE_DUP,
@@ -109,85 +54,154 @@ public:
     E_OP_TIMES,
     E_OP_CLONE,
     E_OP_MAX
-  } e_recordOps;
+  } eRecordOps;
+
+private:
+  class RecordEntry {
+  public:
+    eRecordOps operation; 
+    char  data[64 - sizeof(eRecordOps)];
+  };
+
+  /** 
+   * In order to handle these record information uniformly, the first item is "list_t"
+   */
+  struct recordFile {
+    list_t list;
+    int fd;
+  };
+
+  struct recordMmap {
+    void * addr;
+  };
+  
+  struct recordMunmap {
+    list_t list;
+    void * addr;
+    size_t length;
+  };
+
+  // sizeof(time_t) = 8
+  struct recordTime {
+    time_t time;
+  };
+
+  // sizeof(timeval) = 16, sizeof(timezone) = 8
+  struct recordTimeofday {
+    int    ret;
+    struct timeval tvalue;
+    struct timezone tzone;
+  };
+
+  // sizeof(clock_t) = 8, sizeof(tms) =32
+  struct recordTimes {
+    clock_t ret;
+    struct tms buf; 
+  };
+
+  struct recordClone {
+    int    ret;
+    pthread_t tid;
+  };
+
+  struct recordDir {
+    list_t list;
+    DIR * dir;
+  };
+
+public:
 
   void initialize(void) {
-    struct recordHeader * record;
+    _entries.initialize();
 
+    // Initialize corresponding lists
     for(int i = 0; i < E_OP_MAX; i++) {
-      record = &_glist[i];
-      listInit(&record->list);
-    } 
+      listInit(&_glist[i]);
+    }
   }
 
-  // Record a file operation according to given fops.
-  void recordFileOps(e_recordOps fops, int fd) {
+  // Record a file operation according to given op.
+  void recordFileOps(eRecordOps op, int fd) {
     // using the assertion since only my code will call this.
-    assert(fops <= E_OP_FILE_DUP);
+    assert(op <= E_OP_FILE_DUP);
 
-    struct recordFile * rf = (struct recordFile *)malloc(sizeof(*rf));
-    rf->fd = fd;
-    listInit(&rf->list);
-
-    // Insert to the list
-    insertList(fops, (list_t *)&rf->list); 
+    struct recordFile * record = (struct recordFile *)allocEntry(op);
+    record->fd = fd;
+    if(op == E_OP_FILE_CLOSE) {
+      insertList(E_OP_FILE_CLOSE, &record->list);
+    }
   }
 
-  // Get the fd with specific fops and remove corresponding item.
-  bool getFileOps(e_recordOps fops, int * fd) {
+  // Get the fd with specific op and remove corresponding item.
+  bool getFileOps(eRecordOps op, int * fd) {
     bool isFound = false;
-    assert(fops <= E_OP_FILE_DUP);
-    struct recordFile * rf = (struct recordFile *)getNextEntry(fops);
-    if(rf) {
-      *fd = rf->fd;
+    assert(op <= E_OP_FILE_DUP);
+    struct recordFile * record = (struct recordFile *)getEntry(op);
+    if(record) {
+      *fd = record->fd;
+      isFound = true;
+    }
+    return isFound;
+  }
+ 
+  bool retrieveFCloseList(int * fd) {
+    bool isFound = false;
+    struct recordFile * record = (struct recordFile *)retrieveEntry(E_OP_FILE_CLOSE);
+    if(record) {
+      *fd = record->fd;
+      isFound = true;
+    }
+    return isFound;
+  }
+ 
+  // Record a file operation according to given op.
+  void recordDirOps(eRecordOps op, DIR * dir) {
+    // using the assertion since only my code will call this.
+    assert(op == E_OP_DIR_OPEN || op == E_OP_DIR_CLOSE);
+
+    struct recordDir * record = (struct recordDir *)allocEntry(op);
+    record->dir = dir;
+    if(op == E_OP_DIR_CLOSE) {
+      insertList(E_OP_DIR_CLOSE, &record->list);
+    }
+  }
+
+  // Get the fd with specific op and remove corresponding item.
+  bool getDirOps(eRecordOps op, DIR ** dir) {
+    bool isFound = false;
+    assert(op == E_OP_DIR_OPEN || op == E_OP_DIR_CLOSE);
+    struct recordDir * record = (struct recordDir *)getEntry(op);
+    if(record) {
+      *dir = record->dir;
       isFound = true;
     }
     return isFound;
   }
   
-  // Record a file operation according to given fops.
-  void recordDirOps(e_recordOps dops, DIR * dir) {
-    // using the assertion since only my code will call this.
-    assert(dops == E_OP_DIR_OPEN || dops == E_OP_DIR_CLOSE);
-
-    struct recordDir * rd = (struct recordDir *)malloc(sizeof(*rd));
-    rd->dir = dir;
-    listInit(&rd->list);
-
-    // Insert to the list
-    insertList(dops, (list_t *)&rd->list); 
-  }
-
-  // Get the fd with specific fops and remove corresponding item.
-  bool getDirOps(e_recordOps dops, DIR ** dir) {
+  bool retrieveDIRCloseList(DIR ** dir) {
     bool isFound = false;
-    assert(dops == E_OP_DIR_OPEN || dops == E_OP_DIR_CLOSE);
-    struct recordDir * rd = (struct recordDir *)getNextEntry(dops);
-    if(rd) {
-      *dir = rd->dir;
+    struct recordDir * record = (struct recordDir *)retrieveEntry(E_OP_DIR_CLOSE);
+    if(record) {
+      *dir = record->dir;
       isFound = true;
     }
     return isFound;
   }
+ 
 
   // record time results
   void recordTimeOps(time_t time) {
-    struct recordTime * rt = (struct recordTime *)malloc(sizeof(*rt));
-    rt->time = time;
-    listInit(&rt->list);
-
-    // Insert to the list
-    insertList(E_OP_TIME, (list_t *)&rt->list); 
+    struct recordTime * record = (struct recordTime *)allocEntry(E_OP_TIME);
+    record->time = time;
   }
 
   // Get the first time results
   bool getTimeOps(time_t * time) {
     bool isFound = false;
-    e_recordOps op = E_OP_TIME;
-    struct recordTime * rt = (struct recordTime *)getNextEntry(op);
+    struct recordTime * record = (struct recordTime *)getEntry(E_OP_TIME);
 
-    if(rt) {
-      *time = rt->time;
+    if(record) {
+      *time = record->time;
       isFound = true;
     }
 
@@ -196,21 +210,17 @@ public:
     
   // record time results
   void recordMmapOps(void * addr) {
-    struct recordMmap * rm = (struct recordMmap *)malloc(sizeof(*rm));
-    rm->addr = addr;
-    listInit(&rm->list);
-
-    // Insert to the list
-    insertList(E_OP_MMAP, (list_t *)&rm->list); 
+    struct recordMmap * record = (struct recordMmap *)allocEntry(E_OP_MMAP);
+    record->addr = addr;
   }
 
   // Get the first time results
   bool getMmapOps(void ** addr) {
-    struct recordMmap * rm = (struct recordMmap *)getNextEntry(E_OP_MMAP);
+    struct recordMmap * record = (struct recordMmap *)getEntry(E_OP_MMAP);
     bool isFound = false;
     
-    if(rm) {
-      *addr = rm->addr;
+    if(record) {
+      *addr = record->addr;
       isFound = true;
     }
 
@@ -219,23 +229,22 @@ public:
  
   // record time results
   void recordMunmapOps(void * addr, size_t length) {
-    struct recordMunmap * rm = (struct recordMunmap *)malloc(sizeof(*rm));
-    rm->addr = addr;
-    rm->length = length;
-    listInit(&rm->list);
+    struct recordMunmap * record = (struct recordMunmap *)allocEntry(E_OP_MUNMAP);
+    record->addr = addr;
+    record->length = length;
 
-    // Insert to the list
-    insertList(E_OP_MUNMAP, (list_t *)&rm->list); 
+    // Adding this munmap to the list.
+    insertList(E_OP_MUNMAP, &record->list);
   }
 
   // Get the first time results
   bool getMunmapOps(void ** addr, size_t * length) {
     bool isFound = false;
-    struct recordMunmap * rm = (struct recordMunmap *)getNextEntry(E_OP_MUNMAP);
+    struct recordMunmap * record = (struct recordMunmap *)getEntry(E_OP_MUNMAP);
     
-    if(rm) {
-      *addr = rm->addr;
-      *length = rm->length;
+    if(record) {
+      *addr = record->addr;
+      *length = record->length;
 
       isFound = true;
     }
@@ -245,38 +254,33 @@ public:
 
   // record time results
   void recordGettimeofdayOps(int ret, struct timeval *tv, struct timezone *tz) { 
-    e_recordOps op = E_OP_GETTIMEOFDAY; 
-    struct recordTimeofday * rt = (struct recordTimeofday *)malloc(sizeof(*rt));
+    eRecordOps op = E_OP_GETTIMEOFDAY; 
+    struct recordTimeofday * record = (struct recordTimeofday *)allocEntry(E_OP_GETTIMEOFDAY);
     
     // Save those tv and tz
     if(tv) {
-      memcpy(&rt->tvalue, tv, sizeof(struct timeval));
+      memcpy(&record->tvalue, tv, sizeof(struct timeval));
     }
     if(tz) {
-      memcpy(&rt->tzone, tz, sizeof(struct timezone));
+      memcpy(&record->tzone, tz, sizeof(struct timezone));
     }
-    rt->ret = ret;
-    listInit(&rt->list);
-
-    // Insert to the list
-    insertList(op, (list_t *)&rt->list); 
+    record->ret = ret;
   }
 
   // Get the first time results
   bool getGettimeofdayOps(int * ret, struct timeval * tv, struct timezone * tz) {
-    e_recordOps op = E_OP_GETTIMEOFDAY; 
-    struct recordTimeofday * rt = (struct recordTimeofday *)getNextEntry(op);
+    struct recordTimeofday * record = (struct recordTimeofday *)getEntry(E_OP_GETTIMEOFDAY);
     bool isFound = false;
 
-    if(rt) {
+    if(record) {
       // memcpy
       if(tv) { 
-        memcpy(tv, &rt->tvalue, sizeof(struct timeval));
+        memcpy(tv, &record->tvalue, sizeof(struct timeval));
       }
       if(tz) {
-        memcpy(tz, &rt->tzone, sizeof(struct timezone));
+        memcpy(tz, &record->tzone, sizeof(struct timezone));
       }
-      *ret = rt->ret;
+      *ret = record->ret;
 
       isFound = true;
     }
@@ -286,31 +290,25 @@ public:
   
   // record time results
   void recordTimesOps(clock_t ret, struct tms * buf) { 
-    e_recordOps op = E_OP_TIMES; 
-    struct recordTimes * rt = (struct recordTimes *)malloc(sizeof(*rt));
+    struct recordTimes * record = (struct recordTimes *)allocEntry(E_OP_TIMES);
     
     // Save those tv and tz
-    rt->ret = ret;
+    record->ret = ret;
     if(ret != -1) {
-      memcpy(&rt->buf, buf, sizeof(struct tms));
+      memcpy(&record->buf, buf, sizeof(struct tms));
     }
-    listInit(&rt->list);
-
-    // Insert to the list
-    insertList(op, (list_t *)&rt->list); 
   }
 
   // Get the first time results
   bool getTimesOps(clock_t * ret, struct tms * buf) {
-    e_recordOps op = E_OP_TIMES; 
-    struct recordTimes * rt = (struct recordTimes *)getNextEntry(op);
+    struct recordTimes * record = (struct recordTimes *)getEntry(E_OP_TIMES);
     bool isFound = false;
 
-    if(rt) {
+    if(record) {
       // memcpy
-      *ret = rt->ret;
+      *ret = record->ret;
       if(buf) { 
-        memcpy(buf, &rt->buf, sizeof(struct tms));
+        memcpy(buf, &record->buf, sizeof(struct tms));
       }
 
       isFound = true;
@@ -319,24 +317,19 @@ public:
     return isFound;
   }
 
-#if 1    
   // record time results
   void recordCloneOps(int ret, pthread_t tid) {
-    struct recordClone * rc = (struct recordClone *)malloc(sizeof(*rc));
+    struct recordClone * rc = (struct recordClone *)allocEntry(E_OP_CLONE);
     if(rc) {
       rc->ret = ret;
       rc->tid = tid;
-      listInit(&rc->list);
     }
-
-    // Insert to the list
-    insertList(E_OP_CLONE, (list_t *)&rc->list); 
   }
 
   // Get the first time results
   bool getCloneOps(pthread_t * tid, int * ret) {
     bool isFound = false;
-    struct recordClone * rc = (struct recordClone *)getNextEntry(E_OP_CLONE);
+    struct recordClone * rc = (struct recordClone *)getEntry(E_OP_CLONE);
    
     if(rc) {
       *tid = rc->tid;
@@ -346,84 +339,71 @@ public:
 
     return isFound;
   }
-#endif 
    
   // For some list, we donot need to search one by one.
   // We can clear the whole list.
-  void clearRecordList(e_recordOps op) {
-    assert(op >= E_OP_FILE_OPEN && op <= E_OP_MAX);
+  void epochBegin(void) {
+    // Do munmap for all entries
+    struct recordMunmap * record = NULL;
+    while(true) {
+      record = (struct recordMunmap *)retrieveEntry(E_OP_MUNMAP);
 
-    list_t * head = getTargetList(op);
-    list_t * entry = NULL;
-
-    while((entry = listRetrieveItem(head)) != NULL) {
-      freeEntry(entry); 
+      if(record == NULL) {
+        break;
+      }
+    
+      WRAP(munmap)(record->addr, record->length);
     }
-
-    listInit(head);
+    _entries.cleanup();
   }
 
   // Prepare the traverse for all list.
-  void prepareTraverse(void) {
-    int i;
-    struct recordHeader * record;
-
-    for(i = 0; i < E_OP_MAX; i++) {
-      record = &_glist[i];    
-
-      if(!isListEmpty(&record->list)) {
-        record->curentry = nextEntry(&record->list);
-      }
-      else {
-        record->curentry = NULL;
-      }
-    }
+  void prepareRollback(void) {
+    _entries.prepareRollback();
   }
 
 private:
 
-  inline void * malloc(size_t sz) {
-    return InternalHeap::getInstance().malloc(sz);
+  inline void * allocEntry(eRecordOps op) {
+    class RecordEntry * entry = _entries.alloc();
+    entry->operation = op;
+    return entry->data; 
   }
   
-  inline void free(void * ptr) {
-    InternalHeap::getInstance().free(ptr);
+  // For records, we only pop them from the beginning of a list
+  void * getEntry (eRecordOps op) {
+    assert(op >=E_OP_FILE_OPEN && op < E_OP_MAX);
+
+    class RecordEntry * entry = _entries.getIterEntry();
+
+    void * ptr = NULL; 
+    if(entry) {
+      assert(entry->operation == op);
+      ptr = entry->data;
+    }
+    return ptr;    
   }
- 
+
+  // Remove an entry from the list.
+  void * retrieveEntry(eRecordOps op) {
+    assert(op == E_OP_FILE_CLOSE || op == E_OP_DIR_CLOSE || op == E_OP_MUNMAP);
+    list_t * list = getTargetList(op);
+    return listRetrieveItem(list);
+  }
+
+  inline list_t * getTargetList(e_recordOps op) {
+    return &_glist[op];
+  }
+
   // We are always insert an entry into the tail of a list.
   void insertList(e_recordOps op, list_t * list) {
     list_t * head = getTargetList(op);
-    
+    listInit(list);
     listInsertTail(list, head);
   }
 
-  // For records, we only pop them from the beginning of a list
-  list_t * getNextEntry (e_recordOps op) {
-    assert(op >=E_OP_FILE_OPEN && op < E_OP_MAX);
-    
-    struct recordHeader * record = &_glist[op];
-
-    //PRWRN("debug: op is %d record %p\n", op, record);
-    list_t * curentry = record->curentry;
-      
-    if(curentry && !isListTail(curentry, &record->list)) {
-      record->curentry = nextEntry(curentry);
-    }
-    else {
-      record->curentry = NULL;
-    }
-    return curentry;    
-  }
-
-  void freeEntry(void * ptr) {
-    free(ptr);
-  }
-  
-  inline list_t * getTargetList(e_recordOps op) {
-    return &_glist[op].list;
-  }
-
-  struct recordHeader _glist[E_OP_MAX];  
+  RecordEntries<class RecordEntry, xdefines::MAX_RECORD_ENTRIES>  _entries;
+  list_t _glist[E_OP_MAX];
 };
 
 #endif

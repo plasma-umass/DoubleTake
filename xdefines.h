@@ -117,8 +117,8 @@ public:
   // We can only supported 128 threads simultaneously
   enum { MAX_ALIVE_THREADS = 1 }; 
 #else 
-  enum { MAX_ALIVE_THREADS = 16 }; 
-//  enum { MAX_ALIVE_THREADS = 64 }; 
+//  enum { MAX_ALIVE_THREADS = 16 }; 
+  enum { MAX_ALIVE_THREADS = 64 }; 
 #endif
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 }; 
@@ -144,8 +144,9 @@ public:
   enum { DIRS_MAP_SIZE = 1024 }; 
   enum { DIROPEN_ALLOC_SIZE = 0x8038 };
 
-//  enum { SYNCEVENT_POOL_ENTRIES = 0x1000 };
-  enum { SYNCEVENT_POOL_ENTRIES = 0x1000000 };
+//  enum { MAX_RECORD_ENTRIES = 0x1000 };
+  enum { MAX_RECORD_ENTRIES = 0x1000000 };
+  enum { MAX_SYNCEVENT_ENTRIES = 0x1000000 };
 
 #ifdef X86_32BIT
   enum {SENTINEL_WORD = 0xCAFEBABE };

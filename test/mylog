@@ -1,3 +1,0 @@
-transient = 0xabb75000, persistent = 0xd1375000, size = 25800000, _startaddr 0xabb75000, _endaddr 0xd1375000
-transient = 0x8c8000, persistent = 0xaba43000, size = 3000, _startaddr 0x8c8000, _endaddr 0x8cb000
-transient = 0x8049000, persistent = 0xaba40000, size = 1000, _startaddr 0x8049000, _endaddr 0x804a000

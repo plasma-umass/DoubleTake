@@ -98,7 +98,6 @@ void xrun::epochBegin (void) {
     thread_t * thread = i.getThread();
 
     if(thread != current) {
-      // There is no need to acquire lock since other threads are waiting somewhere.
       lock_thread(thread);
         
       if(thread->hasJoined == true) {
@@ -121,8 +120,10 @@ void xrun::epochBegin (void) {
   PRDBG("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   globalinfo::getInstance().epochBegin();
 
+#ifdef HANDLE_SYSCALL
   // Start the new epoch for current thread 
-  syscalls::getInstance().cleanupRecords();
+  syscalls::getInstance().handleEpochBegin();
+#endif
 
   PRDBG("getpid %d: xrun::epochBegin\n", getpid());
   // Save the context of this thread
@@ -251,7 +252,7 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
     PRDBG("%p wakeup from notification.\n", pthread_self());
   // PRDBG("%p reset contexts~~~~~\n", pthread_self());
     xthread::getInstance().saveSpecifiedContext((ucontext_t *)context);   
-    syscalls::getInstance().cleanupRecords();
+    syscalls::getInstance().handleEpochBegin();
    // xthread::getInstance().resetContexts();
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.

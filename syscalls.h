@@ -67,38 +67,13 @@ public:
     xrun::getInstance().epochBegin(); 
   }
 
-  // Call munmap for all munmap() happened in the last epoch.
-  void cleanMunmapOps(void) {
-    void * addr;
-    size_t length;
-
-    while(getRecord()->getMunmapOps(&addr, &length)) {
-      WRAP(munmap)(addr, length);
-    }
-
-    getRecord()->clearRecordList(Record::E_OP_MUNMAP);
-  }
-
   // Called by xrun::epochBegin() 
-  void cleanupRecords() {
-    getRecord()->prepareTraverse();
-   
-    // Release those mmap operations since we don't need rollback now.
-    getRecord()->clearRecordList(Record::E_OP_MMAP);
-
-    // Handle those munmap operations.
-    cleanMunmapOps();
-
-    // cleanning up those recording time() or gettimeofday()
-    getRecord()->clearRecordList(Record::E_OP_TIME);
-    getRecord()->clearRecordList(Record::E_OP_GETTIMEOFDAY);
+  void handleEpochBegin(void) {
 #ifdef REPRODUCIBLE_FDS
     // Handle those closed files
     _fops.cleanClosedFiles();
-    
-    // Handle those opened files in last epoch
-    _fops.cleanNewlyOpennedfiles();
 #endif
+    getRecord()->epochBegin();
   }
 
   void epochEnd(void) {
@@ -121,7 +96,7 @@ public:
 
   // Prepare rollback for system calls
   void prepareRollback(void) {
-    getRecord()->prepareTraverse();
+    getRecord()->prepareRollback();
    
     // Handle those closed files
     _fops.prepareRollback();

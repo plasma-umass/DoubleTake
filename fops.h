@@ -76,12 +76,6 @@ public:
     _dirsMap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::DIRS_MAP_SIZE);
   }
 
-  // clean those newly opened files in epochBegin
-  void cleanNewlyOpennedfiles(void) {
-    getRecord()->clearRecordList(Record::E_OP_FILE_OPEN);
-    getRecord()->clearRecordList(Record::E_OP_DIR_OPEN);
-  }
-
   // This is called after we are sure that there is no need to rollback.
   void updateOpenedFiles(void) {
     // Get file position for all files in the global hash table.
@@ -526,7 +520,7 @@ public:
     int fd = -1;
     struct fileInfo * thisFile = NULL;
 
-    while((getRecord()->getFileOps(Record::E_OP_FILE_CLOSE, &fd))) {
+    while((getRecord()->retrieveFCloseList(&fd))) {
 
       if(fd == -1) {
         continue;
@@ -557,18 +551,14 @@ public:
         // Should not happen.
         assert(0);
       }
-
-      
     } 
 
     // When there is no need to rollback
     // we can remove the whole list.
-    getRecord()->clearRecordList(Record::E_OP_FILE_CLOSE);
-    
     struct dirInfo * thisDir = NULL;
     DIR * dir;
 
-    while((getRecord()->getDirOps(Record::E_OP_DIR_CLOSE, &dir))) {
+    while((getRecord()->retrieveDIRCloseList(&dir))) {
       if(dir == NULL) {
         continue;
       }
@@ -592,8 +582,6 @@ public:
         assert(0);
       }
     } 
-
-    getRecord()->clearRecordList(Record::E_OP_DIR_CLOSE);
   }
 
   // Check whether this file is a normal file, not a socket file.

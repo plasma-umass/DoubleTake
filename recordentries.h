@@ -19,46 +19,38 @@
 */
 
 /*
- * @file   synceventpool.h
- * @brief  Managing the pool of synchronization events. The basic of having pool is 
+ * @file   recordentires.h
+ * @brief  Managing record entry for each thread. Since each thread will have different entries,
+           There is no need to use lock here at all.
+           The basic idea of having pool is 
            to reduce unnecessary memory allocation and deallocation operations, similar 
            to slab manager of Linux system. However, it is different here.
            There is no memory deallocation for each pool. 
            In the same epoch, we keep allocating from 
            this pool and udpate correponding counter, updating to next one.
            When epoch ends, we reset the counter to 0 so that we can reuse all 
-           
+           memory and there is no need to release the memory of recording entries. 
             
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
-#ifndef _SYNCEVENTPOOL__H_
-#define _SYNCEVENTPOOL__H_
+#ifndef _RECORDENTRIES_H_
+#define _RECORDENTRIES_H_
 
 #include "xdefines.h"
 #include "mm.h"
 
-extern "C" {
-  // Record corresponding information for each event.  
-  struct syncEvent {
-    list_t     list;
-    // Which thread is performing synchronization? 
-    void    *  thread;
-    void    *  eventlist;
-    int        ret; // used for mutex_lock
-  };
-
-};
-
-class SyncEventPool {
+template <class Entry, size_t NElts = 1>
+class RecordEntries {
 public:
-  SyncEventPool() {
+  RecordEntries() 
+  {
   }
 
   void initialize(void) {
 		void * ptr;
     int i = 0;
 
-    _size = alignup(xdefines::MAX_RECORD_ENTRIES * sizeof(struct syncEvent), xdefines::PageSize);
+    _size = alignup(NElts * sizeof(Entry), xdefines::PageSize);
 		// We don't need to allocate all pages, only the difference between newnum and oldnum.
 		ptr = MM::mmapAllocatePrivate(_size);
 		if(ptr == NULL)  {
@@ -67,9 +59,9 @@ public:
 		}
 		
 		// start to initialize it.
-    _start = (struct syncEvent *)ptr;
+    _start = (Entry *)ptr;
 		_cur = 0;
-		_total = xdefines::MAX_RECORD_ENTRIES;
+		_total = NElts;
     _iter = 0;
 		return;
 	}
@@ -78,10 +70,10 @@ public:
     MM::mmapDeallocate(_start, _size);
   }
 
-	struct syncEvent * alloc(void) {
-		struct syncEvent * entry = NULL;
+	Entry * alloc(void) {
+		Entry * entry = NULL;
 		if(_cur < _total) {
-			entry = &_start[_cur];
+		  entry = (Entry *)&_start[_cur];
 			_cur++;
 		}
  		else {
@@ -101,11 +93,11 @@ public:
     _iter = 0;
   }
 
-  inline struct syncEvent * getEntry(size_t index) {
+  inline Entry * getEntry(size_t index) {
     return &_start[index];
   }
 
-  struct syncEvent * nextIterEntry(void) {
+  Entry * nextIterEntry(void) {
     _iter++;
     if(_iter < _cur) {
       return getEntry(_iter);
@@ -114,14 +106,24 @@ public:
       return NULL;
     }
   }
+  
+  Entry * getIterEntry(void) {
+    Entry * entry = NULL;
+    if(_iter <= _cur) {
+      entry = getEntry(_iter);
+      _iter++;
+    }
+    return entry;
+  }
+
 
   // Only called in the replay
-  struct syncEvent * firstIterEntry(void) {
+  Entry * firstIterEntry(void) {
     return &_start[_iter];
   }
 
 private:
-  struct syncEvent * _start; 
+  Entry * _start; 
   size_t _total; 
   size_t _cur; //
   size_t _size; 
