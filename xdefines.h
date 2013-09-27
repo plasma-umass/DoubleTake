@@ -80,6 +80,14 @@ extern "C" {
     return (addr & ~(alignto -1));
   }
 
+  struct syncEvent {
+    list_t     list;
+    // Which thread is performing synchronization? 
+    void    *  thread;
+    void    *  eventlist;
+    int        ret; // used for mutex_lock
+  };
+
 };
 
 class xdefines {

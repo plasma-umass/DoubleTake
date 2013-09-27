@@ -39,7 +39,6 @@
 #include "semaphore.h"
 #include "record.h"
 #include "synceventlist.h"
-#include "synceventpool.h"
 #include "threadstruct.h"
 
 class threadmap {

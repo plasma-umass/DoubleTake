@@ -29,7 +29,7 @@
 #include <ucontext.h>
 #include "xcontext.h"
 #include "semaphore.h"
-#include "synceventpool.h"
+#include "recordentries.h"
 
 extern "C" {
   typedef enum e_thrstatus {
@@ -86,7 +86,7 @@ extern "C" {
     struct thread * joiner;
 
     // Synchronization events happens on this thread.
-    SyncEventPool syncevents;
+    RecordEntries<struct syncEvent, xdefines::MAX_SYNCEVENT_ENTRIES> syncevents;
    // struct syncEventList syncevents;
     list_t pendingSyncevents;
    // struct syncEventList pendingSyncevents;

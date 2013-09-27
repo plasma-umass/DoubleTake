@@ -30,7 +30,6 @@ INCS =  xmapping.h     \
         bitmap.h       \
         sanitycheck.h  \
         synceventlist.h \
-        synceventpool.h \
         watchpoint.h \
         syscalls.h \
         fops.h 
