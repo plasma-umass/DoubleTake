@@ -62,7 +62,7 @@ public:
     _phase = E_SYS_INIT;
     _numOfEnds = 0;
 
-    fprintf(stderr, "global initializee............\n");
+//    fprintf(stderr, "global initializee............\n");
     WRAP(pthread_mutex_init)(&_mutex, NULL);
     WRAP(pthread_mutex_init)(&_mutexSignalhandler, NULL);
     WRAP(pthread_cond_init)(&_condCommitter, NULL);

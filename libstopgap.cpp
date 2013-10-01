@@ -92,7 +92,7 @@ extern "C" {
 #endif
   size_t __max_stack_size; 
 
-  #define INITIAL_MALLOC_SIZE (4096 * 10240)
+  #define INITIAL_MALLOC_SIZE (1024 * 1024 * 1024)
 //  #define LOGBUF_SIZE (4096)
   //static bool *funcInitialized;
   bool funcInitialized = false;

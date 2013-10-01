@@ -78,13 +78,14 @@ public:
   // Record a synchronization event
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent * event = allocSyncEvent();
+
+    fprintf(stderr, "recordSyncEvent event %p\n", event);
     listInit(&event->list);
 
     // Change the event there.
     event->thread = current;
     event->eventlist = this;
     event->ret = ret;
-  //  PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
 
     if(synccmd != E_SYNC_MUTEX_LOCK) {   
       WRAP(pthread_mutex_lock)(&this->lock);
@@ -150,6 +151,7 @@ public:
       event = (struct syncEvent *)this->curentry;
     }
 
+    fprintf(stderr, "synceventlist at %p event %p\n", &list, event);
     return event;
   }
 

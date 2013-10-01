@@ -113,6 +113,7 @@ void xrun::epochBegin (void) {
   }
 
   // Saving the context of the memory.
+  xthread::epochBegin();
   _memory.epochBegin();
   xthread::getInstance().runDeferredSyncs();
   
@@ -136,7 +137,7 @@ void xrun::epochEnd (void) {
   stopAllThreads();
 
 #ifdef DEBUG_ROLLBACK
-  //rollback();
+  rollback();
   //assert(0);
 #endif
 
@@ -251,6 +252,7 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
   if(globalinfo::getInstance().isEpochBegin()) {
     PRDBG("%p wakeup from notification.\n", pthread_self());
   // PRDBG("%p reset contexts~~~~~\n", pthread_self());
+    xthread::epochBegin();
     xthread::getInstance().saveSpecifiedContext((ucontext_t *)context);   
     syscalls::getInstance().handleEpochBegin();
    // xthread::getInstance().resetContexts();

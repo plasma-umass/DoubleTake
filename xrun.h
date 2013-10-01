@@ -114,7 +114,7 @@ public:
     _main_id = pid;
 
     PRDBG("starting!!!!!\n");
-    fprintf(stderr, "starting!!!!!\n");
+//    fprintf(stderr, "starting!!!!!\n");
     epochBegin();
   }
   

@@ -637,6 +637,8 @@ public:
   // Preparing the rollback.
   void prepareRollback(void);
 
+  static void epochBegin(void);
+
   // Rollback the whole process
   inline void rollback(void) {
     // Recover the context for current thread.

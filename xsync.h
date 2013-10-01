@@ -158,7 +158,7 @@ public:
 
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
       eventlist = (SyncEventList *)i.getData();
-      
+     
       prepareEventListRollback(eventlist);
     }
   }
@@ -172,7 +172,7 @@ public:
   inline void prepareEventListRollback(SyncEventList * eventlist) {
     struct syncEvent * event = eventlist->prepareRollback();
 
-    if(!event) {
+    if(event) {
       // Signal to next thread with the top event
       signalNextThread(event); 
     }

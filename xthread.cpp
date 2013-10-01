@@ -61,7 +61,11 @@ void xthread::invokeCommit(void) {
   xrun::getInstance().epochEnd();
   xrun::getInstance().epochBegin();
 }
-  
+ 
+void xthread::epochBegin(void) {
+  current->syncevents.cleanup();
+}
+ 
 void xthread::prepareRollback(void) {
   syscalls::getInstance().prepareRollback();
 
