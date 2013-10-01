@@ -105,6 +105,18 @@ extern "C" {
   char * outbuf2;
   int outfd = 2; // We are going to output the standard error
   static char * tempalloced = tempbuf;
+
+  // Some global information. 
+  bool g_isRollback;
+  bool g_hasRollbacked;
+  int  g_numOfEnds;
+  enum SystemPhase g_phase; 
+  pthread_cond_t g_condCommitter;
+  pthread_cond_t g_condWaiters;
+  pthread_mutex_t g_mutex;
+  pthread_mutex_t g_mutexSignalhandler;
+  int g_waiters;  
+  int g_waitersTotal;  
  
   void initializer (void) {
     // Using globals to provide allocation

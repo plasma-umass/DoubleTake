@@ -32,8 +32,6 @@ extern "C" {
 
 extern void lock_thread(thread_t* thread);
 extern void unlock_thread(thread_t* thread);
-extern void lock_global(void);
-extern void unlock_global(void);
 extern void wait_thread(thread_t*thread);
 extern void signal_thread(thread_t*thread);
 

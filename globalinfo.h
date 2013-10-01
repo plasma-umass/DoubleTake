@@ -35,8 +35,7 @@
 #include "threadstruct.h"
 #include "xdefines.h"
 
-class globalinfo {
-
+extern "C" {
   enum SystemPhase {
     E_SYS_INIT, // Initialization phase
     E_SYS_NORMAL_EXECUTION, 
@@ -44,163 +43,156 @@ class globalinfo {
     E_SYS_ROLLBACK, // We are trying to rollback the whole system.
     E_SYS_EPOCH_BEGIN, // We have to start a new epoch when no overflow. 
   };
+  extern bool g_isRollback;
+  extern bool g_hasRollbacked;
+  extern int  g_numOfEnds;
+  extern enum SystemPhase g_phase; 
+  extern pthread_cond_t g_condCommitter;
+  extern pthread_cond_t g_condWaiters;
+  extern pthread_mutex_t g_mutex;
+  extern pthread_mutex_t g_mutexSignalhandler;
+  extern int g_waiters;  
+  extern int g_waitersTotal;  
 
-public:
-  globalinfo()
-  {
+  inline void global_lock(void) {
+    WRAP(pthread_mutex_lock)(&g_mutex);
   }
 
-  static globalinfo& getInstance (void) {
-    static char buf[sizeof(globalinfo)];
-    static globalinfo * theOneTrueObject = new (buf) globalinfo();
-    return *theOneTrueObject;
+  inline void global_unlock(void) {
+    WRAP(pthread_mutex_unlock)(&g_mutex);
+  } 
+  
+  inline void global_lockInsideSignalhandler(void) {
+    WRAP(pthread_mutex_lock)(&g_mutexSignalhandler);
   }
 
-  void initialize(void) {
-    _isRollback = false;
-    _hasRollbacked = false;
-    _phase = E_SYS_INIT;
-    _numOfEnds = 0;
+  inline void global_unlockInsideSignalhandler(void) {
+    WRAP(pthread_mutex_unlock)(&g_mutexSignalhandler);
+  }
+
+
+  inline void global_initialize(void) {
+    g_isRollback = false;
+    g_hasRollbacked = false;
+    g_phase = E_SYS_INIT;
+    g_numOfEnds = 0;
 
 //    fprintf(stderr, "global initializee............\n");
-    WRAP(pthread_mutex_init)(&_mutex, NULL);
-    WRAP(pthread_mutex_init)(&_mutexSignalhandler, NULL);
-    WRAP(pthread_cond_init)(&_condCommitter, NULL);
-    WRAP(pthread_cond_init)(&_condWaiters, NULL);
+    WRAP(pthread_mutex_init)(&g_mutex, NULL);
+    WRAP(pthread_mutex_init)(&g_mutexSignalhandler, NULL);
+    WRAP(pthread_cond_init)(&g_condCommitter, NULL);
+    WRAP(pthread_cond_init)(&g_condWaiters, NULL);
   }
  
-  void setEpochEnd(void) {
-    _numOfEnds++;
-    _phase = E_SYS_EPOCH_END;
+  inline void global_setEpochEnd(void) {
+    g_numOfEnds++;
+    g_phase = E_SYS_EPOCH_END;
   }
 
-  bool isInitPhase(void) {
-    return _phase == E_SYS_INIT;
+  inline bool global_isInitPhase(void) {
+    return g_phase == E_SYS_INIT;
   }
 
-  bool isEpochEnd(void) {
-    return _phase == E_SYS_EPOCH_END;
+  inline bool global_isEpochEnd(void) {
+    return g_phase == E_SYS_EPOCH_END;
   }
 
-  bool isRollback(void) {
-    return _phase == E_SYS_ROLLBACK;
+  inline bool global_isRollback(void) {
+    fprintf(stderr, "ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+    return g_phase == E_SYS_ROLLBACK;
   }
 
-  bool isEpochBegin(void) {
-    return _phase == E_SYS_EPOCH_BEGIN;
+  inline bool global_isEpochBegin(void) {
+    return g_phase == E_SYS_EPOCH_BEGIN;
   }
 
-  void setRollback(void) {
-    _phase = E_SYS_ROLLBACK;
-    _hasRollbacked = true;
+  inline void global_setRollback(void) {
+    g_phase = E_SYS_ROLLBACK;
+    g_hasRollbacked = true;
+    fprintf(stderr, "setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
-  bool hasRollbacked(void) {
-    return _hasRollbacked;
+  inline bool global_hasRollbacked(void) {
+    return g_hasRollbacked;
   }
 
-  void rollback(void) {
-    setRollback();
+  inline void global_rollback(void) {
+    global_setRollback();
 
     // Wakeup all other threads.
-    WRAP(pthread_cond_broadcast)(&_condWaiters);
+    WRAP(pthread_cond_broadcast)(&g_condWaiters);
   }
 
-  void epochBegin(void) {
-    lockInsideSignalhandler();
-    _phase = E_SYS_EPOCH_BEGIN;
+  inline void global_epochBegin(void) {
+    global_lockInsideSignalhandler();
 
+    if(g_phase == E_SYS_INIT) {
+      g_phase = E_SYS_EPOCH_BEGIN;
+    }
+    else {
+      fprintf(stderr, "epochBegin!!!!!!!\n");
+      while(1); 
+    }
     PRDBG("waken up all waiters\n");
     // Wakeup all other threads.
-    WRAP(pthread_cond_broadcast)(&_condWaiters);
+    WRAP(pthread_cond_broadcast)(&g_condWaiters);
 
-    if(_waiters != 0) {
-      WRAP(pthread_cond_wait)(&_condCommitter, &_mutexSignalhandler);
+    if(g_waiters != 0) {
+      WRAP(pthread_cond_wait)(&g_condCommitter, &g_mutexSignalhandler);
     }
-    unlockInsideSignalhandler();
+    global_unlockInsideSignalhandler();
   }
 
-  thread_t * getCurrent(void) {
+  inline thread_t * global_getCurrent(void) {
     return current; 
   }
 
-  void lock(void) {
-    WRAP(pthread_mutex_lock)(&_mutex);
-  }
-
-  void unlock(void) {
-    WRAP(pthread_mutex_unlock)(&_mutex);
-  } 
-  
-  void lockInsideSignalhandler(void) {
-    WRAP(pthread_mutex_lock)(&_mutexSignalhandler);
-  }
-
-  void unlockInsideSignalhandler(void) {
-    WRAP(pthread_mutex_unlock)(&_mutexSignalhandler);
-  }
-
   // Waiting for the stops of threads, no need to hold the lock.
-  void waitThreadsStops(int totalwaiters) {
-    lockInsideSignalhandler();
-    _waitersTotal = totalwaiters;
-//    fprintf(stderr, "During waiting: _waiters %d _waitersTotal %d\n", _waiters, _waitersTotal);
-    while(_waiters != _waitersTotal) {
-      WRAP(pthread_cond_wait)(&_condCommitter, &_mutexSignalhandler);
+  inline void global_waitThreadsStops(int totalwaiters) {
+    global_lockInsideSignalhandler();
+    g_waitersTotal = totalwaiters;
+//    fprintf(stderr, "During waiting: g_waiters %d g_waitersTotal %d\n", g_waiters, g_waitersTotal);
+    while(g_waiters != g_waitersTotal) {
+      WRAP(pthread_cond_wait)(&g_condCommitter, &g_mutexSignalhandler);
     }
-    unlockInsideSignalhandler();
+    global_unlockInsideSignalhandler();
   }
 
-  void checkWaiters(void) {
-    assert(_waiters == 0);
+  inline void global_checkWaiters(void) {
+    assert(g_waiters == 0);
   }
 
   // Notify the commiter and wait on the global conditional variable 
-  void waitForNotification(void) {
-    assert(isEpochEnd() == true);
+  inline void global_waitForNotification(void) {
+    assert(global_isEpochEnd() == true);
     
-//    printf("waitForNotification, waiters is %d at thread %p\n", _waiters, pthread_self());
-    lockInsideSignalhandler();
-    PRDBG("waitForNotification _waiters %d totalWaiters %d\n", _waiters, _waitersTotal);
+//    printf("waitForNotification, waiters is %d at thread %p\n", g_waiters, pthread_self());
+    global_lockInsideSignalhandler();
+    PRDBG("waitForNotification g_waiters %d totalWaiters %d\n", g_waiters, g_waitersTotal);
 
-    _waiters++;
+    g_waiters++;
 
-    if(_waiters == _waitersTotal) {
-      //printf("NNNNNNNNNN, waiters is %d at thread %p. WWWWWWWWWWWWWWWWWWWWWWWWWWW\n", _waiters, pthread_self());
-      WRAP(pthread_cond_signal)(&_condCommitter); 
+    if(g_waiters == g_waitersTotal) {
+      //printf("NNNNNNNNNN, waiters is %d at thread %p. WWWWWWWWWWWWWWWWWWWWWWWWWWW\n", g_waiters, pthread_self());
+      WRAP(pthread_cond_signal)(&g_condCommitter); 
       PRDBG("waitForNotification after calling cond_broadcast\n");
     }
 
     // Only waken up when it is not the end of epoch anymore.
-    while(isEpochEnd()) {
+    while(global_isEpochEnd()) {
       PRDBG("waitForNotification before waiting again\n");
-      WRAP(pthread_cond_wait)(&_condWaiters, &_mutexSignalhandler);
-      PRDBG("waitForNotification after waken up. isEpochEnd() %d \n", isEpochEnd());
+      WRAP(pthread_cond_wait)(&g_condWaiters, &g_mutexSignalhandler);
+      PRDBG("waitForNotification after waken up. isEpochEnd() %d \n", global_isEpochEnd());
     }
 
-    _waiters--;
+    g_waiters--;
 
-    if(_waiters == 0) {
-      WRAP(pthread_cond_signal)(&_condCommitter); 
+    if(g_waiters == 0) {
+      WRAP(pthread_cond_signal)(&g_condCommitter); 
     }
-    PRDBG("waitForNotification decrement waiters. status %d\n", _phase);
+    PRDBG("waitForNotification decrement waiters. status %d\n", g_phase);
       
-    unlockInsideSignalhandler();
+    global_unlockInsideSignalhandler();
   }
-
-
-private:
-  bool _isRollback;
-  bool _hasRollbacked;
-  int  _numOfEnds;
-  enum SystemPhase _phase; 
-  
-  pthread_cond_t _condCommitter;
-  pthread_cond_t _condWaiters;
-  pthread_mutex_t _mutex;
-  pthread_mutex_t _mutexSignalhandler;
-  int _waiters;  
-  int _waitersTotal;  
 };
-
 #endif

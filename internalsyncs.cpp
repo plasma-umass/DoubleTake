@@ -25,7 +25,6 @@
  */
 #include "libfuncs.h"
 #include "internalsyncs.h"
-#include "globalinfo.h"
 
 extern "C" {
 
@@ -37,14 +36,6 @@ extern "C" {
     WRAP(pthread_mutex_unlock)(&thread->mutex); 
   }
   
-  void lock_global(void) {
-    globalinfo::getInstance().lock();  
-  }
-  
-  void unlock_global(void) {
-    globalinfo::getInstance().unlock();
-  }
-
   void wait_thread(thread_t*thread) {
     WRAP(pthread_cond_wait)(&thread->cond, &thread->mutex); 
   }

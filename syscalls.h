@@ -203,7 +203,7 @@ public:
       return WRAP(mmap)(start, length, prot, flags, fd, offset);
     }
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       // We only record these mmap requests.
       ret = WRAP(mmap)(start, length, prot, flags, fd, offset);
 //      PRWRN("in execution, ret %p length %lx\n", ret, length);
@@ -239,7 +239,7 @@ public:
   
 #ifdef REPRODUCIBLE_FDS 
     // In the rollback phase, we only call 
-    if(isRollback()) {
+    if(global_isRollback()) {
       ret = _fops.getFdAtOpen();
     }
     else {
@@ -265,7 +265,7 @@ public:
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call 
-      if(isRollback()) {
+      if(global_isRollback()) {
         ret = 0;
       }
       else {
@@ -293,7 +293,7 @@ public:
     
 #ifdef REPRODUCIBLE_FDS 
     // In the rollback phase, we only call 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       ret = WRAP(opendir)(name);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveDir(ret);
@@ -315,7 +315,7 @@ public:
     int ret;
 
 #ifdef REPRODUCIBLE_FDS 
-    if(isRollback()) {
+    if(global_isRollback()) {
       ret = 0;
     }
     else {
@@ -332,7 +332,7 @@ public:
     FILE * ret;
    
 #ifdef REPRODUCIBLE_FDS 
-    if(!isRollback()) { 
+    if(!global_isRollback()) { 
       ret = WRAP(fopen)(filename, modes);
       if(ret != NULL) {
         // Commit those local changes now.
@@ -369,7 +369,7 @@ public:
     FILE * ret;
     
 #ifdef REPRODUCIBLE_FDS 
-    if(!isRollback()) { 
+    if(!global_isRollback()) { 
       //PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = WRAP(fopen64)(filename, modes);
       if(ret != NULL) {
@@ -459,7 +459,7 @@ public:
   int mprotect(const void *addr, size_t len, int prot) {
     int ret;
     if(threadSpawning()) {
-      if(isRollback()) {
+      if(global_isRollback()) {
         return 0;
       }
       else {
@@ -480,7 +480,7 @@ public:
   int munmap(void *start, size_t length) {
     int ret = 0;
    
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       getRecord()->recordMunmapOps(start, length); 
     }
     return ret;
@@ -776,7 +776,7 @@ public:
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(oldfd)) {
       // In the rollback phase, we only call 
-      if(isRollback()) {
+      if(global_isRollback()) {
         ret = _fops.getFdAtOpen();
       }
       else {
@@ -809,7 +809,7 @@ public:
   
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(newfd)) {
-      if(isRollback()) {
+      if(global_isRollback()) {
         ret = _fops.getFdAtOpen();
       }
       else {
@@ -1152,7 +1152,7 @@ public:
       {
 #ifdef REPRODUCIBLE_FDS
         // In the rollback phase, we only call 
-        if(isRollback()) {
+        if(global_isRollback()) {
           ret = _fops.getFdAtOpen();
         }
         else {
@@ -1434,7 +1434,7 @@ public:
   int gettimeofday(struct timeval *tv, struct timezone *tz){
     int ret;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       ret = WRAP(gettimeofday)(tv, tz);
       // Add this to the record list.
       getRecord()->recordGettimeofdayOps(ret, tv, tz); 
@@ -1477,7 +1477,7 @@ public:
   clock_t times(struct tms *buf){
     clock_t ret;
     
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       ret = WRAP(times)(buf);
       // Add this to the record list.
       getRecord()->recordTimesOps(ret, buf); 
@@ -2369,7 +2369,7 @@ public:
   time_t time(time_t *t){
     time_t ret;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       ret = WRAP(time)(t);
       // Add this to the record list.
       getRecord()->recordTimeOps(ret); 
@@ -3054,7 +3054,7 @@ public:
   int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc * tls, pid_t *ctid) {
     int ret;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       ret = WRAP(__clone)(fn, child_stack, flags, arg, pid, tls, ctid);
       getRecord()->recordCloneOps(ret); 
     }
@@ -3067,10 +3067,6 @@ public:
 #endif
 
 private:
-  bool isRollback() {
-    return globalinfo::getInstance().isRollback();
-  }
- 
   bool threadSpawning() {
     return xthread::getInstance().threadSpawning();
   }

@@ -90,7 +90,7 @@ public:
 
     while(1);
 #endif
-    globalinfo::getInstance().initialize();
+    global_initialize();
 
     
     installSignalHandler();
@@ -127,7 +127,7 @@ public:
     //fprintf(stderr, "In the end of finalize function\n");
     //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
-    if(!globalinfo::getInstance().isRollback())
+    if(!global_isRollback())
       epochEnd();
 
     PRINF("%d: finalize now !!!!!\n", getpid());

@@ -190,25 +190,25 @@ public:
     syncVar->syncVarType = type;
     syncVar->variable = ptr;
     
-    globalinfo::getInstance().lock();
+    global_lock();
 
     listInsertTail(&syncVar->list, &_deferSyncs);
     if(type == E_SYNCVAR_THREAD) {
       incrementReapableThreads();
     }   
  
-    globalinfo::getInstance().unlock();
+    global_unlock();
   }
 
   void cancelAliveThread(pthread_t  thread) {
     thread_t * deadThread = getThread(thread);
 
-    globalinfo::getInstance().lock();
+    global_lock();
     
     threadmap::getInstance().removeAliveThread(deadThread);
     _aliveThreads--;
     _reapableThreads--;
-    globalinfo::getInstance().unlock();
+    global_unlock();
   }
 
     // We actually get those parameter about new created thread

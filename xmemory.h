@@ -428,7 +428,7 @@ public:
     bool hasOverflow = false; 
 
     // Whether it is a rollback phase
-    if(globalinfo::getInstance().isRollback()) {
+    if(global_isRollback()) {
       return false;
     }
 

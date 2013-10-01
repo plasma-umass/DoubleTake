@@ -33,7 +33,7 @@
 void xrun::startRollback(void) {
   // Now we are going to rollback. Wakup all threads
   // waiting on the shared conditional variable
-  globalinfo::getInstance().rollback();
+  global_rollback();
 
   PRWRN("Starting rollback for other threads\n");
 
@@ -64,7 +64,7 @@ void xrun::rollback(void) {
   fprintf(stderr, "\n\nNOW ROLLING BACK\n\n\n");
   // If this is the first time to rollback,
   // then we should rollback now.
-  if(globalinfo::getInstance().hasRollbacked()) {
+  if(global_hasRollbacked()) {
     PRDBG("HAS rollback, now exit\n");
     rollbackandstop();
     EXIT;
@@ -119,7 +119,7 @@ void xrun::epochBegin (void) {
   
   // Now waken up all other threads then threads can do its cleanup.
   PRDBG("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
-  globalinfo::getInstance().epochBegin();
+  global_epochBegin();
 
 #ifdef HANDLE_SYSCALL
   // Start the new epoch for current thread 
@@ -170,14 +170,14 @@ void xrun::stopAllThreads(void) {
      fork, it would have to happen in a signal handler.  But this is
      no allowed, pthread_kill is not guaranteed to be async-safe.  */
   //threadmap::getInstance().traverseAllThreads();
-  globalinfo::getInstance().checkWaiters();
+  global_checkWaiters();
 
   // Used to tell other threads about normal epoch end because of one have to commit.
   // pthread_kill can not support additional signal value except signal number
-  globalinfo::getInstance().setEpochEnd();
+  global_setEpochEnd();
 
   // In order to avoid this problem, we may avoid the thread spawning in this phase.
-  lock_global();
+  global_lock();
 
   //fprintf(stderr, "EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
   PRDBG("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. Stopping other threads\n", current, current->index, pthread_self());
@@ -218,10 +218,10 @@ void xrun::stopAllThreads(void) {
   }
 
   if(waiters != 0) {
-    globalinfo::getInstance().waitThreadsStops(waiters);
+    global_waitThreadsStops(waiters);
   }
     
-  unlock_global();
+  global_unlock();
 }
 
 bool isNewThread(void) {
@@ -242,14 +242,14 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
   // Check what is current status of the system.
   // If we are in the end of an epoch, then we save the context somewhere since
   // current thread is going to stop execution in order to commit or rollback.
-  assert(globalinfo::getInstance().isEpochEnd() == true);
+  assert(global_isEpochEnd() == true);
 
   //printf("Thread %p in sigusr2Handler %d\n", pthread_self(), __LINE__);
   // Wait for notification from the commiter 
-  globalinfo::getInstance().waitForNotification();
+  global_waitForNotification();
 
   // Check what is the current phase: rollback or resume
-  if(globalinfo::getInstance().isEpochBegin()) {
+  if(global_isEpochBegin()) {
     PRDBG("%p wakeup from notification.\n", pthread_self());
   // PRDBG("%p reset contexts~~~~~\n", pthread_self());
     xthread::epochBegin();
@@ -260,8 +260,8 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
     // since the exiting from signal handler can do this automatically.
   } 
   else {
-    PRDBG("epochBegin %d rollback %d\n", globalinfo::getInstance().isEpochBegin(), globalinfo::getInstance().isRollback());
-    assert(globalinfo::getInstance().isRollback() == true);
+    PRDBG("epochBegin %d rollback %d\n", global_isEpochBegin(), global_isRollback());
+    assert(global_isRollback() == true);
   
     if(isNewThread()) {
       lock_thread(current);

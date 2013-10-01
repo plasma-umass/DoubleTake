@@ -203,14 +203,6 @@ public:
   }
 
 private:
-  void global_lock() {
-    globalinfo::getInstance().lock();
-  }
-  
-  void global_unlock() {
-    globalinfo::getInstance().unlock();
-  }
-
   size_t getThreadSyncSeqNum() {
     return 0;
   }

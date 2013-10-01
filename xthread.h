@@ -139,9 +139,9 @@ public:
     int result;
 
 //   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       // Lock and record
-      lock_global();
+      global_lock();
 
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
@@ -154,11 +154,11 @@ public:
           PRERR("xdefines::MAX_ALIVE_THREADS is set to too small\n");
           EXIT;
         }
-        unlock_global();
+        global_unlock();
         
         invokeCommit();
  
-        lock_global();
+        global_lock();
         tindex = allocThreadIndex();
         if(tindex == -1) {
           PRDBG("System can support %d threadds: xdefines::MAX_ALIVE_THREADS to a larger number\n", xdefines::MAX_ALIVE_THREADS);
@@ -215,7 +215,7 @@ public:
         insertAliveThread(children, *tid);
       }
 
-      unlock_global();
+      global_unlock();
       
       //PRDBG("Creating THREAD%d at %p self %p\n", tindex, children, children->self); 
       if(result == 0) {
@@ -356,7 +356,7 @@ public:
     pthread_mutex_t * realMutex = NULL;
     int result = 0;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       // Allocate a real mutex.
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
@@ -383,8 +383,8 @@ public:
     SyncEventList * list = NULL;
 
     //fprintf(stderr, "do_mutex_lock\n"); 
-    if(!isRollback()) {
-     // fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
+    if(!global_isRollback()) {
+      fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
      // fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       if(realMutex == NULL) {
@@ -414,6 +414,9 @@ public:
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
+
+      fprintf(stderr, "MUTEX_LOCK in rollback\n");
+      while(1);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       assert(list != NULL);
       ret = list->peekSyncEvent();
@@ -439,7 +442,7 @@ public:
     int ret = 0;
     pthread_mutex_t * realMutex = NULL;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
       ret = WRAP(pthread_mutex_unlock)(realMutex);
     }
@@ -476,7 +479,7 @@ public:
     SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
     assert(list != NULL);
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       pthread_mutex_t * realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
       assert(realMutex != NULL);
 
@@ -525,7 +528,7 @@ public:
 #else
     pthread_barrier_t * realBarrier = NULL;
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       // Allocate a real mutex.
       realBarrier=(pthread_barrier_t *)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
 
@@ -559,7 +562,7 @@ public:
     assert(realBarrier != NULL);
     list = getSyncEventList(var, sizeof(pthread_barrier_t)); 
 
-    if(!isRollback()) {
+    if(!global_isRollback()) {
       // Since we do not have a lock here, which can not guarantee that
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
@@ -849,10 +852,6 @@ private:
 
   static bool isThreadDetached(void) {
     return current->isDetached;
-  }
-
-  static bool isRollback() {
-    return globalinfo::getInstance().isRollback();
   }
 
   void cleanSyncEvents() {

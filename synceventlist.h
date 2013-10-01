@@ -79,7 +79,7 @@ public:
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent * event = allocSyncEvent();
 
-    fprintf(stderr, "recordSyncEvent event %p\n", event);
+    PRDBG("recordSyncEvent event %p\n", event);
     listInit(&event->list);
 
     // Change the event there.

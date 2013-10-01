@@ -42,7 +42,7 @@ __thread thread_t * current;
 list_t threadmap::_alivethreads;
 
 int getThreadIndex(void) {
-  if(!globalinfo::getInstance().isInitPhase()) {
+  if(!global_isInitPhase()) {
   //  PRWRN("current %p\n", current);
     return current->index;
   }
