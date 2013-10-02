@@ -90,6 +90,7 @@ public:
 
     while(1);
 #endif
+    fprintf(stderr, "xrun::initialize\n");
     global_initialize();
 
     
@@ -100,7 +101,6 @@ public:
     // Initialize the internal heap at first.
     //InternalHeap::getInstance().malloc(8);
     _thread.initialize();
-
       
     // Initialize the memory (install the memory handler)
     _memory.initialize();

@@ -150,6 +150,7 @@ public:
   inline void saveContext() {
     size_t size;
    // PRDBG("SAVECONTEXT: Current %p _privateTop %p at %p _backup %p\n", getpid(), _privateTop, &_privateTop, _backup);
+    fprintf(stderr, "saveContext nownow!!!!!!\n");
     // Save the stack at first.
     _privateStart = &size;
     size = size_t((intptr_t)_privateTop - (intptr_t)_privateStart);

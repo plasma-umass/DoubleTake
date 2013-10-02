@@ -38,8 +38,14 @@
 #include "spinlock.h"
 #include "semaphore.h"
 #include "globalinfo.h"
+#include "internalheap.h"
 
 class xsync {
+
+  struct SyncEntry {
+    void * realEntry;
+    SyncEventList * list;  
+  };
 
 public:
   xsync()
@@ -50,11 +56,18 @@ public:
     _syncvars.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::SYNCMAP_SIZE);
   } 
 
-  void insertSyncMap(void * key, SyncEventList * list) {
-    _syncvars.insert(key, sizeof(key), list);
+  void insertSyncMap(void * key, void * realentry, SyncEventList * list) {
+    struct SyncEntry * entry = (struct SyncEntry *)InternalHeap::getInstance().malloc(sizeof(struct SyncEntry));
+    entry->realEntry = realentry;
+    entry->list = list;
+    _syncvars.insert(key, sizeof(key), entry);
   }
   
   void deleteMap(void * key) {
+    struct SyncEntry * entry;
+    if(_syncvars.find(key, sizeof(key), &entry)) {
+      InternalHeap::getInstance().free(entry); 
+    }
     _syncvars.erase(key, sizeof(void*));
   }
 
@@ -144,6 +157,10 @@ public:
     }
   }
 
+  inline void setSyncVariable(void ** syncvariable, void * realvariable) {
+    *syncvariable = realvariable;
+  }
+
   /*
    Prepare rollback. Only one thread can call this function.
    It basically check every synchronization variable.
@@ -152,13 +169,21 @@ public:
    */
   void prepareRollback() {
     syncvarsHashMap::iterator i;
-    SyncEventList * eventlist;
+    struct SyncEntry * entry;
+    SyncEventList * eventlist = NULL;
+    void * syncvariable;
     struct syncEvent * event;
     thread_t * thread;
 
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
-      eventlist = (SyncEventList *)i.getData();
-     
+      syncvariable = i.getkey();
+      entry = (struct SyncEntry *)i.getData();
+      if(syncvariable != entry) {
+        // Setting the address
+        setSyncVariable((void **)syncvariable, entry->realEntry);
+      }
+      
+      eventlist = entry->list;
       prepareEventListRollback(eventlist);
     }
   }
@@ -212,7 +237,7 @@ private:
   }
 
   // We are maintainning a private hash map for each thread.
-  typedef HashMap<void *, SyncEventList *, spinlock, InternalHeapAllocator> syncvarsHashMap;
+  typedef HashMap<void *, struct SyncEntry *, spinlock, InternalHeapAllocator> syncvarsHashMap;
 
   // Synchronization related to different sync variable should be recorded into
   // the synchronization variable related list.

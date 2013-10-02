@@ -77,7 +77,7 @@ extern "C" {
     g_phase = E_SYS_INIT;
     g_numOfEnds = 0;
 
-//    fprintf(stderr, "global initializee............\n");
+   //fprintf(stderr, "global initializee............\n");
     WRAP(pthread_mutex_init)(&g_mutex, NULL);
     WRAP(pthread_mutex_init)(&g_mutexSignalhandler, NULL);
     WRAP(pthread_cond_init)(&g_condCommitter, NULL);
@@ -98,7 +98,7 @@ extern "C" {
   }
 
   inline bool global_isRollback(void) {
-    fprintf(stderr, "ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+    //PRDBG("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
     return g_phase == E_SYS_ROLLBACK;
   }
 
@@ -109,7 +109,7 @@ extern "C" {
   inline void global_setRollback(void) {
     g_phase = E_SYS_ROLLBACK;
     g_hasRollbacked = true;
-    fprintf(stderr, "setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+    //fprintf(stderr, "setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
   inline bool global_hasRollbacked(void) {
@@ -121,18 +121,13 @@ extern "C" {
 
     // Wakeup all other threads.
     WRAP(pthread_cond_broadcast)(&g_condWaiters);
+    fprintf(stderr, "after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
   inline void global_epochBegin(void) {
     global_lockInsideSignalhandler();
 
-    if(g_phase == E_SYS_INIT) {
-      g_phase = E_SYS_EPOCH_BEGIN;
-    }
-    else {
-      fprintf(stderr, "epochBegin!!!!!!!\n");
-      while(1); 
-    }
+    g_phase = E_SYS_EPOCH_BEGIN;
     PRDBG("waken up all waiters\n");
     // Wakeup all other threads.
     WRAP(pthread_cond_broadcast)(&g_condWaiters);

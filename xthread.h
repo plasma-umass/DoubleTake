@@ -63,6 +63,7 @@ public:
   }
 
   void initialize(void) {
+    fprintf(stderr, "%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
     _thread.initialize();
 
     // Initialize the syncmap and threadmap.
@@ -77,7 +78,7 @@ public:
    
     // We do not know whether NULL can be support or not, so we use
     // fake variable name _spawningList here 
-    _sync.insertSyncMap((void *)_spawningList, _spawningList); 
+    _sync.insertSyncMap((void *)_spawningList, _spawningList, _spawningList); 
 
     // Register the first thread 
     initialThreadRegister();
@@ -140,6 +141,7 @@ public:
 
 //   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
+      fprintf(stderr, "PTHREAD_CREATE it is not rollback phase!!!!!!\n");
       // Lock and record
       global_lock();
 
@@ -360,19 +362,13 @@ public:
       // Allocate a real mutex.
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
-    //  fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
+//      fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
       // Actually initialize this mutex
       result = WRAP(pthread_mutex_init)(realMutex, attr);
 
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
     }
-    // In the rollback state, maybe we should reset the state of lock
-    else {
-     //FIXME 
-
-    }
-
     return result;
   }
 
@@ -384,7 +380,7 @@ public:
 
     //fprintf(stderr, "do_mutex_lock\n"); 
     if(!global_isRollback()) {
-      fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
+      //fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
      // fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       if(realMutex == NULL) {
@@ -414,10 +410,8 @@ public:
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
-
-      fprintf(stderr, "MUTEX_LOCK in rollback\n");
-      while(1);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+      fprintf(stderr, "synceventlist get mutex at %p list %p\n", mutex, list);
       assert(list != NULL);
       ret = list->peekSyncEvent();
       if(ret == 0) { 
@@ -708,6 +702,7 @@ private:
 
   inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
     void ** entry = (void **)ptr;
+    fprintf(stderr, "ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
     return (SyncEventList *)((intptr_t)(*entry) + size);
   }
 
@@ -722,7 +717,7 @@ private:
       SyncEventList * list = getSyncEventList(syncvar, size);
 
       // Adding this entry to global synchronization map
-      _sync.insertSyncMap((void *)syncvar, list); 
+      _sync.insertSyncMap((void *)syncvar, realvar, list); 
     }
   }
 

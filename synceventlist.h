@@ -67,6 +67,7 @@ class SyncEventList {
 public:
   SyncEventList(void * variable, thrSyncCmd synccmd)
   {
+    fprintf(stderr, "synceventlist initialization at list %p\n", &list);
     // Initialize the sequence number   
     listInit(&list);
     WRAP(pthread_mutex_init)(&lock, NULL);
@@ -102,7 +103,12 @@ public:
 
   // peekSyncEvent return the saved event value for current synchronization.
   inline int peekSyncEvent(void) {
+    fprintf(stderr, "synceventlist peeking at %p\n", &list);
     struct syncEvent * event = (struct syncEvent *)curentry;
+    if(event == NULL) {
+      fprintf(stderr, "peekSyncEvent event is not existing\n");
+      while(1);
+    }
     if(event->thread != (void *)current) {
       PRERR("This event should not belong to thread %p\n", current);
     }

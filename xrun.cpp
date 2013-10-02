@@ -70,12 +70,14 @@ void xrun::rollback(void) {
     EXIT;
   }
 
-  // We must prepare the rollback, for example, if multiple
-  // threads is existing, we must initiate the semaphores for threads
-  _thread.prepareRollback();
 
   // Rollback all memory before rolling back the context.
   _memory.rollback();
+  
+  // We must prepare the rollback, for example, if multiple
+  // threads is existing, we must initiate the semaphores for threads
+  // Also, we should setup those synchronization event list 
+  _thread.prepareRollback();
 
   PRDBG("\n\nset rollback\n\n\n");
 
@@ -127,6 +129,7 @@ void xrun::epochBegin (void) {
 #endif
 
   PRDBG("getpid %d: xrun::epochBegin\n", getpid());
+  
   // Save the context of this thread
   saveContext(); 
 }
