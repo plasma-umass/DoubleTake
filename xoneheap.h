@@ -42,7 +42,7 @@ public:
   void backup (void * end) { getHeap()->backup(end); }
 
   /// Check the buffer overflow.
-  bool checkHeapOverflow() { return getHeap()->checkHeapOverflow(); }
+  bool checkHeapOverflow(void * end) { return getHeap()->checkHeapOverflow(end); }
 
   void stats () { getHeap()->stats(); }
 

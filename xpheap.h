@@ -186,12 +186,12 @@ public:
 
     // Initialize the SourceHeap before malloc from there.
     char * base = (char *)SourceHeap::initialize(xdefines::USER_HEAP_SIZE, metasize);
-
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
+
     _heap = new (base) SuperHeap;
-    fprintf(stderr, "xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
+//    fprintf(stderr, "xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
     
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
@@ -211,9 +211,7 @@ public:
   // Performing the actual sanity check.
   bool checkHeapOverflow(void) {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
-    //fprintf(stderr, "****heapEnd %p\n", heapEnd);
-    sanitycheck::getInstance().setHeapPosition(heapEnd);
-    return SourceHeap::checkHeapOverflow();
+    return SourceHeap::checkHeapOverflow(heapEnd);
   }
 
   void recoverMemory(void) {

@@ -143,37 +143,16 @@ public:
 
 
   // Check the integrity of heap.
-  bool checkHeapIntegrity(void * start, size_t size) {
-    void * begin, * end;
-    void * stop = (void *)((intptr_t)start + size);
-  //  fprintf(stderr, "checkHeapIntegrity: start %p stop %p size %x. _checkStart %p heapPos %p\n", start, stop,  size, _checkStart, _heapPos); 
-
-    if(start >= _checkStart && start <= _heapPos) {
-      begin = start;
+  bool checkHeapIntegrity(void * begin, void * end) {
+    if(end == begin) {
+      return;
     }
-    else if(start < _checkStart) {
-      // start should be always valid. If not valid, problem happens.
-      begin = _checkStart;
-    }
-    else {
-      assert(0);
-    }
-      
-    if(stop >= _heapPos) {    
-      end = _heapPos;
-    }
-    else {
-      end = stop;
-    }
- 
-      
+    assert(begin >= _checkStart && begin <= _checkEnd);
+    assert(end > begin);
+    assert(end < _checkEnd);
     return _bitmap.checkSentinelsIntegrity(begin, end);
   }
 #endif 
-
-  void setHeapPosition(void * addr) {
-    _heapPos = addr;
-  }
 
   void cleanup(void * start, size_t sz) {
 #ifdef DETECT_OVERFLOW 
@@ -185,9 +164,6 @@ private:
   // start address of sanity check (start of actual heap)
   void * _checkStart;
   void * _checkEnd;
-
-  // What is the current position of heap
-  void * _heapPos;
 
 #ifdef DETECT_OVERFLOW 
   // Pointing to a shared bitmap

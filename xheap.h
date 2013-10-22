@@ -32,6 +32,7 @@
 
 //#include "xpersist.h"
 #include "xdefines.h"
+#include "heapowner.h"
 #include "xmapping.h"
 
 //template <unsigned long Size>
@@ -62,15 +63,19 @@ public:
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
 
-    // Register this heap so that they can be recoved later.
-    parent::initialize(ptr, startsize+metasize, true);
 
     // Initialize the following content according the values of xpersist class.
     _start      = (char *)((intptr_t)ptr + metasize);
     _end        = (char *)((intptr_t)_start + startsize);
+    _bigHeapStart = _end;
     _position  = (char *)_start;
     _remaining = startsize;
     _magic     = 0xCAFEBABE;
+
+    _unitSize = xdefines::USER_HEAP_CHUNK + xdefines::PageSize;
+    
+    // Register this heap so that they can be recoved later.
+    parent::initialize(ptr, startsize+metasize, (void*)_start);
 
     return ptr;	
     //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
@@ -120,6 +125,7 @@ public:
   inline void * malloc (size_t sz) {
     // Roud up the size to page aligned.
 	  sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
+    int threadindex = getThreadIndex();
 
 	  lock();
 
@@ -129,13 +135,26 @@ public:
       exit (-1);
     }
 
-    // FIXME: check the size. If size is too large, then we are allocating from the end of the heap 
-    void * p = _position;
+    void * p;
 
-    // Increment the bump pointer and drop the amount of memory.
     _remaining -= sz;
-    _position += sz;
+    // FIXME: check the size. If size is too large, then we are allocating from the end of the heap
+    if(sz > _unitSize) {
+      p = (void *)(_bigHeapStart - sz);
 
+      _bigHeapStart = (char *)p;
+ 
+      heapowner::getInstance().registerNormalHeap(p, threadindex);
+    }
+    else { 
+      assert(sz == _unitSize);
+
+      p = _position;
+      // Increment the bump pointer and drop the amount of memory.
+      _position += sz;
+
+      heapowner::getInstance().registerNormalHeap(p, threadindex);
+    }
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
     fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
@@ -174,12 +193,15 @@ private:
 
   /// The end of the heap area.
   volatile char *  _end;
+  volatile char *  _bigHeapStart;
 
   /// Pointer to the current bump pointer.
   char *  _position;
 
   /// Pointer to the amount of memory remaining.
   size_t  _remaining;
+
+  size_t _unitSize; 
 
   /// For single thread program, we are simply adding
   /// two backup pointers to backup the metadata.

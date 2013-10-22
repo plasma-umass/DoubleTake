@@ -72,14 +72,14 @@ public:
   }
 
   // Initialize the map and corresponding part.
-  void initialize(void * startaddr = 0, size_t size = 0, bool isHeap = false)
+  void initialize(void * startaddr = 0, size_t size = 0, void * heapstart = NULL)
   {
     // Check whether the size is valid, should be page aligned.
     if(size % xdefines::PageSize != 0) {
       PRFATAL("Wrong size %lx, should be page aligned.\n", size);
     }
 
-    printf("xmapping startaddr %p size %lx isHeap %d\n", startaddr, size, isHeap);
+    printf("xmapping startaddr %p size %lx heapstart %p\n", startaddr, size, heapstart);
 
     // Establish two maps to the backing file.
     // The persistent map is shared.
@@ -88,7 +88,8 @@ public:
     // If we specified a start address (globals), copy the contents into the
     // persistent area now because the transient memory mmap call is going
     // to squash it.
-	  _isHeap = isHeap;
+    _heapStart = heapstart; 
+
     _userMemory = (char *)startaddr;
 
     // The transient map is private and optionally fixed at the
@@ -124,13 +125,14 @@ public:
   }
 
 #ifdef DETECT_OVERFLOW
-  inline bool checkHeapOverflow(void) {
-    assert(_isHeap == true);
+  inline bool checkHeapOverflow(void * end) {
+    assert(_heapStart != NULL);
  
     bool hasOverflow = false;
 
+    // FIXME: we only need to check those allocated heap.
     hasOverflow = sanitycheck::getInstance().checkHeapIntegrity
-                  (base(), size());
+                  (_heapStart, end);
 
     return hasOverflow;
   }
@@ -140,7 +142,7 @@ public:
   void backup(void * end) {
     size_t sz;
 
-    if(_isHeap) {
+    if(_heapStart) {
       sz = (intptr_t)end - (intptr_t)base();
     }
     else {
@@ -149,7 +151,7 @@ public:
     }
 
     // Copy everything to _backupMemory From _userMemory
-    memcpy(_backupMemory, _userMemory, sz);
+    customMemcpy(_backupMemory, _userMemory, sz);
   }
 
   // How to commit some memory
@@ -157,14 +159,14 @@ public:
     size_t offset = (intptr_t)start - (intptr_t)base();
  
     void * dest = (void *)((intptr_t)_backupMemory + offset);
-    memcpy(dest, start, size);
+    customMemcpy(dest, start, size);
   }
 
   // Release all temporary pages.
   void recoverMemory(void *end) {
     size_t sz;
 
-    if(_isHeap) {
+    if(_heapStart) {
       sz = (intptr_t)end - (intptr_t)base();
     }
     else {
@@ -172,18 +174,62 @@ public:
       sz = size();
     }
 
-//    PRWRN("ccccccccccopying back memory to userMemory %p, sz %lx\n", _userMemory, sz);  
-    memcpy(_userMemory, _backupMemory, sz);
+    customMemcpy(_userMemory, _backupMemory, sz);
   }
 
+  void customMemcpy(void * dest, void * src, size_t len) {
+#ifdef SSE_SUPPORT
+#define PREFETCH "prefetchnta"
+    char * from = (char *)src;
+    char * to = (char *)dest;
+
+     void *retval;
+     size_t i;
+     retval = to;
+     i = len >> 6; /* len/64 */
+//     i = 64; /* len/64 */
+  __asm__ __volatile__ (
+             PREFETCH" (%0)\n"
+             PREFETCH" 64(%0)\n"
+             PREFETCH" 128(%0)\n"
+             PREFETCH" 192(%0)\n"
+             PREFETCH" 256(%0)\n"
+              : : "r" (from) );
+     /*
+        Only if SRC is aligned on 16-byte boundary.
+        It allows to use movaps instead of movups, which required data
+        to be aligned or a general-protection exception (#GP) is generated.
+     */
+    for(; i>0; i--)
+    {
+         __asm__ __volatile__ (
+         PREFETCH" 320(%0)\n"
+         "movaps (%0), %%xmm0\n"
+         "movaps 16(%0), %%xmm1\n"
+         "movaps 32(%0), %%xmm2\n"
+         "movaps 48(%0), %%xmm3\n"
+         "movntps %%xmm0, (%1)\n"
+         "movntps %%xmm1, 16(%1)\n"
+         "movntps %%xmm2, 32(%1)\n"
+         "movntps %%xmm3, 48(%1)\n"
+         :: "r" (from), "r" (to) : "memory");
+         from+=64;
+         to+=64;
+    }
+    __asm__ __volatile__ ("sfence":::"memory");
+
+//    #error "need support for memcpy"
+#else
+    memcpy(to, from, len);
+#endif
+  }
 
 private:
 
-  /// True if current xmapping.h is a heap.
-  bool _isHeap;
-
   /// The starting address of the region.
   void * _startaddr;
+
+  void * _heapStart;
 
   /// The size of the region.
   size_t _startsize;
