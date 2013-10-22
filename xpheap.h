@@ -126,7 +126,7 @@ public:
 private:
   // We want that a single heap's metadata are on different page
   // to avoid conflicts on one page
-  char buf[4096 - (sizeof(SuperHeap) % 4096)];
+//  char buf[4096 - (sizeof(SuperHeap) % 4096)];
 };
 
 // Different processes will have a different heap.
@@ -173,7 +173,7 @@ private:
 template <class SourceHeap>
 class xpheap : public SourceHeap 
 {
-  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::PHEAP_CHUNK> >
+  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::USER_HEAP_CHUNK> >
   SuperHeap;
 
 public: 
@@ -181,20 +181,17 @@ public:
   }
 
   void initialize(void) {
+
+    int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
+
     // Initialize the SourceHeap before malloc from there.
-    SourceHeap::initialize(NULL, xdefines::PROTECTEDHEAP_SIZE);
+    char * base = (char *)SourceHeap::initialize(xdefines::USER_HEAP_SIZE, metasize);
 
-    int  metasize = sizeof(SuperHeap);
-
-    char * base;
-
-    //printf("xpheap calling sourceHeap::malloc size %d\n", metasize);
-    base = (char *)SourceHeap::malloc(metasize);
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
-  //  fprintf(stderr, "\n\nInitialize the superheap\n\n");
     _heap = new (base) SuperHeap;
+    fprintf(stderr, "xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
     
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
@@ -204,8 +201,8 @@ public:
     void * sanitycheckStart;
     size_t sanitycheckSize;
     sanitycheckStart = (void *) ((intptr_t)(_heapStart) + metasize);
-    sanitycheckSize = xdefines::PROTECTEDHEAP_SIZE -  metasize;
-    //printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::PROTECTEDHEAP_SIZE);
+    sanitycheckSize = xdefines::USER_HEAP_SIZE -  metasize;
+    //printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::USER_HEAP_SIZE);
     sanitycheck::getInstance().initialize(sanitycheckStart, sanitycheckSize);
    // base = (char *)malloc(0, 4); 
   }

@@ -57,11 +57,10 @@ public:
     // Trying to get the information of global regions
     selfmap::getInstance().getGlobalRegions(&_regions[0], &_numbRegions);
 
-//    _numbRegions = 0;
-//    _numbRegions = 2;
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
 //      PRWRN("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
+      printf("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
       _maps[i].initialize(_regions[i].start, (size_t)((intptr_t)_regions[i].end - (intptr_t)_regions[i].start));
     }
 

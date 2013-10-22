@@ -77,8 +77,10 @@ public:
     // writes to pages).
     installSignalHandler();
 
+    fprintf(stderr, "xmemory line %d\n", __LINE__);
     // Call _pheap so that xheap.h can be initialized at first and then can work normally.
     _pheap.initialize();
+    fprintf(stderr, "xmemory line %d\n", __LINE__);
 	  _globals.initialize();
   }
 
@@ -484,7 +486,7 @@ public:
     static stack_t _sigstk;
 
     // Set up an alternate signal stack.
-    _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ, -1);
+    _sigstk.ss_sp = MM::mmapAllocatePrivate (SIGSTKSZ);
     _sigstk.ss_size = SIGSTKSZ;
     _sigstk.ss_flags = 0;
     WRAP(sigaltstack)(&_sigstk, (stack_t *) 0);

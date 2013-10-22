@@ -35,7 +35,7 @@
 template <class SourceHeap>
 class perheap : public SourceHeap 
 {
-  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::PHEAP_CHUNK> >
+  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::INTERNAL_HEAP_CHUNK> >
   SuperHeap;
 
 public: 
@@ -43,19 +43,16 @@ public:
   }
 
   void initialize(void) {
+
+    int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
+
     // Initialize the SourceHeap before malloc from there.
-    SourceHeap::initialize(NULL, xdefines::INTERNAL_HEAP_SIZE);
-
-    int  metasize = sizeof(SuperHeap);
-
-    char * base;
-
-    //printf("xpheap calling sourceHeap::malloc size %d\n", metasize);
-    base = (char *)SourceHeap::malloc(metasize);
+    char * base = (char *) SourceHeap::initialize(xdefines::INTERNAL_HEAP_SIZE, metasize);
+  
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
-  //  fprintf(stderr, "\n\nInitialize the superheap\n\n");
+    fprintf(stderr, "\n\nInternalHeap base %p metasize %lx\n\n", base, metasize);
     _heap = new (base) SuperHeap;
     
     // Get the heap start and heap end;

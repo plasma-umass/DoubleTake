@@ -72,12 +72,14 @@ public:
   }
 
   // Initialize the map and corresponding part.
-  void initialize(void * startaddr = 0, size_t size = 0)
+  void initialize(void * startaddr = 0, size_t size = 0, bool isHeap = false)
   {
     // Check whether the size is valid, should be page aligned.
     if(size % xdefines::PageSize != 0) {
       PRFATAL("Wrong size %lx, should be page aligned.\n", size);
     }
+
+    printf("xmapping startaddr %p size %lx isHeap %d\n", startaddr, size, isHeap);
 
     // Establish two maps to the backing file.
     // The persistent map is shared.
@@ -86,14 +88,8 @@ public:
     // If we specified a start address (globals), copy the contents into the
     // persistent area now because the transient memory mmap call is going
     // to squash it.
-    if(startaddr) {
-	    _isHeap = false;
-      _userMemory = (char *)startaddr;
-    }
-  	else {
-	    _isHeap = true;
-      _userMemory = (char *) MM::mmapAllocatePrivate(size);
-	  }
+	  _isHeap = isHeap;
+    _userMemory = (char *)startaddr;
 
     // The transient map is private and optionally fixed at the
     // desired start address.

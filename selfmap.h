@@ -257,7 +257,7 @@ public:
 
         void * newstart;
         // Check whether next entry should be also included or not.
-        if(nextentry.find("lib", 0) == string::npos) {
+        if(nextentry.find("lib", 0) == string::npos && nextentry.find(" 00:00 ") == string::npos) {
           getRegionInfo(nextentry, &newstart, &endaddr);
         }
         foundGlobals = true;

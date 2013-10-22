@@ -140,7 +140,7 @@ void xrun::epochEnd (void) {
   stopAllThreads();
 
 #ifdef DEBUG_ROLLBACK
-  rollback();
+//  rollback();
   //assert(0);
 #endif
 

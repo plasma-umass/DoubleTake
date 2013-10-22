@@ -79,7 +79,7 @@ public:
     
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
-//    fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
+    //fprintf(stderr, "starting max_stacksize %lx!!!!!\n", __max_stack_size);
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;
@@ -93,11 +93,14 @@ public:
     fprintf(stderr, "xrun::initialize\n");
     global_initialize();
 
+    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     
     installSignalHandler();
     
+    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     InternalHeap::getInstance().initialize();
 
+    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     // Initialize the internal heap at first.
     //InternalHeap::getInstance().malloc(8);
     _thread.initialize();
@@ -113,9 +116,9 @@ public:
     _pid = pid;
     _main_id = pid;
 
-    PRDBG("starting!!!!!\n");
-//    fprintf(stderr, "starting!!!!!\n");
+//    PRDBG("starting!!!!!\n");
     epochBegin();
+    fprintf(stderr, "starting!!!!!\n");
   }
   
   void finalize (void)
@@ -236,7 +239,7 @@ private:
     static stack_t _sigstk;
 
     // Set up an alternate signal stack.
-    _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ, -1);
+    _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ);
     _sigstk.ss_size = SIGSTKSZ;
     _sigstk.ss_flags = 0;
     WRAP(sigaltstack)(&_sigstk, (stack_t *) 0);

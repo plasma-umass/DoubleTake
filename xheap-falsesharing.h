@@ -30,15 +30,11 @@
 #ifndef _XHEAP_H_
 #define _XHEAP_H_
 
-//#include "xpersist.h"
 #include "xdefines.h"
-#include "xmapping.h"
 
 //template <unsigned long Size>
-class xheap : public xmapping
+class xheap 
 {
-  typedef xmapping parent;
-
 public:
 
   // It is very very important to put the first page in a separate page since it is shared by different
@@ -46,7 +42,8 @@ public:
   // greately and also can affect the correctness: we don't want different threads 
   // end up getting the same memory from the private mapping. 
   // It is possible that we don't need sanityCheck any more, but we definitely need a lock to avoid the race on "metatdata".
-  xheap () {
+  xheap ()
+  {
   }
 
   void * initialize(size_t startsize, size_t metasize) 
@@ -54,54 +51,28 @@ public:
     void * ptr;
 
     // We must initialize the heap now.
-    void * startHeap = (void *)(xdefines::USER_HEAP_BASE - metasize);
+    void * startHeap = (void *)(USER_HEAP_BASE - metasize);
 
     //fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
     ptr = MM::mmapAllocatePrivate(startsize+metasize, (void *)startHeap);
 
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
-
-    // Register this heap so that they can be recoved later.
-    parent::initialize(ptr, startsize+metasize, true);
-
+  
     // Initialize the following content according the values of xpersist class.
     _start      = (char *)((intptr_t)ptr + metasize);
-    _end        = (char *)((intptr_t)_start + startsize);
+    _end        = (void *)((intptr_t)_start + startsize);
     _position  = (char *)_start;
     _remaining = startsize;
     _magic     = 0xCAFEBABE;
-
-    return ptr;	
-    //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
+    fprintf(stderr, "XHEAP:_start %p end is %p\n", _start, _end);
+    return ptr;
+    // PRDBG("XHEAP:_start at %p end at %p mutexlock %p\n", &_start, &_end, _lock);
   }
 
-  /*
-   * We don't need to backup the metadata for each allocation.
-   * We will do this for each transaction.
-   * Also, we can recover it if we want to do rollback, only for single thread program!!!FIXME.
-   * However, this approach is not good for multithreaded program since
-   * a transaction may acquire memory sever times and they are interleaved
-   * as other threads. We CANNOT do a deterministic replay because of this.
-   * We may endup using a list to keep those newly allocated objects everytime.
-   * In the rollback phase, we only reuse those previous allocated objects. 
-   */ 
-  /// We will save those pointers to the backup ones.
-  inline void saveHeapMetadata(void) {
-    _positionBackup = _position;
-    _remainingBackup = _remaining;
-    //PRDBG("save heap metadata, _position %p remaining 0x%lx\n", *_position, *_remaining);
-  }
-
-  /// We will overlap the metadata with the saved ones
-  /// when we need to backup
-  inline void recoverHeapMetadata(void) {
-    _position = _positionBackup;
-    _remaining = _remainingBackup;
-    //PRDBG("in recover, now _position %p remaining 0x%lx\n", *_position, *_remaining);
-  }
 
   inline void * getHeapStart(void) {
+    //PRDBG("*****XHEAP:_start %p*****\n", _start);
     return (void *)_start;
   }
 
@@ -112,16 +83,18 @@ public:
   // Get current heap position
   // We only need to do the sanity check until current position.
   inline void * getHeapPosition(void) {
-	  return  _position;
+    return  _position;
   }
 
   // We need to page-aligned size, we don't want that
   // two different threads are using the same page here.
   inline void * malloc (size_t sz) {
-    // Roud up the size to page aligned.
-	  sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
+    sanityCheck();
 
-	  lock();
+    // Roud up the size to page aligned.
+    sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
+
+    lock();
 
     if (_remaining < sz) { 
       fprintf (stderr, "Fatal error: out of memory for heap.\n");
@@ -129,7 +102,6 @@ public:
       exit (-1);
     }
 
-    // FIXME: check the size. If size is too large, then we are allocating from the end of the heap 
     void * p = _position;
 
     // Increment the bump pointer and drop the amount of memory.
@@ -137,13 +109,9 @@ public:
     _position += sz;
 
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
-	  unlock();
-    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
+    //fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
+    unlock();
     
-#ifdef DETECT_OVERFLOW
-    // We must cleanup corresponding bitmap 
-   sanitycheck::getInstance().cleanup(p, sz);
-#endif
     // Now we cleanup the corresponding 
     //printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x\n", getpid(),  p, (intptr_t)p + sz,  sz);
     return p;
@@ -170,23 +138,16 @@ private:
   }
 
   /// The start of the heap area.
-  volatile char *  _start;
+  void *  _start;
 
   /// The end of the heap area.
-  volatile char *  _end;
+  void *  _end;
 
   /// Pointer to the current bump pointer.
   char *  _position;
 
   /// Pointer to the amount of memory remaining.
   size_t  _remaining;
-
-  /// For single thread program, we are simply adding
-  /// two backup pointers to backup the metadata.
-  char *  _positionBackup;
-
-  /// Pointer to the amount of memory remaining.
-  size_t  _remainingBackup;
 
   /// A magic number, used for sanity checking only.
   size_t  _magic;
@@ -196,3 +157,4 @@ private:
 };
 
 #endif
+

@@ -34,7 +34,7 @@ class xoneheap {
 public:
   enum { Alignment = 16 };
 
-  void initialize(void * ptr, size_t size) { getHeap()->initialize(ptr, size); }
+  void * initialize(size_t size, size_t metasize) { return getHeap()->initialize(size, metasize); }
   void sanitycheckInitialize(void * ptr, size_t size) { getHeap()->sanitycheckInitialize(ptr, size); }
   void finalize () { getHeap()->finalize(); }
   

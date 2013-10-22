@@ -92,26 +92,16 @@ extern "C" {
 
 class xdefines {
 public:
-#ifdef X86_32BIT
-  enum { PROTECTEDHEAP_SIZE = 1048576UL * 512 };
-#else
-  //enum { PROTECTEDHEAP_SIZE = 1048576UL * 1024 };
-  enum { PROTECTEDHEAP_SIZE = 1048576UL * 8192 };
-  //enum { PROTECTEDHEAP_SIZE = 1048576UL * 4096 };
-#endif
-//  enum { SHAREDHEAP_SIZE = 1048576UL * 2048 };
-  //enum { PROTECTEDHEAP_CHUNK = 40960 };
-  enum { PHEAP_CHUNK = 40960 };
-  enum { SHAREDHEAP_CHUNK = 1048576 * 10};
-  enum { LARGE_CHUNK = 1024 };
-  //enum { INTERNAL_HEAP_SIZE = 1048576UL * 2048 };
-  enum { INTERNAL_HEAP_SIZE = 1048576UL * 2048 };
+  enum { USER_HEAP_SIZE     = 1048576UL * 8192 }; // 8G
+  enum { USER_HEAP_BASE     = 0x40000000 }; // 1G
+  enum { MAX_USER_SPACE     = USER_HEAP_BASE + USER_HEAP_SIZE };
+  enum { INTERNAL_HEAP_BASE = 0x100000000000 };
+  enum { INTERNAL_HEAP_SIZE = 1048576 * 256 };
 
-  // Reserve how many bitmap segment for each process
-  // Now consider that we wil have 512M data, for each page,
-  // We will need a bitmap segment. Totally, we will need around
-  // 128 K bitmap. 
-  enum { PRIVATE_PAGES = 20000 }; 
+  
+  // 128M so that almost all memory is allocated from the begining. 
+  enum { USER_HEAP_CHUNK = 1048576 * 128 }; 
+  enum { INTERNAL_HEAP_CHUNK = 1048576 };
 
   // 4 bytes is representing by 1 bit. If bit is 0, it is not a canary word.
   // Otherwise, it is a canary word. 
@@ -120,14 +110,7 @@ public:
   enum { MAX_WATCHPOINTS  = 4 };
   enum { PageSize = 4096UL };
   enum { PAGE_SIZE_MASK = (PageSize-1) };
-  //enum { NUM_HEAPS = 32 };
-#ifdef SINGLE_THREAD
-  // We can only supported 128 threads simultaneously
-  enum { MAX_ALIVE_THREADS = 1 }; 
-#else 
-//  enum { MAX_ALIVE_THREADS = 16 }; 
   enum { MAX_ALIVE_THREADS = 64 }; 
-#endif
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 }; 
   enum { THREAD_MAP_SIZE = 1024 }; 

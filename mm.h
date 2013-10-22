@@ -45,8 +45,8 @@ public:
   }
 
   static void * mmapAllocatePrivate (size_t sz,
-				 int fd = -1,
-				 void * startaddr = NULL) 
+				 void * startaddr = NULL,
+				 int fd = -1)
   {
     return allocate (false, sz, fd, startaddr);
   }
