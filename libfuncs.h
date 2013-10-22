@@ -16,9 +16,9 @@
 #include <time.h>
 #include <utime.h>
 #include <unistd.h>
-#include <attr/xattr.h>
+//#include <attr/xattr.h>
 #include <mqueue.h>
-#include <keyutils.h>
+//#include <keyutils.h>
 //#include <aio.h>
 //#include <linux/futex.h>
 //#include <linux/unistd.h>
@@ -622,8 +622,8 @@ extern mqd_t (*WRAP(mq_notify))(mqd_t mqdes, const struct sigevent *notification
 extern mqd_t (*WRAP(mq_getsetattr))(mqd_t mqdes, struct mq_attr *newattr, struct mq_attr *oldattr);
 extern long (*WRAP(kexec_load))(unsigned long entry, unsigned long nr_segments, struct kexec_segment *segments, unsigned long flags);
 extern int (*WRAP(waitid))(idtype_t idtype, id_t id, siginfo_t *infop, int options);
-extern key_serial_t (*WRAP(add_key))(const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring);
-extern key_serial_t (*WRAP(request_key))(const char *type, const char *description, const char *callout_info, key_serial_t keyring);
+//extern key_serial_t (*WRAP(add_key))(const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring);
+//extern key_serial_t (*WRAP(request_key))(const char *type, const char *description, const char *callout_info, key_serial_t keyring);
 extern long (*WRAP(keyctl))(int cmd, ...);
 extern int (*WRAP(ioprio_get))(int which, int who);
 extern int (*WRAP(ioprio_set))(int which, int who, int ioprio);
@@ -675,10 +675,10 @@ extern int (*WRAP(ppoll))(struct pollfd *fds, nfds_t nfds, const struct timespec
 extern int (*WRAP(unshare))(int flags);
 extern long (*WRAP(get_robust_list))(int pid, struct robust_list_head **head_ptr, size_t *len_ptr);
 extern long (*WRAP(set_robust_list))(struct robust_list_head *head, size_t len);
-extern int (*WRAP(splice))(int fd_in, __off64_t *off_in, int fd_out, __off64_t *off_out, size_t len, unsigned int flags);
-extern int (*WRAP(tee))(int fd_in, int fd_out, size_t len, unsigned int flags);
+extern ssize_t (*WRAP(splice))(int fd_in, __off64_t *off_in, int fd_out, __off64_t *off_out, size_t len, unsigned int flags);
+extern ssize_t (*WRAP(tee))(int fd_in, int fd_out, size_t len, unsigned int flags);
 extern int (*WRAP(sync_file_range))(int fd, __off64_t offset, __off64_t nbytes, unsigned int flags);
-extern int (*WRAP(vmsplice))(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags);
+extern ssize_t (*WRAP(vmsplice))(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags);
 extern long (*WRAP(move_pages))(pid_t pid, unsigned long nr_pages, const void **address, const int *nodes, int *status, int flags);
 /*
 #define _SYS_epoll_pwait  281

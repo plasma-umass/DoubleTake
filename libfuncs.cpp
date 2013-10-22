@@ -564,8 +564,8 @@ mqd_t (*WRAP(mq_notify))(mqd_t mqdes, const struct sigevent *notification);
 mqd_t (*WRAP(mq_getsetattr))(mqd_t mqdes, struct mq_attr *newattr, struct mq_attr *oldattr);
 long (*WRAP(kexec_load))(unsigned long entry, unsigned long nr_segments, struct kexec_segment *segments, unsigned long flags);
 int (*WRAP(waitid))(idtype_t idtype, id_t id, siginfo_t *infop, int options);
-key_serial_t (*WRAP(add_key))(const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring);
-key_serial_t (*WRAP(request_key))(const char *type, const char *description, const char *callout_info, key_serial_t keyring);
+//key_serial_t (*WRAP(add_key))(const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring);
+//key_serial_t (*WRAP(request_key))(const char *type, const char *description, const char *callout_info, key_serial_t keyring);
 long (*WRAP(keyctl))(int cmd, ...);
 int (*WRAP(ioprio_get))(int which, int who);
 int (*WRAP(ioprio_set))(int which, int who, int ioprio);
@@ -623,10 +623,10 @@ int (*WRAP(ppoll))(struct pollfd *fds, nfds_t nfds, const struct timespec *timeo
 int (*WRAP(unshare))(int flags);
 long (*WRAP(get_robust_list))(int pid, struct robust_list_head **head_ptr, size_t *len_ptr);
 long (*WRAP(set_robust_list))(struct robust_list_head *head, size_t len);
-int (*WRAP(splice))(int fd_in, __off64_t *off_in, int fd_out, __off64_t *off_out, size_t len, unsigned int flags);
-int (*WRAP(tee))(int fd_in, int fd_out, size_t len, unsigned int flags);
+ssize_t (*WRAP(splice))(int fd_in, __off64_t *off_in, int fd_out, __off64_t *off_out, size_t len, unsigned int flags);
+ssize_t (*WRAP(tee))(int fd_in, int fd_out, size_t len, unsigned int flags);
 int (*WRAP(sync_file_range))(int fd, off64_t offset, off64_t nbytes, unsigned int flags);
-int (*WRAP(vmsplice))(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags);
+ssize_t (*WRAP(vmsplice))(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags);
 long (*WRAP(move_pages))(pid_t pid, unsigned long nr_pages, const void **address, const int *nodes, int *status, int flags);
 /*
 #define _SYS_epoll_pwait  281
@@ -902,8 +902,8 @@ void init_real_functions() {
   SET_WRAPPED(mq_getsetattr, RTLD_NEXT);
   SET_WRAPPED(kexec_load, RTLD_NEXT);
   SET_WRAPPED(waitid, RTLD_NEXT);
-  SET_WRAPPED(add_key, RTLD_NEXT);
-  SET_WRAPPED(request_key, RTLD_NEXT);
+//  SET_WRAPPED(add_key, RTLD_NEXT);
+//  SET_WRAPPED(request_key, RTLD_NEXT);
   SET_WRAPPED(keyctl, RTLD_NEXT);
   SET_WRAPPED(ioprio_get, RTLD_NEXT);
   SET_WRAPPED(ioprio_set, RTLD_NEXT);

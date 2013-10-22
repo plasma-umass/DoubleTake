@@ -40,9 +40,9 @@
 #include <time.h>
 #include <utime.h>
 #include <unistd.h>
-#include <attr/xattr.h>
+//#include <attr/xattr.h>
 #include <mqueue.h>
-#include <keyutils.h>
+//#include <keyutils.h>
 //#include <linux/aio.h>
 //#include <linux/futex.h>
 //#include <linux/unistd.h>
@@ -2308,13 +2308,13 @@ extern "C" {
     return syscalls::getInstance().set_robust_list(head, len);
   }
 
-  int splice(int fd_in, __off64_t *off_in, int fd_out,
+  ssize_t splice(int fd_in, __off64_t *off_in, int fd_out,
               __off64_t *off_out, size_t len, unsigned int flags){
     fprintf(stderr, " in stopgap at %d\n", __LINE__);
     return syscalls::getInstance().splice(fd_in, off_in, fd_out, off_out, len, flags);
   }
 
-  int tee(int fd_in, int fd_out, size_t len, unsigned int flags){
+  ssize_t tee(int fd_in, int fd_out, size_t len, unsigned int flags){
     fprintf(stderr, " in stopgap at %d\n", __LINE__);
     return syscalls::getInstance().tee(fd_in, fd_out, len, flags);
   }
@@ -2325,7 +2325,7 @@ extern "C" {
     return syscalls::getInstance().sync_file_range(fd, offset, nbytes, flags);
   }
 
-  int vmsplice(int fd, const struct iovec *iov,
+  ssize_t vmsplice(int fd, const struct iovec *iov,
                 size_t nr_segs, unsigned int flags){
     fprintf(stderr, " in stopgap at %d\n", __LINE__);
     return syscalls::getInstance().vmsplice(fd, iov, nr_segs, flags);
