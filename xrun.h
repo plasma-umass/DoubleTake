@@ -90,17 +90,13 @@ public:
 
     while(1);
 #endif
-    fprintf(stderr, "xrun::initialize\n");
     global_initialize();
 
-    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
-    
     installSignalHandler();
     
-    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
+  //  fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     InternalHeap::getInstance().initialize();
 
-    fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     // Initialize the internal heap at first.
     //InternalHeap::getInstance().malloc(8);
     _thread.initialize();
@@ -168,59 +164,6 @@ public:
     return _pid;
   }
 
-  /* Heap-related functions. */
-  inline void * malloc (size_t sz) {
-    void * ptr;
-    if(xthread::getInstance().threadSpawning()) {
-      ptr = InternalHeap::getInstance().malloc(sz);
-    }
-    else {
-      ptr = _memory.malloc (getIndex(), sz);
-    }
-    return ptr;
-  }
-
-  inline void * memalign(size_t boundary, size_t sz) {
-    return _memory.memalign(getIndex(), boundary, sz);
-  }
-
-  inline void * calloc (size_t nmemb, size_t sz) {
-    void * ptr = malloc(nmemb * sz);
-    return ptr;
-  }
-
-  // In fact, we can delay to open its information about heap.
-  inline void free (void * ptr) {
-    _memory.free (getIndex(), ptr);
-  }
-
-  inline size_t getSize (void * ptr) {
-    return _memory.getSize (ptr);
-  }
-
-  inline void * realloc(void * ptr, size_t sz) {
-    if (sz == 0) {
-      free (ptr);
-      return NULL;
-    }
-
-    // Do actual allocation
-    void * newptr = malloc(sz);
-    //PRINF("realloc ptr %p sz %x\n", ptr, sz);
-    if (ptr == NULL) {
-      return newptr;
-    }
-
-    size_t os = getSize (ptr);
-    if (newptr && os != 0) {
-      size_t copySz = (os < sz) ? os : sz;
-      memcpy (newptr, ptr, copySz);
-    }
-
-    free(ptr);
-    return newptr;
-  }
-
   void epochBegin (void);
   void epochEnd (void);
 private:
@@ -269,14 +212,7 @@ private:
   // Notify the system call handler about rollback phase
   void startRollback();
 
-  int getIndex() {
-    return _thread.getIndex();
-  }
-
-  typedef enum { FAILED, SUCCEEDED } commitResult;
-
   xthread&  _thread;
-
   /// The memory manager (for both heap and globals).
   xmemory&     _memory;
   watchpoint&     _watchpoint;

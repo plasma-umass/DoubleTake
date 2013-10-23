@@ -52,6 +52,7 @@
 #include "finetime.h"
 #include "watchpoint.h"
 #include "globalinfo.h"
+#include "xthread.h"
 
 // Encapsulates all memory spaces (globals & heap).
 class xmemory {
@@ -77,10 +78,10 @@ public:
     // writes to pages).
     installSignalHandler();
 
-    fprintf(stderr, "xmemory line %d\n", __LINE__);
     // Call _pheap so that xheap.h can be initialized at first and then can work normally.
-    _pheap.initialize();
-    fprintf(stderr, "xmemory line %d\n", __LINE__);
+    _heapBegin = (intptr_t) _pheap.initialize((void *)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
+
+    _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
 	  _globals.initialize();
   }
 
@@ -88,22 +89,57 @@ public:
 	  _globals.finalize();
 	  _pheap.finalize();
   }
+  
+  /* Heap-related functions. */
+  inline void * malloc (size_t sz) {
+    void * ptr;
+    if(xthread::getInstance().threadSpawning()) {
+      ptr = InternalHeap::getInstance().malloc(sz);
+    }
+    else {
+      ptr = realmalloc(sz);
+    }
+    return ptr;
+  }
 
-  // Intercepting those allocations
-  inline void *malloc (int heapid, size_t sz) {
+  inline void * calloc (size_t nmemb, size_t sz) {
+    void * ptr = malloc(nmemb * sz);
+    return ptr;
+  }
+
+  inline void * realloc(void * ptr, size_t sz) {
+    if (sz == 0) {
+      free (ptr);
+      return NULL;
+    }
+
+    // Do actual allocation
+    void * newptr = malloc(sz);
+    if (ptr == NULL) {
+      return newptr;
+    }
+
+    size_t os = getSize (ptr);
+    if (newptr && os != 0) {
+      size_t copySz = (os < sz) ? os : sz;
+      memcpy (newptr, ptr, copySz);
+    }
+
+    free(ptr);
+    return newptr;
+  }
+
+
+  // Actual allocations
+  inline void * realmalloc (size_t sz) {
   	unsigned char * ptr = NULL;
     int mysize = sz;
 
-#ifndef X86_32BIT
     if(sz < 16) {
       mysize = 16;
     }
-#endif
   //  fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
-    ptr = (unsigned char *)_pheap.malloc (heapid, mysize);
-  //  fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
-//    PRWRN("malloc size %d ptr %p\n", sz, ptr);
- //   printf("THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+    ptr = (unsigned char *)_pheap.malloc(mysize);
 #ifdef DETECT_OVERFLOW
     objectHeader * o = getObject (ptr);
 
@@ -167,9 +203,9 @@ public:
     return (void *)(((intptr_t)ptr + boundary) & (~(boundary - 1)));
   }
 
-  inline void * memalign(int heapid, size_t boundary, size_t sz) {
+  inline void * memalign(size_t boundary, size_t sz) {
     // Actually, malloc is easy. Just have more memory at first.
-    void * ptr = malloc(heapid, boundary + sz);
+    void * ptr = malloc(boundary + sz);
 
     // Since the returned ptr is not aligned, return next aligned address
     void * newptr = getAlignedAddress(ptr, boundary); 
@@ -293,14 +329,18 @@ public:
     return origptr;
   }
 
+  bool inRange(intptr_t addr) {
+    return (addr > _heapBegin && addr < _heapEnd) ? true : false;
+  }
+
   // We should mark this whole objects with 
   // some canary words.
   // Change the free operation to put into the tail of  
   // list.
-   void free (int heapid, void * ptr) {
+   void free (void * ptr) {
     void * origptr;
-    
-    if(!_pheap.inRange(ptr)) {
+   
+    if(!inRange((intptr_t)ptr)) {
       return;
     }
 
@@ -325,7 +365,7 @@ public:
       }
 #endif
 
-      _pheap.free(heapid, origptr);
+      _pheap.free(origptr);
 
 #ifdef DETECT_OVERFLOW
       // We only remove the size 
@@ -334,6 +374,7 @@ public:
 #endif
     // Cleanup this object with sentinel except the first word. 
   }
+
 
   /// @return the allocated size of a dynamically-allocated object.
   inline size_t getSize (void * ptr) {
@@ -453,12 +494,14 @@ public:
     return (o - 1);
   }
 
-public:
-
   static objectHeader * getObject (void * ptr) {
     objectHeader * o = (objectHeader *) ptr;
     return (o - 1);
   }
+
+  void freeAllObjects(void);
+
+  void cleanupFreeList(void);
 
   /// Rollback to previous 
   static void handleSegFault();
@@ -520,6 +563,9 @@ private:
 
   /// The globals region.
   xglobals   _globals;
+
+  intptr_t _heapBegin;
+  intptr_t _heapEnd;
 
   /// The protected heap used to satisfy small objects requirement. Less than 256 bytes now.
   static xpheap<xoneheap<xheap > > _pheap;

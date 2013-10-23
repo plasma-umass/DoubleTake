@@ -42,6 +42,7 @@
 
 // Implemented for stopgap to check buffer overflow
 #include "sanitycheck.h"
+#include "freelist.h"
 
 template <class SourceHeap>
 class AdaptAppHeap : public SourceHeap {
@@ -180,12 +181,12 @@ public:
   xpheap() {
   }
 
-  void initialize(void) {
+  void * initialize(void * start, size_t heapsize) {
 
     int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
 
     // Initialize the SourceHeap before malloc from there.
-    char * base = (char *)SourceHeap::initialize(xdefines::USER_HEAP_SIZE, metasize);
+    char * base = (char *)SourceHeap::initialize(start, heapsize, metasize);
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
@@ -204,6 +205,7 @@ public:
     sanitycheckSize = xdefines::USER_HEAP_SIZE -  metasize;
     //printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::USER_HEAP_SIZE);
     sanitycheck::getInstance().initialize(sanitycheckStart, sanitycheckSize);
+    return (void *)_heapStart;
    // base = (char *)malloc(0, 4); 
   }
 
@@ -216,21 +218,35 @@ public:
 
   void recoverMemory(void) {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
-    return SourceHeap::recoverMemory(heapEnd);
+    SourceHeap::recoverMemory(heapEnd);
   }
 
   void backup(void) {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
     return SourceHeap::backup(heapEnd);
   }
-  
-  void * malloc(int heapid, size_t size) {
+ 
+  void * malloc(size_t size) {
     //printf("malloc in xpheap with size %d\n", size);
-    return _heap->malloc(heapid, size);
+    return _heap->malloc(getThreadIndex(), size);
   }
 
-  void free(int heapid, void * ptr) {
-    _heap->free(heapid, ptr);
+  void free(void * ptr) {
+    int tid = getThreadIndex();
+
+    // Check whether it is the same tid with the owner
+    int owner = SourceHeap::getOwner(ptr);
+    if(tid == owner) {  
+      _heap->free(tid, ptr);
+    }
+    else {
+      // Add this into a global list.
+      freelist::getInstance().cacheFreeObject(ptr, owner);
+    }
+  }
+
+  void realfree(void * ptr, int tindex) {
+    _heap->free(tindex, ptr);
   }
 
   size_t getSize (void * ptr) {

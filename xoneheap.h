@@ -34,9 +34,11 @@ class xoneheap {
 public:
   enum { Alignment = 16 };
 
-  void * initialize(size_t size, size_t metasize) { return getHeap()->initialize(size, metasize); }
+  void * initialize(void * start, size_t size, size_t metasize) { return getHeap()->initialize(start, size, metasize); }
   void sanitycheckInitialize(void * ptr, size_t size) { getHeap()->sanitycheckInitialize(ptr, size); }
   void finalize () { getHeap()->finalize(); }
+
+  int  getOwner(void * ptr) { return getHeap()->getOwner(ptr); }
   
   void recoverMemory(void * ptr) { getHeap()->recoverMemory(ptr); }
   void backup (void * end) { getHeap()->backup(end); }

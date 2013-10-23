@@ -47,7 +47,7 @@ public:
     int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
 
     // Initialize the SourceHeap before malloc from there.
-    char * base = (char *) SourceHeap::initialize(xdefines::INTERNAL_HEAP_SIZE, metasize);
+    char * base = (char *) SourceHeap::initialize((void *)xdefines::INTERNAL_HEAP_BASE, xdefines::INTERNAL_HEAP_SIZE, metasize);
   
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");

@@ -32,7 +32,6 @@
 
 //#include "xpersist.h"
 #include "xdefines.h"
-#include "heapowner.h"
 #include "xmapping.h"
 
 //template <unsigned long Size>
@@ -50,15 +49,20 @@ public:
   xheap () {
   }
 
-  void * initialize(size_t startsize, size_t metasize) 
+  void * initialize(void * startaddr, size_t startsize, size_t metasize) 
   {
     void * ptr;
+    
+    // Initialize corresponding heapowner
+    _unitSize = xdefines::USER_HEAP_CHUNK + xdefines::PageSize;
+    int units = startsize/_unitSize;
+    int ownermapSize = alignup(units * sizeof(int), xdefines::PageSize);
 
     // We must initialize the heap now.
     void * startHeap = (void *)(xdefines::USER_HEAP_BASE - metasize);
-
+    
     //fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
-    ptr = MM::mmapAllocatePrivate(startsize+metasize, (void *)startHeap);
+    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, (void *)startHeap);
 
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
@@ -67,12 +71,10 @@ public:
     // Initialize the following content according the values of xpersist class.
     _start      = (char *)((intptr_t)ptr + metasize);
     _end        = (char *)((intptr_t)_start + startsize);
-    _bigHeapStart = _end;
     _position  = (char *)_start;
     _remaining = startsize;
     _magic     = 0xCAFEBABE;
-
-    _unitSize = xdefines::USER_HEAP_CHUNK + xdefines::PageSize;
+    _owners     = (int *)_end;
     
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize+metasize, (void*)_start);
@@ -120,12 +122,47 @@ public:
 	  return  _position;
   }
 
+  inline void registerOwner(void * start, size_t sz) {
+    int threadindex = getThreadIndex();
+    int units = sz/_unitSize;
+
+    for(int i = 0; i < units; i++) {
+      _owners[i] = threadindex;
+    }
+  }
+
+  inline size_t findSize(size_t sz) {
+    int units = sz/_unitSize;
+
+    if(sz%_unitSize != 0) {
+      units++;
+    } 
+    return units * _unitSize;
+  }
+
+  inline size_t getMapIndex(void * addr) {
+    return ((intptr_t)addr - (intptr_t)_start)/_unitSize;
+  }
+
+  inline int getOwner(void * addr) {
+    if(addr > _end) {
+      return -1;
+    }
+    else {
+      return _owners[getMapIndex(addr)];
+    }
+  }
+
   // We need to page-aligned size, we don't want that
   // two different threads are using the same page here.
   inline void * malloc (size_t sz) {
     // Roud up the size to page aligned.
 	  sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
-    int threadindex = getThreadIndex();
+      
+    // Find smallest sz which is multiple of _unitSize
+    sz = findSize(sz);
+
+    void * p;
 
 	  lock();
 
@@ -135,26 +172,13 @@ public:
       exit (-1);
     }
 
-    void * p;
-
     _remaining -= sz;
-    // FIXME: check the size. If size is too large, then we are allocating from the end of the heap
-    if(sz > _unitSize) {
-      p = (void *)(_bigHeapStart - sz);
+    p = _position;
+    // Increment the bump pointer and drop the amount of memory.
+    _position += sz;
 
-      _bigHeapStart = (char *)p;
- 
-      heapowner::getInstance().registerNormalHeap(p, threadindex);
-    }
-    else { 
-      assert(sz == _unitSize);
+    registerOwner(p, sz);
 
-      p = _position;
-      // Increment the bump pointer and drop the amount of memory.
-      _position += sz;
-
-      heapowner::getInstance().registerNormalHeap(p, threadindex);
-    }
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
     fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
@@ -193,7 +217,6 @@ private:
 
   /// The end of the heap area.
   volatile char *  _end;
-  volatile char *  _bigHeapStart;
 
   /// Pointer to the current bump pointer.
   char *  _position;
@@ -209,6 +232,9 @@ private:
 
   /// Pointer to the amount of memory remaining.
   size_t  _remainingBackup;
+
+
+  int    * _owners;
 
   /// A magic number, used for sanity checking only.
   size_t  _magic;

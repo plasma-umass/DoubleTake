@@ -75,6 +75,7 @@
 //#include "memtrace.h"
 #include "xrun.h"
 
+#include "xmemory.h"
 #ifdef HANDLE_SYSCALL
 #include "syscalls.h"
 #endif
@@ -173,7 +174,7 @@ extern "C" {
       ptr = tempmalloc(sz);
     } else {
 //      printf("stopgapmalloc sz %d\n", sz);
-      ptr = xrun::getInstance().malloc (sz);
+      ptr = xmemory::getInstance().malloc(sz);
 //      printf("stopgapmalloc sz %d ptr %p\n", sz, ptr);
     }
     if (ptr == NULL) {
@@ -194,14 +195,14 @@ extern "C" {
 
   void stopgap_free (void * ptr) {
     if (initialized && ptr) {
-      xrun::getInstance().free (ptr);
+      xmemory::getInstance().free (ptr);
     }
   }
 
   size_t stopgap_malloc_usable_size(void * ptr) {
     //assert(initialized);
     if(initialized) {
-      return xrun::getInstance().getSize(ptr);
+      return xmemory::getInstance().getSize(ptr);
     }
     return 0;
   }
@@ -215,7 +216,7 @@ extern "C" {
       return newptr;
     }
     else { 
-      return xrun::getInstance().memalign(boundary, size);
+      return xmemory::getInstance().memalign(boundary, size);
     }
     return NULL;
   }
@@ -227,7 +228,7 @@ extern "C" {
       return newptr;
     }
     else { 
-      return xrun::getInstance().realloc (ptr, sz);
+      return xmemory::getInstance().realloc (ptr, sz);
     }
   }
  

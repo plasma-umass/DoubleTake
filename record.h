@@ -118,6 +118,7 @@ public:
     for(int i = 0; i < E_OP_MAX; i++) {
       listInit(&_glist[i]);
     }
+    _lck.init();
   }
 
   // Record a file operation according to given op.
@@ -364,8 +365,18 @@ public:
 
 private:
 
+  void lock(void) {
+    _lck.lock();
+  }
+
+  void unlock(void) {
+    _lck.unlock();
+  }
+
   inline void * allocEntry(eRecordOps op) {
+    lock();
     class RecordEntry * entry = _entries.alloc();
+    unlock();
     entry->operation = op;
     return entry->data; 
   }
@@ -404,6 +415,7 @@ private:
 
   RecordEntries<class RecordEntry, xdefines::MAX_RECORD_ENTRIES>  _entries;
   list_t _glist[E_OP_MAX];
+  spinlock _lck;
 };
 
 #endif

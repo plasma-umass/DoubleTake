@@ -87,6 +87,11 @@ extern "C" {
     void    *  eventlist;
     int        ret; // used for mutex_lock
   };
+  
+  struct freeObject {
+    void * ptr;
+    int owner; // which thread is using this heap.
+  };
 
 };
 
@@ -100,7 +105,7 @@ public:
 
   
   // 128M so that almost all memory is allocated from the begining. 
-  enum { USER_HEAP_CHUNK = 1048576 * 128 }; 
+  enum { USER_HEAP_CHUNK = 1048576 * 8 }; 
   enum { INTERNAL_HEAP_CHUNK = 1048576 };
 
   // 4 bytes is representing by 1 bit. If bit is 0, it is not a canary word.
@@ -137,6 +142,7 @@ public:
 
 //  enum { MAX_RECORD_ENTRIES = 0x1000 };
   enum { MAX_RECORD_ENTRIES = 0x1000000 };
+  enum { MAX_FREE_OBJECTS = 0x100000 };
   enum { MAX_SYNCEVENT_ENTRIES = 0x1000000 };
 
 #ifdef X86_32BIT

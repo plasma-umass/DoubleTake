@@ -93,6 +93,10 @@ public:
     _iter = 0;
   }
 
+  void prepareIteration(void) {
+    _iter = 0;
+  }
+
   inline Entry * getEntry(size_t index) {
     return &_start[index];
   }

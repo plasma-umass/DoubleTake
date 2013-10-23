@@ -38,13 +38,14 @@ public:
   SourceInternalHeap (void)
   { }
 
-  void * initialize(size_t initSize, size_t metasize) {
+  void * initialize(void * startaddr, size_t initSize, size_t metasize) {
     void * ptr;
     char * base;
     size_t size = initSize;
  
     // Call mmap to allocate a shared map.
-    ptr = MM::mmapAllocatePrivate(size+metasize, (void *)xdefines::INTERNAL_HEAP_BASE);
+    //ptr = MM::mmapAllocatePrivate(size+metasize, (void *)xdefines::INTERNAL_HEAP_BASE);
+    ptr = MM::mmapAllocatePrivate(size+metasize, (void *)startaddr);
     base = (char *)ptr;
 
     pthread_mutex_init(&_mutex, NULL);

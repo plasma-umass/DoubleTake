@@ -148,9 +148,11 @@ void xrun::epochEnd (void) {
  
   // First, attempt to commit.
   if(hasOverflow) {
+    _memory.cleanupFreeList();
     rollback();
   }
   else {
+    _memory.freeAllObjects();
     PRDBG("getpid %d: xrun::epochEnd without overflow\n", getpid());
     //fprintf(stderr, "getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
