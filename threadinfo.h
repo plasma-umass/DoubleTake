@@ -80,7 +80,11 @@ public:
     size_t perStackSize = __max_stack_size;
 
     unsigned long totalStackSize = perStackSize * 2 * xdefines::MAX_ALIVE_THREADS;
-    char * stackStart = (char *)MM::mmapAllocatePrivate(totalStackSize);
+    unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
+    unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
+
+    char * stackStart = (char *)MM::mmapAllocatePrivate(totalStackSize + qbufSize);
+    char * qbufStart = (char *)((intptr_t)stackStart + totalStackSize);
 
     // Initialize all mutex.
     thread_t * tinfo;
@@ -94,7 +98,9 @@ public:
     //  PRWRN("in xthread initialize i %d sysrecord %p\n", i , sysrecord); 
       sysrecord->initialize();
       tinfo->record = (void *)sysrecord;
-    
+
+      // Starting 
+      tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);    
       tinfo->available = true;
       tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 *i]);
       tinfo->newContext.setupBackup(&stackStart[perStackSize * 2 *i + 1]);

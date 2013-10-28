@@ -63,7 +63,7 @@ public:
   }
 
   void initialize(void) {
-    fprintf(stderr, "%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
+    //fprintf(stderr, "%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
     _thread.initialize();
 
     // Initialize the syncmap and threadmap.
@@ -141,7 +141,7 @@ public:
 
 //   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
-      fprintf(stderr, "PTHREAD_CREATE it is not rollback phase!!!!!!\n");
+//      fprintf(stderr, "PTHREAD_CREATE it is not rollback phase!!!!!!\n");
       // Lock and record
       global_lock();
 
@@ -233,7 +233,7 @@ public:
     }
     else {
       PRDBG("process %d is before thread_create now\n", current->index);
-      result = _spawningList->peekSyncEvent();
+      result = _sync.peekSyncEvent();
 
       getRecord()->getCloneOps(tid, &result);
       PRWRN("process %d in creation, result %d\n", current->index, result);
@@ -411,9 +411,9 @@ public:
     }
     else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      fprintf(stderr, "synceventlist get mutex at %p list %p\n", mutex, list);
+     // fprintf(stderr, "synceventlist get mutex at %p list %p\n", mutex, list);
       assert(list != NULL);
-      ret = list->peekSyncEvent();
+      ret = _sync.peekSyncEvent();
       if(ret == 0) { 
         waitSemaphore();
       }
@@ -421,6 +421,7 @@ public:
       // Update thread synchronization event in order to handle the nesting lock.
       _sync.advanceThreadSyncList();
     }
+    //fprintf(stderr, "do_mutex_lock done!!!!!\n"); 
     return ret;
   }
   
@@ -485,7 +486,7 @@ public:
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
-      ret = list->peekSyncEvent();
+      ret = _sync.peekSyncEvent();
       
       if(ret == 0) {
         struct syncEvent * event = list->advanceSyncEvent();
@@ -564,7 +565,7 @@ public:
       list->recordSyncEvent(E_SYNC_BARRIER, ret);
     }
     else {
-      ret = list->peekSyncEvent();
+      ret = _sync.peekSyncEvent();
       if(ret == 0) {
         waitSemaphore();
       }
@@ -637,10 +638,7 @@ public:
   static void epochBegin(void);
 
   // Rollback the whole process
-  inline void rollback(void) {
-    // Recover the context for current thread.
-    restoreContext(); 
-  }
+  static void rollback(void);
  
   void rollbackInsideSignalHandler(ucontext * context) {
     
@@ -693,6 +691,7 @@ public:
   }
 
   void invokeCommit(void);
+  void addQuarantineList(void * ptr, size_t sz);
 
 private:
   inline void * getSyncEntry(void * entry) {
@@ -702,7 +701,7 @@ private:
 
   inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
     void ** entry = (void **)ptr;
-    fprintf(stderr, "ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
+    //fprintf(stderr, "ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
     return (SyncEventList *)((intptr_t)(*entry) + size);
   }
 

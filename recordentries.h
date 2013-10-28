@@ -57,7 +57,8 @@ public:
 			fprintf(stderr, "%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
 			::abort();
 		}
-		
+	
+    //fprintf(stderr, "recordentries.h::initialize at _cur at %p\n", &_cur);	
 		// start to initialize it.
     _start = (Entry *)ptr;
 		_cur = 0;
@@ -78,7 +79,7 @@ public:
 		}
  		else {
 			// There is no enough entry now, re-allocate new entries now.
-			fprintf(stderr, "Not enought synchronization event entry, now _cur %x, _total %x!!!\n", _cur, _total);
+			fprintf(stderr, "Not enough entries, now _cur %x, _total %x at %p!!!\n", _cur, _total, &_cur);
 			::abort();
 		}
 		return entry;
@@ -111,15 +112,23 @@ public:
     }
   }
   
-  Entry * getIterEntry(void) {
+  Entry * retrieveIterEntry(void) {
     Entry * entry = NULL;
-    if(_iter <= _cur) {
+    if(_iter < _cur) {
       entry = getEntry(_iter);
       _iter++;
     }
     return entry;
   }
 
+  // No change on iteration entry.
+  Entry * getEntry(void) {
+    Entry * entry = NULL;
+    if(_iter < _cur) {
+      entry = getEntry(_iter);
+    }
+    return entry;
+  }
 
   // Only called in the replay
   Entry * firstIterEntry(void) {

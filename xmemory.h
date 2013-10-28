@@ -381,19 +381,13 @@ public:
     // Just pass the pointer along to the heap.
     return _pheap.getSize (ptr);
   }
-
+  
   // Commit something without check the heap overflow
   void atomicCommit(void * addr, size_t size) {
     int index;
 #if 0
-    if (_pheap.inRange (addr)) {
+    if (inRange (addr)) {
       _pheap.commit (addr, size);
-    }
-    else if (_globals.inRange (addr, &index)) {
-      _globals.commit(addr, size, index);
-    }
-    else {
-      assert(0);
     }
 #endif
   }
@@ -406,7 +400,8 @@ public:
     PRWRN("Recoverring the global memory\n");
     _globals.recoverMemory();
     _pheap.recoverMemory();
-   
+  
+    fprintf(stderr, "INSTALL watching points nowwwwww!!!\n"); 
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
@@ -501,6 +496,7 @@ public:
 
   void freeAllObjects(void);
 
+  void realfree(void * ptr);
   void cleanupFreeList(void);
 
   /// Rollback to previous 

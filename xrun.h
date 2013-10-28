@@ -111,10 +111,10 @@ public:
     // Set the current _tid to our process id.
     _pid = pid;
     _main_id = pid;
+//    fprintf(stderr, "starting!!!!!\n");
 
 //    PRDBG("starting!!!!!\n");
     epochBegin();
-    fprintf(stderr, "starting!!!!!\n");
   }
   
   void finalize (void)
@@ -126,15 +126,22 @@ public:
     //fprintf(stderr, "In the end of finalize function\n");
     //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
-    if(!global_isRollback())
+    if(!global_isRollback()) {
+#ifdef DETECT_USAGE_AFTER_FREE
+      finalUAFCheck();
+#endif
+
       epochEnd();
+    }
 
     PRINF("%d: finalize now !!!!!\n", getpid());
     // Now we have to cleanup all semaphores.
     _thread.finalize();
     
   }
-
+#ifdef DETECT_USAGE_AFTER_FREE
+  void finalUAFCheck(void);
+#endif
   // Simply commit specified memory block
   void atomicCommit(void * addr, size_t size) {
     _memory.atomicCommit(addr, size);

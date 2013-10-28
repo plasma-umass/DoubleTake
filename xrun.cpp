@@ -79,6 +79,7 @@ void xrun::rollback(void) {
   // Also, we should setup those synchronization event list 
   _thread.prepareRollback();
 
+  //while(1);
   PRDBG("\n\nset rollback\n\n\n");
 
   // Now we are going to rollback
@@ -163,6 +164,27 @@ void xrun::epochEnd (void) {
 bool isThreadSafe(thread_t * thread) {
   return thread->isSafe;
 }
+
+#ifdef DETECT_USAGE_AFTER_FREE
+void xrun::finalUAFCheck(void) {
+  threadmap::aliveThreadIterator i;
+  // Check all threads' quarantine list
+  for(i = threadmap::getInstance().begin(); 
+      i != threadmap::getInstance().end(); i++)
+  {
+    thread_t * thread = i.getThread();
+    
+    if(thread->qlist.finalUAFCheck()) {
+      rollback();
+    }
+  }
+
+  // Check freelist
+  if(freelist::getInstance().checkUAF()) {
+    rollback();
+  }
+}
+#endif
 
 void xrun::stopAllThreads(void) {
   threadmap::aliveThreadIterator i;

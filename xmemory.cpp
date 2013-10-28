@@ -71,3 +71,7 @@ void xmemory::freeAllObjects(void)
   freelist::getInstance().postFreeAllObjects(); 
 //  _pheap.realfree(ptr, tindex);
 }
+
+void xmemory::realfree(void * ptr) {
+  _pheap.realfree(ptr);
+}

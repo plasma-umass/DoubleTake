@@ -30,6 +30,7 @@
 #include "xcontext.h"
 #include "semaphore.h"
 #include "recordentries.h"
+#include "quarantine.h"
 
 extern "C" {
   typedef enum e_thrstatus {
@@ -87,6 +88,9 @@ extern "C" {
 
     // Synchronization events happens on this thread.
     RecordEntries<struct syncEvent, xdefines::MAX_SYNCEVENT_ENTRIES> syncevents;
+
+    quarantine qlist;
+
    // struct syncEventList syncevents;
     list_t pendingSyncevents;
    // struct syncEventList pendingSyncevents;

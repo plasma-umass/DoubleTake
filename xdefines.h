@@ -70,6 +70,7 @@ extern "C" {
   extern int getThreadIndex();
   extern char * getThreadBuffer();
   extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
+  extern void addThreadQuarantineList(void * ptr, size_t size);
   #define EXIT (WRAP(exit)(-1))
 
   inline size_t alignup(size_t size, size_t alignto) {
@@ -90,20 +91,29 @@ extern "C" {
   
   struct freeObject {
     void * ptr;
-    int owner; // which thread is using this heap.
+    union {
+      int owner; // which thread is using this heap.
+      size_t size;
+    };
   };
 
 };
 
 class xdefines {
 public:
+  //enum { USER_HEAP_SIZE     = 1048576UL * 1024 }; // 8G
   enum { USER_HEAP_SIZE     = 1048576UL * 8192 }; // 8G
   enum { USER_HEAP_BASE     = 0x40000000 }; // 1G
   enum { MAX_USER_SPACE     = USER_HEAP_BASE + USER_HEAP_SIZE };
   enum { INTERNAL_HEAP_BASE = 0x100000000000 };
   enum { INTERNAL_HEAP_SIZE = 1048576 * 256 };
 
+  enum { QUARANTINE_BUF_SIZE = 1024 };
   
+  // If total free objects is larger than this size, we begin to 
+  // re-use those objects
+  enum { QUARANTINE_TOTAL_SIZE = 1048576 * 16 };
+    
   // 128M so that almost all memory is allocated from the begining. 
   enum { USER_HEAP_CHUNK = 1048576 * 8 }; 
   enum { INTERNAL_HEAP_CHUNK = 1048576 };
@@ -132,6 +142,9 @@ public:
   enum { WORD_SIZE_MASK = WORD_SIZE - 1 };
   enum { SENTINEL_SIZE = WORD_SIZE };
   enum { MAGIC_BYTE_NOT_ALIGNED = 0xEE };
+  enum { FREE_OBJECT_CANARY_WORDS = 16 };
+  enum { FREE_OBJECT_CANARY_SIZE = 16 * WORD_SIZE };
+  
 
   // FIXME: the following definitions are sensitive to 
   // glibc version (possibly?)

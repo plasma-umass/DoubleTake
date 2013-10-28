@@ -60,7 +60,7 @@ public:
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
 //      PRWRN("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
-      printf("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
+  //    printf("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
       _maps[i].initialize(_regions[i].start, (size_t)((intptr_t)_regions[i].end - (intptr_t)_regions[i].start));
     }
 

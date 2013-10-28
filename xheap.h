@@ -67,7 +67,6 @@ public:
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
 
-
     // Initialize the following content according the values of xpersist class.
     _start      = (char *)((intptr_t)ptr + metasize);
     _end        = (char *)((intptr_t)_start + startsize);
@@ -78,6 +77,9 @@ public:
     
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize+metasize, (void*)_start);
+
+    // Initialize the freelist.
+    freelist::getInstance().initialize();
 
     return ptr;	
     //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
@@ -181,7 +183,7 @@ public:
 
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
-    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
+//    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
     
 #ifdef DETECT_OVERFLOW
     // We must cleanup corresponding bitmap 

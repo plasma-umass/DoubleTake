@@ -42,6 +42,7 @@
 
 // Implemented for stopgap to check buffer overflow
 #include "sanitycheck.h"
+#include "quarantine.h"
 #include "freelist.h"
 
 template <class SourceHeap>
@@ -236,6 +237,7 @@ public:
 
     // Check whether it is the same tid with the owner
     int owner = SourceHeap::getOwner(ptr);
+#ifndef DETECT_USAGE_AFTER_FREE
     if(tid == owner) {  
       _heap->free(tid, ptr);
     }
@@ -243,10 +245,26 @@ public:
       // Add this into a global list.
       freelist::getInstance().cacheFreeObject(ptr, owner);
     }
+#else
+    size_t size = getSize(ptr); 
+    if(tid == owner) { 
+      // Adding this to the quarantine list
+      addThreadQuarantineList(ptr, size);
+      //quarantine::getInstance().addFreeObject(ptr, size); 
+    }
+    else {
+      // Add this into a global list.
+      freelist::getInstance().cacheFreeObject(ptr, owner);
+    }
+#endif
   }
 
   void realfree(void * ptr, int tindex) {
     _heap->free(tindex, ptr);
+  }
+
+  void realfree(void * ptr) {
+    _heap->free(getThreadIndex(), ptr);
   }
 
   size_t getSize (void * ptr) {

@@ -121,7 +121,7 @@ extern "C" {
 
     // Wakeup all other threads.
     WRAP(pthread_cond_broadcast)(&g_condWaiters);
-    fprintf(stderr, "after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+//    fprintf(stderr, "after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
   inline void global_epochBegin(void) {

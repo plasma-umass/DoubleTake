@@ -146,6 +146,26 @@ public:
     }
     global_unlock();
   }
+  
+  // peekSyncEvent return the saved event value for current synchronization.
+  inline int peekSyncEvent(void) {
+    int result = -1;
+    struct syncEvent * event = (struct syncEvent *)current->syncevents.getEntry();
+    if(event) {
+      if(event->thread != (void *)current) {
+        PRERR("This event %p belonging to thread %p (not thread %p (THREAD%d)!!!!)\n", event, event->thread, current, current->index);
+        while(1);
+      }
+      else {
+        result = event->ret;
+      }
+      //abort();
+    }
+    else {
+    //  PRERR("Event not exising now at thread %p!!!!\n", current);
+    }
+    return result;
+  }
 
   void cleanSyncEvents() {
     // Remove all events in the global map and event list.
@@ -223,7 +243,7 @@ public:
   
   void signalThread(thread_t * thread) {
     semaphore * sema = &thread->sema;
-    PRDBG("Signal semaphore %p to thread%d (at %p)\n", sema, thread->index, thread);
+    PRDBG("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
     sema->put();
   }
 

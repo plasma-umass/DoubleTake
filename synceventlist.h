@@ -67,7 +67,7 @@ class SyncEventList {
 public:
   SyncEventList(void * variable, thrSyncCmd synccmd)
   {
-    fprintf(stderr, "synceventlist initialization at list %p\n", &list);
+//    fprintf(stderr, "synceventlist initialization at list %p\n", &list);
     // Initialize the sequence number   
     listInit(&list);
     WRAP(pthread_mutex_init)(&lock, NULL);
@@ -80,7 +80,7 @@ public:
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent * event = allocSyncEvent();
 
-    PRDBG("recordSyncEvent event %p\n", event);
+    PRDBG("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
     listInit(&event->list);
 
     // Change the event there.
@@ -101,14 +101,6 @@ public:
    // PRDBG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
   }
 
-  // peekSyncEvent return the saved event value for current synchronization.
-  inline int peekSyncEvent(void) {
-    struct syncEvent * event = (struct syncEvent *)curentry;
-    if(event->thread != (void *)current) {
-      PRERR("This event should not belong to thread %p\n", current);
-    }
-    return event->ret;
-  }
 
   inline void * getSyncVariable(void) {
     return syncVariable;
@@ -124,9 +116,9 @@ public:
 
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
+      PRDBG("advanceSyncEvent: curentry %p, now %p", curentry, this->curentry);
     }
     else {
-     // PRDBG("tail, UpdateNextEvent curentry %p, list->list %p", curentry, &list->list);
       this->curentry = NULL;
     }
 
@@ -152,7 +144,7 @@ public:
       event = (struct syncEvent *)this->curentry;
     }
 
-    fprintf(stderr, "synceventlist at %p event %p\n", &list, event);
+//    fprintf(stderr, "synceventlist at %p event %p\n", &list, event);
     return event;
   }
 

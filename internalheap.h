@@ -52,7 +52,7 @@ public:
     if(base == NULL) {
       PRFATAL("Failed to allocate memory for heap metadata.");
     }
-    fprintf(stderr, "\n\nInternalHeap base %p metasize %lx\n\n", base, metasize);
+//    fprintf(stderr, "\n\nInternalHeap base %p metasize %lx\n\n", base, metasize);
     _heap = new (base) SuperHeap;
     
     // Get the heap start and heap end;

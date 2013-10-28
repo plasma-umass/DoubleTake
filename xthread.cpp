@@ -29,7 +29,7 @@
 #include "xrun.h"
 #include "syscalls.h"
 #include "threadmap.h"
-
+#include "quarantine.h"
 
 // Global lock used when joining and exiting a thread.
 //threadmap::threadHashMap threadmap::_xmap;
@@ -63,6 +63,7 @@ void xthread::invokeCommit(void) {
 }
  
 void xthread::epochBegin(void) {
+  current->qlist.restore();
   current->syncevents.cleanup();
 }
  
@@ -87,4 +88,15 @@ void xthread::setThreadSafe(void) {
       signal_thread(current);
     }
     unlock_thread(current);
+}
+
+void xthread::addQuarantineList(void * ptr, size_t sz) {
+  current->qlist.addFreeObject(ptr, sz);
+}
+
+void xthread::rollback(void) {
+  current->qlist.restore();
+
+  // Recover the context for current thread.
+  restoreContext(); 
 }

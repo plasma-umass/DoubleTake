@@ -79,7 +79,7 @@ public:
       PRFATAL("Wrong size %lx, should be page aligned.\n", size);
     }
 
-    printf("xmapping startaddr %p size %lx heapstart %p\n", startaddr, size, heapstart);
+//    printf("xmapping startaddr %p size %lx heapstart %p\n", startaddr, size, heapstart);
 
     // Establish two maps to the backing file.
     // The persistent map is shared.

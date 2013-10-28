@@ -112,6 +112,7 @@ private:
 public:
 
   void initialize(void) {
+//    fprintf(stderr, "RECORD: _entries %p\n", &_entries);
     _entries.initialize();
 
     // Initialize corresponding lists
@@ -147,7 +148,7 @@ public:
  
   bool retrieveFCloseList(int * fd) {
     bool isFound = false;
-    struct recordFile * record = (struct recordFile *)retrieveEntry(E_OP_FILE_CLOSE);
+    struct recordFile * record = (struct recordFile *)retrieveListEntry(E_OP_FILE_CLOSE);
     if(record) {
       *fd = record->fd;
       isFound = true;
@@ -181,7 +182,7 @@ public:
   
   bool retrieveDIRCloseList(DIR ** dir) {
     bool isFound = false;
-    struct recordDir * record = (struct recordDir *)retrieveEntry(E_OP_DIR_CLOSE);
+    struct recordDir * record = (struct recordDir *)retrieveListEntry(E_OP_DIR_CLOSE);
     if(record) {
       *dir = record->dir;
       isFound = true;
@@ -347,7 +348,7 @@ public:
     // Do munmap for all entries
     struct recordMunmap * record = NULL;
     while(true) {
-      record = (struct recordMunmap *)retrieveEntry(E_OP_MUNMAP);
+      record = (struct recordMunmap *)retrieveListEntry(E_OP_MUNMAP);
 
       if(record == NULL) {
         break;
@@ -385,7 +386,7 @@ private:
   void * getEntry (eRecordOps op) {
     assert(op >=E_OP_FILE_OPEN && op < E_OP_MAX);
 
-    class RecordEntry * entry = _entries.getIterEntry();
+    class RecordEntry * entry = _entries.retrieveIterEntry();
 
     void * ptr = NULL; 
     if(entry) {
@@ -396,7 +397,7 @@ private:
   }
 
   // Remove an entry from the list.
-  void * retrieveEntry(eRecordOps op) {
+  void * retrieveListEntry(eRecordOps op) {
     assert(op == E_OP_FILE_CLOSE || op == E_OP_DIR_CLOSE || op == E_OP_MUNMAP);
     list_t * list = getTargetList(op);
     return listRetrieveItem(list);

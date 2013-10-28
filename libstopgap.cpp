@@ -253,6 +253,10 @@ extern "C" {
     return stopgap_memalign(boundary, sz);
   }
 
+  void addThreadQuarantineList(void * ptr, size_t sz) {
+    xthread::getInstance().addQuarantineList(ptr, sz);
+  }
+
 #ifdef MULTI_THREAD
   /// Threads's synchronization functions.
   // Mutex related functions 

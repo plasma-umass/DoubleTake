@@ -78,13 +78,14 @@ public:
   // Add a watch point with its value to watchpoint list.
   void addWatchpoint(void * addr, size_t value ) {
 
-    fprintf(stderr, "CAUGHT: problematic address %p with value 0x%lx!!!!!\n", addr, value);
+    fprintf(stderr, "***********CAUGHT: problematic address %p with value 0x%lx!!!!!\n", addr, value);
     if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
       // Watch
       _wp[_numWatchpoints].addr = (size_t *)addr;
       _wp[_numWatchpoints].faultvalue = value;
       _wp[_numWatchpoints].hasOverflowed = false;
       _numWatchpoints++;
+  //    fprintf(stderr, "***********CAUGHT: problematic address %p with value 0x%lx _numWatchpoints %d!!!!!\n", addr, value, _numWatchpoints);
     } 
   }
 
@@ -99,7 +100,8 @@ public:
     struct sigaction trap_action;
     int status = 0;
     pid_t parent = getpid();
-    
+
+    fprintf(stderr, "installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Initialize those debug registers. 
     init_debug_registers();
 
@@ -109,10 +111,12 @@ public:
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     WRAP(sigaction)(SIGTRAP, &trap_action, NULL);
 
+    fprintf(stderr, "installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Creating a child to setup the watchpoints for the parent.
     child = WRAP(fork)();
     if(child == 0)
     {
+      fprintf(stderr, "CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
@@ -127,8 +131,9 @@ public:
      // fprintf(stderr, "child install watchpoints now\n");
 
       // Install all watchpoints now.
+      fprintf(stderr, "child install watchpoints %d at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
-    //    fprintf(stderr, "child install watchpoints %d at %p\n", i, _watchAddrs[i]);
+        fprintf(stderr, "child install watchpoints %d at %p\n", i, _wp[i].addr);
         insert_watchpoint ((unsigned long)_wp[i].addr, sizeof(void *), hw_write, parent);
       } 
       
@@ -141,6 +146,7 @@ public:
       exit(0);
     }
     else if(child > 0) {
+      fprintf(stderr, "PARENT installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
       // Wait for the children to setup
       waitpid(child, &status, 0);
       if(WEXITSTATUS(status))
@@ -148,6 +154,10 @@ public:
         fprintf(stderr, "child exit now!0\n");
         exit(-1);
       }
+    }
+    else {
+      fprintf(stderr, "Can't fork when installing watch points, with error: %s\n", strerror(errno));
+      while(1);
     }
   }
 
@@ -200,6 +210,7 @@ public:
     
     fprintf(stderr, "\n\n\nCAPTURING writes at watchpoints from ip %p, detailed information:\n", addr);
     isOverflow = watchpoint::getInstance().printWatchpoints();
+    isOverflow = true;
     selfmap::getInstance().printCallStack(trapcontext, addr, isOverflow);
 #ifdef STOP_AT_OVERFLOW
     if(isOverflow) {
