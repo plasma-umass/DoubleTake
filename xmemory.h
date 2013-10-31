@@ -435,6 +435,14 @@ public:
 		_globals.backup();
   }
 
+  inline void * getHeapEnd(void) {
+    return _pheap.getHeapEnd();
+  }
+
+  inline void * getHeapBegin(void) {
+    return (void *)_heapBegin;
+  }
+
 #ifdef DETECT_OVERFLOW
   // This function is called before the system call is issued.
   inline bool checkOverflowBeforehand(void * start, size_t size) {

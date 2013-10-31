@@ -147,7 +147,7 @@ public:
   }
 
   inline int getOwner(void * addr) {
-    if(addr > _end) {
+    if(addr > _position) {
       return -1;
     }
     else {

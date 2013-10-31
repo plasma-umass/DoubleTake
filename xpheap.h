@@ -226,6 +226,10 @@ public:
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
     return SourceHeap::backup(heapEnd);
   }
+
+  void * getHeapEnd(void) {
+    return (void *)SourceHeap::getHeapPosition();
+  }
  
   void * malloc(size_t size) {
     //printf("malloc in xpheap with size %d\n", size);

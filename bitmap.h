@@ -41,6 +41,7 @@
 #include "mm.h"
 #include "objectheader.h"
 #include "watchpoint.h"
+#include "aliveobjects.h"
 
 class bitmap {
 public:

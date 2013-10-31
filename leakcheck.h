@@ -45,22 +45,35 @@
 
 #include <set>
 #include <internalheap.h>
+#include "aliveobjects.h"
 
-class leakCheck {
-  struct aliveObject {
-    void * begin;
-    void * end;
-    // If it is checked, then it is not a leak object if we view this conservatively
-    bool   checked; 
-  };
+class leakcheck {
+
+  leakcheck() { }
 
 public:
-  bool doLeakCheck(void * begin, void *end, ) {
-    _heapBegin = begin;
-    _heapEnd = end;
 
-    
+  static leakcheck& getInstance (void) {
+    static char buf[sizeof(leakcheck)];
+    static leakcheck * theOneTrueObject = new (buf) leakcheck();
+    return *theOneTrueObject;
+  }
+
+  bool doSlowLeakCheck(void * begin, void *end) {
+    _heapBegin = (unsigned long)begin;
+    _heapEnd = (unsigned long)end;
   } 
+
+  // In the end of program, we can only check those non-freed objects.
+  // All of them are considered as memory leakage
+  bool doFastLeakCheck(void * begin, void * end) {
+
+  }
+
+  bool doLeakCheck(void * begin, void * end) {
+
+
+  }
 
   void getUnexploredSetFromStack(void) {
 

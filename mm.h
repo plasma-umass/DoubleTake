@@ -75,4 +75,13 @@ private:
 
 };
 
+class InternalHeapAllocator {
+public:
+  static void * malloc (size_t sz);
+  static void free (void * ptr);
+  static void *allocate(size_t sz);
+  static void deallocate (void * ptr);
+};
+
+
 #endif /* _MM_H_ */

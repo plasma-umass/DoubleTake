@@ -115,7 +115,7 @@ public:
   enum { QUARANTINE_TOTAL_SIZE = 1048576 * 16 };
     
   // 128M so that almost all memory is allocated from the begining. 
-  enum { USER_HEAP_CHUNK = 1048576 * 8 }; 
+  enum { USER_HEAP_CHUNK = 1048576 * 4 }; 
   enum { INTERNAL_HEAP_CHUNK = 1048576 };
 
   // 4 bytes is representing by 1 bit. If bit is 0, it is not a canary word.

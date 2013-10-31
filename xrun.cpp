@@ -29,6 +29,7 @@
 #include "syscalls.h"
 #include "globalinfo.h"
 #include "threadmap.h"
+#include "leakcheck.h"
 
 void xrun::startRollback(void) {
   // Now we are going to rollback. Wakup all threads
@@ -146,7 +147,9 @@ void xrun::epochEnd (void) {
 #endif
 
   bool hasOverflow = _memory.checkHeapOverflow();
- 
+
+  bool hasMemoryLeak = leakcheck::getInstance().doLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+
   // First, attempt to commit.
   if(hasOverflow) {
     _memory.cleanupFreeList();

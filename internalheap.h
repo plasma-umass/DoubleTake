@@ -126,23 +126,4 @@ private:
 };
 
 
-class InternalHeapAllocator {
-public:
-  static void * malloc (size_t sz) {
-    return InternalHeap::getInstance().malloc(sz);
-  }
-  
-  static void free (void * ptr) {
-    return InternalHeap::getInstance().free(ptr);
-  }
-
-  static void *allocate(size_t sz) {
-    return InternalHeap::getInstance().malloc(sz);
-  }
-  
-  static void deallocate (void * ptr) {
-    return InternalHeap::getInstance().free(ptr);
-  }
-};
-
 #endif
