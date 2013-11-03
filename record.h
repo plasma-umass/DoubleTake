@@ -113,7 +113,7 @@ public:
 
   void initialize(void) {
 //    fprintf(stderr, "RECORD: _entries %p\n", &_entries);
-    _entries.initialize();
+    _entries.initialize(xdefines::MAX_RECORD_ENTRIES);
 
     // Initialize corresponding lists
     for(int i = 0; i < E_OP_MAX; i++) {
@@ -414,7 +414,7 @@ private:
     listInsertTail(list, head);
   }
 
-  RecordEntries<class RecordEntry, xdefines::MAX_RECORD_ENTRIES>  _entries;
+  RecordEntries<class RecordEntry> _entries;
   list_t _glist[E_OP_MAX];
   spinlock _lck;
 };

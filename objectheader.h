@@ -65,6 +65,8 @@ public:
 private:
 
   // If a block is larger than 4G, we can't support 
+  // We are using the lsb of _blockSize bit is marked whether
+  // an object is checked or not.
   unsigned int  _blockSize;
   unsigned int  _objectSize;
   

@@ -39,18 +39,18 @@
 #include "xdefines.h"
 #include "mm.h"
 
-template <class Entry, size_t NElts = 1>
+template <class Entry>
 class RecordEntries {
 public:
   RecordEntries() 
   {
   }
 
-  void initialize(void) {
+  void initialize(int entries) {
 		void * ptr;
     int i = 0;
 
-    _size = alignup(NElts * sizeof(Entry), xdefines::PageSize);
+    _size = alignup(entries * sizeof(Entry), xdefines::PageSize);
 		// We don't need to allocate all pages, only the difference between newnum and oldnum.
 		ptr = MM::mmapAllocatePrivate(_size);
 		if(ptr == NULL)  {
@@ -62,7 +62,7 @@ public:
 		// start to initialize it.
     _start = (Entry *)ptr;
 		_cur = 0;
-		_total = NElts;
+		_total = entries;
     _iter = 0;
 		return;
 	}
@@ -133,6 +133,10 @@ public:
   // Only called in the replay
   Entry * firstIterEntry(void) {
     return &_start[_iter];
+  }
+
+  size_t getEntriesNumb(void) {
+    return _cur;
   }
 
 private:

@@ -67,6 +67,7 @@ private:
 		                    sharedInfo, fd, 0);
     if(ptr == MAP_FAILED) {
       fprintf(stderr, "Couldn't do mmap %s : startaddr %p, sz %lx\n", strerror(errno), startaddr, sz);
+      while(1);
       abort();
     }
 

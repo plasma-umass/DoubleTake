@@ -777,7 +777,7 @@ private:
     current->self = WRAP(pthread_self)();
 
     // Initialize event pool for this thread.
-    current->syncevents.initialize();
+    current->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
     listInit(&current->pendingSyncevents);
 
     // Lock the mutex for this thread.

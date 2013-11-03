@@ -33,9 +33,71 @@
  *
  */
 template <class SourceHeap>
+class InternalAdaptHeap : public SourceHeap {
+
+public:
+  void * malloc (size_t sz) {
+
+    // We are adding one objectHeader and two "canary" words along the object
+    // The layout will be:  objectHeader + "canary" + Object + "canary".
+    //fprintf(stderr, "InternalAdaptHeap before malloc sz %d\n", sz);
+    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);    if (!ptr) {
+      return NULL;
+    }
+
+    // There is no operations to set sentinals. 
+    // We can use check by introducing a flag, however,
+    // that can cause a little bit performance problem. 
+
+    // Set the objectHeader. 
+    objectHeader * o = new (ptr) objectHeader (sz);
+    void * newptr = getPointer(o);
+
+    return newptr;
+  }
+
+  void free (void * ptr) {
+    SourceHeap::free ((void *) getObject(ptr));
+  }
+
+  size_t getSize (void * ptr) {
+    objectHeader * o = getObject(ptr);
+    size_t sz = o->getSize();
+    if (sz == 0) {
+      PRFATAL ("Object size error, can't be 0");
+    }
+    return sz;
+  }
+
+private:
+  static objectHeader * getObject (void * ptr) {
+    objectHeader * o = (objectHeader *) ptr;
+    return (o - 1);
+  }
+
+  static void * getPointer (objectHeader * o) {
+    return (void *) (o + 1);
+  }
+};
+
+template <class SourceHeap, int Chunky>
+class InternalKingsleyStyleHeap :
+  public
+  HL::ANSIWrapper<
+  HL::StrictSegHeap<Kingsley::NUMBINS,
+        Kingsley::size2Class,
+        Kingsley::class2Size,
+        HL::AdaptHeap<HL::SLList, InternalAdaptHeap<SourceHeap> >,
+        InternalAdaptHeap<HL::ZoneHeap<SourceHeap, Chunky> > > >
+{
+};
+
+
+template <class SourceHeap>
 class perheap : public SourceHeap 
 {
-  typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::INTERNAL_HEAP_CHUNK> >
+  //typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, InternalAdaptHeap<SourceHeap>, xdefines::INTERNAL_HEAP_CHUNK> >
+  typedef PerThreadHeap<xdefines::NUM_HEAPS, InternalKingsleyStyleHeap<SourceHeap, xdefines::INTERNAL_HEAP_CHUNK> >
   SuperHeap;
 
 public: 
@@ -43,7 +105,6 @@ public:
   }
 
   void initialize(void) {
-
     int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
 
     // Initialize the SourceHeap before malloc from there.

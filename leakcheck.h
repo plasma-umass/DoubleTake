@@ -45,7 +45,6 @@
 
 #include <set>
 #include <internalheap.h>
-#include "aliveobjects.h"
 
 class leakcheck {
 

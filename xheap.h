@@ -81,7 +81,7 @@ public:
     // Initialize the freelist.
     freelist::getInstance().initialize();
 
-    return ptr;	
+    return (void *)_start;	
     //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
   }
 
@@ -181,6 +181,9 @@ public:
 
     registerOwner(p, sz);
 
+#ifdef DETECT_MEMORY_LEAKAGE
+    objectmap::getInstance().initChunk(p, _position, sz);
+#endif
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
 //    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);

@@ -37,7 +37,7 @@ void xmemory::handleSegFault(void)
 #ifdef DETECT_OVERFLOW
   fprintf(stderr, "Returning from segmentation fault error\n"); 
   // Check whether the segmentation fault is called by buffer overflow.
-  if(checkHeapOverflow()) {
+  if(xmemory::getInstance().checkHeapOverflow()) {
     // Now we can roll back 
     fprintf(stderr, "\n\nOVERFLOW causes segmenation fault!!!! ROLLING BACK\n\n\n");
     

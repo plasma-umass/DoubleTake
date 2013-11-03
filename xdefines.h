@@ -101,12 +101,13 @@ extern "C" {
 
 class xdefines {
 public:
-  //enum { USER_HEAP_SIZE     = 1048576UL * 1024 }; // 8G
   enum { USER_HEAP_SIZE     = 1048576UL * 8192 }; // 8G
-  enum { USER_HEAP_BASE     = 0x40000000 }; // 1G
+//  enum { USER_HEAP_SIZE     = 1048576UL * 1024 }; // 8G
+  enum { USER_HEAP_BASE     = 0x100000000 }; // 1G
   enum { MAX_USER_SPACE     = USER_HEAP_BASE + USER_HEAP_SIZE };
   enum { INTERNAL_HEAP_BASE = 0x100000000000 };
-  enum { INTERNAL_HEAP_SIZE = 1048576 * 256 };
+  //enum { INTERNAL_HEAP_BASE = 0xC0000000 };
+  enum { INTERNAL_HEAP_SIZE = 1048576UL * 128 };
 
   enum { QUARANTINE_BUF_SIZE = 1024 };
   
@@ -117,6 +118,10 @@ public:
   // 128M so that almost all memory is allocated from the begining. 
   enum { USER_HEAP_CHUNK = 1048576 * 4 }; 
   enum { INTERNAL_HEAP_CHUNK = 1048576 };
+  enum { OBJECT_SIZE_BASE = 16 };
+  //enum { MAX_OBJECTS_USER_HEAP_CHUNK = USER_HEAP_CHUNK/MINIMUM_OBJECT_SIZE };
+  //enum { TOTAL_USER_HEAP_HUNKS = USER_HEAP_SIZE/USER_HEAP_CHUNK };
+
 
   // 4 bytes is representing by 1 bit. If bit is 0, it is not a canary word.
   // Otherwise, it is a canary word. 

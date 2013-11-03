@@ -87,7 +87,7 @@ extern "C" {
     struct thread * joiner;
 
     // Synchronization events happens on this thread.
-    RecordEntries<struct syncEvent, xdefines::MAX_SYNCEVENT_ENTRIES> syncevents;
+    RecordEntries<struct syncEvent> syncevents;
 
     quarantine qlist;
 

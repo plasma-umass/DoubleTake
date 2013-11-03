@@ -138,7 +138,7 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-  //  fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+    fprintf(stderr, "In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
     ptr = (unsigned char *)_pheap.malloc(mysize);
 #ifdef DETECT_OVERFLOW
     objectHeader * o = getObject (ptr);
@@ -193,7 +193,7 @@ public:
     // We donot need to do anything if size is equal to sz
     //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
 #endif
-  //  printf("THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
+   printf("THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
     return ptr;
   }
 

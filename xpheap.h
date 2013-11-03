@@ -53,7 +53,6 @@ public:
 
     // We are adding one objectHeader and two "canary" words along the object
     // The layout will be:  objectHeader + "canary" + Object + "canary".
-    //fprintf(stderr, "AdaptAppHeap before malloc sz %d\n", sz);
     void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);
     if (!ptr) {
       return NULL;
@@ -64,8 +63,7 @@ public:
     void * newptr = getPointer(o);
 
     // Now we are adding two sentinels and mark them on the shared bitmap.
-    //fprintf(stderr, "AdaptAppHeap setup sentinels\n");
-    //printf("AdaptAppHeap: sz is %lx, actual size %lx. ptr %p newptr %p\n", sz, sz+sizeof(objectHeader)+xdefines::SENTINEL_SIZE, ptr, newptr);
+    fprintf(stderr, "AdaptAppHeap malloc sz %d and markSentinels now\n", sz);
 #ifdef DETECT_OVERFLOW 
     sanitycheck::getInstance().setupSentinels(newptr, sz); 
 #endif
@@ -177,6 +175,7 @@ class xpheap : public SourceHeap
 {
   typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, xdefines::USER_HEAP_CHUNK> >
   SuperHeap;
+  //typedef PerThreadHeap<xdefines::NUM_HEAPS, KingsleyStyleHeap<SourceHeap, AdaptAppHeap<SourceHeap>, xdefines::USER_HEAP_CHUNK> >
 
 public: 
   xpheap() {
@@ -202,9 +201,11 @@ public:
     // Sanity check related information
     void * sanitycheckStart;
     size_t sanitycheckSize;
-    sanitycheckStart = (void *) ((intptr_t)(_heapStart) + metasize);
-    sanitycheckSize = xdefines::USER_HEAP_SIZE -  metasize;
-    //printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::USER_HEAP_SIZE);
+    sanitycheckStart = _heapStart;
+    sanitycheckSize = xdefines::USER_HEAP_SIZE;
+    printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::USER_HEAP_SIZE);
+
+    // Initialize bitmap
     sanitycheck::getInstance().initialize(sanitycheckStart, sanitycheckSize);
     return (void *)_heapStart;
    // base = (char *)malloc(0, 4); 

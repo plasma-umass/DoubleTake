@@ -118,6 +118,8 @@ extern "C" {
   pthread_mutex_t g_mutexSignalhandler;
   int g_waiters;  
   int g_waitersTotal;  
+  unsigned long on[WORDBITS];
+  unsigned long off[WORDBITS];
  
   void initializer (void) {
     // Using globals to provide allocation

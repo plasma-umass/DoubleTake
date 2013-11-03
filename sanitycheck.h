@@ -39,7 +39,7 @@
 
 #include "xdefines.h"
 #include "objectheader.h"
-#include "bitmap.h"
+#include "sentinelmap.h"
 
 class sanitycheck {
   enum { OBJECT_HEADER_SIZE = sizeof(objectHeader) }; 
@@ -66,7 +66,7 @@ public:
   void initialize(void * start, size_t size) {
 #ifdef DETECT_OVERFLOW 
     // Initialize the actual bitmap
-    _bitmap.initialize(start, size);
+    _bmap.initialize(start, size);
 #endif
     _checkStart = start;
     _checkEnd = (void *)((intptr_t)start + size); 
@@ -86,11 +86,11 @@ public:
     *sentinelFirst = xdefines::SENTINEL_WORD;
     *sentinelLast = xdefines::SENTINEL_WORD;
   
-   //fprintf(stderr, "SET sentinels: first %p last %p\n", sentinelFirst, sentinelLast); 
+   fprintf(stderr, "SET sentinels: first %p (with value %lx) last %p (with value %lx)\n", sentinelFirst,*sentinelFirst, sentinelLast, *sentinelLast); 
     // Now we have to set up corresponding bitmap so that we can check heap overflow sometime
-    _bitmap.tryToSet((void *)sentinelFirst);  
+    _bmap.tryToSet((void *)sentinelFirst);  
    // fprintf(stderr, "SET sentinels: setting last %p\n", sentinelLast); 
-    _bitmap.tryToSet((void *)sentinelLast);  
+    _bmap.tryToSet((void *)sentinelLast);  
   }
 
   void setSentinelAt(void * ptr) {
@@ -101,11 +101,11 @@ public:
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::SENTINEL_WORD;
-    _bitmap.tryToSet((void *)sentinel);  
+    _bmap.tryToSet((void *)sentinel);  
   }
 
   void clearSentinelAt(void * ptr) {
-    _bitmap.clear(ptr);
+    _bmap.clear(ptr);
   }
 #endif
   
@@ -118,19 +118,19 @@ public:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::MEMALIGN_SENTINEL_WORD;
 #ifdef DETECT_OVERFLOW
-    _bitmap.tryToSet((void *)sentinel); 
+    _bmap.tryToSet((void *)sentinel); 
 #endif 
   }
 
 #ifdef DETECT_OVERFLOW
   void markSentinelAt(void * ptr) {
-    _bitmap.tryToSet(ptr);
+    _bmap.tryToSet(ptr);
   }
 
   bool checkAndClearSentinel(void * ptr) {
     size_t * sentinel = (size_t *)ptr;
     
-    _bitmap.clear(ptr);
+    _bmap.clear(ptr);
 
     return ((*sentinel == xdefines::SENTINEL_WORD) ? true:false);
   }
@@ -138,25 +138,27 @@ public:
   // Check whether the specified area has sentinels or not.
   // If yes, then it is a possible sentinels.
   bool hasSentinels(void * start, size_t size) {
-    return _bitmap.hasSentinels(start, size);
+    return _bmap.hasSentinels(start, size);
   }
 
 
   // Check the integrity of heap.
   bool checkHeapIntegrity(void * begin, void * end) {
+    // If no objects is allocated, sure,
+    // there is no buffer overflow
     if(end == begin) {
-      return;
+      return true;
     }
     assert(begin >= _checkStart && begin <= _checkEnd);
     assert(end > begin);
     assert(end < _checkEnd);
-    return _bitmap.checkSentinelsIntegrity(begin, end);
+    return _bmap.checkSentinelsIntegrity(begin, end);
   }
 #endif 
 
   void cleanup(void * start, size_t sz) {
 #ifdef DETECT_OVERFLOW 
-    _bitmap.cleanup(start, sz);
+    _bmap.cleanup(start, sz);
 #endif
   }
 
@@ -167,7 +169,7 @@ private:
 
 #ifdef DETECT_OVERFLOW 
   // Pointing to a shared bitmap
-  bitmap _bitmap;
+  sentinelmap _bmap;
 #endif
 };
 

@@ -46,7 +46,7 @@ public:
  
   void initialize(void) {
     _lck.init();
-    _objects.initialize();
+    _objects.initialize(xdefines::MAX_FREE_OBJECTS);
     //fprintf(stderr, "FREELIST _objects at %p******************************\n", &_objects);
   }
 
@@ -122,7 +122,7 @@ private:
   }
 
   spinlock _lck;
-  RecordEntries<struct freeObject, xdefines::MAX_FREE_OBJECTS>  _objects;
+  RecordEntries<struct freeObject> _objects;
 };
 
 #endif
