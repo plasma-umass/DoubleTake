@@ -142,7 +142,7 @@ public:
   /// If we are given the address, we have to calculate the "index" at first.
   inline bool tryToSet (void * addr) {
     unsigned long item = getIndex(addr);
-    fprintf(stderr, "SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
+//    fprintf(stderr, "SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
     return _bitmap.checkSetBit(item);
   }
 
@@ -253,7 +253,7 @@ private:
       // Only check those address when corresponding bit has been set
       if(isBitSet(bits, i)) {
         if(address[i] != xdefines::SENTINEL_WORD && address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
-         fprintf(stderr, "Bits %ld is set, address %lx with value %lx\n", i, &address[i], address[i]);
+         //fprintf(stderr, "Bits %ld is set, address %lx with value %lx\n", i, &address[i], address[i]);
           bool isBadSentinel = false;
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.
@@ -271,8 +271,6 @@ private:
             // Calculate how many canary bytes there from the end of this object
             WORD curword = address[i];
             
-            fprintf(stderr, "__CHECK__ nonaligned. curword %lx\n", curword);
- 
             // Calculate how many canary bytes here.
             // We are using the ptr to varify the size
             unsigned char * p = (unsigned char *)&address[i];
@@ -284,7 +282,7 @@ private:
               j--;
             } 
 
-            fprintf(stderr, " __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
+            //fprintf(stderr, " __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
             // If there is no magic bytes, it is wrong since 
             // we should have MAGIC_BYTE_NOT_ALIGNED if a bit is set.
             if(magicBytesSize == 0 || (int)p[j] != magicBytesSize) {

@@ -138,7 +138,7 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-    fprintf(stderr, "In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+    //fprintf(stderr, "In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
     ptr = (unsigned char *)_pheap.malloc(mysize);
 #ifdef DETECT_OVERFLOW
     objectHeader * o = getObject (ptr);
@@ -193,7 +193,7 @@ public:
     // We donot need to do anything if size is equal to sz
     //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
 #endif
-   printf("THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
+   PRINF("THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
     return ptr;
   }
 
@@ -394,30 +394,34 @@ public:
 
   /// Called when a thread need to rollback.
   inline void rollback(void) {
-    _pheap.recoverHeapMetadata(); 
 
     // Release all private pages.
     PRWRN("Recoverring the global memory\n");
     _globals.recoverMemory();
     _pheap.recoverMemory();
-  
-    fprintf(stderr, "INSTALL watching points nowwwwww!!!\n"); 
+    
+    _pheap.recoverHeapMetadata(); 
+ 
+  //  fprintf(stderr, "INSTALL watching points nowwwwww!!!\n"); 
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
-    PRWRN("Recoverring the global memory, after install watchpoints\n");
+  //  PRWRN("Recoverring the global memory, after install watchpoints\n");
   }
 
   /// Rollback only without install watchpoints.
   inline void rollbackonly(void) {
-    _pheap.recoverHeapMetadata(); 
 
     // Release all private pages.
     _globals.recoverMemory();
     _pheap.recoverMemory();
-   
+  
+    // We should recover heap metadata in the end since 
+    // we will pass the position of heap inside recoverMemory. 
+    _pheap.recoverHeapMetadata(); 
+
     // We do not need to install watch points if we only rollback.
-  //  watchpoint::getInstance().installWatchpoints();
+    watchpoint::getInstance().installWatchpoints();
  } 
   
   inline void printCallsite(void) {

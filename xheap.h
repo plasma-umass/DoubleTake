@@ -107,7 +107,7 @@ public:
   inline void recoverHeapMetadata(void) {
     _position = _positionBackup;
     _remaining = _remainingBackup;
-    //PRDBG("in recover, now _position %p remaining 0x%lx\n", *_position, *_remaining);
+    //PRDBG("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
   }
 
   inline void * getHeapStart(void) {
@@ -121,6 +121,7 @@ public:
   // Get current heap position
   // We only need to do the sanity check until current position.
   inline void * getHeapPosition(void) {
+    //fprintf(stderr, "GetHeapPosition %p\n", _position);
 	  return  _position;
   }
 
@@ -193,7 +194,7 @@ public:
    sanitycheck::getInstance().cleanup(p, sz);
 #endif
     // Now we cleanup the corresponding 
-    //printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x\n", getpid(),  p, (intptr_t)p + sz,  sz);
+    printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x. Heappoition %p\n", getpid(),  p, (intptr_t)p + sz,  sz, _position);
     return p;
   }
 

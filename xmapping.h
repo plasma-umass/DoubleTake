@@ -174,6 +174,7 @@ public:
       sz = size();
     }
 
+    //fprintf(stderr, "Recover memory %p end %p size %lx\n", _userMemory, end, sz);
     customMemcpy(_userMemory, _backupMemory, sz);
   }
 

@@ -111,12 +111,11 @@ public:
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     WRAP(sigaction)(SIGTRAP, &trap_action, NULL);
 
-    fprintf(stderr, "installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Creating a child to setup the watchpoints for the parent.
     child = WRAP(fork)();
     if(child == 0)
     {
-      fprintf(stderr, "CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+//      fprintf(stderr, "CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {

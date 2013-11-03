@@ -220,6 +220,7 @@ public:
 
   void recoverMemory(void) {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
+    //fprintf(stderr, "recoverMemory, heapEnd %p\n", heapEnd);
     SourceHeap::recoverMemory(heapEnd);
   }
 

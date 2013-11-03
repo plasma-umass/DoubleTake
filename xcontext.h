@@ -233,6 +233,7 @@ public:
     c. setcontext to the context of newContext.
    */ 
   inline static void restoreContext(xcontext * oldContext, xcontext * newContext) {
+    fprintf(stderr, "________RESTORECONTEX___________at line %d\n", __LINE__);
     // We can only do this when these two contexts are for the same thread.
     assert(oldContext->getPrivateTop() == newContext->getPrivateTop());
 
@@ -273,6 +274,7 @@ public:
       abort();
     }
 
+    fprintf(stderr, "________RESTORECONTEX___________at line %d\n", __LINE__);
     // Calculate the new ebp and esp registers. 
     // We will set ebp to the bottom of temporary stack.
     newStackTop = (intptr_t)newContext->getBackupStart() + newContext->getStackSize(); 
@@ -305,10 +307,11 @@ public:
     );
 #endif 
 
+    fprintf(stderr, "________RESTORECONTEX___________at line %d\n", __LINE__);
     // Now we will recover the stack from the saved oldContext.
     memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(), oldContext->getBackupSize());
 
-    //PRDBG("thread %p is calling actual setcontext", pthread_self());
+    PRDBG("thread %p is calling actual setcontext", pthread_self());
     // After recovery of the stack, we can call setcontext to switch to original stack. 
     setcontext(oldContext->getContext());
   }
