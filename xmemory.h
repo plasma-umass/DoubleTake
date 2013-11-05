@@ -89,7 +89,15 @@ public:
 	  _globals.finalize();
 	  _pheap.finalize();
   }
-  
+ 
+  inline int getGlobalRegionsNumb(void) {
+    return _globals.getRegions();
+  }
+
+  inline void getGlobalRegion(int index, unsigned long * begin, unsigned long * end) {
+    _globals.getGlobalRegion(index, begin, end);
+  }
+ 
   /* Heap-related functions. */
   inline void * malloc (size_t sz) {
     void * ptr;
@@ -163,7 +171,7 @@ public:
       size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
       if(nonAlignedBytes == 0) {
         //  PRINF("************size%x sz %x ptr %p, p %p nonAlignedBytes %d\n", size, sz, ptr, p, nonAlignedBytes);      
-        sanitycheck::getInstance().setSentinelAt(p);
+        sentinelmap::getInstance().setSentinelAt(p);
       } 
       else {
         // For those less than one word access, maybe we do not care since memory block is 
@@ -181,12 +189,12 @@ public:
         for(int i = 1; i < setBytes; i++) {
           p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
         }
-        sanitycheck::getInstance().markSentinelAt(startp);
+        sentinelmap::getInstance().markSentinelAt(startp);
     
         // We actually setup a next word to capture the next word
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p + setBytes);
-          sanitycheck::getInstance().setSentinelAt(nextp);
+          sentinelmap::getInstance().setSentinelAt(nextp);
         }
       }
     }
@@ -221,7 +229,7 @@ public:
     assert(offset >= 2 * sizeof(size_t));
 
     // Put a sentinel before the this memory block.
-    sanitycheck::getInstance().setMemalignSentinelAt((void *)((intptr_t)newptr - sizeof(size_t)));
+    sentinelmap::getInstance().setMemalignSentinelAt((void *)((intptr_t)newptr - sizeof(size_t)));
 
     // Put the offset before the sentinel too
     void ** origptr = (void **)((intptr_t)newptr - 2 * sizeof(size_t)); 
@@ -264,7 +272,7 @@ public:
       if(nonAlignedBytes == 0) {
         // This is the easist thing
         // check up whether the sentinel is intact or not.
-        if(sanitycheck::getInstance().checkAndClearSentinel(p) != true) {
+        if(sentinelmap::getInstance().checkAndClearSentinel(p) != true) {
           // Add this address to watchpoint
           PRINF("xmemory: checkandclearsentinal now\n");
           watchpoint::getInstance().addWatchpoint(p, *((size_t*)p)); 
@@ -292,12 +300,12 @@ public:
           //PRINF("xmemory: checkandclearsentinal now 222\n");
           watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
         }
-        sanitycheck::getInstance().clearSentinelAt(startp);
+        sentinelmap::getInstance().clearSentinelAt(startp);
     
         // We actually setup a next word to capture the next word
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p - nonAlignedBytes + xdefines::WORD_SIZE);
-          if(sanitycheck::getInstance().checkAndClearSentinel(nextp) != true) {
+          if(sentinelmap::getInstance().checkAndClearSentinel(nextp) != true) {
             // Add this address to watchpoint
             watchpoint::getInstance().addWatchpoint(nextp, *((size_t *)nextp)); 
             isOverflow = true;
@@ -322,7 +330,7 @@ public:
       void ** ppPtr = (void **)((intptr_t)ptr - 2 *sizeof(size_t));
 #ifdef DETECT_OVERFLOW
       // Now we will cleanup the sentinel word.
-      sanitycheck::getInstance().clearSentinelAt(prevPtr);
+      sentinelmap::getInstance().clearSentinelAt(prevPtr);
 #endif
       origptr = *ppPtr;
     } 
@@ -461,7 +469,7 @@ public:
         // check the possible overflow now.
         // We simply check whether this area has sentinels or not.
         // If there exists some sentinels there, it is a possible overflow.
-        hasProblem = sanitycheck::getInstance().hasSentinels(start, size);
+        hasProblem = sentinelmap::getInstance().hasSentinels(start, size);
         PRINF("CAN NOT write to an area with sentinels\n");
       }
       else {
@@ -525,6 +533,7 @@ public:
     fprintf(stderr, "Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     selfmap::getInstance().printCallStack(NULL, NULL, true);
 
+    while(1);
 //    WRAP(exit)(-1);
     // Set the context to handleSegFault
     jumpToFunction((ucontext_t *)context, (unsigned long)xmemory::getInstance().handleSegFault);   

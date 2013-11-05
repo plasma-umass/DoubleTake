@@ -48,6 +48,14 @@ public:
 	sentinelmap()
 	{ }
 
+  // The single instance of sentinelmap. We only need this for 
+  // heap. 
+  static sentinelmap& getInstance (void) {
+    static char buf[sizeof(sentinelmap)];
+    static sentinelmap * theOneTrueObject = new (buf) sentinelmap();
+    return *theOneTrueObject;
+  }
+
   /**
    * @brief Sets aside space for a certain number of elements.
    * @param  nelts  the number of elements needed.
@@ -74,7 +82,7 @@ public:
     _totalBytes = getBytes(_elements);
     _heapStart = (intptr_t)addr;
  
-    fprintf(stderr, "INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
+    fprintf(stderr, "Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
     // Now we allocate specific size of shared memory 
     void * buf = MM::mmapAllocatePrivate(_totalBytes);
     _bitmap.initialize(buf, _elements, _elements/sizeof(unsigned long));
@@ -89,6 +97,7 @@ public:
     unsigned long item = getIndex(start);
     unsigned long bits = getBitSize(size);
 
+    fprintf(stderr, "clearBits item %ld, bits %ld\n", item, bits);
     _bitmap.clearBits(item, bits); 
   }
 
@@ -106,22 +115,21 @@ public:
   }
 
   // Check whether the sentinels of specified range are still integrate or not.
-  inline bool checkSentinelsIntegrity(void * addr, void * stop) {
-      size_t size = (size_t)((intptr_t)stop - (intptr_t)addr);
+  inline bool checkHeapIntegrity(void * begin, void * end) {
+      size_t size = (size_t)((intptr_t)end - (intptr_t)begin);
 
       // We don't rely on previous sentinel addr if the last address are checked last time 
       _lastSentinelAddr = NULL; 
 
-
       int bytes = getMapBytes(size); 
-      unsigned long startIndex = getIndex(addr);
+      unsigned long startIndex = getIndex(begin);
 
       WORD * mapPos;
 
       int words = bytes / WORDBYTES;
       bool hasCorrupted = false; 
 
-      fprintf(stderr, "checkSentinelsIntegrity: addr %p stop %p bytes %d words %d startindex %d\n", addr, stop, bytes, words, startIndex);
+      fprintf(stderr, "checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %d\n", begin, end, bytes, words, startIndex);
       // We are trying to calculate 
       // We know that for a bit, we can use it for a word.
       // For a word with specified bytes, then we can use it for multiple words.
@@ -153,6 +161,107 @@ public:
     _bitmap.clearBit(item);
   }
 
+  // Set up the sentinels for the specified object.
+  void setupSentinels(void * ptr, size_t objectsize) {
+    size_t * sentinelFirst, * sentinelLast;
+   
+//    fprintf(stderr, "Setup sentinels ptr %p objectsize %d\n", ptr, objectsize); 
+    // Calculate the address of two sentinels
+    // The organization should be:
+    //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
+    sentinelFirst = (size_t *)((intptr_t)ptr - xdefines::SENTINEL_SIZE); 
+    sentinelLast = (size_t *)((intptr_t)ptr + objectsize);
+    *sentinelFirst = xdefines::SENTINEL_WORD;
+    *sentinelLast = xdefines::SENTINEL_WORD;
+  
+  // fprintf(stderr, "SET sentinels: first %p (with value %lx) last %p (with value %lx)\n", sentinelFirst,*sentinelFirst, sentinelLast, *sentinelLast); 
+    // Now we have to set up corresponding bitmap so that we can check heap overflow sometime
+    tryToSet((void *)sentinelFirst);  
+   // fprintf(stderr, "SET sentinels: setting last %p\n", sentinelLast); 
+    tryToSet((void *)sentinelLast);  
+  }
+  
+  void setSentinelAt(void * ptr) {
+    size_t * sentinel = (size_t *)ptr;
+   
+    //fprintf(stderr, "****************Setup sentinels ptr %p************\n", ptr); 
+    // Calculate the address of two sentinels
+    // The organization should be:
+    //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
+    *sentinel = xdefines::SENTINEL_WORD;
+    tryToSet((void *)sentinel);  
+  }
+
+  void clearSentinelAt(void * ptr) {
+    clear(ptr);
+  }
+  
+  void setMemalignSentinelAt(void * ptr) {
+    size_t * sentinel = (size_t *)ptr;
+   
+    //fprintf(stderr, "****************Setup sentinels ptr %p************\n", ptr); 
+    // Calculate the address of two sentinels
+    // The organization should be:
+    //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
+    *sentinel = xdefines::MEMALIGN_SENTINEL_WORD;
+    tryToSet((void *)sentinel); 
+  }
+
+  void markSentinelAt(void * ptr) {
+    tryToSet(ptr);
+  }
+
+  bool checkAndClearSentinel(void * ptr) {
+    size_t * sentinel = (size_t *)ptr;
+    clear(ptr);
+
+    return ((*sentinel == xdefines::SENTINEL_WORD) ? true:false);
+  }
+
+  // Finding the heap object covering the specified address.
+  // Now suppose current address is in the middle of an object,
+  // then what should we do is to find the last set bit in the bitmap.
+  inline bool findObjectStartAddr(void * addr, unsigned long * objectStart) {
+    bool hasValidObject = false;
+   
+    unsigned long item = getIndex(addr);
+    unsigned long * canaryAddr;
+    unsigned long startIndex;
+    fprintf(stderr, "findObjectStartAddr line %d. item %ld\n", __LINE__, item);
+    while(_bitmap.getLastBit(item, &startIndex)) {
+      // When we get the last set bit in the bitmap, we should check whether 
+      // this address is inside a valid object. 
+      // There are at least two cases for a normal object.
+      canaryAddr = (unsigned long *)getHeapAddressFromItem(startIndex);
+      fprintf(stderr, "findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
+      if(*canaryAddr == xdefines::SENTINEL_WORD) {
+        *objectStart = (intptr_t)canaryAddr + xdefines::SENTINEL_SIZE;
+        hasValidObject = true;
+    fprintf(stderr, "findObjectStartAddr line %d objectStart %lx\n", __LINE__, *objectStart);
+        break;
+      }
+      else if(*canaryAddr == xdefines::MEMALIGN_SENTINEL_WORD) {
+    fprintf(stderr, "findObjectStartAddr line %d\n", __LINE__);
+        item = startIndex; 
+        continue;
+      }
+      else {
+        hasValidObject = false;
+    fprintf(stderr, "findObjectStartAddr line %d\n", __LINE__);
+        break;
+      }
+    }
+
+    return hasValidObject;
+  }
+  
+  // Check whether corresponding bit has been set or not. 
+  inline bool isSet (void * addr) {
+    unsigned long item = getIndex(addr);
+    return _bitmap.isBitSet(item);
+  }
+
+ 
 private:
   // How to calculate the shift bits according to the sector size
   int calcShiftBits(size_t sectorsize) {
@@ -174,7 +283,7 @@ private:
   // Calculate word index of an address. 
   // Then we can get which bit should we care about. 
   inline unsigned long getIndex(void * addr) {
-//    printf("getIndex addr %p _heapStart %p index %lx\n", addr, _heapStart, index);
+    //printf("getIndex addr %p _heapStart %p wordShiftBits %lx\n", addr, _heapStart, _wordShiftBits);
     return (((intptr_t)addr - _heapStart) >> _wordShiftBits);
   }
 
@@ -205,22 +314,20 @@ private:
   }
 
 
-  // Check whether corresponding bit has been set or not. 
-  inline bool isSet (void * addr) {
-    unsigned long item = getIndex(addr);
-    return _bitmap.isBitSet(item);
-  }
-
   inline bool isBitSet(unsigned long word, int index) {
    // fprintf(stderr, "isBitSet word %lx index %d getMask(Index) %lx\n", word, index, getMask(index));
     return (((word & getMask(index)) != 0) ? true: false); 
   }
 
   // From the bit map index
-  void * getHeapAddress(size_t index) {
+  void * getHeapAddressFromWordIndex(size_t index) {
     // Each bit is related to a word (with WORDBYTES)
     // The indexTH's word of bitmap is related to (index * WORDBITS) 
     return ((void *)((intptr_t)_heapStart + index * WORDBITS * WORDBYTES ));
+  }
+
+  void * getHeapAddressFromItem(size_t index) {
+    return ((void *)((intptr_t)_heapStart + index * WORDBYTES));
   }
 
   bool getLastBitIndex(void * bitsAddr, int curIndex, int *index) {
@@ -242,7 +349,7 @@ private:
 
   // Check whether the sentinels has been corrupted with specified bit map word. 
   inline bool checkIntegrityOnBMW(unsigned long bits, unsigned long wordIndex) {
-    WORD * address = (WORD *)getHeapAddress(wordIndex);
+    WORD * address = (WORD *)getHeapAddressFromWordIndex(wordIndex);
     bool checkNonAligned = false;
     bool hasCorrupted = false;
           

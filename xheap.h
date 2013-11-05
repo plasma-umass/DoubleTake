@@ -182,16 +182,13 @@ public:
 
     registerOwner(p, sz);
 
-#ifdef DETECT_MEMORY_LEAKAGE
-    objectmap::getInstance().initChunk(p, _position, sz);
-#endif
     //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
 //    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
     
 #ifdef DETECT_OVERFLOW
     // We must cleanup corresponding bitmap 
-   sanitycheck::getInstance().cleanup(p, sz);
+   sentinelmap::getInstance().cleanup(p, sz);
 #endif
     // Now we cleanup the corresponding 
     printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x. Heappoition %p\n", getpid(),  p, (intptr_t)p + sz,  sz, _position);

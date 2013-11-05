@@ -32,13 +32,12 @@
 #include "xdefines.h"
 #include "xmapping.h"
 #include "selfmap.h"
-#include "regioninfo.h"
+#include "leakcheck.h"
 
 /// @class xglobals
 /// @brief Maps the globals region onto a persistent store.
 class xglobals {
 public:
-  
   
   xglobals ()
     : _numbRegions(0)
@@ -55,28 +54,39 @@ public:
     selfmap::getInstance().getTextRegions();
 
     // Trying to get the information of global regions
-    selfmap::getInstance().getGlobalRegions(&_regions[0], &_numbRegions);
+    selfmap::getInstance().getGlobalRegions(&_gRegions[0], &_numbRegions);
 
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
-//      PRWRN("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
-  //    printf("Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
-      _maps[i].initialize(_regions[i].start, (size_t)((intptr_t)_regions[i].end - (intptr_t)_regions[i].start));
+  //    printf("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
+      _maps[i].initialize(_gRegions[i].start, (size_t)((intptr_t)_gRegions[i].end - (intptr_t)_gRegions[i].start));
     }
-
-    //while(1); 
   }
 
   void finalize(void) {
     // Nothing need to do here.
   }
 
+  int getRegions(void) {
+    return _numbRegions; 
+  }
+
+  void getGlobalRegion(int index, unsigned long * begin, unsigned long * end) {
+    if(index < _numbRegions) {
+      *begin = (unsigned long)_gRegions[index].start;
+      *end = (unsigned long)_gRegions[index].end;
+    }
+    else {
+      *begin = 0;
+      *end = 0;
+    }
+  }
+
   void recoverMemory(void) {
     for(int i = 0; i < _numbRegions; i++) {
-      //fprintf(stderr, "Call begin at i %d from %p to %p\n", i, _regions[i].start, _regions[i].end); 
+      //fprintf(stderr, "Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
       _maps[i].recoverMemory(NULL);
     }
-
   }
 
   // Commit all regions in the end of each transaction.
@@ -92,7 +102,7 @@ public:
 
 private:
   int _numbRegions; // How many blocks actually.
-  regioninfo _regions[xdefines::NUM_GLOBALS];
+  regioninfo _gRegions[xdefines::NUM_GLOBALS];
   xmapping _maps[xdefines::NUM_GLOBALS];
 };
 

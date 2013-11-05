@@ -82,6 +82,10 @@ public:
     *wordIndex = item/WORDBITS;
     *bitIndex = item%WORDBITS; 
   }
+
+  inline unsigned long getItemIndex(unsigned long wordIndex, unsigned long bitIndex) {
+    return wordIndex * WORDBITS + bitIndex;
+  }
     
   // Totally, which bit should be set.
   inline void setBit(unsigned long item) {
@@ -200,7 +204,8 @@ public:
     getIndexes(item+bits, &lastWordIndex, &lastBitIndex);
 
     // Most common case
-    if(firstBitIndex == 0 && lastBitIndex == WORDBITS) {
+    if(firstBitIndex == 0 && lastBitIndex == 0) {
+      fprintf(stderr, "clearBits: supported cases. firstBitIndex %d lastBitIndex %d lastWordIndex %d\n", firstBitIndex, lastBitIndex, lastWordIndex);
       // Full words.
       void * start = getWord(firstWordIndex);
       int size = (lastWordIndex - firstWordIndex) * WORDSIZE;
@@ -211,25 +216,63 @@ public:
     }
   }
 
+  inline bool isBitSetOnWord(unsigned long bitword, unsigned long index) {
+    return ((bitword & on[index]) != 0) ? true : false;
+  }
+
   // Get last bit has been set
-  unsigned long getLastBit(unsigned long item) {
+  bool getLastBit(unsigned long item, unsigned long * lastBitIndex) {
+    bool hasLastBit = false;
     unsigned long wordIndex, bitIndex;
     getIndexes(item, &wordIndex, &bitIndex);
-   
     // Get the msb in this word. 
     // If bitIndex is the msb, then we have to traverse back 
     // to find last bit in other words. 
-    if(bitIndex == 0) {
+    unsigned long bitword = readWord(wordIndex);
 
-    }    
+    if(bitword != 0) {
+      // Should we use lsbIndex or msbIndex?
+      unsigned long lsbIndex = getLsbIndex(bitword);
+      fprintf(stderr, "lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
+      //while(1);
+      if(bitIndex > lsbIndex) {
+        // Then it is possible that there is a bit between lsbIndex (small) and bitIndex (large)
+        while(bitIndex > lsbIndex) {
+          bitIndex--; 
+          if(isBitSetOnWord(bitword, bitIndex)) {
+            hasLastBit = true;
+            *lastBitIndex = getItemIndex(wordIndex, bitIndex);
+            fprintf(stderr, "lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
+            break;
+          }
+        }
+      }
+    }
+
+    // If we can't find a bit in current bitword, we should check 
+    // forward.
+    if(!hasLastBit) {
+      while(wordIndex > 0) {
+        wordIndex--;
+        bitword = readWord(wordIndex);
+        if(bitword != 0) {
+          bitIndex = getMsbIndex(bitword);
+          *lastBitIndex = getItemIndex(wordIndex, bitIndex);
+          hasLastBit = true;
+          break;
+        }        
+      }
+    }
+
+    return hasLastBit;
   }
 
   unsigned long getMsbIndex(unsigned long word) {
-    return WORDBITS - __builtin_clzl(word);
+    return WORDBITS -2 -  __builtin_clzl(word);
   }
 
   unsigned long getLsbIndex(unsigned long word) {
-    return __builtin_ffsl(word);
+    return __builtin_ffsl(word)-1;
   }
 
 private:

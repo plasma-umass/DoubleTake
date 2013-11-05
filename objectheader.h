@@ -22,6 +22,8 @@
 #ifndef _OBJECTHEADER_H
 #define _OBJECTHEADER_H
 
+#include "xdefines.h"
+
 /*
  * @file   objectheader.h
  * @brief  Heap object header, including size information and sentinels.
@@ -31,7 +33,6 @@
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
-
 class objectHeader {
 public:
 
@@ -61,6 +62,76 @@ public:
   bool isObjectFree() {
     return (_objectSize == 0);
   }
+
+#ifdef DETECT_MEMORY_LEAKAGE
+#define OBJECT_CHECKED_WORD (0x1)
+#define OBJECT_CHECKED_WORD_MASK (0xFFFFFFFE)
+
+  void* getNextObject(void) {
+    return ((void *)((intptr_t)&_sentinel + 4*xdefines::SENTINEL_SIZE+_blockSize));
+  }
+
+  // Since _blockSize is always power of 2 in our allocator,
+  // thus we are using the least significant bit to mark whether
+  // an heap object is reachable or not.
+  void markObjectChecked(void) {
+    _blockSize |= OBJECT_CHECKED_WORD;
+  }
+
+  void cleanObjectChecked(void) {
+    _blockSize &= OBJECT_CHECKED_WORD_MASK;
+  }
+
+  // Check whether a object is reachable or not.
+  // An object is reachable if it is freed.
+  bool doCheckObject(void) {
+    return (isObjectFree() || isObjectChecked()) ? false : true;
+  }
+
+  // Whether we already checked this object or not.
+  bool isObjectChecked(void) {
+    return (_blockSize & OBJECT_CHECKED_WORD) ? true : false;
+  }
+
+  // Check and clean object is reachable or not.
+  bool checkLeakageAndClean(void) {
+    // If an object is freed, it is consider to 
+    // be reachable.
+    bool isLeakage = true;
+    if(isObjectFree() || isObjectChecked()) {
+      isLeakage = false;
+      
+      // cleanObjectChecked
+      cleanObjectChecked();  
+    }
+   
+    return isLeakage; 
+  }
+
+  inline bool isValidObjectSize(unsigned long size) {
+    bool isValid = false;
+    if(size != 0) {
+      isValid = ((size & (size-1)) == 0);
+    }
+    return isValid;
+  }
+
+  inline bool isValidAddr(unsigned long addr) {
+    unsigned long objectSize = getObjectSize();
+
+    bool isValid = isValidObjectSize(objectSize);
+    if(isValid) {
+      unsigned long objectBegin = (unsigned long)getStartPtr();
+      unsigned long objectEnd = objectBegin+getObjectSize();
+
+      if(addr < objectBegin || addr >= objectEnd) {
+        isValid = false;
+      }
+    }
+
+    return isValid;
+  }
+#endif
  
 private:
 

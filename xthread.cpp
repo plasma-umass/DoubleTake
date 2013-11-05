@@ -58,7 +58,7 @@ char * getThreadBuffer(void) {
 }
 
 void xthread::invokeCommit(void) {
-  xrun::getInstance().epochEnd();
+  xrun::getInstance().epochEnd(false);
   xrun::getInstance().epochBegin();
 }
  

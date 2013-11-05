@@ -54,7 +54,7 @@
 #include "ansiwrapper.h"
 
 #include "mm.h"
-#include "sanitycheck.h"
+#include "sentinelmap.h"
 
 using namespace std;
 
@@ -131,7 +131,7 @@ public:
     bool hasOverflow = false;
 
     // FIXME: we only need to check those allocated heap.
-    hasOverflow = sanitycheck::getInstance().checkHeapIntegrity
+    hasOverflow = sentinelmap::getInstance().checkHeapIntegrity
                   (_heapStart, end);
 
     return hasOverflow;

@@ -44,7 +44,13 @@
 #define _LEAKAGE_DETECT_H_
 
 #include <set>
+#include <list>
+#include <ucontext.h>
 #include <internalheap.h>
+#include "threadmap.h"
+#include "objectheader.h"
+#include "spinlock.h"
+//#include "leakcheck.h"
 
 class leakcheck {
 
@@ -57,42 +63,264 @@ public:
     static leakcheck * theOneTrueObject = new (buf) leakcheck();
     return *theOneTrueObject;
   }
-
+  
+#ifdef DETECT_MEMORY_LEAKAGE
   bool doSlowLeakCheck(void * begin, void *end) {
-    _heapBegin = (unsigned long)begin;
+    _heapBegin = (unsigned long)begin + sizeof(objectHeader);
     _heapEnd = (unsigned long)end;
+    _nonStartAddrs = 0;
+
+    fprintf(stderr, "doSlowLeakCheck begin %p end %p\n", begin, end);
+
+    // Search all existing registers to find possible heap pointers
+    ucontext_t context;
+
+    getcontext(&context);
+    //fprintf(stderr, "doSlowLeakCheck line %d\n", __LINE__);
+
+    searchHeapPointers(&context);
+    //fprintf(stderr, "doSlowLeakCheck line %d\n", __LINE__);
+    
+    // Search all stacks to find possible heap pointers
+    searchHeapPointersInsideStack(&context);
+    //fprintf(stderr, "doSlowLeakCheck line %d\n", __LINE__);
+ 
+    // Search the globals to find possible heap pointers
+    searchHeapPointersInsideGlobals();    
+    //fprintf(stderr, "doSlowLeakCheck line %d\n", __LINE__);
+
+    // Traverse all possible heap pointers inside unexplored sets.
+    traverseUnexploredList();
+    return reportUnreachableNonfreedObjects();
   } 
+
 
   // In the end of program, we can only check those non-freed objects.
   // All of them are considered as memory leakage
   bool doFastLeakCheck(void * begin, void * end) {
+    _heapBegin = (unsigned long)begin;
+    _heapEnd = (unsigned long)end;
 
-  }
-
-  bool doLeakCheck(void * begin, void * end) {
-
-
-  }
-
-  void getUnexploredSetFromStack(void) {
-
-
-  }
-
-  void getObjectsFromRegisters(void) {
-
+    return reportUnreachableNonfreedObjects();
   }
 
 
   // In the end of program, all objects 
   // inside 
 private:
-  typedef std::set<void *, less<void *>, HL::STLAllocator<void *, InternalHeapAllocator> > pagesetType;
-  pagesetType _unexploredSet;
+  static objectHeader * getObject (void * ptr) {
+    objectHeader * o = (objectHeader *) ptr;
+    return (o - 1);
+  }
+
+
+  // Check a heap object covering given addr
+  void exploreHeapObject(unsigned long addr) {
+    // In most cases, this addr is the starting address of a heap object.
+    objectHeader * object = getObject((void *)addr);
+    unsigned long objectStart = 0;
+      
+    fprintf(stderr, "exploreHeapObject line %d on heap address %lx\n", __LINE__, addr);
+
+    if(!object->isGoodObject()) {
+#if 1
+      // Current address is not the starting address of a heap object.
+      // To get the starting addresses of this object, we may rely on the 
+      // help of sentinel map.
+      // Maybe we should check whether this object is an memaligned object? 
+      //fprintf(stderr, "exploreHeapObject line %d\n", __LINE__);
+      if(sentinelmap::getInstance().findObjectStartAddr((void *)addr, &objectStart)) { 
+      //  fprintf(stderr, "exploreHeapObject line %d objectStart %lx\n", __LINE__, objectStart);
+        object = getObject((void *)objectStart);
+       
+        // If the return address is not the starting address of
+        // an heap object, then this address is possibly wrong. 
+        if(!object->isGoodObject() || !object->isValidAddr(addr)) {
+          object = NULL;
+        }
+      }
+      else {
+        //fprintf(stderr, "findObjectStartAddr failed on addr %lx at line %d\n", addr, __LINE__);
+        object = NULL;
+      }
+#endif
+    }
+    else {
+      fprintf(stderr, "exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
+      if(object->isValidAddr(addr)) {
+      fprintf(stderr, "exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
+        objectStart = addr;
+      }
+      else {
+        object = NULL;
+      }
+    }
+      
+    //fprintf(stderr, "exploreHeapObject line %d\n", __LINE__);
+      
+    // If current object is free or this object has been checked, we don't care
+    if(!object) {
+      return;
+    }
+      
+    assert(object->isGoodObject());
+    assert(object->isValidAddr(addr));
+
+    // Get the end of object.
+    if(object->doCheckObject()) {
+      unsigned long end = objectStart + object->getObjectSize();
+      searchHeapPointers(objectStart, end);
+      fprintf(stderr, "exploreHeapObject line %d addr %lx end %lx******\n", __LINE__, addr, end);
+
+      // Mark that this object are reachable from roots.
+      object->markObjectChecked();
+    }
+  }
+
+  void traverseUnexploredList(void) {
+    objectListType  i;
+    unsigned long addr;
+
+//    fprintf(stderr, "traverseUnexploredList now empty %d\n", _unexploredObjects.empty());
+    while(_unexploredObjects.empty() != true) {
+      addr = _unexploredObjects.front();
+      _unexploredObjects.pop_front();
+    //  fprintf(stderr, "EEEEEEEEEEExplored list with addr %lx\n", addr); 
+      exploreHeapObject(addr);
+    }
+  }
+
+  void insertLeakageMap(void * ptr, size_t objectSize, size_t size) {
+    _totalLeakageSize += size;
+    // Update the total size.
+    fprintf(stderr, "************************************Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
+    // We only start to rollback when leakage is too large?
+  }
+
+  // In the end, we should report all of those non-reachable non-freed objects.
+  bool reportUnreachableNonfreedObjects(void) {
+    unsigned long * ptr, *stop;
+    bool hasLeakage = true;
+
+    // We basically report those non-checked and non-freed objects in
+    // the system by traverse all objects.
+    ptr = (unsigned long *)_heapBegin;
+    stop = (unsigned long *)_heapEnd;
+ 
+//    fprintf(stderr, "************CHECK LEAK at line %ld****************\n", __LINE__); 
+    // For the last object, we may use the bitmap to help us.
+    // For example, we may only allocate some of a chunk,
+    // Then how can we know whether we should move forward or not. 
+    unsigned long offset; 
+    objectHeader * object;
+    while(ptr < stop) {
+      // We find a object header
+      if(*ptr == xdefines::SENTINEL_WORD && sentinelmap::getInstance().isSet(ptr)) {
+ //       fprintf(stderr, "Find object at %p\n", ptr);
+        object = getObject((void *)++ptr);
+        if(object->checkLeakageAndClean()) {
+ //         fprintf(stderr, "Leakage at %p\n", object->getStartPtr());
+          hasLeakage = true;
+          // Adding this object to freelist
+          insertLeakageMap(object->getStartPtr(), object->getObjectSize(), object->getSize());
+        }
+        ptr = (unsigned long *)object->getNextObject();
+      }
+      else {
+        ptr++;
+      }
+    }
+
+    return hasLeakage;
+  }
+
+  bool isPossibleHeapPointer(unsigned long addr) {
+    return (addr > _heapBegin && addr < _heapEnd) ? true : false; 
+  }
+
+  // Insert an address into unexplored set.
+  void checkInsertUnexploredList(unsigned long addr) {
+    if(isPossibleHeapPointer(addr)) {
+      fprintf(stderr, "IIIIIIIIIIIIIunexplored list with addr %lx\n", addr); 
+      //lock();
+      _unexploredObjects.push_back(addr);
+      //unlock();
+    }
+  }
+
+  // Seatch heap pointers inside a memory region
+  void searchHeapPointers(unsigned long start, unsigned long end) {
+    assert(((intptr_t)start)%sizeof(unsigned long) == 0);
+
+    // It is good if the end is not aligned caused by non-aligned malloc. 
+    // However, we only care about those aligned
+    // address since they can only possibly hold heap addresses.
+    unsigned long * stop = (unsigned long *)aligndown(end, sizeof(void *));
+    unsigned long * ptr = (unsigned long *)start;
+    //fprintf(stderr, "searchHeapPointers at ptr %p stop %p\n", ptr, stop);
+    while(ptr < stop) {
+      checkInsertUnexploredList(*ptr);
+      ptr++;
+    }
+  }
+
+  // Search heap pointers inside registers set.
+  void searchHeapPointers(ucontext_t * context) {
+    for(int i = REG_R8; i <= REG_RCX; i++) {
+      checkInsertUnexploredList(context->uc_mcontext.gregs[i]);
+    }
+  }
+  
+  // Seearch heap pointers inside all stack area
+  void searchHeapPointersInsideStacks(void) {
+#if 0
+    threadmap::aliveThreadIterator i;
+    for(i = threadmap::getInstance().begin();
+      i != threadmap::getInstance().end(); i++)
+    {
+      thread_t * thread = i.getThread();
+    }
+#endif
+  }
+  
+  void searchHeapPointersInsideStack(void * start) {
+    void * stop = current->stackTop;
+
+    //fprintf(stderr, "search heap pointers inside stack now. start %p stop %p\n", start, stop);
+    searchHeapPointers((intptr_t)start, (intptr_t)stop);
+  }
+
+  void lock(void) {
+    _lck.lock();
+  }
+
+  void unlock(void) {
+    _lck.unlock();
+  }
+
+  void searchHeapPointersInsideGlobals(void);
+
+  typedef std::list<unsigned long, HL::STLAllocator<unsigned long, InternalHeapAllocator> > objectListType;
+  objectListType _unexploredObjects;
 
   
+  size_t _totalLeakageSize;
+
+  spinlock _lck;
+
+#define MAXIMUM_SIZE_POWER 30
+  // From 2^4 to 2 ^ 30
+  unsigned long _sizeArray[30];
+  objectListType _sizeList[30];
+
+  // It is used to count how many non-start addresses in
+  // the calculation of reachability
+  size_t _nonStartAddrs;
+ 
 //  typedef std::set<struct memoryRegion *, less<void *
   unsigned long _heapBegin;
   unsigned long _heapEnd;
+#endif
+
 };
 #endif

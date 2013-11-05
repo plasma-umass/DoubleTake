@@ -77,7 +77,10 @@ public:
   }
 
   void epochEnd(void) {
-    xrun::getInstance().epochEnd(); 
+//    fprintf(stderr, "$$$$$$epochEnd at line %d\n", __LINE__);
+    fprintf(stderr, "$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+    printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+    xrun::getInstance().epochEnd(false); 
   }
 
   // Called by xrun::epochEnd when there is no overflow.
@@ -236,8 +239,9 @@ public:
   // Tongping
   int open(const char *pathname, int flags, mode_t mode) {
     int ret;
-  
-#ifdef REPRODUCIBLE_FDS 
+ 
+#ifndef MYTEMP_DEBUG 
+  #ifdef REPRODUCIBLE_FDS 
     // In the rollback phase, we only call 
     if(global_isRollback()) {
       ret = _fops.getFdAtOpen();
@@ -247,13 +251,17 @@ public:
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
     }
-#else
+  #else
     ret = WRAP(open)(pathname, flags, mode);
     
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveFd(ret, NULL);
+  #endif
+#else
+    epochEnd();
+    ret = WRAP(open)(pathname, flags, mode);
+    epochBegin();
 #endif
-
     //PRINF("OPEN fd %d\n", ret);    
     return ret;
   }

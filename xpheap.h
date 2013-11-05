@@ -41,7 +41,7 @@
 #include "spinlock.h"
 
 // Implemented for stopgap to check buffer overflow
-#include "sanitycheck.h"
+#include "sentinelmap.h"
 #include "quarantine.h"
 #include "freelist.h"
 
@@ -65,7 +65,7 @@ public:
     // Now we are adding two sentinels and mark them on the shared bitmap.
     fprintf(stderr, "AdaptAppHeap malloc sz %d and markSentinels now\n", sz);
 #ifdef DETECT_OVERFLOW 
-    sanitycheck::getInstance().setupSentinels(newptr, sz); 
+    sentinelmap::getInstance().setupSentinels(newptr, sz); 
 #endif
 
     assert (getSize(newptr) == sz);
@@ -199,14 +199,14 @@ public:
     _heapEnd = SourceHeap::getHeapEnd();
 
     // Sanity check related information
-    void * sanitycheckStart;
-    size_t sanitycheckSize;
-    sanitycheckStart = _heapStart;
-    sanitycheckSize = xdefines::USER_HEAP_SIZE;
-    printf("INITIAT: sanitycheckStart %p _heapStart %p original size %lx\n", sanitycheckStart, _heapStart, xdefines::USER_HEAP_SIZE);
+    void * sentinelmapStart;
+    size_t sentinelmapSize;
+    sentinelmapStart = _heapStart;
+    sentinelmapSize = xdefines::USER_HEAP_SIZE;
+    fprintf(stderr, "INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
 
     // Initialize bitmap
-    sanitycheck::getInstance().initialize(sanitycheckStart, sanitycheckSize);
+    sentinelmap::getInstance().initialize(sentinelmapStart, sentinelmapSize);
     return (void *)_heapStart;
    // base = (char *)malloc(0, 4); 
   }

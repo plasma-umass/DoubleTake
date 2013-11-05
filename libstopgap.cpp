@@ -86,7 +86,7 @@
 
 extern "C" {
   extern void callAtomicEnd(void);
-#define fprintf(stderr, ...) 
+//#define fprintf(stderr, ...) 
 #if defined(__GNUG__)
   void initializer (void) __attribute__((constructor));
   void finalizer (void)   __attribute__((destructor));
@@ -508,7 +508,7 @@ extern "C" {
     return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
     //return WRAP(mmap)(start, length, prot, flags, fd, offset);
   }
-
+  
   //int open(const char *pathname, int flags, mode_t mode) {
   int open(const char *pathname, int flags, ...) {
     int mode;

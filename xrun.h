@@ -131,7 +131,7 @@ public:
       finalUAFCheck();
 #endif
 
-      epochEnd();
+      epochEnd(true);
     }
 
     PRINF("%d: finalize now !!!!!\n", getpid());
@@ -172,7 +172,7 @@ public:
   }
 
   void epochBegin (void);
-  void epochEnd (void);
+  void epochEnd (bool endOfProgram);
 private:
   void syscallsInitialize(void);
   void stopAllThreads(void);
