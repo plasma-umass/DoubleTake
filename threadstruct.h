@@ -52,6 +52,7 @@ extern "C" {
   
   typedef struct thread {
     bool      available; // True: the thread index is free.
+    bool      internalheap;
     bool      isSpawning; // Whether a new thread is spawning?  
     bool      isNewlySpawned;  // whether this thread is spawned in this epoch?
     // Whether this thread has been joined or not. 

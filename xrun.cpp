@@ -138,7 +138,7 @@ void xrun::epochBegin (void) {
 
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd (bool endOfProgram) {
-  fprintf(stderr, "in the end of an epoch with endOfProgram %d\n", endOfProgram);
+  //fprintf(stderr, "in the end of an epoch with endOfProgram %d\n", endOfProgram);
   // Tell other threads to stop and save context.
   stopAllThreads();
 
@@ -151,12 +151,14 @@ void xrun::epochEnd (bool endOfProgram) {
 
   bool hasMemoryLeak;
 
+#ifdef DETECT_MEMORY_LEAKAGE
   if(endOfProgram) {
     hasMemoryLeak = leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd()); 
   }
   else {
     hasMemoryLeak = leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
   }
+#endif
 
   // First, attempt to commit.
   if(hasOverflow) {

@@ -218,6 +218,10 @@ private:
       if(*ptr == xdefines::SENTINEL_WORD && sentinelmap::getInstance().isSet(ptr)) {
  //       fprintf(stderr, "Find object at %p\n", ptr);
         object = getObject((void *)++ptr);
+        if(object->isObjectFree()) {
+          fprintf(stderr, "object at %p is free\n", ptr);
+        }
+
         if(object->checkLeakageAndClean()) {
  //         fprintf(stderr, "Leakage at %p\n", object->getStartPtr());
           hasLeakage = true;

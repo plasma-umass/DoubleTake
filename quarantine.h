@@ -115,14 +115,19 @@ public:
     memcpy(_objects, _objectsBackup, _objectsSize); 
   }
 
-  void addFreeObject(void * ptr, size_t size) {
+  // We will check whether an object is added into free list or not. 
+  // If not, then we can actuall freed an object. 
+
+  bool addFreeObject(void * ptr, size_t size) {
+    if(size >= xdefines::QUARANTINE_TOTAL_SIZE) {
+      return false;
+    }
     // Check whether we need to free some objects
     freeObject * object = &_objects[_availIndex];
-    assert(size < xdefines::QUARANTINE_TOTAL_SIZE);  
     object->ptr  = ptr;
     object->size = size;
 
-    fprintf(stderr, "ADDDDDDDDDDDDDD free object ptr %p size %d\n", ptr, size);
+   // fprintf(stderr, "ADDDDDDDDDDDDDD free object ptr %p size %d\n", ptr, size);
     // Mark free object
     markFreeObject(ptr, size);
 
@@ -133,6 +138,7 @@ public:
     }
 
     _availIndex = incrIndex(_availIndex);
+    return true;
   }
 
   inline bool hasAvailSlot(void) {
@@ -188,7 +194,7 @@ public:
     int  UAFErrors = 0; 
     freeObject * object;
     
-    fprintf(stderr, "FFFFFFFFFFFinal check\n");
+//    fprintf(stderr, "FFFFFFFFFFFinal check\n");
 
     while(object = retrieveLRObject()) {
       if(hasUsageAfterFree(object->ptr, object->size)) {

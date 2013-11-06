@@ -240,7 +240,7 @@ public:
   int open(const char *pathname, int flags, mode_t mode) {
     int ret;
  
-#ifndef MYTEMP_DEBUG 
+#ifndef MYDEBUG 
   #ifdef REPRODUCIBLE_FDS 
     // In the rollback phase, we only call 
     if(global_isRollback()) {

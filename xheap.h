@@ -81,7 +81,7 @@ public:
     // Initialize the freelist.
     freelist::getInstance().initialize();
 
-    return (void *)_start;	
+    return (void *)ptr;	
     //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
   }
 
@@ -191,7 +191,7 @@ public:
    sentinelmap::getInstance().cleanup(p, sz);
 #endif
     // Now we cleanup the corresponding 
-    printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x. Heappoition %p\n", getpid(),  p, (intptr_t)p + sz,  sz, _position);
+    //printf("%d: XHEAP malloc: ptr %p end 0x%lx size %x. Heappoition %p\n", getpid(),  p, (intptr_t)p + sz,  sz, _position);
     return p;
   }
 

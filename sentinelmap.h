@@ -82,7 +82,7 @@ public:
     _totalBytes = getBytes(_elements);
     _heapStart = (intptr_t)addr;
  
-    fprintf(stderr, "Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
+    //fprintf(stderr, "Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
     // Now we allocate specific size of shared memory 
     void * buf = MM::mmapAllocatePrivate(_totalBytes);
     _bitmap.initialize(buf, _elements, _elements/sizeof(unsigned long));
@@ -97,7 +97,7 @@ public:
     unsigned long item = getIndex(start);
     unsigned long bits = getBitSize(size);
 
-    fprintf(stderr, "clearBits item %ld, bits %ld\n", item, bits);
+    //fprintf(stderr, "clearBits item %ld, bits %ld\n", item, bits);
     _bitmap.clearBits(item, bits); 
   }
 
@@ -129,7 +129,7 @@ public:
       int words = bytes / WORDBYTES;
       bool hasCorrupted = false; 
 
-      fprintf(stderr, "checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %d\n", begin, end, bytes, words, startIndex);
+   //   fprintf(stderr, "checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %d\n", begin, end, bytes, words, startIndex);
       // We are trying to calculate 
       // We know that for a bit, we can use it for a word.
       // For a word with specified bytes, then we can use it for multiple words.
@@ -150,7 +150,7 @@ public:
   /// If we are given the address, we have to calculate the "index" at first.
   inline bool tryToSet (void * addr) {
     unsigned long item = getIndex(addr);
-//    fprintf(stderr, "SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
+   // fprintf(stderr, "SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
     return _bitmap.checkSetBit(item);
   }
 
@@ -184,12 +184,12 @@ public:
   void setSentinelAt(void * ptr) {
     size_t * sentinel = (size_t *)ptr;
    
-    //fprintf(stderr, "****************Setup sentinels ptr %p************\n", ptr); 
+    //fprintf(stderr, "****************set sentinel at ptr %p sentinel at %p************\n", ptr, sentinel); 
     // Calculate the address of two sentinels
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::SENTINEL_WORD;
-    tryToSet((void *)sentinel);  
+    tryToSet(ptr);;  
   }
 
   void clearSentinelAt(void * ptr) {
@@ -227,27 +227,24 @@ public:
     unsigned long item = getIndex(addr);
     unsigned long * canaryAddr;
     unsigned long startIndex;
-    fprintf(stderr, "findObjectStartAddr line %d. item %ld\n", __LINE__, item);
     while(_bitmap.getLastBit(item, &startIndex)) {
       // When we get the last set bit in the bitmap, we should check whether 
       // this address is inside a valid object. 
       // There are at least two cases for a normal object.
       canaryAddr = (unsigned long *)getHeapAddressFromItem(startIndex);
-      fprintf(stderr, "findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
+     // fprintf(stderr, "findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
       if(*canaryAddr == xdefines::SENTINEL_WORD) {
         *objectStart = (intptr_t)canaryAddr + xdefines::SENTINEL_SIZE;
         hasValidObject = true;
-    fprintf(stderr, "findObjectStartAddr line %d objectStart %lx\n", __LINE__, *objectStart);
         break;
       }
       else if(*canaryAddr == xdefines::MEMALIGN_SENTINEL_WORD) {
-    fprintf(stderr, "findObjectStartAddr line %d\n", __LINE__);
         item = startIndex; 
         continue;
       }
       else {
         hasValidObject = false;
-    fprintf(stderr, "findObjectStartAddr line %d\n", __LINE__);
+    //fprintf(stderr, "findObjectStartAddr line %d\n", __LINE__);
         break;
       }
     }

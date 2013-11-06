@@ -83,6 +83,12 @@ public:
 
     _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
 	  _globals.initialize();
+          
+  //#ifdef MYDEBUG
+  #if 0
+    watchpoint::getInstance().addWatchpoint((void *)0x100000038, 0); 
+    watchpoint::getInstance().installWatchpoints();
+  #endif
   }
 
   void finalize(void) {
@@ -101,7 +107,7 @@ public:
   /* Heap-related functions. */
   inline void * malloc (size_t sz) {
     void * ptr;
-    if(xthread::getInstance().threadSpawning()) {
+    if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     }
     else {
@@ -158,7 +164,6 @@ public:
     o->setObjectSize(sz);
 
     assert(size >= sz);
-
     // Add another guard zone if block size is larger than actual size
     // in order to capture the 1 byte overflow.
     if(size > sz) {
@@ -191,17 +196,21 @@ public:
         }
         sentinelmap::getInstance().markSentinelAt(startp);
     
+    //fprintf(stderr, "MALLOC::line %ld offset %lx nextp %p\n", __LINE__, offset);
         // We actually setup a next word to capture the next word
+#if 1
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p + setBytes);
           sentinelmap::getInstance().setSentinelAt(nextp);
+    //fprintf(stderr, "MALLOC::line %ld\n", __LINE__);
         }
+#endif
       }
     }
     // We donot need to do anything if size is equal to sz
     //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
 #endif
-   PRINF("THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
+//   fprintf(stderr, "THREAD%d at %p: malloc size %lx ptr %p before return\n", getThreadIndex(), pthread_self(), sz, ptr);
     return ptr;
   }
 
@@ -433,7 +442,7 @@ public:
  } 
   
   inline void printCallsite(void) {
-    selfmap::getInstance().getInstance().printCallStack(NULL, NULL, true);
+    selfmap::getInstance().printCallStack(NULL, NULL, true);
     PRINF("Program exit becaue of double free or invalid free.\n");
     exit(-1);
   }
@@ -531,9 +540,11 @@ public:
 //    while(1) ;
     //PRDBG("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     fprintf(stderr, "Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    current->internalheap = true;
     selfmap::getInstance().printCallStack(NULL, NULL, true);
-
+    current->internalheap = false;
     while(1);
+
 //    WRAP(exit)(-1);
     // Set the context to handleSegFault
     jumpToFunction((ucontext_t *)context, (unsigned long)xmemory::getInstance().handleSegFault);   

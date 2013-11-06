@@ -90,8 +90,8 @@ void xthread::setThreadSafe(void) {
     unlock_thread(current);
 }
 
-void xthread::addQuarantineList(void * ptr, size_t sz) {
-  current->qlist.addFreeObject(ptr, sz);
+bool xthread::addQuarantineList(void * ptr, size_t sz) {
+  return current->qlist.addFreeObject(ptr, sz);
 }
 
 void xthread::rollback(void) {

@@ -61,6 +61,7 @@ public:
     _elements = elements;
     _words = words;
 
+//    fprintf(stderr, "*********************bitmap initialize %p****************\n", addr);
     // Initialize the on and off
     for(unsigned long i = 0; i < WORDBITS; i++) {
       on[i] = ((unsigned long)1) << i;
@@ -110,10 +111,12 @@ public:
   }
 
   // Inside a word with specifc index, which bits
-  inline bool checkSetBit(unsigned long wordIndex, int bitIndex) {
+  inline bool checkSetBit(unsigned long wordIndex, unsigned long bitIndex) {
     unsigned long * word = getWord(wordIndex);
+ //   fprintf(stderr, "checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
     bool result = (*word & on[bitIndex] == 0) ? true : false;
     *word |= on[bitIndex];
+  //  fprintf(stderr, "checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
     return result;
   }
 
@@ -205,14 +208,15 @@ public:
 
     // Most common case
     if(firstBitIndex == 0 && lastBitIndex == 0) {
-      fprintf(stderr, "clearBits: supported cases. firstBitIndex %d lastBitIndex %d lastWordIndex %d\n", firstBitIndex, lastBitIndex, lastWordIndex);
+   //   fprintf(stderr, "clearBits: supported cases. firstBitIndex %d lastBitIndex %d lastWordIndex %d\n", firstBitIndex, lastBitIndex, lastWordIndex);
       // Full words.
       void * start = getWord(firstWordIndex);
       int size = (lastWordIndex - firstWordIndex) * WORDSIZE;
       memset(start, 0, size);
     }  
     else {
-      fprintf(stderr, "clearBits: none supported cases. firstBitIndex %d lastBitIndex %d\n", firstBitIndex, lastBitIndex);
+      assert(0);
+      //fprintf(stderr, "clearBits: none supported cases. firstBitIndex %d lastBitIndex %d\n", firstBitIndex, lastBitIndex);
     }
   }
 

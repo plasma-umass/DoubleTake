@@ -63,7 +63,7 @@ public:
     void * newptr = getPointer(o);
 
     // Now we are adding two sentinels and mark them on the shared bitmap.
-    fprintf(stderr, "AdaptAppHeap malloc sz %d and markSentinels now\n", sz);
+    //fprintf(stderr, "AdaptAppHeap malloc sz %d ptr %p nextp %lx\n", sz, ptr, (intptr_t)ptr + sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
 #ifdef DETECT_OVERFLOW 
     sentinelmap::getInstance().setupSentinels(newptr, sz); 
 #endif
@@ -192,8 +192,8 @@ public:
     }
 
     _heap = new (base) SuperHeap;
-//    fprintf(stderr, "xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
-    
+    //fprintf(stderr, "xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
+  
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
     _heapEnd = SourceHeap::getHeapEnd();
@@ -203,7 +203,7 @@ public:
     size_t sentinelmapSize;
     sentinelmapStart = _heapStart;
     sentinelmapSize = xdefines::USER_HEAP_SIZE;
-    fprintf(stderr, "INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
+    //fprintf(stderr, "INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
 
     // Initialize bitmap
     sentinelmap::getInstance().initialize(sentinelmapStart, sentinelmapSize);
@@ -255,7 +255,10 @@ public:
     size_t size = getSize(ptr); 
     if(tid == owner) { 
       // Adding this to the quarantine list
-      addThreadQuarantineList(ptr, size);
+      if(addThreadQuarantineList(ptr, size) == false) {
+        // If an object is too large, we simply freed this object.
+        _heap->free(tid, ptr);
+      }
       //quarantine::getInstance().addFreeObject(ptr, size); 
     }
     else {

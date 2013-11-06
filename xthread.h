@@ -675,11 +675,6 @@ public:
    assert(0); 
   }
 
-  // Is this thread spawning?
-  inline static bool threadSpawning() {
-    return current->isSpawning == true;
-  }
-  
   // Run those deferred synchronization.
   inline static void runDeferredSyncs() {
     threadinfo::getInstance().runDeferredSyncs();
@@ -689,9 +684,14 @@ public:
   inline static bool hasReapableThreads() {
     return threadinfo::getInstance().hasReapableThreads();
   }
+  
+  inline bool threadSpawning() {
+    return current->isSpawning;
+  }
+
 
   void invokeCommit(void);
-  void addQuarantineList(void * ptr, size_t sz);
+  bool addQuarantineList(void * ptr, size_t sz);
 
 private:
   inline void * getSyncEntry(void * entry) {
@@ -755,14 +755,15 @@ private:
   }
 
   inline static void setThreadSpawning() {
+    current->internalheap = true;
     current->isSpawning = true;
   }
 
   inline static void unsetThreadSpawning() {
+    current->internalheap = false;
     current->isSpawning = false;
   }
   
-
   inline static pid_t gettid() {
     return syscall(SYS_gettid);
   }

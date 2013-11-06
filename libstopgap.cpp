@@ -86,7 +86,7 @@
 
 extern "C" {
   extern void callAtomicEnd(void);
-//#define fprintf(stderr, ...) 
+#define fprintf(stderr, ...) 
 #if defined(__GNUG__)
   void initializer (void) __attribute__((constructor));
   void finalizer (void)   __attribute__((destructor));
@@ -255,8 +255,8 @@ extern "C" {
     return stopgap_memalign(boundary, sz);
   }
 
-  void addThreadQuarantineList(void * ptr, size_t sz) {
-    xthread::getInstance().addQuarantineList(ptr, sz);
+  bool addThreadQuarantineList(void * ptr, size_t sz) {
+    return xthread::getInstance().addQuarantineList(ptr, sz);
   }
 
 #ifdef MULTI_THREAD

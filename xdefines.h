@@ -70,7 +70,7 @@ extern "C" {
   extern int getThreadIndex();
   extern char * getThreadBuffer();
   extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
-  extern void addThreadQuarantineList(void * ptr, size_t size);
+  extern bool addThreadQuarantineList(void * ptr, size_t size);
   #define EXIT (WRAP(exit)(-1))
 
   inline size_t alignup(size_t size, size_t alignto) {
