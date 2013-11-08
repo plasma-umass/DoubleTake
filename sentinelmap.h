@@ -184,11 +184,12 @@ public:
   void setSentinelAt(void * ptr) {
     size_t * sentinel = (size_t *)ptr;
    
-    //fprintf(stderr, "****************set sentinel at ptr %p sentinel at %p************\n", ptr, sentinel); 
     // Calculate the address of two sentinels
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::SENTINEL_WORD;
+    if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
+    fprintf(stderr, "****************set sentinel at ptr %p to %lx ************\n", ptr, *sentinel); 
     tryToSet(ptr);;  
   }
 
@@ -204,6 +205,8 @@ public:
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::MEMALIGN_SENTINEL_WORD;
+    if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
+      fprintf(stderr, "****************set memalign sentinel at ptr %p to %lx ************\n", ptr, *sentinel); 
     tryToSet((void *)sentinel); 
   }
 
@@ -349,7 +352,7 @@ private:
     WORD * address = (WORD *)getHeapAddressFromWordIndex(wordIndex);
     bool checkNonAligned = false;
     bool hasCorrupted = false;
-          
+        
     //fprintf(stderr, "checkSentinelOnBMD: word %d, bitword %lx address %lx\n", wordIndex, bits, address);
     //fprintf(stderr, "checkSentinelOnBMD: at %lx with value %lx\n", 0x100000028, *((unsigned long *)0x100000028));
 
@@ -357,7 +360,9 @@ private:
       // Only check those address when corresponding bit has been set
       if(isBitSet(bits, i)) {
         if(address[i] != xdefines::SENTINEL_WORD && address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
-         //fprintf(stderr, "Bits %ld is set, address %lx with value %lx\n", i, &address[i], address[i]);
+        unsigned long * ptr = &address[i];
+        if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
+         fprintf(stderr, "Bits %ld is set (total %lx), address %lx with value %lx\n", i, bits, &address[i], address[i]);
           bool isBadSentinel = false;
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.
@@ -389,7 +394,11 @@ private:
             //fprintf(stderr, " __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
             // If there is no magic bytes, it is wrong since 
             // we should have MAGIC_BYTE_NOT_ALIGNED if a bit is set.
-            if(magicBytesSize == 0 || (int)p[j] != magicBytesSize) {
+            if(magicBytesSize == 0) {
+              isBadSentinel = true;
+            }
+            else if((int)p[j] != magicBytesSize && magicBytesSize != 1) {
+              // However, we should be careful on this. Since there is one extreme case,
               isBadSentinel = true;
             }
           }  // if(checkNonAligned) 
@@ -397,7 +406,8 @@ private:
             isBadSentinel = true;
           }
           if(isBadSentinel) {
-            fprintf(stderr, "OVERFLOW!!!! now it is 0x%lx at %p\n", address[i], &address[i]);
+        //if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
+            fprintf(stderr, "OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
             watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]));
           }
         }

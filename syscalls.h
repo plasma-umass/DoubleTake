@@ -78,8 +78,8 @@ public:
 
   void epochEnd(void) {
 //    fprintf(stderr, "$$$$$$epochEnd at line %d\n", __LINE__);
-    fprintf(stderr, "$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
-    printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+//    fprintf(stderr, "$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+ //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
     xrun::getInstance().epochEnd(false); 
   }
 

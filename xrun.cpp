@@ -153,9 +153,11 @@ void xrun::epochEnd (bool endOfProgram) {
 
 #ifdef DETECT_MEMORY_LEAKAGE
   if(endOfProgram) {
+    fprintf(stderr, "DETECTING MEMORY LEAKABE in the end of program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd()); 
   }
   else {
+    fprintf(stderr, "DETECTING MEMORY LEAKABE inside a program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
   }
 #endif

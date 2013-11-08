@@ -78,7 +78,7 @@ public:
   // Add a watch point with its value to watchpoint list.
   void addWatchpoint(void * addr, size_t value ) {
 
-    fprintf(stderr, "***********CAUGHT: problematic address %p with value 0x%lx!!!!!\n", addr, value);
+    fprintf(stderr, "***********DoubleTake: problematic address %p with value 0x%lx!!!!!\n", addr, value);
     if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
       // Watch
       _wp[_numWatchpoints].addr = (size_t *)addr;

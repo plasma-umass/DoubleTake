@@ -186,7 +186,7 @@ public:
 	  unlock();
 //    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
     
-#ifdef DETECT_OVERFLOW
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE)
     // We must cleanup corresponding bitmap 
    sentinelmap::getInstance().cleanup(p, sz);
 #endif

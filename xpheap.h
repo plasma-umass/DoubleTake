@@ -53,7 +53,11 @@ public:
 
     // We are adding one objectHeader and two "canary" words along the object
     // The layout will be:  objectHeader + "canary" + Object + "canary".
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE) 
     void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);
+#else
+    void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader));
+#endif
     if (!ptr) {
       return NULL;
     }
@@ -64,7 +68,7 @@ public:
 
     // Now we are adding two sentinels and mark them on the shared bitmap.
     //fprintf(stderr, "AdaptAppHeap malloc sz %d ptr %p nextp %lx\n", sz, ptr, (intptr_t)ptr + sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
-#ifdef DETECT_OVERFLOW 
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE) 
     sentinelmap::getInstance().setupSentinels(newptr, sz); 
 #endif
 
@@ -199,6 +203,7 @@ public:
     _heapEnd = SourceHeap::getHeapEnd();
 
     // Sanity check related information
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE) 
     void * sentinelmapStart;
     size_t sentinelmapSize;
     sentinelmapStart = _heapStart;
@@ -207,6 +212,7 @@ public:
 
     // Initialize bitmap
     sentinelmap::getInstance().initialize(sentinelmapStart, sentinelmapSize);
+#endif
     return (void *)_heapStart;
    // base = (char *)malloc(0, 4); 
   }

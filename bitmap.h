@@ -237,7 +237,7 @@ public:
     if(bitword != 0) {
       // Should we use lsbIndex or msbIndex?
       unsigned long lsbIndex = getLsbIndex(bitword);
-      fprintf(stderr, "lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
+  //    fprintf(stderr, "lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
       //while(1);
       if(bitIndex > lsbIndex) {
         // Then it is possible that there is a bit between lsbIndex (small) and bitIndex (large)
@@ -246,7 +246,7 @@ public:
           if(isBitSetOnWord(bitword, bitIndex)) {
             hasLastBit = true;
             *lastBitIndex = getItemIndex(wordIndex, bitIndex);
-            fprintf(stderr, "lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
+//            fprintf(stderr, "lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
             break;
           }
         }
