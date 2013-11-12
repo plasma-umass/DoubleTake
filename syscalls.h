@@ -286,7 +286,7 @@ public:
     }
 #endif
     else {
-      fprintf(stderr, "close fd %d at line %d problem\n", fd, __LINE__);
+//      fprintf(stderr, "close fd %d at line %d problem\n", fd, __LINE__);
       //selfmap::getInstance().printCallStack(NULL, NULL, true);
       //epochEnd();
       ret = WRAP(close)(fd);

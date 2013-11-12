@@ -93,7 +93,7 @@ extern "C" {
 #endif
   size_t __max_stack_size; 
 
-  #define INITIAL_MALLOC_SIZE (256 * 1024 * 1024)
+  #define INITIAL_MALLOC_SIZE (512 * 1024 * 1024)
 //  #define LOGBUF_SIZE (4096)
   //static bool *funcInitialized;
   bool funcInitialized = false;
@@ -173,6 +173,7 @@ extern "C" {
   void * stopgap_malloc (size_t sz) {
     void * ptr;
     if (!initialized) {
+      fprintf(stderr, "tempmalloc sz %d\n", sz);
       ptr = tempmalloc(sz);
     } else {
 //      printf("stopgapmalloc sz %d\n", sz);

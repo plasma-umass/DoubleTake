@@ -193,7 +193,7 @@ private:
   void insertLeakageMap(void * ptr, size_t objectSize, size_t size) {
     _totalLeakageSize += size;
     // Update the total size.
-    fprintf(stderr, "**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
+//    fprintf(stderr, "**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
     // We only start to rollback when leakage is too large?
   }
 
@@ -235,7 +235,7 @@ private:
       }
     }
     
-    fprintf(stderr, "Totally leakage memory is around %lx bytes\n", _totalLeakageSize);  
+//    fprintf(stderr, "Totally leakage memory is around %lx bytes\n", _totalLeakageSize);  
 
     return hasLeakage;
   }

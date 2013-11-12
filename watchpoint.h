@@ -78,7 +78,7 @@ public:
   // Add a watch point with its value to watchpoint list.
   void addWatchpoint(void * addr, size_t value ) {
 
-    fprintf(stderr, "***********DoubleTake: problematic address %p with value 0x%lx!!!!!\n", addr, value);
+//    fprintf(stderr, "***********DoubleTake: problematic address %p with value 0x%lx!!!!!\n", addr, value);
     if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
       // Watch
       _wp[_numWatchpoints].addr = (size_t *)addr;
@@ -130,7 +130,7 @@ public:
      // fprintf(stderr, "child install watchpoints now\n");
 
       // Install all watchpoints now.
-      fprintf(stderr, "child install watchpoints %d at %p\n", _numWatchpoints, &_numWatchpoints);
+      fprintf(stderr, "child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
         fprintf(stderr, "child install watchpoints %d at %p\n", i, _wp[i].addr);
         insert_watchpoint ((unsigned long)_wp[i].addr, sizeof(void *), hw_write, parent);

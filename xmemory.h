@@ -182,7 +182,7 @@ public:
         // However, some weird test cases has this overflow. So we should detect this now.
         void * startp = (void *)((intptr_t)p - nonAlignedBytes);
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes; 
-#ifdef DETECT_NONALIGNED_OVERFLOW
+//#ifdef DETECT_NONALIGNED_OVERFLOW
         // Check how much magic bytes we should put there. 
         // The first byte of this is to specify how many bytes there.
         // For example, at 64bit, when nonAlignedBytes is 5,
@@ -204,7 +204,7 @@ public:
         }
 
         sentinelmap::getInstance().markSentinelAt(startp);
-#endif
+//#endif
         // We actually setup a next word to capture the next word
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p + setBytes);
@@ -293,7 +293,7 @@ public:
           isOverflow = true;
         }
       } 
-#ifdef DETECT_NONALIGNED_OVERFLOW
+//#ifdef DETECT_NONALIGNED_OVERFLOW
       else {
         // fprintf(stderr, "xmemory line %d: nonAlignedBytes %d\n", __LINE__, nonAlignedBytes);
         // For those less than one word access, maybe we do not care since memory block is 
@@ -335,12 +335,7 @@ public:
           }
         }
       }
- #endif 
-      if(isOverflow) {
-        //PRINF("xmemory: checkandclearsentinal now 222\n");
-  //      fprintf(stderr, "xmemory: nonaligned byte ptr %p. size %d sz %d\n", ptr, size, sz);
-        watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
-      }
+// #endif 
     }  
 
     return isOverflow;
@@ -395,7 +390,7 @@ public:
     // Check for double free
     if(o->isObjectFree() || !o->isGoodObject()) {
       PRINF("Caught double free or invalid free error\n");
-      fprintf(stderr, "Caught double free or invalid free error\n");
+      fprintf(stderr, "DoubleTake: Caught double free or invalid free error\n");
       printCallsite();
       abort();
     }

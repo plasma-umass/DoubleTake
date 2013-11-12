@@ -147,11 +147,12 @@ void xrun::epochEnd (bool endOfProgram) {
   //assert(0);
 #endif
 
+#ifdef DETECT_OVERFLOW
   bool hasOverflow = _memory.checkHeapOverflow();
-
-  bool hasMemoryLeak;
+#endif
 
 #ifdef DETECT_MEMORY_LEAKAGE
+  bool hasMemoryLeak;
   if(endOfProgram) {
     fprintf(stderr, "DETECTING MEMORY LEAKABE in the end of program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd()); 
@@ -162,18 +163,30 @@ void xrun::epochEnd (bool endOfProgram) {
   }
 #endif
 
+#ifndef EVALUATING_PERF
   // First, attempt to commit.
+  #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
+    #if defined(DETECT_OVERFLOW)
   if(hasOverflow) {
+    #elif defined(DETECT_OVERFLOW)
+  if(hasMemoryLeak) {
+    #endif
     _memory.cleanupFreeList();
     rollback();
   }
   else {
+  #endif
+#endif
     _memory.freeAllObjects();
     PRDBG("getpid %d: xrun::epochEnd without overflow\n", getpid());
     //fprintf(stderr, "getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
+#ifndef EVALUATING_PERF
+  #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
   }
+  #endif
+#endif
 }
 
 bool isThreadSafe(thread_t * thread) {
