@@ -166,16 +166,26 @@ void xrun::epochEnd (bool endOfProgram) {
 #ifndef EVALUATING_PERF
   // First, attempt to commit.
   #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
-    #if defined(DETECT_OVERFLOW)
+  if(hasOverflow || hasMemoryLeak) {
+    _memory.cleanupFreeList();
+    rollback();
+  }
+  else {
+  #elif defined(DETECT_OVERFLOW)
   if(hasOverflow) {
-    #elif defined(DETECT_OVERFLOW)
+    _memory.cleanupFreeList();
+    rollback();
+  }
+  else {
+  #elif defined(DETECT_MEMORY_LEAKAGE)
   if(hasMemoryLeak) {
-    #endif
     _memory.cleanupFreeList();
     rollback();
   }
   else {
   #endif
+#else
+    _memory.cleanupFreeList();
 #endif
     _memory.freeAllObjects();
     PRDBG("getpid %d: xrun::epochEnd without overflow\n", getpid());
