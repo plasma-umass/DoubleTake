@@ -188,8 +188,6 @@ public:
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::SENTINEL_WORD;
-    if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
-    fprintf(stderr, "****************set sentinel at ptr %p to %lx ************\n", ptr, *sentinel); 
     tryToSet(ptr);;  
   }
 
