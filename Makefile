@@ -1,59 +1,55 @@
-SRCS =  libstopgap.cpp \
-	      libfuncs.cpp  \
-	      xthread.cpp    \
-	      finetime.c     \
-        dr.c           \
-        xrun.cpp       \
-        xmemory.cpp    \
-	      gnuwrapper.cpp \
-				quarantine.cpp  \
-        internalsyncs.cpp \
-				leakcheck.cpp \
-				selfmap.cpp \
-				prof.cpp       
+INCDIR = ./include
+SRCDIR = ./source
 
-INCS =  xmapping.h     \
-        xdefines.h     \
-        atomic.h       \
-        xthread.h      \
-        xheap.h        \
-        xoneheap.h     \
-        xpheap.h     \
-	      xglobals.h     \
-	      globalinfo.h     \
-	      xmemory.h      \
-	      xrun.h         \
-	      objectheader.h \
-	      libfuncs.h    \
-	      finetime.h     \
-        log.h         \
-	      mm.h           \
-        xcontext.h     \
-				xsync.h  \
-				recordentries.h \
-				quarantine.h \
-				freelist.h   \
-				sentinelmap.h \
-        selfmap.h      \
-        bitmap.h       \
-        synceventlist.h \
-        watchpoint.h \
-				leakcheck.h \
-        syscalls.h \
-        fops.h 
+SRCS =  $(SRCDIR)/libdoubletake.cpp \
+	$(SRCDIR)/libfuncs.cpp      \
+	$(SRCDIR)/xthread.cpp       \
+	$(SRCDIR)/finetime.c        \
+	$(SRCDIR)/dr.c              \
+        $(SRCDIR)/xrun.cpp          \
+	$(SRCDIR)/xmemory.cpp       \
+	$(SRCDIR)/gnuwrapper.cpp    \
+	$(SRCDIR)/quarantine.cpp    \
+	$(SRCDIR)/internalsyncs.cpp \
+	$(SRCDIR)/leakcheck.cpp     \
+	$(SRCDIR)/selfmap.cpp       \
+	$(SRCDIR)/prof.cpp       
+
+INCS =  $(INCDIR)/xmapping.h      \
+	$(INCDIR)/xdefines.h      \
+	$(INCDIR)/atomic.h        \
+	$(INCDIR)/xthread.h       \
+	$(INCDIR)/xheap.h	  \
+	$(INCDIR)/xoneheap.h      \
+	$(INCDIR)/xpheap.h        \
+	$(INCDIR)/xglobals.h      \
+	$(INCDIR)/globalinfo.h    \
+	$(INCDIR)/xmemory.h       \
+	$(INCDIR)/xrun.h          \
+	$(INCDIR)/objectheader.h  \
+	$(INCDIR)/libfuncs.h      \
+	$(INCDIR)/finetime.h      \
+	$(INCDIR)/log.h           \
+	$(INCDIR)/mm.h            \
+	$(INCDIR)/xcontext.h      \
+	$(INCDIR)/xsync.h         \
+	$(INCDIR)/recordentries.h \
+	$(INCDIR)/quarantine.h    \
+	$(INCDIR)/freelist.h      \
+	$(INCDIR)/sentinelmap.h   \
+	$(INCDIR)/selfmap.h       \
+	$(INCDIR)/bitmap.h        \
+	$(INCDIR)/synceventlist.h \
+	$(INCDIR)/watchpoint.h    \
+	$(INCDIR)/leakcheck.h     \
+	$(INCDIR)/syscalls.h      \
+	$(INCDIR)/fops.h 
 
 DEPS = $(SRCS) $(INCS)
 
-CXX = g++ 
-#-D_GNU_SOURCE 
+CXX = g++
 
-# -march=core2 -msse3 -DSSE_SUPPORT
-# When we evaluate performance, there is no need to rollback.
-#-DEVALUATING_PERF
-
-# Framework
-#CFLAGS   = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DEVALUATING_PERF
-CFLAGS   = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DDETECT_MEMORY_LEAKAGE -DEVALUATING_PERF
+CFLAGS = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DDETECT_MEMORY_LEAKAGE -DEVALUATING_PERF
 
 # Overflow
 #CFLAGS   = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DEVALUATING_PERF
@@ -72,21 +68,20 @@ CFLAGS   = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETEC
 #-DDETECT_USAGE_AFTER_FREE
 #-DDETECT_OVERFLOW
 #-DREPRODUCIBLE_FDS #-m64 # -O3
+
 CFLAGS64 = $(CFLAGS) -DDEBUG_LEVEL=0 -DDEBUG_ROLLBACK #-m64 # -O3
 
-#INCLUDE_DIRS = -I. -I./Heap-Layers
-INCLUDE_DIRS = -I. -I./heaplayers -I./heaplayers/util
+INCLUDE_DIRS = -I. -I$(INCDIR) -I./heaplayers -I./heaplayers/util
 
-TARGETS = libstopgap64.so
+TARGETS = libdoubletake.so
 
 all: $(TARGETS)
 
-libstopgap32.so: $(DEPS)
-	$(CXX) $(CFLAGS32) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=stopgap_##x' $(SRCS) -o libstopgap32.so  -ldl -lpthread -lunwind -lunwind-ptrace -lunwind-generic
+libdoubletake32.so: $(DEPS)
+	$(CXX) $(CFLAGS32) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=doubletake_##x' $(SRCS) -o libdoubletake32.so  -ldl -lpthread -lunwind -lunwind-ptrace -lunwind-generic
 
-#gcc -fPIC -std=c99 -c pthread_create.c
-libstopgap64.so: $(DEPS)
-	$(CXX) $(CFLAGS64) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=stopgap_##x' $(SRCS) -o libstopgap64.so -ldl -lpthread
+libdoubletake.so: $(DEPS)
+	$(CXX) $(CFLAGS64) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=doubletake_##x' $(SRCS) -o libdoubletake.so -ldl -lpthread
 
 clean:
 	rm -f $(TARGETS)
