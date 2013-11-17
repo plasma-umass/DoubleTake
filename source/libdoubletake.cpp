@@ -41,7 +41,7 @@
 #include <utime.h>
 #include <unistd.h>
 //#include <attr/xattr.h>
-#include <mqueue.h>
+//#include <mqueue.h>
 //#include <keyutils.h>
 //#include <linux/aio.h>
 //#include <linux/futex.h>
