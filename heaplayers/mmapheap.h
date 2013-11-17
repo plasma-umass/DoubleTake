@@ -4,7 +4,7 @@
 
   Heap Layers: An Extensible Memory Allocation Infrastructure
   
-  Copyright (C) 2000-2004 by Emery Berger
+  Copyright (C) 2000-2012 by Emery Berger
   http://www.cs.umass.edu/~emery
   emery@cs.umass.edu
   
@@ -24,8 +24,8 @@
 
 */
 
-#ifndef _MMAPHEAP_H_
-#define _MMAPHEAP_H_
+#ifndef HL_MMAPHEAP_H
+#define HL_MMAPHEAP_H
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -39,27 +39,32 @@
 #include <map>
 #endif
 
-#include "sassert.h"
-#include "myhashmap.h"
-#include "stlallocator.h"
+#include <new>
+
 #include "freelistheap.h"
 #include "zoneheap.h"
+#include "bumpalloc.h"
 #include "lockedheap.h"
-#include "blockinglock.h"
-#include "hldefines.h"
+#include "posixlock.h"
+#include "cpuinfo.h"
+#include "myhashmap.h"
+#include "sassert.h"
+#include "mmapwrapper.h"
+#include "stlallocator.h"
 
+#ifndef HL_MMAP_PROTECTION_MASK
 #if HL_EXECUTABLE_HEAP
 #define HL_MMAP_PROTECTION_MASK (PROT_READ | PROT_WRITE | PROT_EXEC)
 #else
 #define HL_MMAP_PROTECTION_MASK (PROT_READ | PROT_WRITE)
 #endif
+#endif
+
 
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-
-#include <new>
 
 /**
  * @class MmapHeap
@@ -75,12 +80,11 @@ namespace HL {
     /// All memory from here is zeroed.
     enum { ZeroMemory = 1 };
 
+    enum { Alignment = MmapWrapper::Alignment };
+
 #if defined(_WIN32) 
 
-    // Microsoft Windows aligns all memory to a 64K boundary.
-    enum { Alignment = 64 * 1024 };
-
-    inline void * malloc (size_t sz) {
+    static inline void * malloc (size_t sz) {
       //    printf ("mmapheap: Size request = %d\n", sz);
 #if HL_EXECUTABLE_HEAP
       char * ptr = (char *) VirtualAlloc (NULL, sz, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, PAGE_EXECUTE_READWRITE);
@@ -90,11 +94,13 @@ namespace HL {
       return (void *) ptr;
     }
   
-    inline void free (void * ptr, size_t) {
+    static inline void free (void * ptr, size_t) {
+      // No need to keep track of sizes in Windows.
       VirtualFree (ptr, 0, MEM_RELEASE);
     }
 
-    inline void free (void * ptr) {
+    static inline void free (void * ptr) {
+      // No need to keep track of sizes in Windows.
       VirtualFree (ptr, 0, MEM_RELEASE);
     }
   
@@ -106,18 +112,9 @@ namespace HL {
 
 #else
 
-    virtual ~PrivateMmapHeap (void) {}
-
-#if defined(__SVR4)
-
-    // Solaris aligns all memory to a 64K boundary.
-    enum { Alignment = 64 * 1024 };
-#else
-    // Linux and most other operating systems align memory to a 4K boundary.
-    enum { Alignment = 4 * 1024 };
-#endif
-
-    inline void * malloc (size_t sz) {
+    static inline void * malloc (size_t sz) {
+      // Round up to the size of a page.
+      sz = (sz + CPUInfo::PageSize - 1) & ~(CPUInfo::PageSize - 1);
 #if defined(MAP_ALIGN) && defined(MAP_ANON)
       // Request memory aligned to the Alignment value above.
       void * ptr = mmap ((char *) Alignment, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ALIGN | MAP_ANON, -1, 0);
@@ -130,28 +127,14 @@ namespace HL {
       if (ptr == MAP_FAILED) {
 	ptr = NULL;
       }
-
       return ptr;
     }
     
-#if 1
-    inline void free (void * ptr) {
-      // abort();
-      munmap (reinterpret_cast<char *>(ptr), getSize(ptr));
-    }
-
-    inline size_t getSize (void *) {
-      // abort();
-      return Alignment; // Obviously broken. Such is life.
-    }
-#endif
-
-    void free (void * ptr, size_t sz)
+    static void free (void * ptr, size_t sz)
     {
       if ((long) sz < 0) {
-	// abort();
+	abort();
       }
-
       munmap (reinterpret_cast<char *>(ptr), sz);
     }
 
@@ -165,16 +148,22 @@ namespace HL {
 
   private:
 
-    class MyHeap : public LockedHeap<BlockingLock, FreelistHeap<ZoneHeap<PrivateMmapHeap, 16384 - 16> > > {}; // FIX ME: 16 = size of ZoneHeap header.
+    // Note: we never reclaim memory obtained for MyHeap, even when
+    // this heap is destroyed.
+    class MyHeap : public LockedHeap<PosixLockType, FreelistHeap<BumpAlloc<16384, PrivateMmapHeap> > > {
+    };
 
     typedef MyHashMap<void *, size_t, MyHeap> mapType;
 
   protected:
     mapType MyMap;
 
-    BlockingLock MyMapLock;
+    PosixLockType MyMapLock;
 
   public:
+
+    enum { Alignment = PrivateMmapHeap::Alignment };
+
     inline void * malloc (size_t sz) {
       void * ptr = PrivateMmapHeap::malloc (sz);
       MyMapLock.lock();
@@ -186,22 +175,22 @@ namespace HL {
 
     inline size_t getSize (void * ptr) {
       MyMapLock.lock();
-      size_t sz = 0;
-      MyMap.get (ptr, sz);
+      size_t sz = MyMap.get (ptr);
       MyMapLock.unlock();
       return sz;
     }
 
+#if 0
     // WORKAROUND: apparent gcc bug.
     void free (void * ptr, size_t sz) {
       PrivateMmapHeap::free (ptr, sz);
     }
+#endif
 
     inline void free (void * ptr) {
       assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
       MyMapLock.lock();
-      size_t sz = 0;
-      MyMap.get (ptr, sz);
+      size_t sz = MyMap.get (ptr);
       PrivateMmapHeap::free (ptr, sz);
       MyMap.erase (ptr);
       MyMapLock.unlock();

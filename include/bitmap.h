@@ -114,7 +114,7 @@ public:
   inline bool checkSetBit(unsigned long wordIndex, unsigned long bitIndex) {
     unsigned long * word = getWord(wordIndex);
  //   fprintf(stderr, "checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
-    bool result = (*word & on[bitIndex] == 0) ? true : false;
+    bool result = ((*word & on[bitIndex]) == 0) ? true : false;
     *word |= on[bitIndex];
   //  fprintf(stderr, "checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
     return result;

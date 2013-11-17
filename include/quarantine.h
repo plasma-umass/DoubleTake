@@ -84,10 +84,7 @@ extern "C" {
 };
 
 class quarantine {
-
 public:
-  quarantine() {
-  }
 
   void initialize(void * start, size_t size) {
     _availIndex = 0;
@@ -100,7 +97,7 @@ public:
     //fprintf(stderr, "QUARANTINE list initialize _objects at %p******************************\n", _objects);
   }
  
-  void backup(void) {
+  void backup() {
     _availIndexBackup = _availIndex;
     _LRIndexBackup = _LRIndex;
     _totalSizeBackup = _totalSize;
@@ -108,7 +105,7 @@ public:
     memcpy(_objectsBackup, _objects, _objectsSize); 
   }
 
-  void restore(void) {
+  void restore() {
     _availIndex = _availIndexBackup;
     _LRIndex = _LRIndexBackup;
     _totalSize = _totalSizeBackup;
@@ -142,11 +139,11 @@ public:
     return true;
   }
 
-  inline bool hasAvailSlot(void) {
+  inline bool hasAvailSlot() {
     return(((_availIndex + 1)%xdefines::QUARANTINE_BUF_SIZE) != _LRIndex);
   }
  
-  inline freeObject * getLRObject(void) {
+  inline freeObject * getLRObject() {
     return &_objects[_LRIndex];
   }
 
@@ -154,7 +151,7 @@ public:
     return (index+1)%xdefines::QUARANTINE_BUF_SIZE;
   }
 
-  inline void freeLRObject(void) {
+  inline void freeLRObject() {
     // Get the least recent object and verify whether 
     // usage-after-free has been detected?
     freeObject * object = getLRObject();
@@ -175,7 +172,7 @@ public:
   }
 
   
-  inline freeObject * retrieveLRObject(void) {
+  inline freeObject * retrieveLRObject() {
     freeObject * object = NULL;
 
     // _LRIndex is never equal to _availIndex unless it is empty.
@@ -190,14 +187,14 @@ public:
     return object;
   }
 
-  bool finalUAFCheck(void) {
+  bool finalUAFCheck() {
     bool hasUAF = false;
     int  UAFErrors = 0; 
     freeObject * object;
     
 //    fprintf(stderr, "FFFFFFFFFFFinal check\n");
 
-    while(object = retrieveLRObject()) {
+    while ((object = retrieveLRObject())) {
       if(hasUsageAfterFree(object->ptr, object->size)) {
         UAFErrors++;
         hasUAF = true;

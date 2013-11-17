@@ -21,7 +21,7 @@ template <class SuperHeap>
 class FreelistHeap : public SuperHeap {
 public:
 
-  FreelistHeap (void)
+  FreelistHeap()
   {
   }
 
@@ -43,9 +43,9 @@ public:
     _freelist.insert (ptr);
   }
 
-  inline void clear (void) {
+  inline void clear() {
     void * ptr;
-    while (ptr = _freelist.get()) {
+    while ((ptr = _freelist.get())) {
       SuperHeap::free (ptr);
     }
   }

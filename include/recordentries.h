@@ -21,15 +21,15 @@
 /*
  * @file   recordentires.h
  * @brief  Managing record entry for each thread. Since each thread will have different entries,
-           There is no need to use lock here at all.
-           The basic idea of having pool is 
-           to reduce unnecessary memory allocation and deallocation operations, similar 
-           to slab manager of Linux system. However, it is different here.
-           There is no memory deallocation for each pool. 
-           In the same epoch, we keep allocating from 
-           this pool and udpate correponding counter, updating to next one.
-           When epoch ends, we reset the counter to 0 so that we can reuse all 
-           memory and there is no need to release the memory of recording entries. 
+ There is no need to use lock here at all.
+ The basic idea of having pool is 
+ to reduce unnecessary memory allocation and deallocation operations, similar 
+ to slab manager of Linux system. However, it is different here.
+ There is no memory deallocation for each pool. 
+ In the same epoch, we keep allocating from 
+ this pool and udpate correponding counter, updating to next one.
+ When epoch ends, we reset the counter to 0 so that we can reuse all 
+ memory and there is no need to release the memory of recording entries. 
             
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
@@ -47,54 +47,53 @@ public:
   }
 
   void initialize(int entries) {
-		void * ptr;
+    void * ptr;
     int i = 0;
 
     _size = alignup(entries * sizeof(Entry), xdefines::PageSize);
-		// We don't need to allocate all pages, only the difference between newnum and oldnum.
-		ptr = MM::mmapAllocatePrivate(_size);
-		if(ptr == NULL)  {
-			fprintf(stderr, "%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
-			::abort();
-		}
+    // We don't need to allocate all pages, only the difference between newnum and oldnum.
+    ptr = MM::mmapAllocatePrivate(_size);
+    if(ptr == NULL)  {
+      fprintf(stderr, "%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
+      ::abort();
+    }
 	
     //fprintf(stderr, "recordentries.h::initialize at _cur at %p\n", &_cur);	
-		// start to initialize it.
+    // start to initialize it.
     _start = (Entry *)ptr;
-		_cur = 0;
-		_total = entries;
+    _cur = 0;
+    _total = entries;
     _iter = 0;
-		return;
-	}
+    return;
+  }
 
-  void finalize(void) {
+  void finalize() {
     MM::mmapDeallocate(_start, _size);
   }
 
-	Entry * alloc(void) {
-		Entry * entry = NULL;
-		if(_cur < _total) {
-		  entry = (Entry *)&_start[_cur];
-			_cur++;
-		}
- 		else {
-			// There is no enough entry now, re-allocate new entries now.
-			fprintf(stderr, "Not enough entries, now _cur %x, _total %x at %p!!!\n", _cur, _total, &_cur);
-			::abort();
-		}
-		return entry;
+  Entry * alloc() {
+    Entry * entry = NULL;
+    if (_cur < _total) {
+      entry = (Entry *)&_start[_cur];
+      _cur++;
+    } else {
+      // There are no enough entries now; re-allocate new entries now.
+      fprintf (stderr, "Not enough entries, now _cur %lu, _total %lu at %p!!!\n", _cur, _total, &_cur);
+      ::abort();
+    }
+    return entry;
   }
 
-	void cleanup(void) {
+  void cleanup() {
     _iter = 0;
-		_cur = 0;
+    _cur = 0;
   }
 
-  void prepareRollback(void) {
+  void prepareRollback() {
     _iter = 0;
   }
 
-  void prepareIteration(void) {
+  void prepareIteration() {
     _iter = 0;
   }
 
@@ -102,7 +101,7 @@ public:
     return &_start[index];
   }
 
-  Entry * nextIterEntry(void) {
+  Entry * nextIterEntry() {
     _iter++;
     if(_iter < _cur) {
       return getEntry(_iter);
@@ -112,7 +111,7 @@ public:
     }
   }
   
-  Entry * retrieveIterEntry(void) {
+  Entry * retrieveIterEntry() {
     Entry * entry = NULL;
     if(_iter < _cur) {
       entry = getEntry(_iter);
@@ -122,7 +121,7 @@ public:
   }
 
   // No change on iteration entry.
-  Entry * getEntry(void) {
+  Entry * getEntry() {
     Entry * entry = NULL;
     if(_iter < _cur) {
       entry = getEntry(_iter);
@@ -131,18 +130,18 @@ public:
   }
 
   // Only called in the replay
-  Entry * firstIterEntry(void) {
+  Entry * firstIterEntry() {
     return &_start[_iter];
   }
 
-  size_t getEntriesNumb(void) {
+  size_t getEntriesNumb() {
     return _cur;
   }
 
 private:
   Entry * _start; 
   size_t _total; 
-  size_t _cur; //
+  size_t _cur;
   size_t _size; 
   size_t _iter; 
 };

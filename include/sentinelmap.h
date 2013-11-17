@@ -270,7 +270,7 @@ private:
     }
 
     if((1UL << i) != sectorsize) {
-      fprintf(stderr, "Wrong sector size %d, power of 2 is %d\n", sectorsize, 1 >> i);
+      fprintf(stderr, "Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
       abort(); 
     }
 
@@ -360,7 +360,7 @@ private:
         if(address[i] != xdefines::SENTINEL_WORD && address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
         unsigned long * ptr = &address[i];
         if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
-         fprintf(stderr, "Bits %ld is set (total %lx), address %lx with value %lx\n", i, bits, &address[i], address[i]);
+         fprintf(stderr, "Bits %d is set (total %lx), address %p with value %lu\n", i, bits, &address[i], address[i]);
           bool isBadSentinel = false;
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.

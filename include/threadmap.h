@@ -266,7 +266,7 @@ public:
       thread_t * thread = ath->thread;
 
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
-      fprintf(stderr, "thread %p self %p status %d\n", thread, thread->self, thread->status);
+	fprintf(stderr, "thread %p self %p status %d\n", thread, (void *) thread->self, thread->status);
       }
 
       // Update to the next thread.

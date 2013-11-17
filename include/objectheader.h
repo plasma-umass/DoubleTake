@@ -50,7 +50,7 @@ public:
 
   size_t getObjectSize() { return(size_t)_objectSize; } 
 
-  size_t setObjectSize(size_t sz) {  _objectSize = sz; }
+  size_t setObjectSize(size_t sz) {  _objectSize = sz; return sz; }
 
   bool isGoodObject() { 
     return (_sentinel == xdefines::SENTINEL_WORD ? true : false );

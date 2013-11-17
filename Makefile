@@ -47,7 +47,7 @@ INCS =  $(INCDIR)/xmapping.h      \
 
 DEPS = $(SRCS) $(INCS)
 
-CXX = g++
+CXX = clang++
 
 CFLAGS = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DDETECT_MEMORY_LEAKAGE -DEVALUATING_PERF
 

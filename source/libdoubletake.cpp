@@ -156,7 +156,7 @@ extern "C" {
   static void * tempmalloc(int size) {
     void * ptr = NULL;
     if(remainning < size) {
-      printf("tempmalloc is not enough\n", size);
+      printf("tempmalloc is not enough\n");
       // complaining. Tried to set to larger
       exit(-1);
     }
