@@ -61,14 +61,16 @@ private:
     int protInfo   = PROT_READ | PROT_WRITE;
     int sharedInfo = isShared ? MAP_SHARED : MAP_PRIVATE;
     sharedInfo     |= ((fd == -1) ? MAP_ANONYMOUS : 0);
-    sharedInfo     |= ((startaddr != NULL) ? MAP_FIXED : 0);
+    sharedInfo     |= ((startaddr != (void *) 0) ? MAP_FIXED : 0);
+    sharedInfo     |= MAP_NORESERVE;
 
     void * ptr =  WRAP(mmap) (startaddr, sz, protInfo,
-		                    sharedInfo, fd, 0);
-    if(ptr == MAP_FAILED) {
-      fprintf(stderr, "Couldn't do mmap %s : startaddr %p, sz %lx\n", strerror(errno), startaddr, sz);
-      while(1);
+			      sharedInfo, fd, 0);
+    if (ptr == MAP_FAILED) {
+      fprintf(stderr, "Couldn't do mmap (%s) : startaddr %p, sz %lu, protInfo=%d, sharedInfo=%d\n", strerror(errno), startaddr, sz, protInfo, sharedInfo);
       abort();
+    } else {
+      //      fprintf (stderr, "Successful map %lu.\n", sz);
     }
 
     return ptr;

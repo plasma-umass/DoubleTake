@@ -173,10 +173,9 @@ public:
     } else {
       // If not, then it is easy.
       // we should verify whether the first word's lsb index is bitIndex
-      if(getLsbIndex(bitword) >= firstBitIndex) {
+      if (getLsbIndex(bitword) >= firstBitIndex) {
         hasBit = true;
-      } 
-      else { 
+      }   else { 
         // If not, then first word don't have bits set.
         // Then check every word between the first word and last word.
         unsigned long i = firstWordIndex + 1;
@@ -199,7 +198,9 @@ public:
         }
       }
     }
+    return hasBit; // EDB
   }
+
   inline void clearBits(unsigned long item, unsigned long bits) {
     unsigned long firstWordIndex, firstBitIndex;
     unsigned long lastWordIndex, lastBitIndex;

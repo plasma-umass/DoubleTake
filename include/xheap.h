@@ -41,13 +41,14 @@ class xheap : public xmapping
 
 public:
 
-  // It is very very important to put the first page in a separate page since it is shared by different
-  // processes or threads. Thus, we don't need to commit this page, which can affect the performance 
-  // greately and also can affect the correctness: we don't want different threads 
-  // end up getting the same memory from the private mapping. 
-  // It is possible that we don't need sanityCheck any more, but we definitely need a lock to avoid the race on "metatdata".
-  xheap () {
-  }
+  // It is very very important to put the first page in a separate
+  // page since it is shared by different processes or threads. Thus,
+  // we don't need to commit this page, which can affect the
+  // performance greately and also can affect the correctness: we
+  // don't want different threads end up getting the same memory from
+  // the private mapping.  It is possible that we don't need
+  // sanityCheck any more, but we definitely need a lock to avoid the
+  // race on "metadata".
 
   void * initialize(void * startaddr, size_t startsize, size_t metasize) 
   {
@@ -59,10 +60,11 @@ public:
     int ownermapSize = alignup(units * sizeof(int), xdefines::PageSize);
 
     // We must initialize the heap now.
-    void * startHeap = (void *)(xdefines::USER_HEAP_BASE - metasize);
+    void * startHeap
+      = (void *)((unsigned long) xdefines::USER_HEAP_BASE - (unsigned long) metasize);
     
-    //fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
-    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, (void *)startHeap);
+    fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
+    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, 0); // was startHeap
 
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);

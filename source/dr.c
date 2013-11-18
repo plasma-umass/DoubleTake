@@ -197,7 +197,7 @@ static void print_debug_register (struct debug_reg_state *state,
 
   ALL_DEBUG_ADDR_REGISTERS(i)
   {
-      printf ("\\tDR%d: ref.count=%d addr %lx\n",
+      printf ("\\tDR%d: ref.count=%d addr %p\n",
 			        i, state->dr_ref_count[i], state->dr_mirror);
   }
 }
@@ -456,14 +456,16 @@ int insert_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid)
   if (type == hw_read)
     return 1; /* unsupported */
 
-  if ((len != 1 && len !=2 && len !=4) && !(TARGET_HAS_DR_LEN_8 && len == 8)
-      || addr % len != 0) {
-    retval = handle_nonaligned_watchpoint (&local_state, WP_INSERT, addr, len, type);
-  }
-  else
-  {
+  if (((len != 1)
+       && (len !=2)
+       && (len !=4)
+       && !(TARGET_HAS_DR_LEN_8 && len == 8))
+      || (addr % len != 0)) 
+    {
+      retval = handle_nonaligned_watchpoint (&local_state, WP_INSERT, addr, len, type);
+    } else {
     unsigned len_rw = dr_length_and_rw_bits (len, type);
-
+    
     retval = insert_aligned_watchpoint (&local_state, addr, len_rw);
   }
 

@@ -65,7 +65,7 @@ void xmemory::freeAllObjects(void)
   freelist::getInstance().preFreeAllObjects(); 
   struct freeObject * obj = NULL;
 
-  while(obj = freelist::getInstance().retrieveFreeObject()) {
+  while ((obj = freelist::getInstance().retrieveFreeObject())) {
     _pheap.realfree(obj->ptr, obj->owner);
   }
  

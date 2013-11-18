@@ -60,13 +60,13 @@ public:
 
   }
 
-  static threadinfo& getInstance (void) {
+  static threadinfo& getInstance () {
     static char buf[sizeof(threadinfo)];
     static threadinfo * theOneTrueObject = new (buf) threadinfo();
     return *theOneTrueObject;
   }
 
-  void initialize(void) {
+  void initialize() {
     _aliveThreads = 0;
     _reapableThreads = 0;
     _threadIndex = 0;
@@ -112,7 +112,7 @@ public:
     listInit(&_deferSyncs);
   }
 
-  void finalize(void) {
+  void finalize() {
   }
 
   /// @ internal function: allocation a thread index when spawning.
@@ -168,12 +168,13 @@ public:
     return thread->outputBuf;
   }
 
-  inline int incrementReapableThreads(void) {
+  inline int incrementReapableThreads() {
     _reapableThreads++;
+    return _reapableThreads; // EDB
   }
   
-  inline int hasReapableThreads(void) {
-    return _reapableThreads != 0;
+  inline bool hasReapableThreads() {
+    return (_reapableThreads != 0);
   } 
 
   inline void insertDeadThread(thread_t *thread) {
@@ -224,7 +225,7 @@ public:
     E_SYNCVAR_MUTEX,
     E_SYNCVAR_BARRIER
 */
-  void runDeferredSyncs(void) {
+  void runDeferredSyncs() {
     list_t * entry;
 
     // Get all entries from _deferSyncs.

@@ -233,7 +233,7 @@ public:
 
   // We may record fd in order replay that.
   int open(const char *pathname, int flags) {
-    open(pathname, flags, 0);
+    return open(pathname, flags, 0); // EDB
   }
 
   // Tongping

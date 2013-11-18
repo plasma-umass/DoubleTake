@@ -72,7 +72,7 @@
         if(isApplication(array[i])) {
           PRDBG("callstack frame %d: ", i);
           // Print out the corresponding source code information
-          sprintf(buf, "addr2line -e %s %x", filename,  (unsigned long)array[i]-2);
+          sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
           system(buf);
         }
       }
