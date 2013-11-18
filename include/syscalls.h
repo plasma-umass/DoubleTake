@@ -38,37 +38,37 @@ class syscalls {
 
 private:
 
-  syscalls (void)
+  syscalls ()
   {
   //PRINF("syscalls constructor\n");
   }
 
 public:
 
-  static syscalls& getInstance (void) {
+  static syscalls& getInstance () {
     static char buf[sizeof(syscalls)];
     static syscalls * theOneTrueObject = new (buf) syscalls();
     return *theOneTrueObject;
   }
 
   /// @brief Initialize the system.
-  void initialize (void)
+  void initialize ()
   {
     _fops.initialize();
   }
 #if 0
-  void setRollback(void) {
+  void setRollback() {
     _fops.rollback();
   }
 #endif
 
   // Currently, epochBegin() will call xrun::epochBegin().
-  void epochBegin(void) {
+  void epochBegin() {
     xrun::getInstance().epochBegin(); 
   }
 
   // Called by xrun::epochBegin() 
-  void handleEpochBegin(void) {
+  void handleEpochBegin() {
 #ifdef REPRODUCIBLE_FDS
     // Handle those closed files
     _fops.cleanClosedFiles();
@@ -76,7 +76,7 @@ public:
     getRecord()->epochBegin();
   }
 
-  void epochEnd(void) {
+  void epochEnd() {
 //    fprintf(stderr, "$$$$$$epochEnd at line %d\n", __LINE__);
 //    fprintf(stderr, "$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
  //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
@@ -86,7 +86,7 @@ public:
   // Called by xrun::epochEnd when there is no overflow.
   // in the end of checking when an epoch ends. 
   // Now, only one thread is active.
-  void epochEndWell(void) {
+  void epochEndWell() {
     // Now we are trying to handling all opened files.
     // Try to updating those information for all opened files.
     // Currently, we don't know whether a file is closed or not.
@@ -98,7 +98,7 @@ public:
   }
 
   // Prepare rollback for system calls
-  void prepareRollback(void) {
+  void prepareRollback() {
     getRecord()->prepareRollback();
    
     // Handle those closed files
@@ -847,7 +847,7 @@ public:
     return ret;
   }
 
-  int pause(void){
+  int pause(){
     int ret;
     epochEnd();
     ret = WRAP(pause)();
@@ -893,7 +893,7 @@ public:
     return ret;
   }
 
- // pid_t getpid(void)
+ // pid_t getpid()
 
   ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count){
     ssize_t ret;
@@ -1058,9 +1058,9 @@ public:
 
 //  int clone(int (*fn)(void *), void *child_stack,
 
-//  pid_t fork(void){
+//  pid_t fork(){
 
-//  pid_t vfork(void){
+//  pid_t vfork(){
     //FIXME
 
   int execve(const char *filename, char *const argv[],
@@ -1502,7 +1502,7 @@ public:
 //              void *addr, void *data){
     // FIXME
 
-  uid_t getuid(void){
+  uid_t getuid(){
     uid_t ret;
     epochEnd();
     ret = WRAP(getuid)();
@@ -1546,7 +1546,7 @@ public:
   */
   
 
-  gid_t getgid(void){
+  gid_t getgid(){
 
     gid_t ret;
     epochEnd();
@@ -1574,7 +1574,7 @@ public:
     return ret;
   }
 
-  uid_t geteuid(void){
+  uid_t geteuid(){
     uid_t ret;
     epochEnd();
 
@@ -1583,7 +1583,7 @@ public:
     return ret;
   }
 
-  gid_t getegid(void){
+  gid_t getegid(){
     gid_t ret;
     epochEnd();
 
@@ -1601,7 +1601,7 @@ public:
     return ret;
   }
 
-  pid_t getppid(void){
+  pid_t getppid(){
     pid_t ret;
     epochEnd();
 
@@ -1610,7 +1610,7 @@ public:
     return ret;
   }
 
-  pid_t getpgrp(void){
+  pid_t getpgrp(){
     pid_t ret;
     epochEnd();
 
@@ -1619,7 +1619,7 @@ public:
     return ret;
   }
 
-  pid_t setsid(void){
+  pid_t setsid(){
     pid_t ret;
     epochEnd();
 
@@ -1993,7 +1993,7 @@ public:
     return ret;
   }
 
-  int munlockall(void){
+  int munlockall(){
     int ret;
     epochEnd();
     ret = WRAP(munlockall)();
@@ -2001,7 +2001,7 @@ public:
     return ret;
   }
 
-  int vhangup(void){
+  int vhangup(){
     int ret;
     epochEnd();
     ret = WRAP(vhangup)();
@@ -2072,7 +2072,7 @@ public:
     return ret;
   }
 
-  void sync(void){
+  void sync(){
     //FIXME
     epochEnd();
     WRAP(sync)();
@@ -2208,7 +2208,7 @@ public:
     return ret;
   }
 
-  pid_t gettid(void){
+  pid_t gettid(){
 
     pid_t ret;
     epochEnd();
@@ -2534,7 +2534,7 @@ public:
     return ret;
   }
 
-  long sys_restart_syscall(void){
+  long sys_restart_syscall(){
     long ret;
     epochEnd();
     ret = WRAP(sys_restart_syscall)();
@@ -2803,7 +2803,7 @@ public:
     return ret;
   }
 
-  int inotify_init(void){
+  int inotify_init(){
 
     int ret;
     epochEnd();
