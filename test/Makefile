@@ -1,6 +1,6 @@
 CC = gcc
 CXX= g++
-CFLAGS = -m32 -Wall -g -O3 
+CFLAGS = -m64 -Wall -g -O3 
 #CFLAGS = -Wall -g -O3 
 #-T../dthreads.ld
 #CFLAGS = -Wall -g -O3 -T../dthreads64.ld
@@ -16,7 +16,7 @@ PTHREAD_LIBS += $(LIBS) -lpthread
 PTHREAD_OBJS := $(addsuffix -pthread, $(TESTS))
 
 #DTHREAD_LIBS = $(LIBS) -rdynamic ../source-no-determsync/libdthread.so
-DTHREAD_LIBS = $(LIBS) -rdynamic ../../libstopgap64.so
+DTHREAD_LIBS = $(LIBS) -rdynamic ../libdoubletake.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/stopgap/glibc/build/nptl/libpthread.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic ../libstopgap64.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/determ/libgrace.so

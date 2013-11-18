@@ -63,8 +63,8 @@ public:
     void * startHeap
       = (void *)((unsigned long) xdefines::USER_HEAP_BASE - (unsigned long) metasize);
     
-    fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
-    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, 0); // was startHeap
+    //    fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
+    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, startHeap);
 
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
