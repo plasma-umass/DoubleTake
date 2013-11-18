@@ -843,7 +843,6 @@ public:
       epochBegin();
     }
 
-    assert(0);
     return ret;
   }
 

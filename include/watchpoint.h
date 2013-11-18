@@ -113,13 +113,18 @@ public:
 
     // Creating a child to setup the watchpoints for the parent.
     child = WRAP(fork)();
-    if(child == 0)
+    if (child == 0)
     {
+      sleep(1); // This is not necessarily enough but let's try it.
+      // Child process.
+
 //      fprintf(stderr, "CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
-        fprintf(stderr, "Child can not trace the parent %d\n", parent);
+	perror("DoubleTake error:");
+        fprintf(stderr, "Child cannot trace the parent %d\n", parent);
         exit(-1);
       }
       //fprintf(stderr, "child install watchpoints now, before sleep\n");

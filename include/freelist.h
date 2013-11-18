@@ -38,13 +38,13 @@ class freelist {
 
 public:
 
-  static freelist& getInstance (void) {
+  static freelist& getInstance () {
     static char buf[sizeof(freelist)];
     static freelist * theOneTrueObject = new (buf) freelist();
     return *theOneTrueObject;
   }
  
-  void initialize(void) {
+  void initialize() {
     _lck.init();
     _objects.initialize(xdefines::MAX_FREE_OBJECTS);
     //fprintf(stderr, "FREELIST _objects at %p******************************\n", &_objects);
@@ -73,20 +73,20 @@ public:
     obj->owner = tindex;
   }
 
-  void preFreeAllObjects(void) {
+  void preFreeAllObjects() {
     _objects.prepareIteration();
   }
 
-  void postFreeAllObjects(void) {
+  void postFreeAllObjects() {
     _objects.cleanup();
   }
 
-  struct freeObject * retrieveFreeObject(void) {
+  struct freeObject * retrieveFreeObject() {
     return _objects.retrieveIterEntry();
   }
 
 #ifdef DETECT_USAGE_AFTER_FREE
-  bool checkUAF(void) {
+  bool checkUAF() {
     bool hasUAF = false;
     int UAFErrors = 0;
 
@@ -94,9 +94,9 @@ public:
 
     struct freeObject * object;
 
-    while(object = retrieveFreeObject()) {
+    while ((object = retrieveFreeObject())) {
       fprintf(stderr, "Object is %p ptr %p\n", object, object->ptr);
-      while(1);
+      while(1);       // EDB: what is this?
       objectHeader * o = getObject(object->ptr);
       size_t size = o->getSize();
       if(hasUsageAfterFree(object, object->size)) {
@@ -113,11 +113,12 @@ public:
 #endif
 
 private:
-  void lock(void) {
+
+  void lock() {
     _lck.lock();
   }
 
-  void unlock(void) {
+  void unlock() {
     _lck.unlock();
   }
 
