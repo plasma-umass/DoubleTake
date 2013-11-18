@@ -221,7 +221,7 @@ public:
 
 //    #error "need support for memcpy"
 #else
-    memcpy(to, from, len);
+    memcpy(dest, src, len);
 #endif
   }
 

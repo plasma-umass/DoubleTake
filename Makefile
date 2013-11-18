@@ -49,11 +49,14 @@ DEPS = $(SRCS) $(INCS)
 
 CXX = clang++
 
-CFLAGS = -m64 -g -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DDETECT_MEMORY_LEAKAGE -DEVALUATING_PERF -DDETECT_USAGE_AFTER_FREE -Wno-deprecated
+CFLAGS = -O2 -m64 -g -DSSE_SUPPORT -fno-omit-frame-pointer -Wno-deprecated -DDEBUG_LEVEL=0 -DDEBUG_ROLLBACK
 
-# CFLAGS = -m64 -g -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DDETECT_MEMORY_LEAKAGE -DEVALUATING_PERF -Wno-deprecated
+CFLAGS_OVERFLOW     = -DHANDLE_SYSCALL -DDETECT_OVERFLOW
+CFLAGS_USEAFTERFREE = -DHANDLE_SYSCALL -DDETECT_USAGE_AFTER_FREE 
+CFLAGS_LEAKS        = -DHANDLE_SYSCALL -DDETECT_MEMORY_LEAKAGE
+CFLAGS_ALL          = $(CFLAGS_OVERFLOW) $(CFLAGS_USEAFTERFREE) $(CFLAGS_LEAKS)
 
-# EDB: -O2 removed
+# -DEVALUATING_PERF
 
 # Overflow
 #CFLAGS   = -g -O2 -DSSE_SUPPORT -fno-omit-frame-pointer -DHANDLE_SYSCALL -DDETECT_OVERFLOW -DEVALUATING_PERF
@@ -85,7 +88,7 @@ libdoubletake32.so: $(DEPS)
 	$(CXX) $(CFLAGS32) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=doubletake_##x' $(SRCS) -o libdoubletake32.so  -ldl -lpthread -lunwind -lunwind-ptrace -lunwind-generic
 
 libdoubletake.so: $(DEPS)
-	$(CXX) $(CFLAGS64) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=doubletake_##x' $(SRCS) -o libdoubletake.so -ldl -lpthread
+	$(CXX) $(CFLAGS_ALL) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=doubletake_##x' $(SRCS) -o libdoubletake.so -ldl -lpthread
 
 clean:
 	rm -f $(TARGETS)
