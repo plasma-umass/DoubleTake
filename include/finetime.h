@@ -25,8 +25,10 @@
  *  Note:  Code is borrowed from the test cases from GRACE project, original author is Ting Yang.
  */
 
-
+#if defined(__cplusplus)
 extern "C" {
+#endif
+
 struct timeinfo {
 	unsigned long low;
 	unsigned long high;
@@ -35,5 +37,9 @@ struct timeinfo {
 void start(struct timeinfo *ti);
 double stop(struct timeinfo * begin, struct timeinfo * end);
 unsigned long elapse2ms(double elapsed);
+
+#if defined(__cplusplus)
 };
+#endif
+
 #endif /* __TIME_H__ */

@@ -357,7 +357,7 @@ static int remove_aligned_watchpoint (struct debug_reg_state *state,
 
 static int
 handle_nonaligned_watchpoint (struct debug_reg_state *state,
-				   wp_op_t what, CORE_ADDR addr, int len, int type)
+				   wp_op_t what, CORE_ADDR addr, int len, enum target_hw_bp_type type)
 {
   int retval = 0;
   int max_wp_len = TARGET_HAS_DR_LEN_8 ? 8 : 4;
