@@ -100,9 +100,6 @@ extern "C" {
     void * stackBottom;
     void * stackTop;
 
-    // The local thread output buffer.
-    char  outputBuf[LOG_SIZE];
-
     // Main thread have completely stack setting.
     bool mainThread;
 

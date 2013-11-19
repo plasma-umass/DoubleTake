@@ -78,14 +78,14 @@ public:
   // Add a watch point with its value to watchpoint list.
   void addWatchpoint(void * addr, size_t value ) {
 
-//    fprintf(stderr, "***********DoubleTake: problematic address %p with value 0x%lx!!!!!\n", addr, value);
+//    DEBUG("***********DoubleTake: problematic address %p with value 0x%lx!!!!!\n", addr, value);
     if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
       // Watch
       _wp[_numWatchpoints].addr = (size_t *)addr;
       _wp[_numWatchpoints].faultvalue = value;
       _wp[_numWatchpoints].hasOverflowed = false;
       _numWatchpoints++;
-  //    fprintf(stderr, "***********CAUGHT: problematic address %p with value 0x%lx _numWatchpoints %d!!!!!\n", addr, value, _numWatchpoints);
+  //    DEBUG("***********CAUGHT: problematic address %p with value 0x%lx _numWatchpoints %d!!!!!\n", addr, value, _numWatchpoints);
     } 
   }
 
@@ -101,7 +101,7 @@ public:
     int status = 0;
     pid_t parent = getpid();
 
-    fprintf(stderr, "installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+    DEBUG("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Initialize those debug registers. 
     init_debug_registers();
 
@@ -118,49 +118,49 @@ public:
       sleep(1); // This is not necessarily enough but let's try it.
       // Child process.
 
-//      fprintf(stderr, "CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+//      DEBUG("CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
 
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
 	perror("DoubleTake error:");
-        fprintf(stderr, "Child cannot trace the parent %d\n", parent);
+        DEBUG("Child cannot trace the parent %d\n", parent);
         exit(-1);
       }
-      //fprintf(stderr, "child install watchpoints now, before sleep\n");
+      //DEBUG("child install watchpoints now, before sleep\n");
 
       // Child will wait the parent to stop.
       sleep(1);
 
-     // fprintf(stderr, "child install watchpoints now\n");
+     // DEBUG("child install watchpoints now\n");
 
       // Install all watchpoints now.
-      fprintf(stderr, "child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
+      DEBUG("child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
-        fprintf(stderr, "child install watchpoints %d at %p\n", i, _wp[i].addr);
+        DEBUG("child install watchpoints %d at %p\n", i, _wp[i].addr);
         insert_watchpoint ((unsigned long)_wp[i].addr, sizeof(void *), hw_write, parent);
       } 
       
       // Now we will deteach the parent.      
       if(ptrace(PTRACE_DETACH, parent, NULL, NULL))
       {
-        fprintf(stderr, "Child can not detach the parent %d\n", parent);
+        DEBUG("Child can not detach the parent %d\n", parent);
         exit(-1);
       }
       exit(0);
     }
     else if(child > 0) {
-      fprintf(stderr, "PARENT installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+      DEBUG("PARENT installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
       // Wait for the children to setup
       waitpid(child, &status, 0);
       if(WEXITSTATUS(status))
       {
-        fprintf(stderr, "child exit now!0\n");
+        DEBUG("child exit now!0\n");
         exit(-1);
       }
     }
     else {
-      fprintf(stderr, "Can't fork when installing watch points, with error: %s\n", strerror(errno));
+      DEBUG("Can't fork when installing watch points, with error: %s\n", strerror(errno));
       while(1);
     }
   }
@@ -187,10 +187,10 @@ public:
       }
 
       if(!isOverflowing) {
-        fprintf(stderr, "\tNow watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
+        DEBUG("\tNow watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
       }
       else {
-        fprintf(stderr, "\tOVERFLOW NOW!!!!Watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
+        DEBUG("\tOVERFLOW NOW!!!!Watchpoint %d: at %p value %lx Faulted Value %lx\n", i, _wp[i].addr, value, _wp[i].faultvalue);
       }
     } 
 
@@ -206,13 +206,13 @@ public:
 
     // check the address of trap
     // Get correponding ip information.
-    //fprintf(stderr, "CAPTURING write at %p: %lx at ip %lx. sivalue %d address %p, signal code %d\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_RIP], siginfo->si_value, siginfo->si_ptr, siginfo->si_code);
+    //DEBUG("CAPTURING write at %p: %lx at ip %lx. sivalue %d address %p, signal code %d\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_RIP], siginfo->si_value, siginfo->si_ptr, siginfo->si_code);
     // We omit those modifications by stopgap library itself.
     if(selfmap::getInstance().isStopgapLibrary(addr)) {
       return;
     }
     
-    fprintf(stderr, "\n\n\nCAPTURING writes at watchpoints from ip %p, detailed information:\n", addr);
+    DEBUG("\n\n\nCAPTURING writes at watchpoints from ip %p, detailed information:\n", addr);
     isOverflow = watchpoint::getInstance().printWatchpoints();
     isOverflow = true;
     selfmap::getInstance().printCallStack(trapcontext, addr, isOverflow);

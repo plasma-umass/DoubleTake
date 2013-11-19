@@ -93,9 +93,9 @@ public:
     // Initialize semaphore to the desired number.
     arg.val = initValue;
     _semaId = Real::semget()(_semaKey, nsemas, 0666 | IPC_CREAT);
-    //fprintf(stderr, "Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
+    //DEBUG("Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
     if(_semaId == -1) {
-      fprintf(stderr, "semaphore creates failure %s\n", strerror(errno));
+      DEBUG("semaphore creates failure %s\n", strerror(errno));
       EXIT;
     }
     else {
@@ -126,17 +126,17 @@ public:
       return;
     }
  
-    //fprintf(stderr, "Semaphore %p _semaId %d semaphore destory\n", &_semaKey, _semaId);
+    //DEBUG("Semaphore %p _semaId %d semaphore destory\n", &_semaKey, _semaId);
     if(Real::semctl()(_semaId, 0, IPC_RMID, argument) < 0)
     {
-      fprintf(stderr, "Cannot detroy semaphore.\n");
+      DEBUG("Cannot detroy semaphore.\n");
       EXIT;  
     }
   }
 
 private:
   void set (int val) {
-    //fprintf(stderr, "Semaphore %p _semaId %d semop value %d\n", &_semaKey, _semaId, val);
+    //DEBUG("Semaphore %p _semaId %d semop value %d\n", &_semaKey, _semaId, val);
     // Now increment the semaphore by the desired value.
     struct sembuf sops;
     sops.sem_num = 0;

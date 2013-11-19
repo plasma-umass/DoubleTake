@@ -94,7 +94,7 @@ public:
 
     _objects = (freeObject *) start;
     _objectsBackup = (freeObject *)((intptr_t)start + size); 
-    //fprintf(stderr, "QUARANTINE list initialize _objects at %p******************************\n", _objects);
+    //DEBUG("QUARANTINE list initialize _objects at %p******************************\n", _objects);
   }
  
   void backup() {
@@ -125,7 +125,7 @@ public:
     object->ptr  = ptr;
     object->size = size;
 
-   // fprintf(stderr, "ADDDDDDDDDDDDDD free object ptr %p size %d\n", ptr, size);
+   // DEBUG("ADDDDDDDDDDDDDD free object ptr %p size %d\n", ptr, size);
     // Mark free object
     markFreeObject(ptr, size);
 
@@ -192,7 +192,7 @@ public:
     int  UAFErrors = 0; 
     freeObject * object;
     
-//    fprintf(stderr, "FFFFFFFFFFFinal check\n");
+//    DEBUG("FFFFFFFFFFFinal check\n");
 
     while ((object = retrieveLRObject())) {
       if(hasUsageAfterFree(object->ptr, object->size)) {

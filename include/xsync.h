@@ -80,10 +80,10 @@ public:
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
       signalThread(thread);
-      PRWRN("THREAD%d actually signal next thread %d on event %p", current->index, thread->index, event);
+      WARN("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
     }
     else {
-      PRWRN("THREAD%d adding pending event to next thread %d on event %p", current->index, thread->index, event);
+      WARN("Thread %d adding pending event to next thread %d on event %p", current->index, thread->index, event);
       addPendingSyncEvent(event, thread);
     }
   }
@@ -95,10 +95,10 @@ public:
     
     assert(thread == current);
 
-    //PRWRN("singalCurrentThread: event %p on variable %p command %d", event, event->eventlist->getSyncVariable(), event->eventlist->getSyncCmd()); 
+    //WARN("singalCurrentThread: event %p on variable %p command %d", event, event->eventlist->getSyncVariable(), event->eventlist->getSyncCmd()); 
 
     if(!isListEmpty(eventlist)) {
- //     PRWRN("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event, thread); 
+ //     WARN("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event, thread); 
       // Only signal itself when current event is first event of this thread.
       struct pendingSyncEvent * pe = NULL; 
 
@@ -107,7 +107,7 @@ public:
       while(true) {
         // We found this event
         if(pe->event == event) {
-          PRLOG("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event, pe->event); 
+          DEBUG("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event, pe->event); 
           // Remove this event from the list.
           listRemoveNode(&pe->list);
           
@@ -129,7 +129,7 @@ public:
       } // while (true)
     } 
     else {
-      PRLOG("thread pending list is empty now!!!");
+      DEBUG("thread pending list is empty now!!!");
     }
   }
  
@@ -152,17 +152,10 @@ public:
     int result = -1;
     struct syncEvent * event = (struct syncEvent *)current->syncevents.getEntry();
     if(event) {
-      if(event->thread != (void *)current) {
-        PRERR("This event %p belonging to thread %p (not thread %p (THREAD%d)!!!!)\n", event, event->thread, current, current->index);
-        while(1);
-      }
-      else {
-        result = event->ret;
-      }
-      //abort();
-    }
-    else {
-    //  PRERR("Event not exising now at thread %p!!!!\n", current);
+      REQUIRE(event->thread == current, "Event %p belongs to thread %p, not the current thread (%p)", event, event->thread, current);
+      result = event->ret;
+    } else {
+      //ERROR("Event not exising now at thread %p!!!!\n", current);
     }
     return result;
   }
@@ -243,7 +236,7 @@ public:
   
   void signalThread(thread_t * thread) {
     semaphore * sema = &thread->sema;
-    PRDBG("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
+    DEBUG("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
     sema->put();
   }
 

@@ -43,18 +43,12 @@ list_t threadmap::_alivethreads;
 
 int getThreadIndex(void) {
   if(!global_isInitPhase()) {
-  //  PRWRN("current %p\n", current);
+    //WARN("current %p\n", current);
     return current->index;
   }
   else { 
     return 0;
   }
-}
-
-char * getThreadBuffer(void) {
-  int index = getThreadIndex();
-
-  return threadinfo::getInstance().getThreadBuffer(index);
 }
 
 void xthread::invokeCommit(void) {

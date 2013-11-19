@@ -35,16 +35,16 @@ xpheap<xoneheap<xheap > > xmemory::_pheap;
 void xmemory::handleSegFault(void)
 {
 #ifdef DETECT_OVERFLOW
-  fprintf(stderr, "Returning from segmentation fault error\n"); 
+  DEBUG("Returning from segmentation fault error\n"); 
   // Check whether the segmentation fault is called by buffer overflow.
   if(xmemory::getInstance().checkHeapOverflow()) {
     // Now we can roll back 
-    fprintf(stderr, "\n\nOVERFLOW causes segmenation fault!!!! ROLLING BACK\n\n\n");
+    DEBUG("\n\nOVERFLOW causes segmenation fault!!!! ROLLING BACK\n\n\n");
     
     xrun::getInstance().rollback();
   }  
   else {
-    fprintf(stderr, "\n\nNO overflow in segmenation fault, ROLLING BACK and stop\n\n\n");
+    DEBUG("\n\nNO overflow in segmenation fault, ROLLING BACK and stop\n\n\n");
     // We may rely on gdb to find out this problem.
     // We do not need to install watchpoints at all.
     // But we can rollback everything and hault there

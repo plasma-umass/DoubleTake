@@ -125,7 +125,7 @@ public:
     _buckets = size;
 
     if(hfunc == NULL || kcmp == NULL) {
-      fprintf(stderr, "Hashfunc or kcmp should not be null\n");
+      DEBUG("Hashfunc or kcmp should not be null\n");
       EXIT;
     }
 
@@ -135,8 +135,8 @@ public:
  
     // Allocated predefined size.
     _entries = (struct HashEntry *)SourceHeap::allocate(size * sizeof(struct HashEntry));
-//    fprintf(stderr, "hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(), getThreadIndex());
-//    fprintf(stderr, "hashmap initialization _entries %p\n", _entries);
+//    DEBUG("hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(), getThreadIndex());
+//    DEBUG("hashmap initialization _entries %p\n", _entries);
 
     // Initialize all of these _entries. 
     struct HashEntry * entry;
@@ -181,15 +181,15 @@ public:
 
   void insert(const KeyType & key, size_t keylen, ValueType value) {
     if(_initialized != true) {
-      fprintf(stderr, "process %d index %d: initialized at  %p hashmap is not true\n", getpid(), getThreadIndex(), &_initialized);
+      DEBUG("process %d index %d: initialized at  %p hashmap is not true\n", getpid(), getThreadIndex(), &_initialized);
     }
 
     assert(_initialized == true);
     size_t hindex = hashIndex(key, keylen);
-    //fprintf(stderr, "Insert entry:  before inserting\n"); 
+    //DEBUG("Insert entry:  before inserting\n"); 
     struct HashEntry * first = getHashEntry(hindex);
   
-    //fprintf(stderr, "Insert entry: key %p\n", key); 
+    //DEBUG("Insert entry: key %p\n", key); 
     first->Lock(); 
     insertEntry(first, key, keylen, value); 
     first->Unlock(); 
@@ -230,7 +230,7 @@ public:
    
     entry = getEntry(first, key, keylen);
 
-//    fprintf(stderr, "Erapse the entry key %p entry %p\n", key, entry);
+//    DEBUG("Erapse the entry key %p entry %p\n", key, entry);
     if(entry) {
       isFound = true;
 
@@ -280,7 +280,7 @@ private:
 
     // Check all _entries with the same hindex.
     int count = first->count;
-    //fprintf(stderr, "getEntry count is %d\n", count);
+    //DEBUG("getEntry count is %d\n", count);
     while(count > 0) {
       if(entry->keylen == keylen && _keycmp(entry->key, key, keylen)) {
         result = entry;

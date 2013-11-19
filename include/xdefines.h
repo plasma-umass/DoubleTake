@@ -44,7 +44,7 @@
  */ 
 
 #if 0
-//#define fprintf(stderr, ...) 
+//#define DEBUG(...) 
 typedef struct runtime_data {
   volatile unsigned long thread_index;
   volatile unsigned long threads;
@@ -68,7 +68,6 @@ extern "C" {
   extern size_t __max_stack_size; 
   typedef void * threadFunction (void *);
   extern int getThreadIndex();
-  extern char * getThreadBuffer();
   extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
   extern bool addThreadQuarantineList(void * ptr, size_t size);
   #define EXIT (Real::exit()(-1))

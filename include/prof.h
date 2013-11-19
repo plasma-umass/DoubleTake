@@ -45,11 +45,11 @@ unsigned long elapse2ms(double elapsed);
 
 #define START_TIMER(x) start(&global_data->stats.x##_start)
 #define STOP_TIMER(x) global_data->stats.x##_total += elapse2ms(stop(&global_data->stats.x##_start, NULL))
-#define PRINT_TIMER(x) fprintf(stderr, " " #x " time: %.4fms\n", (double)global_data->stats.x##_total / 100000.0)
+#define PRINT_TIMER(x) DEBUG(" " #x " time: %.4fms\n", (double)global_data->stats.x##_total / 100000.0)
 
 #define INC_COUNTER(x) global_data->stats.x##_count++
 #define DEC_COUNTER(x) global_data->stats.x##_count--
-#define PRINT_COUNTER(x) fprintf(stderr, " " #x " count: %lu\n", global_data->stats.x##_count);
+#define PRINT_COUNTER(x) DEBUG(" " #x " count: %lu\n", global_data->stats.x##_count);
 
 struct runtime_stats {
 	//size_t alloc_count;

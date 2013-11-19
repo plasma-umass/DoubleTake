@@ -70,7 +70,7 @@ public:
 
   // How to initalize 
   void initialize() {
-    //fprintf(stderr, "HASH MAP INITIALIZATION\n");
+    //DEBUG("HASH MAP INITIALIZATION\n");
     // Initialialize the hashmap.
     _filesMap.initialize(HashFuncs::hashInt, HashFuncs::compareInt, xdefines::FILES_MAP_SIZE);
     _dirsMap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::DIRS_MAP_SIZE);
@@ -84,7 +84,7 @@ public:
 
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       thisFile = (fileInfo *)i.getData();
-      PRWRN("thisfile fd %d pos %d", thisFile->fd, thisFile->pos); 
+      WARN("thisfile fd %d pos %ld", thisFile->fd, thisFile->pos); 
 #ifdef REPRODUCIBLE_FDS
       if(!thisFile->isClosed) {
         if(thisFile->origStream) {
@@ -192,7 +192,7 @@ public:
     getRecord()->recordDirOps(Record::E_OP_DIR_OPEN, dir);   
 #endif
 
-//    fprintf(stderr, "saveDir %p\n", dir);
+//    DEBUG("saveDir %p\n", dir);
     // Only save to the dirmap when a dir is valid. 
     if(dir != NULL) {
       dirInfo * thisDir = (dirInfo *)InternalHeap::getInstance().malloc(sizeof(dirInfo));
@@ -200,7 +200,7 @@ public:
       thisDir->pos = telldir(dir); 
       thisDir->dir = dir;
     
-      //fprintf(stderr, "thisDir in the insertion %p dir %p\n", thisDir, thisDir->dir); 
+      //DEBUG("thisDir in the insertion %p dir %p\n", thisDir, thisDir->dir); 
 #ifdef REPRODUCIBLE_FDS 
       thisDir->isClosed = false; 
       // Allocate a block of memory
@@ -231,7 +231,7 @@ public:
       // Simulate the fopen, since fopen will always call malloc().
       // It is possible that different library will have different size...
       void * ptr = malloc(xdefines::DIROPEN_ALLOC_SIZE);
-      //fprintf(stderr, "getFopen fd %d and file %p current ptr %p\n", fd, finfo.origStream, ptr);
+      //DEBUG("getFopen fd %d and file %p current ptr %p\n", fd, finfo.origStream, ptr);
 
       // check whether the pointer is the same as before.
       assert(dir == dinfo->dir);
@@ -279,11 +279,11 @@ public:
 #else
     bool hasFound = false;
 
-    //fprintf(stderr, "Finding the entry\n");
+    //DEBUG("Finding the entry\n");
     hasFound = _dirsMap.find(dir, sizeof(dir), &thisDir);
 
     if(hasFound) {
-      //fprintf(stderr, "Found the entry thisDir %p\n", thisDir);
+      //DEBUG("Found the entry thisDir %p\n", thisDir);
       // Remove this entry from the filemap. FIXME
       _dirsMap.erase(dir, sizeof(dir));
       InternalHeap::getInstance().free(thisDir);
@@ -297,7 +297,7 @@ public:
  
   // Called in the execution phase when fopen or open
   void saveFd(int fd, FILE *file) {
-  //  fprintf(stderr, "saveFd %d\n", fd);
+  //  DEBUG("saveFd %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
     // Save it even when fopen/open is not successful. 
     getRecord()->recordFileOps(Record::E_OP_FILE_OPEN, fd);   
@@ -331,7 +331,7 @@ public:
 
   void saveFopen(FILE * file) {
     if(file) {
-      //fprintf(stderr, "saveFopen fd %d and file %p\n", file->_fileno, file);
+      //DEBUG("saveFopen fd %d and file %p\n", file->_fileno, file);
       saveFd(file->_fileno, (FILE *)file);
     }
     else {
@@ -345,7 +345,7 @@ public:
     // We must recove all file offsets of all files now.
     filesHashMap::iterator i;
 
-  //  fprintf(stderr, "***************fops rollback now!**************\n");
+  //  DEBUG("***************fops rollback now!**************\n");
     /*  Traverse each entry of the hash table. */
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       fileInfo * thisFile;
@@ -371,7 +371,7 @@ public:
       thisDir = (dirInfo *)j.getData();
 #ifdef REPRODUCIBLE_FDS 
       seekdir(thisDir->dir, thisDir->pos);
-      //fprintf(stderr, "thisdir is %p dir %p\n", thisDir, thisDir->dir); 
+      //DEBUG("thisdir is %p dir %p\n", thisDir, thisDir->dir); 
       if(thisDir->backupDir) {
         memcpy(thisDir->dir, thisDir->backupDir, xdefines::DIROPEN_ALLOC_SIZE);
       }
@@ -410,7 +410,7 @@ public:
       // Simulate the fopen, since fopen will always call malloc().
       // It is possible that different library will have different size...
       void * ptr = malloc(xdefines::FOPEN_ALLOC_SIZE);
-      //fprintf(stderr, "getFopen fd %d and file %p current ptr %p\n", fd, finfo.origStream, ptr);
+      //DEBUG("getFopen fd %d and file %p current ptr %p\n", fd, finfo.origStream, ptr);
 
       // check whether the pointer is the same as before.
       assert(ptr == finfo->origStream);
@@ -464,7 +464,7 @@ public:
     // Try to get corresponding entry in the hashmap.
     fileInfo * thisFile;
 
-    //fprintf(stderr, "close file %d\n", fd);
+    //DEBUG("close file %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
       
     // The file should be in

@@ -54,11 +54,11 @@ public:
     // We don't need to allocate all pages, only the difference between newnum and oldnum.
     ptr = MM::mmapAllocatePrivate(_size);
     if(ptr == NULL)  {
-      fprintf(stderr, "%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
+      DEBUG("%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
       ::abort();
     }
 	
-    //fprintf(stderr, "recordentries.h::initialize at _cur at %p\n", &_cur);	
+    //DEBUG("recordentries.h::initialize at _cur at %p\n", &_cur);	
     // start to initialize it.
     _start = (Entry *)ptr;
     _cur = 0;

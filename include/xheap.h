@@ -63,7 +63,7 @@ public:
     void * startHeap
       = (void *)((unsigned long) xdefines::USER_HEAP_BASE - (unsigned long) metasize);
     
-    //    fprintf(stderr, "heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
+    //    DEBUG("heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
     ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, startHeap);
 
     // Initialize the lock.
@@ -84,7 +84,7 @@ public:
     freelist::getInstance().initialize();
 
     return (void *)ptr;	
-    //PRDBG("XHEAP:_start %p end %p, remaining %lx, position %p. OFFSET %x\n", _start, _end, _remaining,  _position, (unsigned long)_position-(intptr_t)_start);
+    DEBUG("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
   }
 
   /*
@@ -101,7 +101,7 @@ public:
   inline void saveHeapMetadata(void) {
     _positionBackup = _position;
     _remainingBackup = _remaining;
-    //PRDBG("save heap metadata, _position %p remaining 0x%lx\n", *_position, *_remaining);
+    DEBUG("save heap metadata, _position %p remaining %#lx\n", _position, _remaining);
   }
 
   /// We will overlap the metadata with the saved ones
@@ -109,7 +109,7 @@ public:
   inline void recoverHeapMetadata(void) {
     _position = _positionBackup;
     _remaining = _remainingBackup;
-    //PRDBG("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
+    DEBUG("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
   }
 
   inline void * getHeapStart(void) {
@@ -123,7 +123,7 @@ public:
   // Get current heap position
   // We only need to do the sanity check until current position.
   inline void * getHeapPosition(void) {
-    //fprintf(stderr, "GetHeapPosition %p\n", _position);
+    //DEBUG("GetHeapPosition %p\n", _position);
 	  return  _position;
   }
 
@@ -184,9 +184,7 @@ public:
 
     registerOwner(p, sz);
 
-    //PRFATAL("****xheap malloc %lx, p %p***\n", sz, p);
 	  unlock();
-//    fprintf(stderr, "****THREAD%d: xheap malloc %lx, p %p***\n", getThreadIndex(), sz, p);
     
 #if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE)
     // We must cleanup corresponding bitmap 
@@ -211,10 +209,8 @@ private:
     pthread_mutex_unlock(&_lock);
   }
 
-  void sanityCheck (void) {
-    if (_magic != 0xCAFEBABE) {
-      PRFATAL("Sanitycheck failed for xheap\n");
-    }
+  void sanityCheck() {
+    REQUIRE(_magic == 0xCAFEBABE, "Sanity check failed for xheap");
   }
 
   /// The start of the heap area.

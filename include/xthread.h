@@ -63,14 +63,14 @@ public:
   }
 
   void initialize(void) {
-    //fprintf(stderr, "%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
+    //DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
     _thread.initialize();
 
     // Initialize the syncmap and threadmap.
     _sync.initialize();
     threadmap::getInstance().initialize();
  
-    PRWRN("threadinit");
+    DEBUG("Starting thread initialization");
 
     // Initialize the global list for spawning operations 
     void * ptr = ((void *)InternalHeap::getInstance().malloc(sizeof(SyncEventList)));
@@ -83,7 +83,7 @@ public:
     // Register the first thread 
     initialThreadRegister();
     current->isSafe = true;
-    PRWRN("threadinit after"); 
+    DEBUG("Done with thread initialization"); 
   }
 
   void finalize(void) {
@@ -123,7 +123,7 @@ public:
   /// Handling the specific thread event.
   int thread_exit(void * value) {
     // FIXME later.
-    assert(0);
+    abort();
   }
 
   // In order to improve the speed, those spawning operations will do in 
@@ -139,9 +139,9 @@ public:
     int tindex;
     int result;
 
-//   PRDBG("****in the beginning of thread_create, *tid is %lx\n", *tid);
+//   DEBUG("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
-//      fprintf(stderr, "PTHREAD_CREATE it is not rollback phase!!!!!!\n");
+//      DEBUG("PTHREAD_CREATE it is not rollback phase!!!!!!\n");
       // Lock and record
       global_lock();
 
@@ -152,25 +152,19 @@ public:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
       // Second, we haven't meet commit point for a long time.
       if(tindex == -1) {
-        if(hasReapableThreads() == false) {
-          PRERR("xdefines::MAX_ALIVE_THREADS is set to too small\n");
-          EXIT;
-        }
+        REQUIRE(hasReapableThreads(), "No reapable threads");
         global_unlock();
         
         invokeCommit();
  
         global_lock();
         tindex = allocThreadIndex();
-        if(tindex == -1) {
-          PRDBG("System can support %d threadds: xdefines::MAX_ALIVE_THREADS to a larger number\n", xdefines::MAX_ALIVE_THREADS);
-          EXIT;
-        }
-        PRDBG("AFTER commit now******* tindex %d\n", tindex);     
+        REQUIRE(tindex != -1, "System can support %d threads", xdefines::MAX_ALIVE_THREADS);
+        DEBUG("AFTER commit now******* tindex %d\n", tindex);     
       }
 
 
-      //PRDBG("thread creation with index %d\n", tindex);
+      DEBUG("thread creation with index %d\n", tindex);
       // WRAP up the actual thread function.
       // Get corresponding thread_t structure.
       thread_t * children = getThreadInfo(tindex);
@@ -205,7 +199,7 @@ public:
       result =  Real::pthread_create()(tid, attr, xthread::startThread, (void *)children);
       unsetThreadSpawning();
       if(result != 0) {
-        PRDBG("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
+        DEBUG("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
         Real::exit()(-1);
       }
     
@@ -219,31 +213,31 @@ public:
 
       global_unlock();
       
-      //PRDBG("Creating THREAD%d at %p self %p\n", tindex, children, children->self); 
+      DEBUG("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self); 
       if(result == 0) {
         // Waiting for the finish of registering children thread.
         lock_thread(children);
 
         while(children->status == E_THREAD_STARTING) {
           wait_thread(children);
-    //     PRDBG("Children %d status %d. now wakenup\n", children->index, children->status);
+    //     DEBUG("Children %d status %d. now wakenup\n", children->index, children->status);
         }
         unlock_thread(children);
       }
     }
     else {
-      PRDBG("process %d is before thread_create now\n", current->index);
+      DEBUG("process %d is before thread_create now\n", current->index);
       result = _sync.peekSyncEvent();
 
       getRecord()->getCloneOps(tid, &result);
-      PRWRN("process %d in creation, result %d\n", current->index, result);
+      DEBUG("process %d in creation, result %d\n", current->index, result);
       if(result == 0) { 
         waitSemaphore();
-        PRWRN("process %d is after waitsemaphore\n", current->index, result);
+        DEBUG("process %d is after waitsemaphore\n", current->index);
 
         // Wakeup correponding thread, now they can move on.  
         thread_t * thread = getThread(*tid);
-        PRWRN("Waken up *tid %p thread %p child %d in thread_creation\n", *tid, thread, thread->index);
+        DEBUG("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread, thread->index);
          
         // Wakeup corresponding thread
         thread->joiner = NULL;
@@ -252,7 +246,7 @@ public:
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
-     PRDBG("#############process %d before updateSyncEvent now\n", current->index);
+     DEBUG("#############process %d before updateSyncEvent now\n", current->index);
       updateSyncEvent(_spawningList); 
 //      _spawningList->advanceSyncEvent(); 
     }
@@ -265,34 +259,34 @@ public:
   inline int thread_join(pthread_t joinee, void ** result) {
     thread_t * thread = NULL;
 
-   // PRDBG("thread_join on joinee %p\n", joinee);    
+   // DEBUG("thread_join on joinee %p\n", joinee);    
     // Try to check whether thread is empty or not? 
     thread = getThread(joinee);
     assert(thread != NULL);
 
-    //PRWRN("thread_join, joinee is 0x%lx thread %p thread->index %d*****\n", joinee, thread, thread->index); 
-//    PRDBG("thread_join, joinee is 0x%lx thread %p thread->status %d*****\n", joinee, thread, thread->status); 
+    //WARN("thread_join, joinee is 0x%lx thread %p thread->index %d*****\n", joinee, thread, thread->index); 
+//    DEBUG("thread_join, joinee is 0x%lx thread %p thread->status %d*****\n", joinee, thread, thread->status); 
 
     // Now the thread has finished the register
     lock_thread(thread);
    
     if(thread->status != E_THREAD_WAITFOR_REAPING) {
-      //PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
+      //WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
       // Set the joiner to current thread 
       thread->joiner = current;
       current->status = E_THREAD_JOINING;
   
-//      PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
+//      WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
       // Now we are waiting the finish of child thread   
       while(current->status != E_THREAD_RUNNING) {
-      //  PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
-      //  PRDBG("thread_join, current %p status %d, waiting on joinee %d (at %p, thread %p). thread->joiner %p at %p*****\n", current, current->status, thread->index, thread, thread->self, thread->joiner, &thread->joiner); 
+      //  WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
+      //  DEBUG("thread_join, current %p status %d, waiting on joinee %d (at %p, thread %p). thread->joiner %p at %p*****\n", current, current->status, thread->index, thread, thread->self, thread->joiner, &thread->joiner); 
         // Wait for the joinee to wake me up
         wait_thread(thread);
-      //  PRDBG("thread_join status %d, wakenup by thread %d*****\n", current->status, thread->index); 
+      //  DEBUG("thread_join status %d, wakenup by thread %d*****\n", current->status, thread->index); 
       }
       
-     // PRWRN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
+     // WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status); 
     } 
 
     // Now mark this thread's status so that the thread can be reaped.
@@ -300,7 +294,7 @@ public:
 
     // FIXME: actually, we should get the result from corresponding thread
     if(result) {
-     // PRDBG("thread_join, getresult, result %p actual result*****\n", result); 
+     // DEBUG("thread_join, getresult, result %p actual result*****\n", result); 
       *result = thread->result;
     }
 
@@ -326,7 +320,7 @@ public:
     threadinfo->isDetached = true;
     unlock_thread(threadinfo);
     
-    assert(0);
+    abort();
   }
   
   /// @brief Do a pthread_cancel
@@ -360,7 +354,7 @@ public:
       // Allocate a real mutex.
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
-//      fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
+//      DEBUG("mutex_init with realMutex %p\n", realMutex);
       // Actually initialize this mutex
       result = Real::pthread_mutex_init()(realMutex, attr);
 
@@ -376,15 +370,15 @@ public:
     pthread_mutex_t * realMutex = NULL;
     SyncEventList * list = NULL;
 
-    //fprintf(stderr, "do_mutex_lock\n"); 
+    //DEBUG("do_mutex_lock\n"); 
     if(!global_isRollback()) {
-      //fprintf(stderr, "do_mutex_lock before getSyncEntry %d\n", __LINE__); 
+      //DEBUG("do_mutex_lock before getSyncEntry %d\n", __LINE__); 
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
-     // fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
+     // DEBUG("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       if(realMutex == NULL) {
         mutex_init((pthread_mutex_t *)mutex, NULL);
         realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
-     //   fprintf(stderr, "do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
+     //   DEBUG("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       }
       
       assert(realMutex != NULL);
@@ -403,13 +397,13 @@ public:
       }
 
       // Record this event
-    //  fprintf(stderr, "do_mutex_lock before recording\n"); 
+    //  DEBUG("do_mutex_lock before recording\n"); 
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-     // fprintf(stderr, "synceventlist get mutex at %p list %p\n", mutex, list);
+     // DEBUG("synceventlist get mutex at %p list %p\n", mutex, list);
       assert(list != NULL);
       ret = _sync.peekSyncEvent();
       if(ret == 0) { 
@@ -419,7 +413,7 @@ public:
       // Update thread synchronization event in order to handle the nesting lock.
       _sync.advanceThreadSyncList();
     }
-    //fprintf(stderr, "do_mutex_lock done!!!!!\n"); 
+    //DEBUG("do_mutex_lock done!!!!!\n"); 
     return ret;
   }
   
@@ -446,7 +440,7 @@ public:
         _sync.signalNextThread(nextEvent);
       }
     }
-   // PRWRN("mutex_unlock mutex %p\n", mutex);
+   // WARN("mutex_unlock mutex %p\n", mutex);
     return ret;
   }
 
@@ -477,7 +471,7 @@ public:
       pthread_mutex_t * realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
       assert(realMutex != NULL);
 
-      //PRDBG("cond_wait for thread %d\n", current->index);
+      DEBUG("cond_wait for thread %d\n", current->index);
       // Add the event into eventlist
       ret = Real::pthread_cond_wait() (cond, realMutex);
       
@@ -601,20 +595,20 @@ public:
   inline static void saveContext() {
     size_t size;
 
-    PRDBG("SAVECONTEXT: Current %p current->privateTop %p at %p thread index %d\n", current, current->privateTop, &current->privateTop, current->index);
+    DEBUG("SAVECONTEXT: Current %p current->privateTop %p at %p thread index %d\n", current, current->privateTop, &current->privateTop, current->index);
     // Save the stack at first.
     current->privateStart = &size;
     size = size_t((intptr_t)current->privateTop - (intptr_t)current->privateStart);
     current->backupSize = size;
 
     if(size >= current->totalPrivateSize) {
-      PRDBG("Wrong. Current stack size (%lx = %p - %p) need to backup is larger than" \
+      DEBUG("Wrong. Current stack size (%lx = %p - %p) need to backup is larger than" \
               "total size (%lx). Either the application called setrlimit or the implementation" \
               "is wrong.\n", size, current->privateTop, current->privateStart, current->totalPrivateSize);
       Real::exit()(-1);
     }
  
-   // PRDBG("privateStart %p size %lx backup %p\n", current->privateStart, size, current->backup);
+   // DEBUG("privateStart %p size %lx backup %p\n", current->privateStart, size, current->backup);
     memcpy(current->backup, current->privateStart, size);
     // We are trying to save context at first
     getcontext(&current->context);
@@ -654,7 +648,7 @@ public:
   };
 
   inline static void restoreContext() {
-    PRDBG("restore context now\n");
+    DEBUG("restore context now\n");
     xcontext::restoreContext(&current->oldContext, &current->newContext);
   };
 
@@ -700,7 +694,7 @@ private:
 
   inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
     void ** entry = (void **)ptr;
-    //fprintf(stderr, "ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
+    //DEBUG("ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
     return (SyncEventList *)((intptr_t)(*entry) + size);
   }
 
@@ -831,7 +825,7 @@ private:
     // Now we can wakeup the parent since the parent must wait for the registe
     signal_thread(current);
 
-    PRDBG("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n", current->index, current->self, current, current->status, &current->cond, &current->mutex);
+    DEBUG("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n", current->index, (void*)current->self, current, current->status, &current->cond, &current->mutex);
    
     unlock_thread(current); 
     if(!isMainThread) {
@@ -839,8 +833,8 @@ private:
       saveContext();
     }
 
-    //PRWRN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
-    //PRDBG("THREAD%d (pthread_t %p) registered at %p, status %d\n", current->index, current->self, current, current->status);
+    //WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
+    DEBUG("THREAD%d (pthread_t %p) registered at %p, status %d\n", current->index, (void*)current->self, current, current->status);
   }
 
 
@@ -907,15 +901,15 @@ private:
     void * result;
     current = (thread_t *)arg;
 
-    //PRDBG("thread %p self %p is starting now.\n", current, current->self);
+    DEBUG("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
     
     // Now current thread is safe to be interrupted. 
     setThreadSafe(); 
-    //PRDBG("thread %p self %p after thread register now.\n", current, current->self);
+    DEBUG("thread %p self %p after thread register now.\n", current, (void*)current->self);
  
-    //PRDBG("Child thread %d has been registered.\n", current->index);
+    DEBUG("Child thread %d has been registered.\n", current->index);
     // We actually get those parameter about new created thread
     // from the TLS storage.
     result = current->startRoutine(current->startArg);
@@ -938,14 +932,12 @@ private:
       if(joiner) {
         assert(joiner->status == E_THREAD_JOINING);
         joiner->status = E_THREAD_RUNNING;
-        PRWRN("Waking up the joiner %p!!!\n", joiner->self);
+        DEBUG("Waking up the joiner %p!!!\n", (void*)joiner->self);
         // Now we can wakeup the joiner.
         signal_thread(current);
       }
-    }
-    else {
-      PRDBG("Thread is detached!!!\n");
-      PRWRN("Thread is detached!!!\n");
+    } else {
+      DEBUG("Thread is detached!!!\n");
     } 
 
     current->status = E_THREAD_WAITFOR_REAPING;
@@ -955,16 +947,16 @@ private:
     // be set to E_THREAD_ROLLBACK 
     //while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {     
     while(current->status == E_THREAD_WAITFOR_REAPING) {
-      //PRDBG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
-      //PRDBG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
+      DEBUG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
+      DEBUG("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       wait_thread(current);
-//      PRDBG("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
+//      DEBUG("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
     // What to do in the end of a thread? Who will send out this message? 
     // When heap overflow occurs 
     if(current->status == E_THREAD_ROLLBACK) {
-      //PRDBG("THREAD%d (at %p) is wakenup\n", current->index, current);
+      DEBUG("THREAD%d (at %p) is wakenup\n", current->index, current);
       current->status = E_THREAD_RUNNING;
       unlock_thread(current);
 
@@ -972,7 +964,7 @@ private:
       // Since it is possible that we copy back everything after the join, then
       // Some thread data maybe overlapped by this rollback.
       // Especially those current->joiner, then we may have a wrong status.
-      PRWRN("THREAD%d (at %p) is rollngback now\n", current->index, current);
+      DEBUG("THREAD%d (at %p) is rollngback now\n", current->index, current);
       xthread::getInstance().rollback();
 
       // We will never reach here
@@ -981,7 +973,7 @@ private:
     else {
       assert(current->status == E_THREAD_EXITING);
       current->syncevents.finalize();
-      PRWRN("THREAD%d (at %p) is exiting now\n", current->index, current);
+      DEBUG("THREAD%d (at %p) is exiting now\n", current->index, current);
       unlock_thread(current);
     }
     return result; // EDB

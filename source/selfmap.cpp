@@ -45,12 +45,12 @@
     int size;
     int skip = 0;
 
-    PRDBG("Try to get backtrace with array %p\n", array);
+    DEBUG("Try to get backtrace with array %p\n", array);
     // get void*'s for all entries on the stack
     current->internalheap = true;
     size = backtrace(array, 10);
     current->internalheap = false;
-    PRDBG("After get backtrace with array %p\n", array);
+    DEBUG("After get backtrace with array %p\n", array);
 
     for(int i = 0; i < size; i++) {
       if(isStopgapLibrary(array[i])) {
@@ -65,12 +65,12 @@
 
     // Print out the source code information if it is a overflow site.
     if(isOverflow) {
-      PRDBG("\nSource code information about overflow site:\n");
+      DEBUG("\nSource code information about overflow site:\n");
       char buf[MAX_BUF_SIZE];
 
       for(int i = skip; i < size-skip; i++) {
         if(isApplication(array[i])) {
-          PRDBG("callstack frame %d: ", i);
+          DEBUG("callstack frame %d: ", i);
           // Print out the corresponding source code information
           sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
           system(buf);
@@ -78,14 +78,14 @@
       }
     }
 
-    PRDBG("\n\n");
+    DEBUG("\n\n");
       // We don't care about the address in the libraries.
       
       // We must traverse back to find the address in the application.
-//      PRDBG("pcaddr %p is a library address\n", pcaddr);   
+//      DEBUG("pcaddr %p is a library address\n", pcaddr);   
      // backtrace_symbols_fd(length, frames, 2);
       //for(int i = 0; i < frames; i++) {
-      //  PRDBG("i %d pc %p\n", i, buf[i]);
+      //  DEBUG("i %d pc %p\n", i, buf[i]);
       //}
   }
  

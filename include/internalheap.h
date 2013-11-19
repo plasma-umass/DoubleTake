@@ -40,7 +40,7 @@ public:
 
     // We are adding one objectHeader and two "canary" words along the object
     // The layout will be:  objectHeader + "canary" + Object + "canary".
-    //fprintf(stderr, "InternalAdaptHeap before malloc sz %d\n", sz);
+    //DEBUG("InternalAdaptHeap before malloc sz %d\n", sz);
     void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);    if (!ptr) {
       return NULL;
     }
@@ -63,9 +63,7 @@ public:
   size_t getSize (void * ptr) {
     objectHeader * o = getObject(ptr);
     size_t sz = o->getSize();
-    if (sz == 0) {
-      PRFATAL ("Object size error, can't be 0");
-    }
+    REQUIRE(sz != 0, "Object size cannot be zero");
     return sz;
   }
 
@@ -110,10 +108,9 @@ public:
     // Initialize the SourceHeap before malloc from there.
     char * base = (char *) SourceHeap::initialize((void *)xdefines::INTERNAL_HEAP_BASE, xdefines::INTERNAL_HEAP_SIZE, metasize);
   
-    if(base == NULL) {
-      PRFATAL("Failed to allocate memory for heap metadata.");
-    }
-//    fprintf(stderr, "\n\nInternalHeap base %p metasize %lx\n\n", base, metasize);
+    REQUIRE(base != NULL, "Failed to allocated memory for heap metadata");
+    DEBUG("Internal heap base %p, metasize %xz", base, metasize);
+    
     _heap = new (base) SuperHeap;
     
     // Get the heap start and heap end;
@@ -170,10 +167,7 @@ public:
     void * ptr = NULL;
     ptr = _heap.malloc (getThreadIndex(), sz);
   
-    if(!ptr) {
-      PRERR("%d : SHAREHEAP is exhausted, exit now!!!", getpid());
-      assert(ptr != NULL);
-    }
+    REQUIRE(ptr != NULL, "Shareheap is exhausted");
   
     return ptr;
   }

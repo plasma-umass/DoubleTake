@@ -192,11 +192,11 @@ inline void listPrintItems(list_t * head, int num) {
   first = head;
 
  while(entry != first && i < num) {
-    fprintf(stderr, "%d: ENTRY %d: %p (prev %p). HEAD %p\n", getpid(), i++, entry, entry->prev, head);
+    DEBUG("%d: ENTRY %d: %p (prev %p). HEAD %p\n", getpid(), i++, entry, entry->prev, head);
     entry = entry->next;
   }
     
-  fprintf(stderr, "HEAD %p Head->prev %p head->next %p\n", head, head->prev, head->next);
+  DEBUG("HEAD %p Head->prev %p head->next %p\n", head, head->prev, head->next);
 }
 
 /* Get the pointer to the struct this entry is part of

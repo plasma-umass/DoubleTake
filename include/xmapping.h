@@ -74,13 +74,9 @@ public:
   // Initialize the map and corresponding part.
   void initialize(void * startaddr = 0, size_t size = 0, void * heapstart = NULL)
   {
-    // Check whether the size is valid, should be page aligned.
-    if(size % xdefines::PageSize != 0) {
-      PRFATAL("Wrong size %lx, should be page aligned.\n", size);
-    }
-
-//    printf("xmapping startaddr %p size %lx heapstart %p\n", startaddr, size, heapstart);
-
+    REQUIRE(size % xdefines::PageSize == 0, "Wrong size %lx, should be page aligned", size);
+    DEBUG("xmapping starts at %p, size %lx", startaddr, size);
+    
     // Establish two maps to the backing file.
     // The persistent map is shared.
     _backupMemory = (char *) MM::mmapAllocatePrivate(size);
@@ -174,7 +170,7 @@ public:
       sz = size();
     }
 
-    //fprintf(stderr, "Recover memory %p end %p size %lx\n", _userMemory, end, sz);
+    //DEBUG("Recover memory %p end %p size %lx\n", _userMemory, end, sz);
     customMemcpy(_userMemory, _backupMemory, sz);
   }
 

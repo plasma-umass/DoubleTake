@@ -117,7 +117,7 @@
   
   inline int atomic_test_and_set(volatile unsigned long *mem) {
     int ret;
-    //fprintf(stderr, "Before lock: value is %d\n", *w);
+    //DEBUG("Before lock: value is %d\n", *w);
 #if defined(__i386__)
     asm volatile("lock; xchgl %0, %1":"=r"(ret), "=m"(*mem)
        :"0"(1), "m"(*mem)

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 #include "dr.h"
+#include "log.h"
 
 #undef offsetof
 #define offsetof(type, member)   ((size_t)((char *)&(*(type *)0).member - \
@@ -83,7 +84,7 @@ static unsigned long dr_get (pid_t pid, int regnum)
   value = ptrace (PTRACE_PEEKUSER, pid, offsetof(struct user, u_debugreg[regnum]), 0);
 
   if (errno != 0) {
-    fprintf(stderr, "Couldn't read debug register %d at pid %d\n", regnum, pid);
+    DEBUG("Couldn't read debug register %d at pid %d\n", regnum, pid);
   }
 
   return value;
@@ -93,10 +94,10 @@ static unsigned long dr_get (pid_t pid, int regnum)
 static void dr_set (pid_t pid, int regnum, unsigned long value)
 {
   errno = 0;
-//  fprintf(stderr, "set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
+//  DEBUG("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
   ptrace (PTRACE_POKEUSER, pid, offsetof (struct user, u_debugreg[regnum]), value);
   if (errno != 0) {
-    fprintf(stderr, "Couldn't set debug register %d error %s\n", regnum, strerror(errno));
+    DEBUG("Couldn't set debug register %d error %s\n", regnum, strerror(errno));
   //  abort();
   }
   
@@ -228,7 +229,7 @@ static unsigned dr_length_and_rw_bits (int len, int type)
 	    break;
      
     default:
-      fprintf(stderr, "Invalid watchpoint type %d in dr_length_and_rw_bits.\n", (int) type);
+      DEBUG("Invalid watchpoint type %d in dr_length_and_rw_bits.\n", (int) type);
       break;
   }
 
@@ -257,7 +258,7 @@ static unsigned dr_length_and_rw_bits (int len, int type)
     }
 	/* ELSE FALL THROUGH */
     default:
-      fprintf(stderr, "Invalid watchpoint length %d in dr_length_and_rw_bits.\n", len);
+      DEBUG("Invalid watchpoint length %d in dr_length_and_rw_bits.\n", len);
       break;
     }
     return value;
@@ -400,7 +401,7 @@ handle_nonaligned_watchpoint (struct debug_reg_state *state,
 	      else if (what == WP_REMOVE)
 	        retval = remove_aligned_watchpoint (state, addr, len_rw);
 	      else
-            fprintf(stderr, "Invalid value %d handle_nonaligned_watchpoint.\n", (int)what);
+            DEBUG("Invalid value %d handle_nonaligned_watchpoint.\n", (int)what);
 	      if (retval)
 	        break;
 	    }
@@ -419,7 +420,7 @@ static void update_inferior_debug_regs (pid_t pid, struct debug_reg_state *new_s
   struct debug_reg_state *state = debug_reg_state ();
   int i;
 
-//  fprintf(stderr, "pid is %d\n", pid);
+//  DEBUG("pid is %d\n", pid);
 
   ALL_DEBUG_ADDR_REGISTERS (i)
   {
@@ -640,7 +641,7 @@ void  resume_process (pid_t pid)
  // if(ptrace (PTRACE_CONT, pid, 0, SIGCONT) == -1) {
   //if(ptrace (PTRACE_CONT, pid, 0, SIGUSR2) == -1) {
   if(ptrace (PTRACE_CONT, pid, 0, SIGCONT) == -1) {
-    fprintf(stderr, "Can't start the child process.\n");
+    DEBUG("Can't start the child process.\n");
     abort();
   }
 }
@@ -651,7 +652,7 @@ void  pass_signals (pid_t pid, int signal)
   // Send corresponding child a SIGUSR2
   if(ptrace (PTRACE_CONT, pid, 0, signal) == -1) {
 //  if(ptrace (PTRACE_CONT, pid, 0, signal) == -1) {
-    fprintf(stderr, "Can't pass process %d a signal %d, the error %s\n", pid, signal, strerror(errno));
+    DEBUG("Can't pass process %d a signal %d, the error %s\n", pid, signal, strerror(errno));
   //  abort();
   }
 }

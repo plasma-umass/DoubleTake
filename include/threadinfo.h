@@ -92,10 +92,10 @@ public:
     for(int i = 0; i < xdefines::MAX_ALIVE_THREADS; i++) {
       tinfo = &_threads[i];
  
-    //  PRWRN("in xthread initialize i %d\n", i ); 
+    //  WARN("in xthread initialize i %d\n", i ); 
       // Initialize the record.
       Record * sysrecord = (Record *)InternalHeap::getInstance().malloc(sizeof(Record));
-    //  PRWRN("in xthread initialize i %d sysrecord %p\n", i , sysrecord); 
+    //  WARN("in xthread initialize i %d sysrecord %p\n", i , sysrecord); 
       sysrecord->initialize();
       tinfo->record = (void *)sysrecord;
 
@@ -140,7 +140,7 @@ public:
         Real::pthread_mutex_init()(&thread->mutex, NULL);
         Real::pthread_cond_init()(&thread->cond, NULL);
     
-//        fprintf(stderr, "origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
+//        DEBUG("origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
         break;
       }
       else {
@@ -160,12 +160,6 @@ public:
 
   inline thread_t * getThread(pthread_t thread) {
     return threadmap::getInstance().getThreadInfo(thread);
-  }
-
-  inline char * getThreadBuffer(int index) {
-    thread_t * thread = getThreadInfo(index);
-
-    return thread->outputBuf;
   }
 
   inline int incrementReapableThreads() {
@@ -189,7 +183,7 @@ public:
     syncVar = (struct deferSyncVariable *)InternalHeap::getInstance().malloc(sizeof(struct deferSyncVariable));
 
     if(syncVar == NULL) {
-      fprintf(stderr, "No enough private memory, syncVar %p\n", syncVar);
+      DEBUG("No enough private memory, syncVar %p\n", syncVar);
       return;
     }
 
@@ -256,8 +250,8 @@ public:
         case E_SYNCVAR_BARRIER:
         {
           //int * test = (int *)syncvar->variable;
-          //fprintf(stderr, "calling destory on %p\n", syncvar->variable);
-          //fprintf(stderr, "Destroy barrier %p First Word %lx, second word %lx\n", syncvar->variable, test[0], test[1]);
+          //DEBUG("calling destory on %p\n", syncvar->variable);
+          //DEBUG("Destroy barrier %p First Word %lx, second word %lx\n", syncvar->variable, test[0], test[1]);
           Real::pthread_barrier_destroy()((pthread_barrier_t *)syncvar->variable);
           break;
         }

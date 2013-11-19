@@ -112,7 +112,7 @@ private:
 public:
 
   void initialize(void) {
-//    fprintf(stderr, "RECORD: _entries %p\n", &_entries);
+//    DEBUG("RECORD: _entries %p\n", &_entries);
     _entries.initialize(xdefines::MAX_RECORD_ENTRIES);
 
     // Initialize corresponding lists
