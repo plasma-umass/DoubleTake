@@ -35,21 +35,18 @@
 #include "record.h"
 #include "mm.h"
 
-extern "C" {
+typedef enum e_syncVariable {
+  E_SYNCVAR_THREAD = 0, 
+  E_SYNCVAR_COND, 
+  E_SYNCVAR_MUTEX, 
+  E_SYNCVAR_BARRIER 
+} syncVariableType;
 
-  typedef enum e_syncVariable {
-    E_SYNCVAR_THREAD = 0, 
-    E_SYNCVAR_COND, 
-    E_SYNCVAR_MUTEX, 
-    E_SYNCVAR_BARRIER 
-  } syncVariableType;
-
-  // Each synchronization variable will have a corresponding list.
-  struct deferSyncVariable {
-    list_t list;
-    syncVariableType syncVarType;
-    void * variable;
-  };
+// Each synchronization variable will have a corresponding list.
+struct deferSyncVariable {
+  list_t list;
+  syncVariableType syncVarType;
+  void * variable;
 };
 
 /// @class threadinfo

@@ -33,55 +33,47 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "watchpoint.h"
 #include "objectheader.h"
 
-extern "C" {
+inline size_t getMarkWords(size_t size) {
+  int words;
 
+  // Get a size for checking
+  if(size > xdefines::FREE_OBJECT_CANARY_SIZE) {
+    words = xdefines::FREE_OBJECT_CANARY_WORDS;
+  }
+  else {
+    words = size/sizeof(unsigned long);
+  }
+  return words;
+}
 
-#if 1
-  inline size_t getMarkWords(size_t size) {
-    int words;
+inline void markFreeObject(void * ptr, size_t size) {
+  unsigned long * addr = (unsigned long *)ptr;
+  size_t words = getMarkWords(size);
 
-    // Get a size for checking
-    if(size > xdefines::FREE_OBJECT_CANARY_SIZE) {
-      words = xdefines::FREE_OBJECT_CANARY_WORDS;
-    }
-    else {
-      words = size/sizeof(unsigned long);
-    }
-    return words;
+  for(int i = 0; i < words; i++) {
+    addr[i] = xdefines::SENTINEL_WORD;  
+  }
+}
+
+inline bool hasUsageAfterFree(void * ptr, size_t size) {
+  bool hasUAF = false;
+  int words = getMarkWords(size);
+
+  // We only check specified size
+  unsigned long * addr = (unsigned long *)ptr;
+
+  for(int i = 0; i < words; i++) {
+    if(addr[i] != xdefines::SENTINEL_WORD) {
+      hasUAF = true;
+     
+      printf("Usage-after-free problem at address %p!!!!!!\n", &addr[i]); 
+      // install watchpoints on this point.
+      watchpoint::getInstance().addWatchpoint(&addr[i], addr[i]); 
+    }     
   }
 
-  inline void markFreeObject(void * ptr, size_t size) {
-    unsigned long * addr = (unsigned long *)ptr;
-    size_t words = getMarkWords(size);
-
-    for(int i = 0; i < words; i++) {
-      addr[i] = xdefines::SENTINEL_WORD;  
-    }
-  }
-  
-  inline bool hasUsageAfterFree(void * ptr, size_t size) {
-    bool hasUAF = false;
-    int words = getMarkWords(size);
- 
-    // We only check specified size
-    unsigned long * addr = (unsigned long *)ptr;
-
-    for(int i = 0; i < words; i++) {
-      if(addr[i] != xdefines::SENTINEL_WORD) {
-        hasUAF = true;
-       
-        printf("Usage-after-free problem at address %p!!!!!!\n", &addr[i]); 
-        // install watchpoints on this point.
-        watchpoint::getInstance().addWatchpoint(&addr[i], addr[i]); 
-      }     
-    }
-
-    return hasUAF; 
-  }
-
-#endif
-
-};
+  return hasUAF; 
+}
 
 class quarantine {
 public:

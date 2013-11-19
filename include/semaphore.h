@@ -38,13 +38,11 @@
 #include "xdefines.h"
 #include "real.h"
 
-extern "C" {
-  typedef union semun {
-    int val;
-    struct semid_ds *buf;
-    ushort * array;
-  } semaArg;
-};
+typedef union semun {
+  int val;
+  struct semid_ds *buf;
+  ushort * array;
+} semaArg;
   
 class semaphore {
 public:

@@ -52,6 +52,7 @@
 #include <utime.h>
 
 extern "C" {
+  // This header file doesn't properly wrap declarations for C++ inclusion
   #include <linux/kexec.h>
 }
 

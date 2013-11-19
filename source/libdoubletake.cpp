@@ -596,7 +596,6 @@ extern "C" {
   }
 
 */
-#if 1
   // Close current transaction since it is impossible to rollback.
   off_t lseek(int filedes, off_t offset, int whence) {
     DEBUG("lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
@@ -605,7 +604,6 @@ extern "C" {
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
   }
-#endif
 
   int mprotect(void *addr, size_t len, int prot) {
     if (!initialized) {

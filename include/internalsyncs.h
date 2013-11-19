@@ -28,13 +28,9 @@
 #include<pthread.h>
 #include "threadstruct.h"
 
-extern "C" {
-
-extern void lock_thread(thread_t* thread);
-extern void unlock_thread(thread_t* thread);
-extern void wait_thread(thread_t*thread);
-extern void signal_thread(thread_t*thread);
-
-};
+void lock_thread(thread_t* thread);
+void unlock_thread(thread_t* thread);
+void wait_thread(thread_t* thread);
+void signal_thread(thread_t* thread);
 
 #endif

@@ -40,27 +40,24 @@
 #include "globalinfo.h"
 #include "threadstruct.h"
 
-extern "C" {
-  typedef enum e_thrsynccmd {
-    E_SYNC_SPAWN = 0,  // Thread creation
-  //  E_SYNC_COND_SIGNAL,// conditional signal
-  //  E_SYNC_COND_BROADCAST,// conditional broadcast
-  //  E_SYNC_COND_WAIT,// conditional wait
-  //  E_SYNC_COND_WAKEUP,// conditional wakeup from waiting
-    E_SYNC_BARRIER, // barrier waiting 
-    E_SYNC_MUTEX_LOCK,
-    E_SYNC_MUTEX_TRY_LOCK,
-    E_SYNC_RWLOCK_RDLOCK,
-    E_SYNC_RWLOCK_TIMEDRDLOCK,
-    E_SYNC_RWLOCK_TRYRDLOCK,
-    E_SYNC_RWLOCK_WRLOCK,
-    E_SYNC_RWLOCK_TIMEDWRLOCK,
-    E_SYNC_RWLOCK_TRYWRLOCK,
-    E_SYNC_THREAD, // Not a actual synchronization event, but for each thread.
-  //  E_SYNC_KILL, // Inside the critical section. 
-  } thrSyncCmd;
-
-};
+typedef enum e_thrsynccmd {
+  E_SYNC_SPAWN = 0,  // Thread creation
+//  E_SYNC_COND_SIGNAL,// conditional signal
+//  E_SYNC_COND_BROADCAST,// conditional broadcast
+//  E_SYNC_COND_WAIT,// conditional wait
+//  E_SYNC_COND_WAKEUP,// conditional wakeup from waiting
+  E_SYNC_BARRIER, // barrier waiting 
+  E_SYNC_MUTEX_LOCK,
+  E_SYNC_MUTEX_TRY_LOCK,
+  E_SYNC_RWLOCK_RDLOCK,
+  E_SYNC_RWLOCK_TIMEDRDLOCK,
+  E_SYNC_RWLOCK_TRYRDLOCK,
+  E_SYNC_RWLOCK_WRLOCK,
+  E_SYNC_RWLOCK_TIMEDWRLOCK,
+  E_SYNC_RWLOCK_TRYWRLOCK,
+  E_SYNC_THREAD, // Not a actual synchronization event, but for each thread.
+//  E_SYNC_KILL, // Inside the critical section. 
+} thrSyncCmd;
 
 class SyncEventList {
 

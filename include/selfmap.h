@@ -39,11 +39,10 @@
 #define MAX_BUF_SIZE 4096
 #include "xdefines.h"
 using namespace std;
-extern "C" {
-  struct regioninfo {
-    void * start;
-    void * end; 
-  };
+
+struct regioninfo {
+  void * start;
+  void * end; 
 };
 
 class selfmap {

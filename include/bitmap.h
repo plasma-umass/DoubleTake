@@ -42,12 +42,10 @@
 #include "objectheader.h"
 #include "watchpoint.h"
 
-extern "C" {
-  enum { WORDBITS = sizeof(unsigned long) * 8 };
-  enum { WORDSIZE = sizeof(unsigned long) * 8 };
-  extern unsigned long on[WORDBITS];
-  extern unsigned long off[WORDBITS];
-};
+enum { WORDBITS = sizeof(unsigned long) * 8 };
+enum { WORDSIZE = sizeof(unsigned long) * 8 };
+extern unsigned long on[WORDBITS];
+extern unsigned long off[WORDBITS];
 
 class bitmap {
 public:
