@@ -91,7 +91,7 @@ public:
           assert(thisFile->backupStream != NULL);
         }
 #endif
-        off_t pos = WRAP(lseek)(thisFile->fd, 0, SEEK_CUR);
+        off_t pos = Real::lseek()(thisFile->fd, 0, SEEK_CUR);
         thisFile->pos = pos;
 
 #ifndef REPRODUCIBLE_FDS
@@ -290,7 +290,7 @@ public:
     }
     
     // Remove this 
-    return WRAP(closedir)(dir);
+    return Real::closedir()(dir);
 #endif
 
   }
@@ -351,7 +351,7 @@ public:
       fileInfo * thisFile;
       thisFile = (fileInfo *)i.getData();
 
-      WRAP(lseek)(thisFile->fd, thisFile->pos, SEEK_SET);
+      Real::lseek()(thisFile->fd, thisFile->pos, SEEK_SET);
 
       // The file has already existed before current epoch
       if(thisFile->origStream) {
@@ -505,10 +505,10 @@ public:
     
     // Remove this 
     if(fp == NULL) {
-      return WRAP(close)(fd);
+      return Real::close()(fd);
     }
     else {
-      return WRAP(fclose)(fp);
+      return Real::fclose()(fp);
     }
 #endif
   }
@@ -533,14 +533,14 @@ public:
         // close a newfd won't affect the new fd. 
         // check whether this file is a file stream or not.
         if(thisFile->origStream) {
-          WRAP(fclose)(thisFile->origStream);
+          Real::fclose()(thisFile->origStream);
         
           assert(thisFile->backupStream != NULL); 
           // Release temporary file stream now.
           InternalHeap::getInstance().free(thisFile->backupStream);
         }
         else {
-          WRAP(close)(fd);
+          Real::close()(fd);
         }
       
         // Remove this entry from the filemap. FIXME
@@ -568,7 +568,7 @@ public:
         assert(dir == thisDir->dir);
 
         // check whether this file is a file stream or not.
-        WRAP(closedir)(dir);
+        Real::closedir()(dir);
          
         // Release temporary file stream now.
         InternalHeap::getInstance().free(thisDir->backupDir);

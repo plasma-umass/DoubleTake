@@ -110,11 +110,11 @@ public:
 private:
 
   void lock(void) {
-    WRAP(pthread_mutex_lock)(&_mutex);
+    Real::pthread_mutex_lock()(&_mutex);
   }
 
   void unlock(void) {
-    WRAP(pthread_mutex_unlock)(&_mutex);
+    Real::pthread_mutex_unlock()(&_mutex);
   }
 
   void sanityCheck (void) {

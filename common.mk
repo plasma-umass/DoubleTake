@@ -130,6 +130,9 @@ $(OTHER_TARGETS):: $(OBJS_NATIVE) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/c
 	@echo $(INDENT)[$(notdir $(firstword $(CXX)))] Linking $@ for $(if $(DEBUG),Debug,Release) build
 	@$(CXX) $(CXXFLAGS_NATIVE) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) $(OBJS_NATIVE) -o $@ $(LIBFLAGS)
 
+$(ROOT)/heaplayers:
+	git clone ssh://git@github.com/emeryberger/Heap-Layers $(ROOT)/heaplayers
+
 $(RECURSIVE_TARGETS)::
 	@for dir in $(DIRS); do \
 	  echo "$(INDENT)[$@] Entering $$dir"; \

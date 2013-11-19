@@ -106,9 +106,9 @@ void xrun::epochBegin (void) {
         
       if(thread->hasJoined == true) {
         thread->status = E_THREAD_EXITING;
-        WRAP(pthread_cond_signal)(&thread->cond);
+        Real::pthread_cond_signal()(&thread->cond);
         unlock_thread(thread);
-        WRAP(pthread_join)(thread->self, NULL);
+        Real::pthread_join()(thread->self, NULL);
       }
       else {
         unlock_thread(thread);
@@ -261,7 +261,7 @@ void xrun::stopAllThreads(void) {
           PRDBG("in epochend, stopping thread %p self %p status %d\n", thread, thread->self, thread->status);
           //fprintf(stderr, "in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
           waiters++;
-          WRAP(pthread_kill)(thread->self, SIGUSR2);
+          Real::pthread_kill()(thread->self, SIGUSR2);
         }
         else {
           //fprintf(stderr, "NOTSAFE!!! Thread %p self %p status %d\n", thread, thread->self, thread->status);
@@ -270,7 +270,7 @@ void xrun::stopAllThreads(void) {
             wait_thread(thread);
           }
           if(thread->status != E_THREAD_WAITFOR_REAPING) {
-            WRAP(pthread_kill)(thread->self, SIGUSR2);
+            Real::pthread_kill()(thread->self, SIGUSR2);
             waiters++;
           }
         }
@@ -333,7 +333,7 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
 
       // Waiting for the waking up from the its parent thread
       while(current->status != E_THREAD_ROLLBACK) {
-        WRAP(pthread_cond_wait)(&current->cond, &current->mutex);
+        Real::pthread_cond_wait()(&current->cond, &current->mutex);
       }
         
       unlock_thread(current);

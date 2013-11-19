@@ -104,8 +104,8 @@ public:
       tinfo->available = true;
       tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 *i]);
       tinfo->newContext.setupBackup(&stackStart[perStackSize * 2 *i + 1]);
-      WRAP(pthread_mutex_init)(&tinfo->mutex, NULL);
-      WRAP(pthread_cond_init)(&tinfo->cond, NULL);
+      Real::pthread_mutex_init()(&tinfo->mutex, NULL);
+      Real::pthread_cond_init()(&tinfo->cond, NULL);
     }
 
     // Initialize the total event list.
@@ -137,8 +137,8 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex+1)%_totalThreads;
-        WRAP(pthread_mutex_init)(&thread->mutex, NULL);
-        WRAP(pthread_cond_init)(&thread->cond, NULL);
+        Real::pthread_mutex_init()(&thread->mutex, NULL);
+        Real::pthread_cond_init()(&thread->cond, NULL);
     
 //        fprintf(stderr, "origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
         break;
@@ -243,13 +243,13 @@ public:
 
         case E_SYNCVAR_COND:
         {
-          WRAP(pthread_cond_destroy)((pthread_cond_t *)syncvar->variable);
+          Real::pthread_cond_destroy()((pthread_cond_t *)syncvar->variable);
           break;
         }
 
         case E_SYNCVAR_MUTEX:
         {
-          WRAP(pthread_mutex_destroy)((pthread_mutex_t *)syncvar->variable);
+          Real::pthread_mutex_destroy()((pthread_mutex_t *)syncvar->variable);
           break;
         }
 
@@ -258,7 +258,7 @@ public:
           //int * test = (int *)syncvar->variable;
           //fprintf(stderr, "calling destory on %p\n", syncvar->variable);
           //fprintf(stderr, "Destroy barrier %p First Word %lx, second word %lx\n", syncvar->variable, test[0], test[1]);
-          WRAP(pthread_barrier_destroy)((pthread_barrier_t *)syncvar->variable);
+          Real::pthread_barrier_destroy()((pthread_barrier_t *)syncvar->variable);
           break;
         }
 

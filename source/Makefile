@@ -1,14 +1,16 @@
 ROOT = ..
 TARGETS = $(ROOT)/libdoubletake.so
-INCLUDE_DIRS = $(ROOT)/include $(ROOT)/heaplayers $(ROOT)/heaplayers/util
+LIBS = dl pthread
+INCLUDE_DIRS = $(ROOT)/include $(ROOT)/heaplayers
 
 CFLAGS_OVERFLOW     = -DHANDLE_SYSCALL -DDETECT_OVERFLOW
 CFLAGS_USEAFTERFREE = -DHANDLE_SYSCALL -DDETECT_USAGE_AFTER_FREE 
 CFLAGS_LEAKS        = -DHANDLE_SYSCALL -DDETECT_MEMORY_LEAKAGE
 CFLAGS_ALL          = $(CFLAGS_OVERFLOW) $(CFLAGS_USEAFTERFREE) $(CFLAGS_LEAKS)
 
-CFLAGS = -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' \
+CFLAGS = -fPIC -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' \
 	-DDEBUG_LEVEL=0 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL -DEVALUATING_PERF \
-	$(CFLAGS_ALL)
+	$(CFLAGS_ALL) \
+	-ferror-limit=1
 
 include $(ROOT)/common.mk

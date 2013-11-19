@@ -44,7 +44,7 @@
 #include <ucontext.h>
 
 #include "xdefines.h"
-#include "libfuncs.h"
+#include "real.h"
 #include "dr.h"
 #include "selfmap.h"
 
@@ -106,13 +106,13 @@ public:
     init_debug_registers();
 
     // Now we are setting a trap handler.
-    WRAP(sigaction)(SIGTRAP, NULL, &trap_action);
+    Real::sigaction()(SIGTRAP, NULL, &trap_action);
     trap_action.sa_sigaction = watchpoint::trapHandler;
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
-    WRAP(sigaction)(SIGTRAP, &trap_action, NULL);
+    Real::sigaction()(SIGTRAP, &trap_action, NULL);
 
     // Creating a child to setup the watchpoints for the parent.
-    child = WRAP(fork)();
+    child = Real::fork()();
     if (child == 0)
     {
       sleep(1); // This is not necessarily enough but let's try it.

@@ -23,25 +23,25 @@
  * @brief  Managing internal synchronizations used by StopGap itself.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
-#include "libfuncs.h"
+#include "real.h"
 #include "internalsyncs.h"
 
 extern "C" {
 
   void lock_thread(thread_t * thread) {
-    WRAP(pthread_mutex_lock)(&thread->mutex); 
+    Real::pthread_mutex_lock()(&thread->mutex); 
   }
   
   void unlock_thread(thread_t* thread) {
-    WRAP(pthread_mutex_unlock)(&thread->mutex); 
+    Real::pthread_mutex_unlock()(&thread->mutex); 
   }
   
   void wait_thread(thread_t*thread) {
-    WRAP(pthread_cond_wait)(&thread->cond, &thread->mutex); 
+    Real::pthread_cond_wait()(&thread->cond, &thread->mutex); 
   }
 
   void signal_thread(thread_t*thread) {
-    WRAP(pthread_cond_broadcast)(&thread->cond); 
+    Real::pthread_cond_broadcast()(&thread->cond); 
   }
 
 };

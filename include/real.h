@@ -1,0 +1,364 @@
+#ifndef _REAL_H
+#define _REAL_H
+
+#include <dlfcn.h>
+
+#include <dirent.h>
+#include <fcntl.h>
+#include <grp.h>
+#include <malloc.h>
+#include <mqueue.h>
+#include <pthread.h>
+#include <poll.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <syslog.h>
+#include <sys/epoll.h>
+#include <sys/file.h>
+#include <sys/fsuid.h>
+#include <sys/inotify.h>
+#include <sys/io.h>
+#include <sys/ioctl.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+#include <sys/mount.h>
+#include <sys/personality.h>
+#include <sys/prctl.h>
+#include <sys/ptrace.h>
+#include <sys/reboot.h>
+#include <sys/resource.h>
+#include <sys/sem.h>
+#include <sys/sendfile.h>
+#include <sys/shm.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/statfs.h>
+#include <sys/swap.h>
+#include <sys/sysctl.h>
+#include <sys/sysinfo.h>
+#include <sys/time.h>
+#include <sys/times.h>
+#include <sys/timex.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <sys/utsname.h>
+#include <sys/vfs.h>
+#include <sys/wait.h>
+#include <sys/xattr.h>
+#include <time.h>
+#include <unistd.h>
+#include <ustat.h>
+#include <utime.h>
+
+extern "C" {
+  #include <linux/kexec.h>
+}
+
+#define MAKE_WRAPPER(name, handle) \
+  static typeof(::name)* name() { \
+    static typeof(::name)* _fn = (typeof(::name)*)dlsym(handle, #name); \
+    return _fn; \
+  }
+
+class Real {
+private:
+  static void* pthread_handle() {
+    static void* _handle = dlopen("libpthread.so.0", RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD);
+    return _handle;
+  }
+  
+public:
+  // No libc wrappers
+  //MAKE_WRAPPER(getdents, RTLD_NEXT);
+  //MAKE_WRAPPER(modify_ldt, RTLD_NEXT);
+  //MAKE_WRAPPER(uselib, RTLD_NEXT);
+  //MAKE_WRAPPER(sysfs, RTLD_NEXT);
+  //MAKE_WRAPPER(gettid, RTLD_NEXT);
+  //MAKE_WRAPPER(tkill, RTLD_NEXT);
+  //MAKE_WRAPPER(set_thread_area, RTLD_NEXT);
+  //MAKE_WRAPPER(get_thread_area, RTLD_NEXT);
+  //MAKE_WRAPPER(io_setup, RTLD_NEXT);
+  //MAKE_WRAPPER(io_destroy, RTLD_NEXT);
+  //MAKE_WRAPPER(io_getevents, RTLD_NEXT);
+  //MAKE_WRAPPER(io_submit, RTLD_NEXT);
+  //MAKE_WRAPPER(io_cancel, RTLD_NEXT);
+  //MAKE_WRAPPER(lookup_dcookie, RTLD_NEXT);
+  //MAKE_WRAPPER(sys_tgkill, RTLD_NEXT);
+  //MAKE_WRAPPER(mq_getsetattr, RTLD_NEXT);
+  //MAKE_WRAPPER(ioprio_get, RTLD_NEXT);
+  //MAKE_WRAPPER(ioprio_set, RTLD_NEXT);
+  //MAKE_WRAPPER(get_robust_list, RTLD_NEXT);
+  //MAKE_WRAPPER(set_robust_list, RTLD_NEXT);
+  //MAKE_WRAPPER(pivot_root, RTLD_NEXT);
+  //MAKE_WRAPPER(arch_prctl, RTLD_NEXT);
+  //MAKE_WRAPPER(futex, RTLD_NEXT);
+  //MAKE_WRAPPER(set_tid_address, RTLD_NEXT);
+  //MAKE_WRAPPER(restart_syscall, RTLD_NEXT);
+  //MAKE_WRAPPER(exit_group, RTLD_NEXT);
+  //MAKE_WRAPPER(add_key, RTLD_NEXT);
+  //MAKE_WRAPPER(request_key, RTLD_NEXT);
+  //MAKE_WRAPPER(keyctl, RTLD_NEXT);
+  //MAKE_WRAPPER(move_pages, RTLD_NEXT);
+  
+  MAKE_WRAPPER(accept, RTLD_NEXT);
+  MAKE_WRAPPER(access, RTLD_NEXT);
+  MAKE_WRAPPER(acct, RTLD_NEXT);
+  MAKE_WRAPPER(adjtimex, RTLD_NEXT);
+  MAKE_WRAPPER(alarm, RTLD_NEXT);
+  MAKE_WRAPPER(bind, RTLD_NEXT);
+  MAKE_WRAPPER(brk, RTLD_NEXT);
+  MAKE_WRAPPER(chdir, RTLD_NEXT);
+  MAKE_WRAPPER(chmod, RTLD_NEXT);
+  MAKE_WRAPPER(chown, RTLD_NEXT);
+  MAKE_WRAPPER(chroot, RTLD_NEXT);
+  MAKE_WRAPPER(clock_getres, RTLD_NEXT);
+  MAKE_WRAPPER(clock_gettime, RTLD_NEXT);
+  MAKE_WRAPPER(clock_nanosleep, RTLD_NEXT);
+  MAKE_WRAPPER(clock_settime, RTLD_NEXT);
+  MAKE_WRAPPER(clone, RTLD_NEXT);
+  MAKE_WRAPPER(close, RTLD_NEXT);
+  MAKE_WRAPPER(closedir, RTLD_NEXT);
+  MAKE_WRAPPER(connect, RTLD_NEXT);
+  MAKE_WRAPPER(creat, RTLD_NEXT);
+  MAKE_WRAPPER(dup, RTLD_NEXT);
+  MAKE_WRAPPER(dup2, RTLD_NEXT);
+  MAKE_WRAPPER(epoll_create, RTLD_NEXT);
+  MAKE_WRAPPER(epoll_ctl, RTLD_NEXT);
+  MAKE_WRAPPER(epoll_wait, RTLD_NEXT);
+  MAKE_WRAPPER(execve, RTLD_NEXT);
+  MAKE_WRAPPER(exit, RTLD_NEXT);
+  MAKE_WRAPPER(faccessat, RTLD_NEXT);
+  MAKE_WRAPPER(fchdir, RTLD_NEXT);
+  MAKE_WRAPPER(fchmod, RTLD_NEXT);
+  MAKE_WRAPPER(fchmodat, RTLD_NEXT);
+  MAKE_WRAPPER(fchown, RTLD_NEXT);
+  MAKE_WRAPPER(fchownat, RTLD_NEXT);
+  MAKE_WRAPPER(fclose, RTLD_NEXT);
+  MAKE_WRAPPER(fcntl, RTLD_NEXT);
+  MAKE_WRAPPER(fdatasync, RTLD_NEXT);
+  MAKE_WRAPPER(fgetxattr, RTLD_NEXT);
+  MAKE_WRAPPER(flistxattr, RTLD_NEXT);
+  MAKE_WRAPPER(flock, RTLD_NEXT);
+  MAKE_WRAPPER(fopen, RTLD_NEXT);
+  MAKE_WRAPPER(fopen64, RTLD_NEXT);
+  MAKE_WRAPPER(fork, RTLD_NEXT);
+  MAKE_WRAPPER(fread, RTLD_NEXT);
+  MAKE_WRAPPER(free, RTLD_NEXT);
+  MAKE_WRAPPER(fremovexattr, RTLD_NEXT);
+  MAKE_WRAPPER(fsetxattr, RTLD_NEXT);
+  MAKE_WRAPPER(fstat, RTLD_NEXT);
+  MAKE_WRAPPER(fstatfs, RTLD_NEXT);
+  MAKE_WRAPPER(fsync, RTLD_NEXT);
+  MAKE_WRAPPER(ftruncate, RTLD_NEXT);
+  MAKE_WRAPPER(futimesat, RTLD_NEXT);
+  MAKE_WRAPPER(fwrite, RTLD_NEXT);
+  MAKE_WRAPPER(getcwd, RTLD_NEXT);
+  MAKE_WRAPPER(getegid, RTLD_NEXT);
+  MAKE_WRAPPER(geteuid, RTLD_NEXT);
+  MAKE_WRAPPER(getgid, RTLD_NEXT);
+  MAKE_WRAPPER(getgroups, RTLD_NEXT);
+  MAKE_WRAPPER(getitimer, RTLD_NEXT);
+  MAKE_WRAPPER(getpeername, RTLD_NEXT);
+  MAKE_WRAPPER(getpgid, RTLD_NEXT);
+  MAKE_WRAPPER(getpgrp, RTLD_NEXT);
+  MAKE_WRAPPER(getpid, RTLD_NEXT);
+  MAKE_WRAPPER(getppid, RTLD_NEXT);
+  MAKE_WRAPPER(getpriority, RTLD_NEXT);
+  MAKE_WRAPPER(getresgid, RTLD_NEXT);
+  MAKE_WRAPPER(getresuid, RTLD_NEXT);
+  MAKE_WRAPPER(getrlimit, RTLD_NEXT);
+  MAKE_WRAPPER(getrusage, RTLD_NEXT);
+  MAKE_WRAPPER(getsid, RTLD_NEXT);
+  MAKE_WRAPPER(getsockname, RTLD_NEXT);
+  MAKE_WRAPPER(getsockopt, RTLD_NEXT);
+  MAKE_WRAPPER(gettimeofday, RTLD_NEXT);
+  MAKE_WRAPPER(getuid, RTLD_NEXT);
+  MAKE_WRAPPER(getxattr, RTLD_NEXT);
+  MAKE_WRAPPER(inotify_add_watch, RTLD_NEXT);
+  MAKE_WRAPPER(inotify_init, RTLD_NEXT);
+  MAKE_WRAPPER(inotify_rm_watch, RTLD_NEXT);
+  MAKE_WRAPPER(ioctl, RTLD_NEXT);
+  MAKE_WRAPPER(ioperm, RTLD_NEXT);
+  MAKE_WRAPPER(iopl, RTLD_NEXT);
+  MAKE_WRAPPER(kexec_load, RTLD_NEXT);
+  MAKE_WRAPPER(kill, RTLD_NEXT);
+  MAKE_WRAPPER(lchown, RTLD_NEXT);
+  MAKE_WRAPPER(lgetxattr, RTLD_NEXT);
+  MAKE_WRAPPER(link, RTLD_NEXT);
+  MAKE_WRAPPER(linkat, RTLD_NEXT);
+  MAKE_WRAPPER(listen, RTLD_NEXT);
+  MAKE_WRAPPER(listxattr, RTLD_NEXT);
+  MAKE_WRAPPER(llistxattr, RTLD_NEXT);
+  MAKE_WRAPPER(lremovexattr, RTLD_NEXT);
+  MAKE_WRAPPER(lseek, RTLD_NEXT);
+  MAKE_WRAPPER(lsetxattr, RTLD_NEXT);
+  MAKE_WRAPPER(lstat, RTLD_NEXT);
+  MAKE_WRAPPER(madvise, RTLD_NEXT);
+  MAKE_WRAPPER(malloc, RTLD_NEXT);
+  MAKE_WRAPPER(malloc_usable_size, RTLD_NEXT);
+  MAKE_WRAPPER(memalign, RTLD_NEXT);
+  MAKE_WRAPPER(mincore, RTLD_NEXT);
+  MAKE_WRAPPER(mkdir, RTLD_NEXT);
+  MAKE_WRAPPER(mkdirat, RTLD_NEXT);
+  MAKE_WRAPPER(mknod, RTLD_NEXT);
+  MAKE_WRAPPER(mknodat, RTLD_NEXT);
+  MAKE_WRAPPER(mlock, RTLD_NEXT);
+  MAKE_WRAPPER(mlockall, RTLD_NEXT);
+  MAKE_WRAPPER(mmap, RTLD_NEXT);
+  MAKE_WRAPPER(mount, RTLD_NEXT);
+  MAKE_WRAPPER(mprotect, RTLD_NEXT);
+  MAKE_WRAPPER(mq_notify, RTLD_NEXT);
+  MAKE_WRAPPER(mq_open, RTLD_NEXT);
+  MAKE_WRAPPER(mq_timedreceive, RTLD_NEXT);
+  MAKE_WRAPPER(mq_timedsend, RTLD_NEXT);
+  MAKE_WRAPPER(mq_unlink, RTLD_NEXT);
+  MAKE_WRAPPER(mremap, RTLD_NEXT);
+  MAKE_WRAPPER(msync, RTLD_NEXT);
+  MAKE_WRAPPER(munlock, RTLD_NEXT);
+  MAKE_WRAPPER(munlockall, RTLD_NEXT);
+  MAKE_WRAPPER(munmap, RTLD_NEXT);
+  MAKE_WRAPPER(nanosleep, RTLD_NEXT);
+  MAKE_WRAPPER(open, RTLD_NEXT);
+  MAKE_WRAPPER(openat, RTLD_NEXT);
+  MAKE_WRAPPER(opendir, RTLD_NEXT);
+  MAKE_WRAPPER(pause, RTLD_NEXT);
+  MAKE_WRAPPER(personality, RTLD_NEXT);
+  MAKE_WRAPPER(pipe, RTLD_NEXT);
+  MAKE_WRAPPER(poll, RTLD_NEXT);
+  MAKE_WRAPPER(posix_fadvise64, RTLD_NEXT);
+  MAKE_WRAPPER(ppoll, RTLD_NEXT);
+  MAKE_WRAPPER(prctl, RTLD_NEXT);
+  MAKE_WRAPPER(pread, RTLD_NEXT);
+  MAKE_WRAPPER(pselect, RTLD_NEXT);
+  
+  MAKE_WRAPPER(pthread_barrier_destroy, pthread_handle());
+  MAKE_WRAPPER(pthread_barrier_init, pthread_handle());
+  MAKE_WRAPPER(pthread_barrier_wait, pthread_handle());
+  MAKE_WRAPPER(pthread_cancel, pthread_handle());
+  MAKE_WRAPPER(pthread_condattr_init, pthread_handle());
+  MAKE_WRAPPER(pthread_cond_broadcast, pthread_handle());
+  MAKE_WRAPPER(pthread_cond_destroy, pthread_handle());
+  MAKE_WRAPPER(pthread_cond_init, pthread_handle());
+  MAKE_WRAPPER(pthread_cond_signal, pthread_handle());
+  MAKE_WRAPPER(pthread_cond_wait, pthread_handle());
+  MAKE_WRAPPER(pthread_create, pthread_handle());
+  MAKE_WRAPPER(pthread_detach, pthread_handle());
+  MAKE_WRAPPER(pthread_exit, pthread_handle());
+  MAKE_WRAPPER(pthread_join, pthread_handle());
+  MAKE_WRAPPER(pthread_kill, pthread_handle());
+  MAKE_WRAPPER(pthread_mutexattr_init, pthread_handle());
+  MAKE_WRAPPER(pthread_mutex_destroy, pthread_handle());
+  MAKE_WRAPPER(pthread_mutex_init, pthread_handle());
+  MAKE_WRAPPER(pthread_mutex_lock, pthread_handle());
+  MAKE_WRAPPER(pthread_mutex_trylock, pthread_handle());
+  MAKE_WRAPPER(pthread_mutex_unlock, pthread_handle());
+  MAKE_WRAPPER(pthread_self, pthread_handle());
+  
+  MAKE_WRAPPER(ptrace, RTLD_NEXT);
+  MAKE_WRAPPER(pwrite, RTLD_NEXT);
+  MAKE_WRAPPER(read, RTLD_NEXT);
+  MAKE_WRAPPER(readahead, RTLD_NEXT);
+  MAKE_WRAPPER(readlink, RTLD_NEXT);
+  MAKE_WRAPPER(readlinkat, RTLD_NEXT);
+  MAKE_WRAPPER(readv, RTLD_NEXT);
+  MAKE_WRAPPER(realloc, RTLD_NEXT);
+  MAKE_WRAPPER(reboot, RTLD_NEXT);
+  MAKE_WRAPPER(recvfrom, RTLD_NEXT);
+  MAKE_WRAPPER(recvmsg, RTLD_NEXT);
+  MAKE_WRAPPER(remap_file_pages, RTLD_NEXT);
+  MAKE_WRAPPER(removexattr, RTLD_NEXT);
+  MAKE_WRAPPER(rename, RTLD_NEXT);
+  MAKE_WRAPPER(renameat, RTLD_NEXT);
+  MAKE_WRAPPER(rmdir, RTLD_NEXT);
+  MAKE_WRAPPER(sched_getaffinity, RTLD_NEXT);
+  MAKE_WRAPPER(sched_getparam, RTLD_NEXT);
+  MAKE_WRAPPER(sched_getscheduler, RTLD_NEXT);
+  MAKE_WRAPPER(sched_get_priority_max, RTLD_NEXT);
+  MAKE_WRAPPER(sched_get_priority_min, RTLD_NEXT);
+  MAKE_WRAPPER(sched_rr_get_interval, RTLD_NEXT);
+  MAKE_WRAPPER(sched_setaffinity, RTLD_NEXT);
+  MAKE_WRAPPER(sched_setparam, RTLD_NEXT);
+  MAKE_WRAPPER(sched_setscheduler, RTLD_NEXT);
+  MAKE_WRAPPER(sched_yield, RTLD_NEXT);
+  MAKE_WRAPPER(select, RTLD_NEXT);
+  MAKE_WRAPPER(semctl, RTLD_NEXT);
+  MAKE_WRAPPER(semget, RTLD_NEXT);
+  MAKE_WRAPPER(semop, RTLD_NEXT);
+  MAKE_WRAPPER(semtimedop, RTLD_NEXT);
+  MAKE_WRAPPER(sendfile, RTLD_NEXT);
+  MAKE_WRAPPER(sendmsg, RTLD_NEXT);
+  MAKE_WRAPPER(sendto, RTLD_NEXT);
+  MAKE_WRAPPER(setdomainname, RTLD_NEXT);
+  MAKE_WRAPPER(setfsgid, RTLD_NEXT);
+  MAKE_WRAPPER(setfsuid, RTLD_NEXT);
+  MAKE_WRAPPER(setgid, RTLD_NEXT);
+  MAKE_WRAPPER(setgroups, RTLD_NEXT);
+  MAKE_WRAPPER(sethostname, RTLD_NEXT);
+  MAKE_WRAPPER(setitimer, RTLD_NEXT);
+  MAKE_WRAPPER(setpgid, RTLD_NEXT);
+  MAKE_WRAPPER(setpriority, RTLD_NEXT);
+  MAKE_WRAPPER(setregid, RTLD_NEXT);
+  MAKE_WRAPPER(setresgid, RTLD_NEXT);
+  MAKE_WRAPPER(setresuid, RTLD_NEXT);
+  MAKE_WRAPPER(setreuid, RTLD_NEXT);
+  MAKE_WRAPPER(setrlimit, RTLD_NEXT);
+  MAKE_WRAPPER(setsid, RTLD_NEXT);
+  MAKE_WRAPPER(setsockopt, RTLD_NEXT);
+  MAKE_WRAPPER(settimeofday, RTLD_NEXT);
+  MAKE_WRAPPER(setuid, RTLD_NEXT);
+  MAKE_WRAPPER(setxattr, RTLD_NEXT);
+  MAKE_WRAPPER(shmat, RTLD_NEXT);
+  MAKE_WRAPPER(shmctl, RTLD_NEXT);
+  MAKE_WRAPPER(shmget, RTLD_NEXT);
+  MAKE_WRAPPER(shutdown, RTLD_NEXT);
+  MAKE_WRAPPER(sigaction, RTLD_NEXT);
+  MAKE_WRAPPER(sigaltstack, RTLD_NEXT);
+  MAKE_WRAPPER(sigpending, RTLD_NEXT);
+  MAKE_WRAPPER(sigprocmask, RTLD_NEXT);
+  MAKE_WRAPPER(sigreturn, RTLD_NEXT);
+  MAKE_WRAPPER(sigsuspend, RTLD_NEXT);
+  MAKE_WRAPPER(sigtimedwait, RTLD_NEXT);
+  MAKE_WRAPPER(sigwait, RTLD_NEXT);
+  MAKE_WRAPPER(socket, RTLD_NEXT);
+  MAKE_WRAPPER(socketpair, RTLD_NEXT);
+  MAKE_WRAPPER(splice, RTLD_NEXT);
+  MAKE_WRAPPER(stat, RTLD_NEXT);
+  MAKE_WRAPPER(statfs, RTLD_NEXT);
+  MAKE_WRAPPER(swapoff, RTLD_NEXT);
+  MAKE_WRAPPER(swapon, RTLD_NEXT);
+  MAKE_WRAPPER(symlink, RTLD_NEXT);
+  MAKE_WRAPPER(symlinkat, RTLD_NEXT);
+  MAKE_WRAPPER(sync, RTLD_NEXT);
+  MAKE_WRAPPER(sync_file_range, RTLD_NEXT);
+  MAKE_WRAPPER(sysctl, RTLD_NEXT);
+  MAKE_WRAPPER(sysinfo, RTLD_NEXT);
+  MAKE_WRAPPER(vsyslog, RTLD_NEXT);
+  MAKE_WRAPPER(tee, RTLD_NEXT);
+  MAKE_WRAPPER(time, RTLD_NEXT);
+  MAKE_WRAPPER(timer_create, RTLD_NEXT);
+  MAKE_WRAPPER(timer_delete, RTLD_NEXT);
+  MAKE_WRAPPER(timer_getoverrun, RTLD_NEXT);
+  MAKE_WRAPPER(timer_gettime, RTLD_NEXT);
+  MAKE_WRAPPER(timer_settime, RTLD_NEXT);
+  MAKE_WRAPPER(times, RTLD_NEXT);
+  MAKE_WRAPPER(truncate, RTLD_NEXT);
+  MAKE_WRAPPER(umask, RTLD_NEXT);
+  MAKE_WRAPPER(umount2, RTLD_NEXT);
+  MAKE_WRAPPER(uname, RTLD_NEXT);
+  MAKE_WRAPPER(unlink, RTLD_NEXT);
+  MAKE_WRAPPER(unlinkat, RTLD_NEXT);
+  MAKE_WRAPPER(unshare, RTLD_NEXT);
+  MAKE_WRAPPER(ustat, RTLD_NEXT);
+  MAKE_WRAPPER(utime, RTLD_NEXT);
+  MAKE_WRAPPER(utimes, RTLD_NEXT);
+  MAKE_WRAPPER(vfork, RTLD_NEXT);
+  MAKE_WRAPPER(vhangup, RTLD_NEXT);
+  MAKE_WRAPPER(vmsplice, RTLD_NEXT);
+  MAKE_WRAPPER(wait4, RTLD_NEXT);
+  MAKE_WRAPPER(waitid, RTLD_NEXT);
+  MAKE_WRAPPER(write, RTLD_NEXT);
+  MAKE_WRAPPER(writev, RTLD_NEXT);
+};
+
+#endif

@@ -55,19 +55,19 @@ extern "C" {
   extern int g_waitersTotal;  
 
   inline void global_lock(void) {
-    WRAP(pthread_mutex_lock)(&g_mutex);
+    Real::pthread_mutex_lock()(&g_mutex);
   }
 
   inline void global_unlock(void) {
-    WRAP(pthread_mutex_unlock)(&g_mutex);
+    Real::pthread_mutex_unlock()(&g_mutex);
   } 
   
   inline void global_lockInsideSignalhandler(void) {
-    WRAP(pthread_mutex_lock)(&g_mutexSignalhandler);
+    Real::pthread_mutex_lock()(&g_mutexSignalhandler);
   }
 
   inline void global_unlockInsideSignalhandler(void) {
-    WRAP(pthread_mutex_unlock)(&g_mutexSignalhandler);
+    Real::pthread_mutex_unlock()(&g_mutexSignalhandler);
   }
 
 
@@ -78,10 +78,10 @@ extern "C" {
     g_numOfEnds = 0;
 
    //fprintf(stderr, "global initializee............\n");
-    WRAP(pthread_mutex_init)(&g_mutex, NULL);
-    WRAP(pthread_mutex_init)(&g_mutexSignalhandler, NULL);
-    WRAP(pthread_cond_init)(&g_condCommitter, NULL);
-    WRAP(pthread_cond_init)(&g_condWaiters, NULL);
+    Real::pthread_mutex_init()(&g_mutex, NULL);
+    Real::pthread_mutex_init()(&g_mutexSignalhandler, NULL);
+    Real::pthread_cond_init()(&g_condCommitter, NULL);
+    Real::pthread_cond_init()(&g_condWaiters, NULL);
   }
  
   inline void global_setEpochEnd(void) {
@@ -120,7 +120,7 @@ extern "C" {
     global_setRollback();
 
     // Wakeup all other threads.
-    WRAP(pthread_cond_broadcast)(&g_condWaiters);
+    Real::pthread_cond_broadcast()(&g_condWaiters);
 //    fprintf(stderr, "after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
@@ -130,10 +130,10 @@ extern "C" {
     g_phase = E_SYS_EPOCH_BEGIN;
     PRDBG("waken up all waiters\n");
     // Wakeup all other threads.
-    WRAP(pthread_cond_broadcast)(&g_condWaiters);
+    Real::pthread_cond_broadcast()(&g_condWaiters);
 
     if(g_waiters != 0) {
-      WRAP(pthread_cond_wait)(&g_condCommitter, &g_mutexSignalhandler);
+      Real::pthread_cond_wait()(&g_condCommitter, &g_mutexSignalhandler);
     }
     global_unlockInsideSignalhandler();
   }
@@ -148,7 +148,7 @@ extern "C" {
     g_waitersTotal = totalwaiters;
 //    fprintf(stderr, "During waiting: g_waiters %d g_waitersTotal %d\n", g_waiters, g_waitersTotal);
     while(g_waiters != g_waitersTotal) {
-      WRAP(pthread_cond_wait)(&g_condCommitter, &g_mutexSignalhandler);
+      Real::pthread_cond_wait()(&g_condCommitter, &g_mutexSignalhandler);
     }
     global_unlockInsideSignalhandler();
   }
@@ -169,21 +169,21 @@ extern "C" {
 
     if(g_waiters == g_waitersTotal) {
       //printf("NNNNNNNNNN, waiters is %d at thread %p. WWWWWWWWWWWWWWWWWWWWWWWWWWW\n", g_waiters, pthread_self());
-      WRAP(pthread_cond_signal)(&g_condCommitter); 
+      Real::pthread_cond_signal()(&g_condCommitter); 
       PRDBG("waitForNotification after calling cond_broadcast\n");
     }
 
     // Only waken up when it is not the end of epoch anymore.
     while(global_isEpochEnd()) {
       PRDBG("waitForNotification before waiting again\n");
-      WRAP(pthread_cond_wait)(&g_condWaiters, &g_mutexSignalhandler);
+      Real::pthread_cond_wait()(&g_condWaiters, &g_mutexSignalhandler);
       PRDBG("waitForNotification after waken up. isEpochEnd() %d \n", global_isEpochEnd());
     }
 
     g_waiters--;
 
     if(g_waiters == 0) {
-      WRAP(pthread_cond_signal)(&g_condCommitter); 
+      Real::pthread_cond_signal()(&g_condCommitter); 
     }
     PRDBG("waitForNotification decrement waiters. status %d\n", g_phase);
       

@@ -28,16 +28,22 @@
 #ifndef _XPHEAP_H_
 #define _XPHEAP_H_
 
+// Missing dependencies deep in heaplayers
+#include <iostream>
+using std::cout;
+using std::endl;
+
 #include "xdefines.h"
-#include "sassert.h"
-#include "ansiwrapper.h"
-#include "kingsleyheap.h"
-#include "adapt.h"
-#include "sllist.h"
-#include "dllist.h"
-#include "zoneheap.h"
+#include "utility/ilog2.h"
+#include "utility/sassert.h"
+#include "wrappers/ansiwrapper.h"
+#include "heaps/general/kingsleyheap.h"
+#include "heaps/buildingblock/adaptheap.h"
+#include "utility/sllist.h"
+#include "utility/dllist.h"
+#include "heaps/special/zoneheap.h"
 #include "objectheader.h"
-#include "sanitycheckheap.h"
+#include "heaps/debug/sanitycheckheap.h"
 #include "spinlock.h"
 
 // Implemented for stopgap to check buffer overflow

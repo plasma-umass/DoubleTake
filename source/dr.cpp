@@ -445,7 +445,7 @@ static void update_inferior_debug_regs (pid_t pid, struct debug_reg_state *new_s
 /* Insert a watchpoint to watch a memory region which starts at
    address ADDR and whose length is LEN bytes.  Watch memory accesses
    of the type TYPE.  Return 0 on success, -1 on failure.  */
-int insert_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid)
+int insert_watchpoint (CORE_ADDR addr, int len, enum target_hw_bp_type type, pid_t pid)
 {
   struct debug_reg_state *state = debug_reg_state ();
   int retval;
@@ -483,7 +483,7 @@ int insert_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid)
 /* Remove a watchpoint that watched the memory region which starts at
    address ADDR, whose length is LEN bytes, and for accesses of the
    type TYPE.  Return 0 on success, -1 on failure.  */
-int remove_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid)
+int remove_watchpoint (CORE_ADDR addr, int len, enum target_hw_bp_type type, pid_t pid)
 {
   struct debug_reg_state *state = debug_reg_state ();
   int retval;

@@ -35,16 +35,10 @@
 #include "fops.h"
 
 class syscalls {
-
 private:
-
-  syscalls ()
-  {
-  //PRINF("syscalls constructor\n");
-  }
+  syscalls() {}
 
 public:
-
   static syscalls& getInstance () {
     static char buf[sizeof(syscalls)];
     static syscalls * theOneTrueObject = new (buf) syscalls();
@@ -52,8 +46,7 @@ public:
   }
 
   /// @brief Initialize the system.
-  void initialize ()
-  {
+  void initialize() {
     _fops.initialize();
   }
 #if 0
@@ -151,12 +144,12 @@ public:
     //PRINF("read on fd %d\n", fd);
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(read)(fd, buf, count);
+      ret = Real::read()(fd, buf, count);
     }
     else {
 //      PRINF("Reading special file\n");
       epochEnd();
-      ret = WRAP(read)(fd, buf, count);
+      ret = Real::read()(fd, buf, count);
       epochBegin();
     }
 
@@ -168,11 +161,11 @@ public:
     
         // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(write)(fd, buf, count);
+      ret = Real::write()(fd, buf, count);
     }
     else {
       epochEnd();
-      ret = WRAP(write)(fd, buf, count);
+      ret = Real::write()(fd, buf, count);
       epochBegin();
     }
 
@@ -203,12 +196,12 @@ public:
     void * ret = NULL;
 
     if(threadSpawning()) {
-      return WRAP(mmap)(start, length, prot, flags, fd, offset);
+      return Real::mmap()(start, length, prot, flags, fd, offset);
     }
 
     if(!global_isRollback()) {
       // We only record these mmap requests.
-      ret = WRAP(mmap)(start, length, prot, flags, fd, offset);
+      ret = Real::mmap()(start, length, prot, flags, fd, offset);
 //      PRWRN("in execution, ret %p length %lx\n", ret, length);
       getRecord()->recordMmapOps(ret); 
     }
@@ -218,7 +211,7 @@ public:
     }
 #if 0 // Used to test epochBegin
     epochEnd();
-    ret = WRAP(mmap)(start, length, prot, flags, fd, offset);
+    ret = Real::mmap()(start, length, prot, flags, fd, offset);
     epochBegin();
     PRINF("in the end of mmap, ret %p length %lx\n", ret, length);
 #endif
@@ -247,19 +240,19 @@ public:
       ret = _fops.getFdAtOpen();
     }
     else {
-      ret = WRAP(open)(pathname, flags, mode);
+      ret = Real::open()(pathname, flags, mode);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
     }
   #else
-    ret = WRAP(open)(pathname, flags, mode);
+    ret = Real::open()(pathname, flags, mode);
     
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveFd(ret, NULL);
   #endif
 #else
     epochEnd();
-    ret = WRAP(open)(pathname, flags, mode);
+    ret = Real::open()(pathname, flags, mode);
     epochBegin();
 #endif
     //PRINF("OPEN fd %d\n", ret);    
@@ -289,7 +282,7 @@ public:
 //      fprintf(stderr, "close fd %d at line %d problem\n", fd, __LINE__);
       //selfmap::getInstance().printCallStack(NULL, NULL, true);
       //epochEnd();
-      ret = WRAP(close)(fd);
+      ret = Real::close()(fd);
     //  epochBegin();
     }
 
@@ -302,7 +295,7 @@ public:
 #ifdef REPRODUCIBLE_FDS 
     // In the rollback phase, we only call 
     if(!global_isRollback()) {
-      ret = WRAP(opendir)(name);
+      ret = Real::opendir()(name);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveDir(ret);
     }
@@ -310,7 +303,7 @@ public:
       ret = _fops.getDirAtOpen();
     }
 #else
-    ret = WRAP(opendir)(name);
+    ret = Real::opendir()(name);
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveDir(ret);
 #endif
@@ -341,7 +334,7 @@ public:
    
 #ifdef REPRODUCIBLE_FDS 
     if(!global_isRollback()) { 
-      ret = WRAP(fopen)(filename, modes);
+      ret = Real::fopen()(filename, modes);
       if(ret != NULL) {
         // Commit those local changes now.
         //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
@@ -360,7 +353,7 @@ public:
 //      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
     }
 #else
-    ret = WRAP(fopen)(filename, modes);
+    ret = Real::fopen()(filename, modes);
     if(ret != NULL) {
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
@@ -379,7 +372,7 @@ public:
 #ifdef REPRODUCIBLE_FDS 
     if(!global_isRollback()) { 
       //PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
-      ret = WRAP(fopen64)(filename, modes);
+      ret = Real::fopen64()(filename, modes);
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
@@ -396,7 +389,7 @@ public:
       ret = _fops.getFopen();
     }
 #else
-    ret = WRAP(fopen64)(filename, modes);
+    ret = Real::fopen64()(filename, modes);
     PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
     if(ret != NULL) {
       // Commit those local changes now.
@@ -427,7 +420,7 @@ public:
   int stat(const char *path, struct stat *buf) {
     int ret;
     epochEnd();
-    ret = WRAP(stat)(path, buf);
+    ret = Real::stat()(path, buf);
     epochBegin();
     return ret;
   }
@@ -435,7 +428,7 @@ public:
   int fstat(int filedes, struct stat *buf) {
     int ret;
     epochEnd();
-    ret = WRAP(fstat)(filedes, buf);
+    ret = Real::fstat()(filedes, buf);
     epochBegin();
     return ret;
   }
@@ -443,7 +436,7 @@ public:
   int lstat(const char *path, struct stat *buf) {
     int ret;
     epochEnd();
-    ret = WRAP(lstat)(path, buf);
+    ret = Real::lstat()(path, buf);
     epochBegin();
     return ret;
   }
@@ -451,7 +444,7 @@ public:
   int poll(struct pollfd *fds, nfds_t nfds, int timeout) {
     int ret;
     epochEnd();
-    ret = WRAP(poll)(fds, nfds, timeout);
+    ret = Real::poll()(fds, nfds, timeout);
     epochBegin();
     return ret;
   }
@@ -459,19 +452,19 @@ public:
   off_t lseek(int filedes, off_t offset, int whence) {
     off_t ret;
     epochEnd();
-    ret = WRAP(lseek)(filedes, offset, whence);
+    ret = Real::lseek()(filedes, offset, whence);
     epochBegin();
     return ret;
   }
 
-  int mprotect(const void *addr, size_t len, int prot) {
+  int mprotect(void *addr, size_t len, int prot) {
     int ret;
     if(threadSpawning()) {
       if(global_isRollback()) {
         return 0;
       }
       else {
-        return WRAP(mprotect)(addr, len, prot);
+        return Real::mprotect()(addr, len, prot);
       }
     }
 
@@ -480,7 +473,7 @@ public:
     // Maybe we should set up some thread-specific variable to 
     // avoid this condition.
     epochEnd();
-    ret = WRAP(mprotect)(addr, len, prot);
+    ret = Real::mprotect()(addr, len, prot);
     epochBegin();
     return ret;
   }
@@ -520,7 +513,7 @@ public:
   int brk(void *end_data_segment) {
     int ret;
     epochEnd();
-    ret = WRAP(brk)(end_data_segment);
+    ret = Real::brk()(end_data_segment);
     epochBegin();
     return ret;
   }
@@ -528,7 +521,7 @@ public:
   int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
     int ret;
     epochEnd();
-    ret = WRAP(sigaction)(signum, act, oldact); 
+    ret = Real::sigaction()(signum, act, oldact); 
     epochBegin();
     return ret;
   }
@@ -536,7 +529,7 @@ public:
   int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
     int ret;
     epochEnd();
-    ret = WRAP(sigprocmask)(how, set, oldset);
+    ret = Real::sigprocmask()(how, set, oldset);
     epochBegin();
     return ret;
   }
@@ -544,7 +537,7 @@ public:
   int sigreturn(unsigned long __unused) {
     int ret;
     epochEnd();
-    ret = WRAP(sigreturn)(__unused);
+    ret = Real::sigreturn()((struct sigcontext*)__unused);
     epochBegin();
     return ret;
   }
@@ -563,12 +556,12 @@ public:
 
     checkOverflowBeforehand(ptr, size*nmemb);
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(fread)(ptr, size, nmemb, stream);
+      ret = Real::fread()(ptr, size, nmemb, stream);
     }
     else {
       //PRINF("fd %d has no permisson for read\n", fd);
       epochEnd();
-      ret = WRAP(fread)(ptr, size, nmemb, stream);
+      ret = Real::fread()(ptr, size, nmemb, stream);
       epochBegin();
     }
 
@@ -582,14 +575,14 @@ public:
     // For stdout, stream is NULL. So we just pass this to 
     // fwrite.
     if(stream == NULL) {
-      ret = WRAP(fwrite)(ptr, size, nmemb, stream);;
+      ret = Real::fwrite()(ptr, size, nmemb, stream);;
     }
     else if(_fops.checkPermission(fd)) {
-      ret = WRAP(fwrite)(ptr, size, nmemb, stream);
+      ret = Real::fwrite()(ptr, size, nmemb, stream);
     }
     else {
       epochEnd();
-      ret = WRAP(fwrite)(ptr, size, nmemb, stream);
+      ret = Real::fwrite()(ptr, size, nmemb, stream);
       epochBegin();
     }
 
@@ -602,11 +595,11 @@ public:
     
     checkOverflowBeforehand(buf, count);
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(pread)(fd, buf, count, offset);
+      ret = Real::pread()(fd, buf, count, offset);
     }
     else {
       epochEnd();
-      ret = WRAP(pread)(fd, buf, count, offset);
+      ret = Real::pread()(fd, buf, count, offset);
       epochBegin();
     }
     return ret;
@@ -616,11 +609,11 @@ public:
     ssize_t ret;
 
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(pwrite)(fd, buf, count, offset);
+      ret = Real::pwrite()(fd, buf, count, offset);
     }
     else {
       epochEnd();
-      ret = WRAP(pwrite)(fd, buf, count, offset);
+      ret = Real::pwrite()(fd, buf, count, offset);
       epochBegin();
     }
     return ret;
@@ -635,13 +628,13 @@ public:
     }
    
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(readv)(fd, vector, count);
+      ret = Real::readv()(fd, vector, count);
     }
     else {
       epochEnd();
       // No need to call aotmicBegin() since this system call
       // won't cause overflow.
-      ret = WRAP(readv)(fd, vector, count);
+      ret = Real::readv()(fd, vector, count);
     
       for(int i = 0; i < count; i++) {
         atomicCommit(vec[i]->iov_base, vec[i]->iov_len);
@@ -656,11 +649,11 @@ public:
 
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
-      ret = WRAP(writev)(fd, vector, count);
+      ret = Real::writev()(fd, vector, count);
     }
     else {
       epochEnd();
-      ret = WRAP(writev)(fd, vector, count);  
+      ret = Real::writev()(fd, vector, count);  
       epochBegin();
     }
     return ret;
@@ -670,7 +663,7 @@ public:
   int access(const char *pathname, int mode){
     int ret;
     epochEnd();
-    ret = WRAP(access)(pathname, mode);
+    ret = Real::access()(pathname, mode);
     epochBegin();
     return ret;
   }
@@ -679,7 +672,7 @@ public:
   int pipe(int filedes[2]){
     int ret;
     epochEnd();
-    ret = WRAP(pipe)(filedes);
+    ret = Real::pipe()(filedes);
     epochBegin();
     return ret;
   }
@@ -688,7 +681,7 @@ public:
              fd_set *exceptfds, struct timeval *timeout){
     int ret;
     epochEnd();
-    ret = WRAP(select)(nfds, readfds, writefds, exceptfds, timeout);
+    ret = Real::select()(nfds, readfds, writefds, exceptfds, timeout);
     epochBegin();
     return ret;
   }
@@ -696,7 +689,7 @@ public:
   void * mremap(void *old_address, size_t old_size , size_t new_size, int flags){
     void * ret;
     epochEnd();
-    ret = WRAP(mremap)(old_address, old_size, new_size, flags);
+    ret = Real::mremap()(old_address, old_size, new_size, flags);
     epochBegin();
     return ret;
   }
@@ -704,7 +697,7 @@ public:
   int msync(void *start, size_t length, int flags){
     int ret;
     epochEnd();
-    ret = WRAP(msync)(start, length, flags);
+    ret = Real::msync()(start, length, flags);
     epochBegin();
     return ret;
   }
@@ -712,7 +705,7 @@ public:
   int mincore(void *start, size_t length, unsigned char *vec){
     int ret;
     epochEnd();
-    ret = WRAP(mincore)(start, length, vec);
+    ret = Real::mincore()(start, length, vec);
     epochBegin();
     return ret;
   }
@@ -720,7 +713,7 @@ public:
   int madvise(void *start, size_t length, int advice){
     int ret;
     epochEnd();
-    ret = WRAP(madvise)(start, length, advice);
+    ret = Real::madvise()(start, length, advice);
     epochBegin();
     return ret;
   }
@@ -730,7 +723,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(shmget)(key, size, shmflg);
+    ret = Real::shmget()(key, size, shmflg);
     epochBegin();
     return ret;
   }
@@ -739,7 +732,7 @@ public:
   void *shmat(int shmid, const void *shmaddr, int shmflg){
     void * ret;
     epochEnd();
-    ret = WRAP(shmat)(shmid, shmaddr, shmflg);
+    ret = Real::shmat()(shmid, shmaddr, shmflg);
     epochBegin();
     return ret;
   }
@@ -748,7 +741,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(shmctl)(shmid, cmd, buf);
+    ret = Real::shmctl()(shmid, cmd, buf);
     epochBegin();
     return ret;
   }
@@ -789,14 +782,14 @@ public:
       }
       else {
       //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
-        ret = WRAP(dup)(oldfd);
+        ret = Real::dup()(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
       }
     }
 #else
     if(_fops.isNormalFile(oldfd)) {
-      ret = WRAP(dup)(oldfd);
+      ret = Real::dup()(oldfd);
       if(ret != -1) {
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveFd(ret, NULL);
@@ -805,7 +798,7 @@ public:
 #endif
     else {
       epochEnd();
-      ret = WRAP(dup)(oldfd);
+      ret = Real::dup()(oldfd);
       epochBegin();
     }
     return ret;
@@ -821,14 +814,14 @@ public:
         ret = _fops.getFdAtOpen();
       }
       else {
-        ret = WRAP(dup2)(oldfd, newfd);
+        ret = Real::dup2()(oldfd, newfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
       }
     }
 #else
     if(_fops.isNormalFile(newfd)) {
-        ret = WRAP(dup2)(oldfd, newfd);
+        ret = Real::dup2()(oldfd, newfd);
         if(ret != -1) {
           // Save current fd, pass NULL since it is not a file stream
           _fops.saveFd(ret, NULL);
@@ -839,7 +832,7 @@ public:
       // newfd is an opened file descriptor,
       // We have to stop the phase.
       epochEnd();
-      ret = WRAP(dup2)(oldfd, newfd);
+      ret = Real::dup2()(oldfd, newfd);
       epochBegin();
     }
 
@@ -849,7 +842,7 @@ public:
   int pause(){
     int ret;
     epochEnd();
-    ret = WRAP(pause)();
+    ret = Real::pause()();
     epochBegin();
     return ret;
   }
@@ -857,7 +850,7 @@ public:
   int nanosleep(const struct timespec *req, struct timespec *rem){
     int ret;
     epochEnd();
-    ret = WRAP(nanosleep)(req, rem);
+    ret = Real::nanosleep()(req, rem);
     epochBegin();
     return ret;
   }
@@ -866,7 +859,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getitimer)(which, value);
+    ret = Real::getitimer()(which, value);
     epochBegin();
     return ret;
   }
@@ -875,7 +868,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(alarm)(seconds);
+    ret = Real::alarm()(seconds);
     epochBegin();
     return ret;
   }
@@ -884,7 +877,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setitimer)(which, value, ovalue);
+    ret = Real::setitimer()(which, value, ovalue);
     if(ovalue != NULL) {  
       atomicCommit(ovalue, sizeof(struct itimerval));
     }
@@ -898,7 +891,7 @@ public:
     ssize_t ret;
     epochEnd();
 
-    ret = WRAP(sendfile)(out_fd, in_fd, offset, count);
+    ret = Real::sendfile()(out_fd, in_fd, offset, count);
     epochBegin();
     return ret;
   }
@@ -906,7 +899,7 @@ public:
   int socket(int domain, int type, int protocol){
     int ret;
     epochEnd();
-    ret = WRAP(socket)(domain, type, protocol);
+    ret = Real::socket()(domain, type, protocol);
     epochBegin();
     return ret;
   }
@@ -914,7 +907,7 @@ public:
   int connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen){
     int ret;
     epochEnd();
-    ret = WRAP(connect)(sockfd, serv_addr, addrlen);
+    ret = Real::connect()(sockfd, serv_addr, addrlen);
     epochBegin();
     return ret;
   }
@@ -923,7 +916,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(accept)(sockfd, addr, addrlen);
+    ret = Real::accept()(sockfd, addr, addrlen);
     // Check whether this buffer is overflow something.
     if(ret > 0) {
       checkOverflowBeforehand(addr, ret);
@@ -938,7 +931,7 @@ public:
   {
     ssize_t ret;
     epochEnd();
-    ret = WRAP(sendto)(s, buf, len, flags, to, tolen);
+    ret = Real::sendto()(s, buf, len, flags, to, tolen);
     epochBegin();
     return ret;
   }
@@ -949,7 +942,7 @@ public:
     epochEnd();
 
     checkOverflowBeforehand(from, len);
-    ret = WRAP(recvfrom)(s, buf, len, flags, from, fromlen);
+    ret = Real::recvfrom()(s, buf, len, flags, from, fromlen);
     if(ret > 0) {
       atomicCommit(from, ret); 
     }
@@ -961,7 +954,7 @@ public:
     ssize_t ret;
     epochEnd();
 
-    ret = WRAP(sendmsg)(s, msg, flags);
+    ret = Real::sendmsg()(s, msg, flags);
     epochBegin();
     return ret;
   }
@@ -970,7 +963,7 @@ public:
     ssize_t ret;
     epochEnd();
 
-    ret = WRAP(recvmsg)(s, msg, flags);
+    ret = Real::recvmsg()(s, msg, flags);
     epochBegin();
     return ret;
   }
@@ -980,7 +973,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(bind)(sockfd, my_addr, addrlen);
+    ret = Real::bind()(sockfd, my_addr, addrlen);
     epochBegin();
     return ret;
   }
@@ -989,7 +982,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(listen)(sockfd, backlog);
+    ret = Real::listen()(sockfd, backlog);
     epochBegin();
     return ret;
   }
@@ -998,7 +991,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getsockname)(s, name, namelen);
+    ret = Real::getsockname()(s, name, namelen);
     if(ret > 0) {
       checkOverflowBeforehand(name, ret);
       atomicCommit(name, ret); 
@@ -1011,7 +1004,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getpeername)(s, name, namelen);
+    ret = Real::getpeername()(s, name, namelen);
     if(ret > 0) {
       checkOverflowBeforehand(name, ret);
       atomicCommit(name, ret); 
@@ -1024,7 +1017,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(socketpair)(d, type, protocol, sv);
+    ret = Real::socketpair()(d, type, protocol, sv);
     if(ret == 0) {
       atomicCommit(&sv[0], sizeof(int));
       atomicCommit(&sv[1], sizeof(int));
@@ -1037,7 +1030,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(setsockopt)(s, level, optname, optval, optlen);
+    ret = Real::setsockopt()(s, level, optname, optval, optlen);
     epochBegin();
     return ret;
   }
@@ -1047,7 +1040,7 @@ public:
     int ret;
     epochEnd();
     checkOverflowBeforehand(optval, *optlen);
-    ret = WRAP(getsockopt)(s, level, optname, optval, optlen);
+    ret = Real::getsockopt()(s, level, optname, optval, optlen);
     if(ret) {
       atomicCommit(optval, *optlen);
     }
@@ -1067,7 +1060,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(execve)(filename, argv, envp);
+    ret = Real::execve()(filename, argv, envp);
     epochBegin();
     return ret;
   }
@@ -1079,7 +1072,7 @@ public:
 
     pid_t ret;
     epochEnd();
-    ret = WRAP(wait4)(pid, status, options, rusage);
+    ret = Real::wait4()(pid, status, options, rusage);
     epochBegin();
     return ret;
   }
@@ -1088,7 +1081,7 @@ public:
     // FIXME
     int ret;
     epochEnd();
-    ret = WRAP(kill)(pid, sig);
+    ret = Real::kill()(pid, sig);
     epochBegin();
     return ret;
   }
@@ -1097,7 +1090,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(uname)(buf);
+    ret = Real::uname()(buf);
     epochBegin();
     return ret;
   }
@@ -1128,7 +1121,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(semget)(key, nsems, semflg);
+    ret = Real::semget()(key, nsems, semflg);
     epochBegin();
     return ret;
   }
@@ -1137,7 +1130,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(semop)(semid, sops, nsops);
+    ret = Real::semop()(semid, sops, nsops);
     epochBegin();
     return ret;
   }
@@ -1146,7 +1139,7 @@ public:
     // FIXME
     int ret;
     epochEnd();
-    ret = WRAP(semctl)(semid, semnum, cmd);
+    ret = Real::semctl()(semid, semnum, cmd);
     epochBegin();
     return ret;
   }
@@ -1163,12 +1156,12 @@ public:
           ret = _fops.getFdAtOpen();
         }
         else {
-          ret = WRAP(fcntl)(fd, cmd, arg);
+          ret = Real::fcntl()(fd, cmd, arg);
           // Save current fd, pass NULL since it is not a file stream
           _fops.saveFd(ret, NULL);
         }
 #else
-        ret = WRAP(fcntl)(fd, cmd, arg);
+        ret = Real::fcntl()(fd, cmd, arg);
         if(ret != -1) {
           // Save current fd, pass NULL since it is not a file stream
           _fops.saveFd(ret, NULL);
@@ -1186,13 +1179,13 @@ public:
       /* Fall through */
       case F_GETLK:
       /* Fall through */
-        ret = WRAP(fcntl)(fd, cmd, arg);
+        ret = Real::fcntl()(fd, cmd, arg);
         break;
 
       default:
       {
         epochEnd();
-        ret = WRAP(fcntl)(fd, cmd, arg);
+        ret = Real::fcntl()(fd, cmd, arg);
         epochBegin();
         break;
       } 
@@ -1205,7 +1198,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(flock)(fd, operation);
+    ret = Real::flock()(fd, operation);
     epochBegin();
     return ret;
   }
@@ -1214,7 +1207,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(fsync)(fd);
+    ret = Real::fsync()(fd);
     epochBegin();
     return ret;
   }
@@ -1223,7 +1216,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(fdatasync)(fd);
+    ret = Real::fdatasync()(fd);
     epochBegin();
     return ret;
   }
@@ -1232,7 +1225,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(truncate)(path, length);
+    ret = Real::truncate()(path, length);
     epochBegin();
     return ret;
   }
@@ -1241,25 +1234,28 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(ftruncate)(fd, length);
+    ret = Real::ftruncate()(fd, length);
     epochBegin();
     return ret;
   }
 
+  // getdents is not defined
+  /*
   int getdents(unsigned int fd, struct dirent *dirp, unsigned int count){
     int ret;
     epochEnd();
 
-    ret = WRAP(getdents)(fd, dirp, count);
+    ret = Real::getdents()(fd, dirp, count);
     epochBegin();
     return ret;
   }
+  */
 
   char * getcwd(char *buf, size_t size){
     char * ret;
     epochEnd();
     checkOverflowBeforehand(buf, size);
-    ret = WRAP(getcwd)(buf, size);
+    ret = Real::getcwd()(buf, size);
     atomicCommit(buf, size);
     epochBegin();
     return ret;
@@ -1269,7 +1265,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(chdir)(path);
+    ret = Real::chdir()(path);
     epochBegin();
     return ret;
   }
@@ -1278,7 +1274,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(fchdir)(fd);
+    ret = Real::fchdir()(fd);
     epochBegin();
     return ret;
   }
@@ -1312,7 +1308,7 @@ public:
   int rename(const char *oldpath, const char *newpath){
     int ret;
     epochEnd();
-    ret = WRAP(rename)(oldpath, newpath);
+    ret = Real::rename()(oldpath, newpath);
     epochBegin();
     return ret;
 
@@ -1321,7 +1317,7 @@ public:
   int mkdir(const char *pathname, mode_t mode){
     int ret;
     epochEnd();
-    ret = WRAP(mkdir)(pathname, mode);
+    ret = Real::mkdir()(pathname, mode);
     epochBegin();
     return ret;
 
@@ -1331,7 +1327,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(rmdir)(pathname);
+    ret = Real::rmdir()(pathname);
     epochBegin();
     return ret;
   }
@@ -1340,7 +1336,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(creat)(pathname, mode);
+    ret = Real::creat()(pathname, mode);
     epochBegin();
     return ret;
   }
@@ -1349,7 +1345,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(link)(oldpath, newpath);
+    ret = Real::link()(oldpath, newpath);
     epochBegin();
     return ret;
   }
@@ -1358,7 +1354,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(unlink)(pathname);
+    ret = Real::unlink()(pathname);
     epochBegin();
     return ret;
   }
@@ -1367,7 +1363,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(symlink)(oldpath, newpath);
+    ret = Real::symlink()(oldpath, newpath);
     epochBegin();
     return ret;
   }
@@ -1376,7 +1372,7 @@ public:
 
     ssize_t ret;
     epochEnd();
-    ret = WRAP(readlink)(path, buf, bufsize);
+    ret = Real::readlink()(path, buf, bufsize);
     if(bufsize) {  
       atomicCommit(buf, bufsize);
     }
@@ -1388,7 +1384,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(chmod)(path, mode);
+    ret = Real::chmod()(path, mode);
     epochBegin();
     return ret;
   }
@@ -1397,7 +1393,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(fchmod)(fildes, mode);
+    ret = Real::fchmod()(fildes, mode);
     epochBegin();
     return ret;
   }
@@ -1406,7 +1402,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(chown)(path, owner, group);
+    ret = Real::chown()(path, owner, group);
     epochBegin();
     return ret;
   }
@@ -1414,7 +1410,7 @@ public:
   int fchown(int fd, uid_t owner, gid_t group){
     int ret;
     epochEnd();
-    ret = WRAP(fchown)(fd, owner, group);
+    ret = Real::fchown()(fd, owner, group);
     epochBegin();
     return ret;
   }
@@ -1423,7 +1419,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(lchown)(path, owner, group);
+    ret = Real::lchown()(path, owner, group);
     epochBegin();
     return ret;
   }
@@ -1432,7 +1428,7 @@ public:
 
     mode_t ret;
     epochEnd();
-    ret = WRAP(umask)(mask);
+    ret = Real::umask()(mask);
     epochBegin();
     return ret;
   }
@@ -1442,7 +1438,7 @@ public:
     int ret;
 
     if(!global_isRollback()) {
-      ret = WRAP(gettimeofday)(tv, tz);
+      ret = Real::gettimeofday()(tv, tz);
       // Add this to the record list.
       getRecord()->recordGettimeofdayOps(ret, tv, tz); 
     }
@@ -1458,7 +1454,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getrlimit)(resource, rlim);
+    ret = Real::getrlimit()(resource, rlim);
     epochBegin();
     return ret;
   }
@@ -1467,7 +1463,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getrusage)(who, usage);
+    ret = Real::getrusage()(who, usage);
     epochBegin();
     return ret;
   }
@@ -1476,7 +1472,7 @@ public:
   int sysinfo(struct sysinfo *info){
     int ret;
     epochEnd();
-    ret = WRAP(sysinfo)(info);
+    ret = Real::sysinfo()(info);
     epochBegin();
     return ret;
   }
@@ -1485,7 +1481,7 @@ public:
     clock_t ret;
     
     if(!global_isRollback()) {
-      ret = WRAP(times)(buf);
+      ret = Real::times()(buf);
       // Add this to the record list.
       getRecord()->recordTimesOps(ret, buf); 
     }
@@ -1504,17 +1500,15 @@ public:
   uid_t getuid(){
     uid_t ret;
     epochEnd();
-    ret = WRAP(getuid)();
+    ret = Real::getuid()();
     epochBegin();
     return ret;
   }
 
-  int syslog(int type, char *bufp, int len){
-    int ret;
+  void vsyslog(int pri, const char* fmt, va_list args){
     epochEnd();
-    ret = WRAP(syslog)(type, bufp, len);
+    Real::vsyslog()(pri, fmt, args);
     epochBegin();
-    return ret;
   }
 
   
@@ -1549,7 +1543,7 @@ public:
 
     gid_t ret;
     epochEnd();
-    ret = WRAP(getgid)();
+    ret = Real::getgid()();
     epochBegin();
     return ret;
   }
@@ -1559,7 +1553,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setuid)(uid);
+    ret = Real::setuid()(uid);
     epochBegin();
     return ret;
   }
@@ -1568,7 +1562,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setgid)(gid);
+    ret = Real::setgid()(gid);
     epochBegin();
     return ret;
   }
@@ -1577,7 +1571,7 @@ public:
     uid_t ret;
     epochEnd();
 
-    ret = WRAP(geteuid)();
+    ret = Real::geteuid()();
     epochBegin();
     return ret;
   }
@@ -1586,7 +1580,7 @@ public:
     gid_t ret;
     epochEnd();
 
-    ret = WRAP(getegid)();
+    ret = Real::getegid()();
     epochBegin();
     return ret;
   }
@@ -1595,7 +1589,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setpgid)(pid, pgid);
+    ret = Real::setpgid()(pid, pgid);
     epochBegin();
     return ret;
   }
@@ -1604,7 +1598,7 @@ public:
     pid_t ret;
     epochEnd();
 
-    ret = WRAP(getppid)();
+    ret = Real::getppid()();
     epochBegin();
     return ret;
   }
@@ -1613,7 +1607,7 @@ public:
     pid_t ret;
     epochEnd();
 
-    ret = WRAP(getpgrp)();
+    ret = Real::getpgrp()();
     epochBegin();
     return ret;
   }
@@ -1622,7 +1616,7 @@ public:
     pid_t ret;
     epochEnd();
 
-    ret = WRAP(setsid)();
+    ret = Real::setsid()();
     epochBegin();
     return ret;
   }
@@ -1631,7 +1625,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setreuid)(ruid, euid);
+    ret = Real::setreuid()(ruid, euid);
     epochBegin();
     return ret;
   }
@@ -1640,7 +1634,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setregid)(rgid, egid);
+    ret = Real::setregid()(rgid, egid);
     epochBegin();
     return ret;
   }
@@ -1649,7 +1643,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setgroups)(size, list);
+    ret = Real::setgroups()(size, list);
     epochBegin();
     return ret;
   }
@@ -1658,7 +1652,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setgroups)(size, list);
+    ret = Real::setgroups()(size, list);
     epochBegin();
     return ret;
   }
@@ -1667,7 +1661,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setresuid)(ruid, euid, suid);
+    ret = Real::setresuid()(ruid, euid, suid);
     epochBegin();
     return ret;
   }
@@ -1676,7 +1670,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getresuid)(ruid, euid, suid);
+    ret = Real::getresuid()(ruid, euid, suid);
     epochBegin();
     return ret;
   }
@@ -1685,7 +1679,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setresgid)(rgid, egid, sgid);
+    ret = Real::setresgid()(rgid, egid, sgid);
     epochBegin();
     return ret;
   }
@@ -1694,7 +1688,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getresgid)(rgid, egid, sgid);
+    ret = Real::getresgid()(rgid, egid, sgid);
     epochBegin();
     return ret;
   }
@@ -1703,7 +1697,7 @@ public:
     pid_t ret;
     epochEnd();
 
-    ret = WRAP(getpgid)(pid);
+    ret = Real::getpgid()(pid);
     epochBegin();
     return ret;
   }
@@ -1712,7 +1706,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setfsuid)(fsuid);
+    ret = Real::setfsuid()(fsuid);
     epochBegin();
     return ret;
   }
@@ -1721,7 +1715,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setfsgid)(fsgid);
+    ret = Real::setfsgid()(fsgid);
     epochBegin();
     return ret;
   }
@@ -1749,7 +1743,7 @@ public:
   pid_t getsid(pid_t pid){
     pid_t ret;
     epochEnd();
-    ret = WRAP(getsid)(pid);
+    ret = Real::getsid()(pid);
     epochBegin();
     return ret;
 
@@ -1759,7 +1753,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(sigpending)(set);
+    ret = Real::sigpending()(set);
     epochBegin();
     return ret;
   }
@@ -1769,7 +1763,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(sigtimedwait)(set, info, timeout);
+    ret = Real::sigtimedwait()(set, info, timeout);
     epochBegin();
     return ret;
   }
@@ -1778,7 +1772,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(sigsuspend)(mask);
+    ret = Real::sigsuspend()(mask);
     epochBegin();
     return ret;
   }
@@ -1787,7 +1781,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(sigaltstack)(ss, oss);
+    ret = Real::sigaltstack()(ss, oss);
     epochBegin();
     return ret;
   }
@@ -1796,7 +1790,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(utime)(filename, buf);
+    ret = Real::utime()(filename, buf);
     epochBegin();
     return ret;
   }
@@ -1805,24 +1799,27 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(mknod)(pathname, mode, dev);
+    ret = Real::mknod()(pathname, mode, dev);
     epochBegin();
     return ret;
   }
 
+  // uselib is not defined
+  /*
   int uselib(const char *library){
     int ret;
     epochEnd();
-    ret = WRAP(uselib)(library);
+    ret = Real::uselib()(library);
     epochBegin();
     return ret;
   }
+  */
 
   int personality(unsigned long persona){
 
     int ret;
     epochEnd();
-    ret = WRAP(personality)(persona);
+    ret = Real::personality()(persona);
     epochBegin();
     return ret;
   }
@@ -1831,7 +1828,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(ustat)(dev, ubuf);
+    ret = Real::ustat()(dev, ubuf);
     epochBegin();
     return ret;
   }
@@ -1840,7 +1837,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(statfs)(path, buf);
+    ret = Real::statfs()(path, buf);
     epochBegin();
     return ret;
   }
@@ -1849,19 +1846,21 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(fstatfs)(fd, buf);
+    ret = Real::fstatfs()(fd, buf);
     epochBegin();
     return ret;
   }
 
+  // sysfs isn't defined anywhere
+  /*
   int sysfs(int option, unsigned int fs_index, char *buf){
-
     int ret;
     epochEnd();
-    ret = WRAP(sysfs)(option, fs_index, buf);
+    ret = Real::sysfs()(option, fs_index, buf);
     epochBegin();
     return ret;
-  }
+  }*/
+  
   /*
   #define _SYS_getpriority                       140
   #define _SYS_setpriority                       141
@@ -1893,7 +1892,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(getpriority)(which, who);
+    ret = Real::getpriority()(which, who);
     epochBegin();
     return ret;
   }
@@ -1903,7 +1902,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(setpriority)(which, who, prio);
+    ret = Real::setpriority()(which, who, prio);
     epochBegin();
     return ret;
   }
@@ -1912,7 +1911,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(sched_setparam)(pid, param);
+    ret = Real::sched_setparam()(pid, param);
     epochBegin();
     return ret;
   }
@@ -1921,7 +1920,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(sched_getparam)(pid, param);
+    ret = Real::sched_getparam()(pid, param);
     epochBegin();
     return ret;
   }
@@ -1930,7 +1929,7 @@ public:
                          const struct sched_param *param){
     int ret;
     epochEnd();
-    ret = WRAP(sched_setscheduler)(pid, policy, param);
+    ret = Real::sched_setscheduler()(pid, policy, param);
     epochBegin();
     return ret;
   }
@@ -1938,7 +1937,7 @@ public:
   int sched_getscheduler(pid_t pid){
     int ret;
     epochEnd();
-    ret = WRAP(sched_getscheduler)(pid);
+    ret = Real::sched_getscheduler()(pid);
     epochBegin();
     return ret;
   }
@@ -1946,7 +1945,7 @@ public:
   int sched_get_priority_max(int policy){
     int ret;
     epochEnd();
-    ret = WRAP(sched_get_priority_max)(policy);
+    ret = Real::sched_get_priority_max()(policy);
     epochBegin();
     return ret;
   }
@@ -1954,7 +1953,7 @@ public:
   int sched_get_priority_min(int policy){
     int ret;
     epochEnd();
-    ret = WRAP(sched_get_priority_min)(policy);
+    ret = Real::sched_get_priority_min()(policy);
     epochBegin();
     return ret;
   }
@@ -1962,7 +1961,7 @@ public:
   int sched_rr_get_interval(pid_t pid, struct timespec *tp){
     int ret;
     epochEnd();
-    ret = WRAP(sched_rr_get_interval)(pid, tp);
+    ret = Real::sched_rr_get_interval()(pid, tp);
     epochBegin();
     return ret;
   }
@@ -1970,7 +1969,7 @@ public:
   int mlock(const void *addr, size_t len){
     int ret;
     epochEnd();
-    ret = WRAP(mlock)(addr, len);
+    ret = Real::mlock()(addr, len);
     epochBegin();
     return ret;
   }
@@ -1979,7 +1978,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(munlock)(addr, len);
+    ret = Real::munlock()(addr, len);
     epochBegin();
     return ret;
   }
@@ -1987,7 +1986,7 @@ public:
   int mlockall(int flags){
     int ret;
     epochEnd();
-    ret = WRAP(mlockall)(flags);
+    ret = Real::mlockall()(flags);
     epochBegin();
     return ret;
   }
@@ -1995,7 +1994,7 @@ public:
   int munlockall(){
     int ret;
     epochEnd();
-    ret = WRAP(munlockall)();
+    ret = Real::munlockall()();
     epochBegin();
     return ret;
   }
@@ -2003,7 +2002,7 @@ public:
   int vhangup(){
     int ret;
     epochEnd();
-    ret = WRAP(vhangup)();
+    ret = Real::vhangup()();
     epochBegin();
     return ret;
   }
@@ -2011,53 +2010,54 @@ public:
 //  int modify_ldt(int func, void *ptr, unsigned long bytecount){
     //FIXME
 
+  // pivot_root is not a libc function
+  /*
   int pivot_root(const char *new_root, const char *put_old){
     // FIXME
     int ret;
     epochEnd();
-    ret = WRAP(pivot_root)(new_root, put_old);
+    ret = Real::pivot_root()(new_root, put_old);
     epochBegin();
     return ret;
-  }
+  }*/
 
-  int _sysctl(struct __sysctl_args *args){
+  int sysctl(int* name, int nlen, void* oldval, size_t* oldlenp, void* newval, size_t newlen) {
     int ret;
     epochEnd();
-    ret = WRAP(_sysctl)(args);
+    ret = Real::sysctl()(name, nlen, oldval, oldlenp, newval, newlen);
     epochBegin();
     return ret;
   }
 
-  int  prctl(int  option,  unsigned  long arg2, unsigned long arg3 , unsigned long arg4,
-             unsigned long arg5){
+  int prctl(int option, unsigned long arg2, unsigned long arg3 , unsigned long arg4, unsigned long arg5){
     int ret;
     epochEnd();
-
-    ret = WRAP(prctl)(option, arg2, arg3, arg4, arg5);
+    ret = Real::prctl()(option, arg2, arg3, arg4, arg5);
     epochBegin();
     return ret;
   }
 
-  int arch_prctl(int code, unsigned long addr) {
+  // arch_prct isn't defined
+  /*int arch_prctl(int code, unsigned long addr) {
     int ret;
     epochEnd();
-    ret = WRAP(arch_prctl)(code, addr);
+    ret = Real::arch_prctl()(code, addr);
     epochBegin();
     return ret;
-  }
+  }*/
 
   int adjtimex(struct timex *buf){
     int ret;
     epochEnd();
     epochBegin();
-    ret = WRAP(adjtimex)(buf);
+    ret = Real::adjtimex()(buf);
     return ret;
   }
 
   int setrlimit(int resource, const struct rlimit *rlim){
     int ret;
     epochEnd();
-    ret = WRAP(setrlimit)(resource, rlim);
+    ret = Real::setrlimit()(resource, rlim);
     epochBegin();
     return ret;
   }
@@ -2066,7 +2066,7 @@ public:
   int chroot(const char *path){
     int ret;
     epochEnd();
-    ret = WRAP(chroot)(path);
+    ret = Real::chroot()(path);
     epochBegin();
     return ret;
   }
@@ -2074,14 +2074,14 @@ public:
   void sync(){
     //FIXME
     epochEnd();
-    WRAP(sync)();
+    Real::sync()();
     epochBegin();
   }
 
   int acct(const char *filename){
     int ret;
     epochEnd();
-    ret = WRAP(acct)(filename);
+    ret = Real::acct()(filename);
     epochBegin();
     return ret;
   }
@@ -2118,7 +2118,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(settimeofday)(tv, tz);
+    ret = Real::settimeofday()(tv, tz);
     epochBegin();
     return ret;
   }
@@ -2129,7 +2129,7 @@ public:
     //FIXME
     int ret;
     epochEnd();
-    ret = WRAP(mount)(source, target, filesystemtype, mountflags, data);
+    ret = Real::mount()(source, target, filesystemtype, mountflags, data);
     epochBegin();
     return ret;
   }
@@ -2138,7 +2138,7 @@ public:
     // FIXME
     int ret;
     epochEnd();
-    ret = WRAP(umount2)(target, flags);
+    ret = Real::umount2()(target, flags);
     epochBegin();
     return ret;
   }
@@ -2147,7 +2147,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(swapon)(path, swapflags);
+    ret = Real::swapon()(path, swapflags);
     epochBegin();
     return ret;
   }
@@ -2156,17 +2156,16 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(swapoff)(path);
+    ret = Real::swapoff()(path);
     epochBegin();
     return ret;
 
   }
 
-  int reboot(int magic, int magic2, int flag, void *arg){
-    // FIXME
+  int reboot(int cmd){
     int ret;
     epochEnd();
-    ret = WRAP(reboot)(magic, magic2, flag, arg);
+    ret = Real::reboot()(cmd);
     epochBegin();
     return ret;
   }
@@ -2175,7 +2174,7 @@ public:
     int ret;
     epochEnd();
 
-    ret = WRAP(sethostname)(name, len);
+    ret = Real::sethostname()(name, len);
     epochBegin();
     return ret;
   }
@@ -2184,7 +2183,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(setdomainname)(name, len);
+    ret = Real::setdomainname()(name, len);
     epochBegin();
     return ret;
   }
@@ -2193,7 +2192,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(iopl)(level);
+    ret = Real::iopl()(level);
     epochBegin();
     return ret;
   }
@@ -2202,19 +2201,19 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(ioperm)(from, num, turn_on);
+    ret = Real::ioperm()(from, num, turn_on);
     epochBegin();
     return ret;
   }
 
-  pid_t gettid(){
-
+  // gettid is not a libc function
+  /*pid_t gettid(){
     pid_t ret;
     epochEnd();
-    ret = WRAP(gettid)();
+    ret = Real::gettid()();
     epochBegin();
     return ret;
-  }
+  }*/
 
   
   /* 
@@ -2246,116 +2245,97 @@ public:
   ssize_t readahead(int fd, __off64_t offset, size_t count){
     ssize_t ret;
     //epochEnd();
-    ret = WRAP(readahead)(fd, offset, count);
+    ret = Real::readahead()(fd, offset, count);
     //epochBegin();
     return ret;
 
   }
 
-  int setxattr (const char *path, const char *name,
-                  const void *value, size_t size, int flags){
+  int setxattr (const char *path, const char *name, const void *value, size_t size, int flags){
     int ret;
     epochEnd();
-
-    ret = WRAP(setxattr)(path, name, value, size, flags);
+    ret = Real::setxattr()(path, name, value, size, flags);
     epochBegin();
     return ret;
   }
 
-  int lsetxattr (const char *path, const char *name,
-                  const void *value, size_t size, int flags){
+  int lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags){
     int ret;
     epochEnd();
-
-    ret = WRAP(lsetxattr)(path, name, value, size, flags);
+    ret = Real::lsetxattr()(path, name, value, size, flags);
     epochBegin();
     return ret;
   }
 
-  int fsetxattr (int filedes, const char *name,
-                  const void *value, size_t size, int flags){
+  int fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags){
     int ret;
     epochEnd();
-
-    ret = WRAP(fsetxattr)(filedes, name, value, size, flags);
+    ret = Real::fsetxattr()(filedes, name, value, size, flags);
     epochBegin();
     return ret;
   }
 
   
-  ssize_t getxattr (const char *path, const char *name,
-                       void *value, size_t size){
+  ssize_t getxattr (const char *path, const char *name, void *value, size_t size){
     ssize_t ret;
     epochEnd();
-    ret = WRAP(getxattr)(path, name, value, size);
+    ret = Real::getxattr()(path, name, value, size);
     epochBegin();
     return ret;
   }
 
-  ssize_t lgetxattr (const char *path, const char *name,
-                       void *value, size_t size){
-
+  ssize_t lgetxattr (const char *path, const char *name, void *value, size_t size){
     ssize_t ret;
     epochEnd();
-    ret = WRAP(lgetxattr)(path, name, value, size);
+    ret = Real::lgetxattr()(path, name, value, size);
     epochBegin();
     return ret;
   }
 
-  ssize_t fgetxattr (int filedes, const char *name,
-                       void *value, size_t size){
+  ssize_t fgetxattr (int filedes, const char *name, void *value, size_t size){
     ssize_t ret;
     epochEnd();
-    ret = WRAP(fgetxattr)(filedes, name, value, size);
-    epochBegin();
-    return ret;
-
-  }
-
-  ssize_t listxattr (const char *path,
-                       char *list, size_t size){
-
-    ssize_t ret;
-    epochEnd();
-    ret = WRAP(listxattr)(path, list, size);
+    ret = Real::fgetxattr()(filedes, name, value, size);
     epochBegin();
     return ret;
   }
 
-  ssize_t llistxattr (const char *path,
-                       char *list, size_t size){
-
+  ssize_t listxattr (const char *path, char *list, size_t size){
     ssize_t ret;
     epochEnd();
-    ret = WRAP(llistxattr)(path, list, size);
+    ret = Real::listxattr()(path, list, size);
     epochBegin();
     return ret;
   }
 
-  ssize_t flistxattr (int filedes,
-                       char *list, size_t size){
-
+  ssize_t llistxattr (const char *path, char *list, size_t size){
     ssize_t ret;
     epochEnd();
-    ret = WRAP(flistxattr)(filedes, list, size);
+    ret = Real::llistxattr()(path, list, size);
+    epochBegin();
+    return ret;
+  }
+
+  ssize_t flistxattr (int filedes, char *list, size_t size){
+    ssize_t ret;
+    epochEnd();
+    ret = Real::flistxattr()(filedes, list, size);
     epochBegin();
     return ret;
   }
 
   int removexattr (const char *path, const char *name){
-
     int ret;
     epochEnd();
-    ret = WRAP(removexattr)(path, name);
+    ret = Real::removexattr()(path, name);
     epochBegin();
     return ret;
   }
 
   int lremovexattr (const char *path, const char *name){
-
     int ret;
     epochEnd();
-    ret = WRAP(lremovexattr)(path, name);
+    ret = Real::lremovexattr()(path, name);
     epochBegin();
     return ret;
   }
@@ -2363,7 +2343,7 @@ public:
   int fremovexattr (int filedes, const char *name){
     int ret;
     epochEnd();
-    ret = WRAP(fremovexattr)(filedes, name);
+    ret = Real::fremovexattr()(filedes, name);
     epochBegin();
     return ret;
   }
@@ -2377,7 +2357,7 @@ public:
     time_t ret;
 
     if(!global_isRollback()) {
-      ret = WRAP(time)(t);
+      ret = Real::time()(t);
       // Add this to the record list.
       getRecord()->recordTimeOps(ret); 
     }
@@ -2389,66 +2369,61 @@ public:
     return ret;
   }
 
-  int futex(int *uaddr, int op, int val, const struct timespec *timeout,
-            int *uaddr2, int val3){
+  // futex isn't defined
+  /*int futex(int *uaddr, int op, int val, const struct timespec *timeout, int *uaddr2, int val3){
     int ret;
     epochEnd();
-    ret = WRAP(futex)(uaddr, op, val, timeout, uaddr2, val3);
+    ret = Real::futex()(uaddr, op, val, timeout, uaddr2, val3);
     epochBegin();
     return ret;
-  }
+  }*/
 
-  int sched_setaffinity(__pid_t pid, size_t cpusetsize,
-                        const cpu_set_t *mask){
+  int sched_setaffinity(__pid_t pid, size_t cpusetsize, const cpu_set_t *mask){
     int ret;
     epochEnd();
-    ret = WRAP(sched_setaffinity)(pid, cpusetsize, mask);
+    ret = Real::sched_setaffinity()(pid, cpusetsize, mask);
     epochBegin();
     return ret;
 
   }
   
   ssize_t sched_getaffinity(__pid_t pid, size_t cpusetsize, cpu_set_t *mask){
-
     ssize_t ret;
     epochEnd();
-    ret = WRAP(sched_getaffinity)(pid, cpusetsize, mask);
+    ret = Real::sched_getaffinity()(pid, cpusetsize, mask);
     epochBegin();
     return ret;
   }
   
-  int set_thread_area (struct user_desc *u_info){
+  // set_thread_area isn't a libc function
+  /*int set_thread_area (struct user_desc *u_info){
     int ret;
-    ret = WRAP(set_thread_area)(u_info);
+    ret = Real::set_thread_area()(u_info);
     epochBegin();
     return ret;
-  }
+  }*/
 
-#if 0
-  int io_setup (int maxevents, io_context_t *ctxp){
-
-    ret = WRAP(io_setup(maxevents, ctxp);
+  // io_* functions are not in libc
+  /*int io_setup (int maxevents, io_context_t *ctxp){
+    ret = Real::io_setup()(maxevents, ctxp);
   }
 
   int io_destroy (io_context_t ctx){
-    ret = WRAP(io_destroy(ctx);
+    ret = Real::io_destroy()(ctx);
   }
 
-  long io_getevents (aio_context_t ctx_id, long min_nr, long nr,
-                     struct io_event *events, struct timespec *timeout){
-    ret = WRAP(io_getevents(ctx_id, min_nr, nr, events, timeout);
+  long io_getevents (aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout){
+    ret = Real::io_getevents()(ctx_id, min_nr, nr, events, timeout);
   }
 
   long io_submit (aio_context_t ctx_id, long nr, struct iocb **iocbpp){
-    ret = WRAP(io_submit(ctx_id, nr, iocbpp);
+    ret = Real::io_submit()(ctx_id, nr, iocbpp);
   }
 
   long io_cancel (aio_context_t ctx_id, struct iocb *iocb, struct io_event *result){
-    ret = WRAP(io_cancel(ctx_id, nr, iocbpp);
-
-  }
+    ret = Real::io_cancel()(ctx_id, nr, iocbpp);
+  }*/
   
-#endif
   /*
   #define _SYS_get_thread_area  211
   #define _SYS_lookup_dcookie 212
@@ -2476,14 +2451,14 @@ public:
   #define _SYS_tgkill   234
   */
 
-  int get_thread_area(struct user_desc *u_info){
+  // get_thread_area is not a libc function
+  /*int get_thread_area(struct user_desc *u_info){
     int ret;
     epochEnd();
-    ret = WRAP(get_thread_area)(u_info);
+    ret = Real::get_thread_area()(u_info);
     epochBegin();
     return ret;
-
-  }
+  }*/
 
 //  int lookup_dcookie(u64 cookie, char * buffer, size_t len){
 //    ret = WRAP(lookup_dcookie(cookie, buffer, len);
@@ -2493,7 +2468,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(epoll_create)(size);
+    ret = Real::epoll_create()(size);
     epochBegin();
     return ret;
   }
@@ -2502,7 +2477,7 @@ public:
 
     int ret;
     epochEnd();
-    ret = WRAP(epoll_ctl)(epfd, op, fd, event);
+    ret = Real::epoll_ctl()(epfd, op, fd, event);
     epochBegin();
     return ret;
   }
@@ -2511,7 +2486,7 @@ public:
                  int maxevents, int timeout){
     int ret;
     epochEnd();
-    ret = WRAP(epoll_wait)(epfd, events, maxevents, timeout);
+    ret = Real::epoll_wait()(epfd, events, maxevents, timeout);
     epochBegin();
     return ret;
   }
@@ -2520,137 +2495,140 @@ public:
   int remap_file_pages(void *start, size_t size, int prot, size_t pgoff, int flags){
     int ret;
     epochEnd();
-    ret = WRAP(remap_file_pages)(start, size, prot, pgoff, flags);
+    ret = Real::remap_file_pages()(start, size, prot, pgoff, flags);
     epochBegin();
     return ret;
   }
 
-  long sys_set_tid_address (int *tidptr){
+  // sys_set_tid_address is not defined
+  /*long sys_set_tid_address (int *tidptr){
     long ret;
     epochEnd();
-    ret = WRAP(sys_set_tid_address)(tidptr);
+    ret = Real::sys_set_tid_address()(tidptr);
     epochBegin();
     return ret;
-  }
+  }*/
 
-  long sys_restart_syscall(){
+  // sys_set_tid_address is not defined
+  /*long sys_restart_syscall(){
     long ret;
     epochEnd();
-    ret = WRAP(sys_restart_syscall)();
+    ret = Real::sys_restart_syscall()();
     epochBegin();
     return ret;
-  }
+  }*/
 
   int semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout){
     int ret;
     epochEnd();
 
-    ret = WRAP(semtimedop)(semid, sops, nsops, timeout);
+    ret = Real::semtimedop()(semid, sops, nsops, timeout);
     epochBegin();
     return ret;
   }
 
-  long fadvise64_64 (int fs, loff_t offset, loff_t len, int advice) {
+  long posix_fadvise64(int fs, loff_t offset, loff_t len, int advice) {
     long ret;
     epochEnd();
-    ret = WRAP(fadvise64_64)(fs, offset, len, advice);
+    ret = Real::posix_fadvise64()(fs, offset, len, advice);
     epochBegin();
     return ret;
   }
 
-  long sys_timer_create (clockid_t which_clock, struct sigevent *timer_event_spec,
+  long timer_create (clockid_t which_clock, struct sigevent *timer_event_spec,
                          timer_t *created_timer_id){
     long ret;
     epochEnd();
 
-    ret = WRAP(sys_timer_create)(which_clock, timer_event_spec, created_timer_id);
+    ret = Real::timer_create()(which_clock, timer_event_spec, created_timer_id);
     epochBegin();
     return ret;
   }
 
-  long sys_timer_settime (timer_t timer_id, int flags, const struct itimerspec
+  long timer_settime (timer_t timer_id, int flags, const struct itimerspec
                           *new_setting, struct itimerspec *old_setting){
 
     long ret;
     epochEnd();
-    ret = WRAP(sys_timer_settime)(timer_id, flags, new_setting, old_setting);
+    ret = Real::timer_settime()(timer_id, flags, new_setting, old_setting);
     epochBegin();
     return ret;
   }
 
-  long sys_timer_gettime (timer_t timer_id, struct itimerspec *setting){
+  long timer_gettime (timer_t timer_id, struct itimerspec *setting){
     long ret;
     epochEnd();
 
-    ret = WRAP(sys_timer_gettime)(timer_id, setting);
+    ret = Real::timer_gettime()(timer_id, setting);
     epochBegin();
     return ret;
   }
   
-  long sys_timer_getoverrun (timer_t timer_id){
+  long timer_getoverrun (timer_t timer_id){
     long ret;
     epochEnd();
-    ret = WRAP(sys_timer_getoverrun)(timer_id);
+    ret = Real::timer_getoverrun()(timer_id);
     epochBegin();
     return ret;
   }
 
-  long sys_timer_delete (timer_t timer_id){
+  long timer_delete (timer_t timer_id){
 
     long ret;
     epochEnd();
-    ret = WRAP(sys_timer_delete)(timer_id);
+    ret = Real::timer_delete()(timer_id);
     epochBegin();
     return ret;
   }
 
-  long sys_clock_settime (clockid_t which_clock, const struct timespec *tp){
-
+  long clock_settime (clockid_t which_clock, const struct timespec *tp){
     long ret;
     epochEnd();
-    ret = WRAP(sys_clock_settime)(which_clock, tp);
+    ret = Real::clock_settime()(which_clock, tp);
     epochBegin();
     return ret;
   }
 
-  long sys_clock_gettime (clockid_t which_clock, struct timespec *tp){
+  long clock_gettime (clockid_t which_clock, struct timespec *tp){
     long ret;
     epochEnd();
-    ret = WRAP(sys_clock_gettime)(which_clock, tp);
+    ret = Real::clock_gettime()(which_clock, tp);
     epochBegin();
     return ret;
   }
 
-  long sys_clock_getres (clockid_t which_clock, struct timespec *tp){
+  long clock_getres (clockid_t which_clock, struct timespec *tp){
     long ret;
     epochEnd();
-    ret = WRAP(sys_clock_getres)(which_clock, tp);
+    ret = Real::clock_getres()(which_clock, tp);
     epochBegin();
     return ret;
   }
 
-  long sys_clock_nanosleep (clockid_t which_clock, int flags,
+  long clock_nanosleep (clockid_t which_clock, int flags,
                             const struct timespec *rqtp, struct timespec *rmtp){
     long ret;
     epochEnd();
-    ret = WRAP(sys_clock_nanosleep)(which_clock, flags, rqtp, rmtp);
+    ret = Real::clock_nanosleep()(which_clock, flags, rqtp, rmtp);
     epochBegin();
     return ret;
   }
 
-  void exit_group(int status){
+  // exit_group is not defined
+  /*void exit_group(int status){
     epochEnd();
-    WRAP(exit_group)(status);
+    Real::exit_group()(status);
     epochBegin();
-  }
+  }*/
 
-  long sys_tgkill (int tgid, int pid, int sig){
+  // tgkill is not a libc function
+  /*long sys_tgkill (int tgid, int pid, int sig){
     long ret;
     epochEnd();
-    ret = WRAP(sys_tgkill)(tgid, pid, sig);
+    ret = Real::sys_tgkill()(tgid, pid, sig);
     epochBegin();
     return ret;
-  }
+  }*/
   
   /*
   #define _SYS_utimes   235
@@ -2681,7 +2659,7 @@ public:
   int utimes(const char *filename, const struct timeval times[2]){
     int ret;
     epochEnd();
-    ret = WRAP(utimes)(filename, times);
+    ret = Real::utimes()(filename, times);
     epochBegin();
     return ret;
   }
@@ -2690,7 +2668,7 @@ public:
                 struct mq_attr *attr){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_open)(name, oflag, mode, attr);
+    ret = Real::mq_open()(name, oflag, mode, attr);
     epochBegin();
     return ret;
 
@@ -2699,7 +2677,7 @@ public:
   mqd_t mq_unlink(const char *name){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_unlink)(name);
+    ret = Real::mq_unlink()(name);
     epochBegin();
     return ret;
   }
@@ -2709,7 +2687,7 @@ public:
                  const struct timespec *abs_timeout){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_timedsend)(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+    ret = Real::mq_timedsend()(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
     epochBegin();
     return ret;
 
@@ -2720,7 +2698,7 @@ public:
                  const struct timespec *abs_timeout){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_timedreceive)(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+    ret = Real::mq_timedreceive()(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
     epochBegin();
     return ret;
 
@@ -2729,26 +2707,27 @@ public:
   mqd_t mq_notify(mqd_t mqdes, const struct sigevent *notification){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_notify)(mqdes, notification);
+    ret = Real::mq_notify()(mqdes, notification);
     epochBegin();
     return ret;
 
   }
   
-  mqd_t mq_getsetattr(mqd_t mqdes, struct mq_attr *newattr,
+  // mq_getsetattr is not a libc function
+  /*mqd_t mq_getsetattr(mqd_t mqdes, struct mq_attr *newattr,
                    struct mq_attr *oldattr){
     mqd_t ret;
     epochEnd();
-    ret = WRAP(mq_getsetattr)(mqdes, newattr, oldattr);
+    ret = Real::mq_getsetattr()(mqdes, newattr, oldattr);
     epochBegin();
     return ret;
-  }
+  }*/
 
-  long kexec_load(unsigned long entry, unsigned long nr_segments,
+  long kexec_load(void* entry, unsigned long nr_segments,
                  struct kexec_segment *segments, unsigned long flags){
     long ret;
     epochEnd();
-    ret = WRAP(kexec_load)(entry, nr_segments, segments, flags);
+    ret = Real::kexec_load()(entry, nr_segments, segments, flags);
     epochBegin();
     return ret;
   }
@@ -2756,24 +2735,24 @@ public:
   int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options){
     int ret;
     epochEnd();
-    ret = WRAP(waitid)(idtype, id, infop, options);
+    ret = Real::waitid()(idtype, id, infop, options);
     epochBegin();
     return ret;
   }
 
-#if 0
-  key_serial_t add_key(const char *type, const char *description,
+  // key functions do not seem to exist
+  /*key_serial_t add_key(const char *type, const char *description,
                        const void *payload, size_t plen, key_serial_t keyring) {
     int ret;
     epochEnd();
-    ret = WRAP(add_key)(type, description, payload, plen, keyring);
+    ret = Real::add_key()(type, description, payload, plen, keyring);
     epochBegin();
     return ret;
   }
 
   key_serial_t request_key(const char *type, const char *description,
                            const char *callout_info, key_serial_t keyring){
-    ret = WRAP(request_key)(type, description, callout_info, keyring);
+    ret = Real::request_key()(type, description, callout_info, keyring);
     epochBegin();
     return ret;
   }
@@ -2782,49 +2761,45 @@ public:
     // FIXME
     PRINF("keyctl is not supported now\n");
     return 0;
-  }
-#endif
-  int ioprio_get(int which, int who){
-
+  }*/
+  
+  // ioprio_* functions are not in libc
+  /*int ioprio_get(int which, int who){
     int ret;
     epochEnd();
-    ret = WRAP(ioprio_get)(which, who);
+    ret = Real::ioprio_get()(which, who);
     epochBegin();
     return ret;
   }
 
   int ioprio_set(int which, int who, int ioprio){
-
     int ret;
     epochEnd();
-    ret = WRAP(ioprio_set)(which, who, ioprio);
+    ret = Real::ioprio_set()(which, who, ioprio);
     epochBegin();
     return ret;
-  }
+  }*/
 
   int inotify_init(){
-
     int ret;
     epochEnd();
-    ret = WRAP(inotify_init)();
+    ret = Real::inotify_init()();
     epochBegin();
     return ret;
   }
 
   int inotify_add_watch(int fd, const char *pathname, uint32_t mask){
-
     int ret;
     epochEnd();
-    ret = WRAP(inotify_add_watch)(fd, pathname, mask);
+    ret = Real::inotify_add_watch()(fd, pathname, mask);
     epochBegin();
     return ret;
   }
 
   int inotify_rm_watch(int fd, uint32_t wd){
-
     int ret;
     epochEnd();
-    ret = WRAP(inotify_rm_watch)(fd, wd);
+    ret = Real::inotify_rm_watch()(fd, wd);
     epochBegin();
     return ret;
   }
@@ -2863,8 +2838,7 @@ public:
   int openat(int dirfd, const char *pathname, int flags, mode_t mode){
     int ret;
     epochEnd();
-
-    ret = WRAP(openat)(dirfd, pathname, flags, mode);
+    ret = Real::openat()(dirfd, pathname, flags, mode);
     epochBegin();
     return ret;
   }
@@ -2872,7 +2846,7 @@ public:
   int mkdirat(int dirfd, const char *pathname, mode_t mode){
     int ret;
     epochEnd();
-    ret = WRAP(mkdirat)(dirfd, pathname, mode);
+    ret = Real::mkdirat()(dirfd, pathname, mode);
     epochBegin();
     return ret;
   }
@@ -2880,25 +2854,23 @@ public:
   int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev){
     int ret;
     epochEnd();
-    ret = WRAP(mknodat)(dirfd, pathname, mode, dev);
+    ret = Real::mknodat()(dirfd, pathname, mode, dev);
     epochBegin();
     return ret;
   }
 
-  int fchownat(int dirfd, const char *path,
-               uid_t owner, gid_t group, int flags){
+  int fchownat(int dirfd, const char *path, uid_t owner, gid_t group, int flags){
     int ret;
     epochEnd();
-    ret = WRAP(fchownat)(dirfd, path, owner, group, flags);
+    ret = Real::fchownat()(dirfd, path, owner, group, flags);
     epochBegin();
     return ret;
   }
 
-  int futimesat(int dirfd, const char *path,
-                const struct timeval times[2]){
+  int futimesat(int dirfd, const char *path, const struct timeval times[2]){
     int ret;
     epochEnd();
-    ret = WRAP(futimesat)(dirfd, path, times);
+    ret = Real::futimesat()(dirfd, path, times);
     epochBegin();
     return ret;
   }
@@ -2906,25 +2878,23 @@ public:
   int unlinkat(int dirfd, const char *pathname, int flags){
     int ret;
     epochEnd();
-    ret = WRAP(unlinkat)(dirfd, pathname, flags);
+    ret = Real::unlinkat()(dirfd, pathname, flags);
     epochBegin();
     return ret;
   }
 
-  int renameat(int olddirfd, const char *oldpath,
-               int newdirfd, const char *newpath){
+  int renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath){
     int ret;
     epochEnd();
-    ret = WRAP(renameat)(olddirfd, oldpath, newdirfd, newpath);
+    ret = Real::renameat()(olddirfd, oldpath, newdirfd, newpath);
     epochBegin();
     return ret;
   }
 
-  int linkat(int olddirfd, const char *oldpath,
-             int newdirfd, const char *newpath, int flags){
+  int linkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags){
     int ret;
     epochEnd();
-    ret = WRAP(linkat)(olddirfd, oldpath, newdirfd, newpath, flags);
+    ret = Real::linkat()(olddirfd, oldpath, newdirfd, newpath, flags);
     epochBegin();
     return ret;
   }
@@ -2932,34 +2902,31 @@ public:
   int symlinkat(const char *oldpath, int newdirfd, const char *newpath){
     int ret;
     epochEnd();
-    ret = WRAP(symlinkat)(oldpath, newdirfd, newpath);
+    ret = Real::symlinkat()(oldpath, newdirfd, newpath);
     epochBegin();
     return ret;
   }
 
   int readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz){
-
     int ret;
     epochEnd();
-    ret = WRAP(readlinkat)(dirfd, path, buf, bufsiz);
+    ret = Real::readlinkat()(dirfd, path, buf, bufsiz);
     epochBegin();
     return ret;
   }
 
   int fchmodat(int dirfd, const char *path, mode_t mode, int flags){
-
     int ret;
     epochEnd();
-    ret = WRAP(fchmodat)(dirfd, path, mode, flags);
+    ret = Real::fchmodat()(dirfd, path, mode, flags);
     epochBegin();
     return ret;
   }
 
   int faccessat(int dirfd, const char *path, int mode, int flags){
-
     int ret;
     epochEnd();
-    ret = WRAP(faccessat)(dirfd, path, mode, flags);
+    ret = Real::faccessat()(dirfd, path, mode, flags);
     epochBegin();
     return ret;
   }
@@ -2969,7 +2936,7 @@ public:
               const sigset_t *sigmask){
     int ret;
     epochEnd();
-    ret = WRAP(pselect)(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+    ret = Real::pselect()(nfds, readfds, writefds, exceptfds, timeout, sigmask);
     epochBegin();
     return ret;
   }
@@ -2978,7 +2945,7 @@ public:
           const struct timespec *timeout, const sigset_t *sigmask){
     int ret;
     epochEnd();
-    ret = WRAP(ppoll)(fds, nfds, timeout, sigmask);
+    ret = Real::ppoll()(fds, nfds, timeout, sigmask);
     epochBegin();
     return ret;
   }
@@ -2986,34 +2953,33 @@ public:
   int unshare(int flags){
     int ret;
     epochEnd();
-    ret = WRAP(unshare)(flags);
+    ret = Real::unshare()(flags);
     epochBegin();
     return ret;
   }
 
-  long get_robust_list(int pid, struct robust_list_head **head_ptr,
-                   size_t *len_ptr){
+  // get/set_robust_list functions are not in libc
+  /*long get_robust_list(int pid, struct robust_list_head **head_ptr, size_t *len_ptr){
     long ret;
     epochEnd();
-    ret = WRAP(get_robust_list)(pid, head_ptr, len_ptr);
+    ret = Real::get_robust_list()(pid, head_ptr, len_ptr);
     epochBegin();
     return ret;
   }
 
   long set_robust_list(struct robust_list_head *head, size_t len){
-
     long ret;
     epochEnd();
-    ret = WRAP(set_robust_list)(head, len);
+    ret = Real::set_robust_list()(head, len);
     epochBegin();
     return ret;
-  }
+  }*/
 
   int splice(int fd_in, __off64_t *off_in, int fd_out,
               __off64_t *off_out, size_t len, unsigned int flags){
     int ret;
     epochEnd();
-    ret = WRAP(splice)(fd_in, off_in, fd_out, off_out, len, flags);
+    ret = Real::splice()(fd_in, off_in, fd_out, off_out, len, flags);
     epochBegin();
     return ret;
 
@@ -3022,7 +2988,7 @@ public:
   int tee(int fd_in, int fd_out, size_t len, unsigned int flags){
     int ret;
     epochEnd();
-    ret = WRAP(tee)(fd_in, fd_out, len, flags);
+    ret = Real::tee()(fd_in, fd_out, len, flags);
     epochBegin();
     return ret;
   }
@@ -3031,7 +2997,7 @@ public:
                        unsigned int flags){
     int ret;
     epochEnd();
-    ret = WRAP(sync_file_range)(fd, offset, nbytes, flags);
+    ret = Real::sync_file_range()(fd, offset, nbytes, flags);
     epochBegin();
     return ret;
   }
@@ -3040,29 +3006,30 @@ public:
                 size_t nr_segs, unsigned int flags){
     int ret;
     epochEnd();
-    ret = WRAP(vmsplice)(fd, iov, nr_segs, flags);
+    ret = Real::vmsplice()(fd, iov, nr_segs, flags);
     epochBegin();
     return ret;
 
   }
 
-  long move_pages(pid_t pid, unsigned long nr_pages,
+  // move_pages isn't defined in any headers
+  /*long move_pages(pid_t pid, unsigned long nr_pages,
                   const void **address,
                   const int *nodes, int *status,
                   int flags){
     long ret;
     epochEnd();
-    ret = WRAP(move_pages)(pid, nr_pages, address, nodes, status, flags);
+    ret = Real::move_pages()(pid, nr_pages, address, nodes, status, flags);
     epochBegin();
     return ret;
-  }
+  }*/
 
-#if 0
-  int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc * tls, pid_t *ctid) {
+  // __clone isn't defined in any headers
+  /*int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc * tls, pid_t *ctid) {
     int ret;
 
     if(!global_isRollback()) {
-      ret = WRAP(__clone)(fn, child_stack, flags, arg, pid, tls, ctid);
+      ret = Real::__clone()(fn, child_stack, flags, arg, pid, tls, ctid);
       getRecord()->recordCloneOps(ret); 
     }
     else {
@@ -3070,8 +3037,7 @@ public:
     }
     
     return ret;
-  }
-#endif
+  }*/
 
 private:
   bool threadSpawning() {

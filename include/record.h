@@ -354,7 +354,7 @@ public:
         break;
       }
     
-      WRAP(munmap)(record->addr, record->length);
+      Real::munmap()(record->addr, record->length);
     }
     _entries.cleanup();
   }

@@ -35,7 +35,7 @@
 #include "xdefines.h"
 //#include "atomic.h"
 //#include "xmemory.h"
-#include "libfuncs.h"
+#include "real.h"
 #include "threadinfo.h"
 #include "globalinfo.h"
 //#include "syscalls.h"
@@ -202,11 +202,11 @@ public:
 
       // Now we are going to record this spawning event.
       setThreadSpawning();
-      result =  WRAP(pthread_create)(tid, attr, xthread::startThread, (void *)children);
+      result =  Real::pthread_create()(tid, attr, xthread::startThread, (void *)children);
       unsetThreadSpawning();
       if(result != 0) {
         PRDBG("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
-        WRAP(exit)(-1);
+        Real::exit()(-1);
       }
     
       // Record spawning event
@@ -333,7 +333,7 @@ public:
   inline int thread_cancel(pthread_t thread) {
     int retval;
     invokeCommit();
-    retval= WRAP(pthread_cancel)(thread);
+    retval= Real::pthread_cancel()(thread);
     if(retval == 0) {
       threadinfo::getInstance().cancelAliveThread(thread);
     }
@@ -341,7 +341,7 @@ public:
   }
 
   inline int thread_kill(pthread_t thread, int sig) {
-    return WRAP(pthread_kill)(thread, sig);
+    return Real::pthread_kill()(thread, sig);
   }
 
   inline void setRealSyncVariable(void * syncVar, void * realVar) {
@@ -362,7 +362,7 @@ public:
 
 //      fprintf(stderr, "mutex_init with realMutex %p\n", realMutex);
       // Actually initialize this mutex
-      result = WRAP(pthread_mutex_init)(realMutex, attr);
+      result = Real::pthread_mutex_init()(realMutex, attr);
 
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
@@ -391,11 +391,11 @@ public:
 
       switch(synccmd) {
         case E_SYNC_MUTEX_LOCK:
-          ret = WRAP(pthread_mutex_lock)(realMutex);
+          ret = Real::pthread_mutex_lock()(realMutex);
           break;
 
         case E_SYNC_MUTEX_TRY_LOCK:
-          ret = WRAP(pthread_mutex_trylock) (realMutex);
+          ret = Real::pthread_mutex_trylock() (realMutex);
           break;
 
         default:
@@ -437,7 +437,7 @@ public:
 
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
-      ret = WRAP(pthread_mutex_unlock)(realMutex);
+      ret = Real::pthread_mutex_unlock()(realMutex);
     }
     else {
       SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
@@ -458,7 +458,7 @@ public:
   
   ///// conditional variable functions.
   void cond_init(pthread_cond_t * cond, const pthread_condattr_t * attr) {
-    WRAP(pthread_cond_init)(cond, attr);
+    Real::pthread_cond_init()(cond, attr);
   }
 
   // Add this into destoyed list.
@@ -479,7 +479,7 @@ public:
 
       //PRDBG("cond_wait for thread %d\n", current->index);
       // Add the event into eventlist
-      ret = WRAP(pthread_cond_wait) (cond, realMutex);
+      ret = Real::pthread_cond_wait() (cond, realMutex);
       
       // Record the waking up of conditional variable
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
@@ -506,11 +506,11 @@ public:
   }
   
   int cond_broadcast(pthread_cond_t * cond) {
-    return WRAP(pthread_cond_broadcast)(cond);
+    return Real::pthread_cond_broadcast()(cond);
   }
 
   int cond_signal(pthread_cond_t * cond) {
-    return WRAP(pthread_cond_signal)(cond);
+    return Real::pthread_cond_signal()(cond);
   }
   
   // Barrier support
@@ -518,7 +518,7 @@ public:
     int result = 0;
 #ifndef BARRIER_SUPPORT
     // Look for this barrier in the map of initialized barrieres.
-    result = WRAP(pthread_barrier_init)(barrier, attr, count);
+    result = Real::pthread_barrier_init()(barrier, attr, count);
 #else
     pthread_barrier_t * realBarrier = NULL;
 
@@ -527,7 +527,7 @@ public:
       realBarrier=(pthread_barrier_t *)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
 
       // Actually initialize this mutex
-      result = WRAP(pthread_barrier_init)(realBarrier, attr);
+      result = Real::pthread_barrier_init()(realBarrier, attr);
 
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(barrier, realBarrier, sizeof(pthread_barrier_t));
@@ -547,7 +547,7 @@ public:
   int barrier_wait(pthread_barrier_t *barrier) {
     int ret;
 #ifndef BARRIER_SUPPORT
-    ret = WRAP(pthread_barrier_wait)(barrier);
+    ret = Real::pthread_barrier_wait()(barrier);
 #else
     pthread_barrier_t * realBarrier = NULL;
     SyncEventList * list = NULL;
@@ -560,7 +560,7 @@ public:
       // Since we do not have a lock here, which can not guarantee that
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
-      ret = WRAP(pthread_barrier_wait)(realBarrier);
+      ret = Real::pthread_barrier_wait()(realBarrier);
       list->recordSyncEvent(E_SYNC_BARRIER, ret);
     }
     else {
@@ -572,7 +572,7 @@ public:
       updateSyncEvent(list);
 
       if(ret == 0) {
-        ret = WRAP(pthread_barrier_wait)(realBarrier);
+        ret = Real::pthread_barrier_wait()(realBarrier);
       }
     }
 #endif
@@ -611,7 +611,7 @@ public:
       PRDBG("Wrong. Current stack size (%lx = %p - %p) need to backup is larger than" \
               "total size (%lx). Either the application called setrlimit or the implementation" \
               "is wrong.\n", size, current->privateTop, current->privateStart, current->totalPrivateSize);
-      WRAP(exit)(-1);
+      Real::exit()(-1);
     }
  
    // PRDBG("privateStart %p size %lx backup %p\n", current->privateStart, size, current->backup);
@@ -646,7 +646,7 @@ public:
   }
 
   inline static pthread_t thread_self() {
-    return WRAP(pthread_self)();
+    return Real::pthread_self()();
   }
 
   inline static void saveContext() {
@@ -774,7 +774,7 @@ private:
     void * privateTop;
     size_t stackSize = __max_stack_size;
 
-    current->self = WRAP(pthread_self)();
+    current->self = Real::pthread_self()();
 
     // Initialize event pool for this thread.
     current->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);

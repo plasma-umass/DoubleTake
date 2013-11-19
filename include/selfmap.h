@@ -138,7 +138,7 @@ public:
     int    count;
 
     /* Get current executable file name. */
-    count= WRAP(readlink)("/proc/self/exe", filename, MAX_BUF_SIZE);
+    count= Real::readlink()("/proc/self/exe", filename, MAX_BUF_SIZE);
     if (count <= 0 || count >= MAX_BUF_SIZE)
     {
       PRDBG("Failed to get current executable file name\n" );

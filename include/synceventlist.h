@@ -70,7 +70,7 @@ public:
 //    fprintf(stderr, "synceventlist initialization at list %p\n", &list);
     // Initialize the sequence number   
     listInit(&list);
-    WRAP(pthread_mutex_init)(&lock, NULL);
+    Real::pthread_mutex_init()(&lock, NULL);
     syncVariable = variable;
     syncCmd = synccmd;
     curentry = NULL;
@@ -89,9 +89,9 @@ public:
     event->ret = ret;
 
     if(synccmd != E_SYNC_MUTEX_LOCK) {   
-      WRAP(pthread_mutex_lock)(&this->lock);
+      Real::pthread_mutex_lock()(&this->lock);
       listInsertTail(&event->list, &this->list);
-      WRAP(pthread_mutex_unlock)(&this->lock);
+      Real::pthread_mutex_unlock()(&this->lock);
     }
     else {
       // We only record synchronization inside critical section.

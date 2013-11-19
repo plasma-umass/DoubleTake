@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <string.h>
 #include "xdefines.h"
-#include "libfuncs.h"
+#include "real.h"
 
 extern "C" {
   typedef union semun {
@@ -78,7 +78,7 @@ public:
     while(true) {
       /* Create the semaphore with external key KEY if it doesn't already 
        exists. Give permissions to the world. */
-      id = WRAP(semget)(_semaKey, 1, 0666);
+      id = Real::semget()(_semaKey, 1, 0666);
       /* Always check system returns. */
       if(id < 0)
       {
@@ -92,14 +92,14 @@ public:
  
     // Initialize semaphore to the desired number.
     arg.val = initValue;
-    _semaId = WRAP(semget)(_semaKey, nsemas, 0666 | IPC_CREAT);
+    _semaId = Real::semget()(_semaKey, nsemas, 0666 | IPC_CREAT);
     //fprintf(stderr, "Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
     if(_semaId == -1) {
       fprintf(stderr, "semaphore creates failure %s\n", strerror(errno));
       EXIT;
     }
     else {
-      WRAP(semctl)(_semaId, 0, SETVAL, arg);
+      Real::semctl()(_semaId, 0, SETVAL, arg);
     }
   }
   
@@ -127,7 +127,7 @@ public:
     }
  
     //fprintf(stderr, "Semaphore %p _semaId %d semaphore destory\n", &_semaKey, _semaId);
-    if(WRAP(semctl)(_semaId, 0, IPC_RMID, argument) < 0)
+    if(Real::semctl()(_semaId, 0, IPC_RMID, argument) < 0)
     {
       fprintf(stderr, "Cannot detroy semaphore.\n");
       EXIT;  
@@ -142,7 +142,7 @@ private:
     sops.sem_num = 0;
     sops.sem_op = val;
     sops.sem_flg = 0;
-    int retval = WRAP(semop)(_semaId, &sops, 1);
+    int retval = Real::semop()(_semaId, &sops, 1);
   }
   
   int _semaKey;

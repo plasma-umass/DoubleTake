@@ -30,7 +30,7 @@
 #include <errno.h>
 
 #include "log.h"
-#include "libfuncs.h"
+#include "real.h"
 #include "list.h"
 #include "prof.h"
 //#include "internalsyncs.h"
@@ -71,7 +71,7 @@ extern "C" {
   extern char * getThreadBuffer();
   extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
   extern bool addThreadQuarantineList(void * ptr, size_t size);
-  #define EXIT (WRAP(exit)(-1))
+  #define EXIT (Real::exit()(-1))
 
   inline size_t alignup(size_t size, size_t alignto) {
     return ((size + (alignto - 1)) & ~(alignto -1));

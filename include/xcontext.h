@@ -159,7 +159,7 @@ public:
     if(size >= _stackSize) {
       PRDBG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
               size, _privateTop, _privateStart, _stackSize);
-      WRAP(exit)(-1);
+      Real::exit()(-1);
     }
     memcpy(_backup, _privateStart, size);
     // We are trying to save context at first
