@@ -49,7 +49,6 @@
 #include "xheap.h"
 
 #include "objectheader.h"
-#include "finetime.h"
 #include "watchpoint.h"
 #include "globalinfo.h"
 #include "xthread.h"
