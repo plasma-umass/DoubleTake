@@ -133,6 +133,10 @@ static void * tempmalloc(int size) {
   }
 }
 
+bool addThreadQuarantineList(void * ptr, size_t sz) {
+  return xthread::getInstance().addQuarantineList(ptr, sz);
+}
+
 extern "C" {
   /// Functions related to memory management.
   void * doubletake_malloc (size_t sz) {
@@ -219,10 +223,6 @@ extern "C" {
 
   void * memalign(size_t boundary, size_t sz) { 
     return doubletake_memalign(boundary, sz);
-  }
-
-  bool addThreadQuarantineList(void * ptr, size_t sz) {
-    return xthread::getInstance().addQuarantineList(ptr, sz);
   }
 
 #ifdef MULTI_THREAD

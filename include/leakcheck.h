@@ -65,6 +65,7 @@ public:
   }
   
   void searchHeapPointersInsideGlobals(void);
+  
   bool doSlowLeakCheck(void * begin, void *end) {
     _heapBegin = (unsigned long)begin + sizeof(objectHeader);
     _heapEnd = (unsigned long)end;

@@ -113,7 +113,7 @@ public:
       // It is impossible that we haven't find the node until the end of a list.
       if(isListTail(&ath->list, &_alivethreads) == true) {
         DEBUG("WRong, we can't find alive thread %p in the list.", thread);
-        EXIT;
+        abort();
       }
       
       ath = (struct aliveThread *)nextEntry(&ath->list);

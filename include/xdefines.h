@@ -32,7 +32,6 @@
 #include "log.h"
 #include "real.h"
 #include "list.h"
-#include "prof.h"
 //#include "internalsyncs.h"
 
 
@@ -64,38 +63,34 @@ extern runtime_data_t *global_data;
 #define hash_map __gnu_cxx::hash_map
 #endif
 
-extern "C" {
-  extern size_t __max_stack_size; 
-  typedef void * threadFunction (void *);
-  extern int getThreadIndex();
-  extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
-  extern bool addThreadQuarantineList(void * ptr, size_t size);
-  #define EXIT (Real::exit()(-1))
+extern size_t __max_stack_size; 
+typedef void * threadFunction (void *);
+extern int getThreadIndex();
+extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
+extern bool addThreadQuarantineList(void * ptr, size_t size);
 
-  inline size_t alignup(size_t size, size_t alignto) {
-    return ((size + (alignto - 1)) & ~(alignto -1));
-  }
+inline size_t alignup(size_t size, size_t alignto) {
+  return ((size + (alignto - 1)) & ~(alignto -1));
+}
 
-  inline size_t aligndown(size_t addr, size_t alignto) {
-    return (addr & ~(alignto -1));
-  }
+inline size_t aligndown(size_t addr, size_t alignto) {
+  return (addr & ~(alignto -1));
+}
 
-  struct syncEvent {
-    list_t     list;
-    // Which thread is performing synchronization? 
-    void    *  thread;
-    void    *  eventlist;
-    int        ret; // used for mutex_lock
+struct syncEvent {
+  list_t     list;
+  // Which thread is performing synchronization? 
+  void    *  thread;
+  void    *  eventlist;
+  int        ret; // used for mutex_lock
+};
+
+struct freeObject {
+  void * ptr;
+  union {
+    int owner; // which thread is using this heap.
+    size_t size;
   };
-  
-  struct freeObject {
-    void * ptr;
-    union {
-      int owner; // which thread is using this heap.
-      size_t size;
-    };
-  };
-
 };
 
 class xdefines {

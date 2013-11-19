@@ -38,54 +38,44 @@
 #include "threadstruct.h"
 #include "selfmap.h"
 
-  // Print out the code information about an eipaddress
-  // Also try to print out stack trace of given pcaddr.
-  void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow) {
-    void * array[10];
-    int size;
-    int skip = 0;
+// Print out the code information about an eipaddress
+// Also try to print out stack trace of given pcaddr.
+void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow) {
+  void * array[10];
+  int size;
+  int skip = 0;
 
-    DEBUG("Try to get backtrace with array %p\n", array);
-    // get void*'s for all entries on the stack
-    current->internalheap = true;
-    size = backtrace(array, 10);
-    current->internalheap = false;
-    DEBUG("After get backtrace with array %p\n", array);
+  DEBUG("Try to get backtrace with array %p\n", array);
+  // get void*'s for all entries on the stack
+  current->internalheap = true;
+  size = backtrace(array, 10);
+  current->internalheap = false;
+  DEBUG("After get backtrace with array %p\n", array);
 
-    for(int i = 0; i < size; i++) {
-      if(isStopgapLibrary(array[i])) {
-        skip++;
-      } 
-      else {
-        break;
-      }
+  for(int i = 0; i < size; i++) {
+    if(isStopgapLibrary(array[i])) {
+      skip++;
+    } 
+    else {
+      break;
     }
-
-    backtrace_symbols_fd(&array[skip], size-skip, 2);
-
-    // Print out the source code information if it is a overflow site.
-    if(isOverflow) {
-      DEBUG("\nSource code information about overflow site:\n");
-      char buf[MAX_BUF_SIZE];
-
-      for(int i = skip; i < size-skip; i++) {
-        if(isApplication(array[i])) {
-          DEBUG("callstack frame %d: ", i);
-          // Print out the corresponding source code information
-          sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
-          system(buf);
-        }
-      }
-    }
-
-    DEBUG("\n\n");
-      // We don't care about the address in the libraries.
-      
-      // We must traverse back to find the address in the application.
-//      DEBUG("pcaddr %p is a library address\n", pcaddr);   
-     // backtrace_symbols_fd(length, frames, 2);
-      //for(int i = 0; i < frames; i++) {
-      //  DEBUG("i %d pc %p\n", i, buf[i]);
-      //}
   }
+
+  backtrace_symbols_fd(&array[skip], size-skip, 2);
+
+  // Print out the source code information if it is a overflow site.
+  if(isOverflow) {
+    DEBUG("\nSource code information about overflow site:\n");
+    char buf[MAX_BUF_SIZE];
+
+    for(int i = skip; i < size-skip; i++) {
+      if(isApplication(array[i])) {
+        DEBUG("callstack frame %d: ", i);
+        // Print out the corresponding source code information
+        sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
+        system(buf);
+      }
+    }
+  }
+}
  

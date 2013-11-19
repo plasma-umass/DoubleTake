@@ -41,12 +41,10 @@ __thread thread_t * current;
 //threadmap::threadHashMap threadmap::_xmap;
 list_t threadmap::_alivethreads;
 
-int getThreadIndex(void) {
+int getThreadIndex() {
   if(!global_isInitPhase()) {
-    //WARN("current %p\n", current);
     return current->index;
-  }
-  else { 
+  } else { 
     return 0;
   }
 }

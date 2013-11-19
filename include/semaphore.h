@@ -96,7 +96,7 @@ public:
     //DEBUG("Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
     if(_semaId == -1) {
       DEBUG("semaphore creates failure %s\n", strerror(errno));
-      EXIT;
+      abort();
     }
     else {
       Real::semctl()(_semaId, 0, SETVAL, arg);
@@ -130,7 +130,7 @@ public:
     if(Real::semctl()(_semaId, 0, IPC_RMID, argument) < 0)
     {
       DEBUG("Cannot detroy semaphore.\n");
-      EXIT;  
+      abort();  
     }
   }
 

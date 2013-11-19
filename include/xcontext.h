@@ -179,7 +179,7 @@ public:
     if(size >= _stackSize) {
       DEBUG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
               size, _privateTop, _privateStart, _stackSize);
-      EXIT;
+      abort();
     }
 
     memcpy(_backup, _privateStart, size);

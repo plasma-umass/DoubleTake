@@ -126,7 +126,7 @@ public:
 
     if(hfunc == NULL || kcmp == NULL) {
       DEBUG("Hashfunc or kcmp should not be null\n");
-      EXIT;
+      abort();
     }
 
     // Initialize those functions.

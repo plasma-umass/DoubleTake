@@ -211,7 +211,7 @@ private:
     sigusr2.sa_sigaction = xrun::sigusr2Handler;
     if (Real::sigaction()(SIGUSR2, &sigusr2, NULL) == -1) {
       fprintf (stderr, "setting signal handler SIGUSR2 failed.\n");
-      EXIT;
+      abort();
     }
   }
 

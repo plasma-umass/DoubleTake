@@ -68,7 +68,7 @@ void xrun::rollback(void) {
   if(global_hasRollbacked()) {
     DEBUG("HAS rollback, now exit\n");
     rollbackandstop();
-    EXIT;
+    abort();
   }
 
 
