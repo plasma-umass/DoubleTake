@@ -48,7 +48,7 @@ public:
   {
   }
  
-  static threadmap& getInstance (void) {
+  static threadmap& getInstance() {
     static char buf[sizeof(threadmap)];
     static threadmap * theOneTrueObject = new (buf) threadmap();
     return *theOneTrueObject;
@@ -142,7 +142,7 @@ public:
    prepareRollback:
     each thread will update its synchronization entry to the first one on its synchronization list.
    */
-  void prepareRollback(void) {
+  void prepareRollback() {
     struct aliveThread * ath;
     thread_t * thread;
  
@@ -170,7 +170,7 @@ public:
   /*
     destroy all semaphores:
    */
-  void destroyAllSemaphores(void) {
+  void destroyAllSemaphores() {
     struct aliveThread * ath;
     thread_t * thread;
     struct syncEventList * eventlist;

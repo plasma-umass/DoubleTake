@@ -53,9 +53,9 @@ public:
   void saveHeapMetadata() { getHeap()->saveHeapMetadata(); }
 
   // Get heap start and end, this is used to check range.
-  void * getHeapStart(void) { return getHeap()->getHeapStart(); }
-  void * getHeapEnd(void) { return getHeap()->getHeapEnd(); }
-  void * getHeapPosition(void) { return getHeap()->getHeapPosition(); }
+  void * getHeapStart() { return getHeap()->getHeapStart(); }
+  void * getHeapEnd() { return getHeap()->getHeapEnd(); }
+  void * getHeapPosition() { return getHeap()->getHeapPosition(); }
   
   void * malloc (size_t sz) { return getHeap()->malloc(sz); }
   void free (void * ptr) { getHeap()->free(ptr); }
@@ -63,7 +63,7 @@ public:
 
 private:
 
-  SourceHeap * getHeap (void) {
+  SourceHeap * getHeap() {
     static char heapbuf[sizeof(SourceHeap)];
     static SourceHeap * _heap = new (heapbuf) SourceHeap;
  //   fprintf (stderr, "xoneheap at %p\n", _heap);

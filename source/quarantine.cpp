@@ -33,7 +33,7 @@ void quarantine::realfree(void * ptr) {
   xmemory::getInstance().realfree(ptr);
 }
 
-void quarantine::rollback(void){
+void quarantine::rollback(){
   // Calling the rollback.
   xmemory::getInstance().rollback();
 }

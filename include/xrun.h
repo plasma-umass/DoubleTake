@@ -46,7 +46,7 @@ class xrun {
 
 private:
 
-  xrun (void)
+  xrun()
   : 
     _hasRollbacked(false), 
     _memory (xmemory::getInstance()),
@@ -58,14 +58,14 @@ private:
 
 public:
 
-  static xrun& getInstance (void) {
+  static xrun& getInstance() {
     static char buf[sizeof(xrun)];
     static xrun * theOneTrueObject = new (buf) xrun();
     return *theOneTrueObject;
   }
 
   /// @brief Initialize the system.
-  void initialize (void)
+  void initialize()
   {
     //current = NULL;
     pid_t pid = syscall(SYS_getpid);
@@ -117,7 +117,7 @@ public:
     epochBegin();
   }
   
-  void finalize (void)
+  void finalize()
   {
     if(mainId() != getpid()) {
       return;
@@ -140,7 +140,7 @@ public:
     
   }
 #ifdef DETECT_USAGE_AFTER_FREE
-  void finalUAFCheck(void);
+  void finalUAFCheck();
 #endif
   // Simply commit specified memory block
   void atomicCommit(void * addr, size_t size) {
@@ -152,30 +152,30 @@ public:
   }
 
   /* Transaction-related functions. */
-  void saveContext(void) {
+  void saveContext() {
     _thread.saveContext();
   }
 
   /// Rollback to previous saved point 
-  void rollback(void);
+  void rollback();
    
   /// Rollback to previous 
-  void rollbackandstop(void);
+  void rollbackandstop();
 
   inline void setpid(int pid) {
     _pid = pid;
   }
  
   /// @ Return current pid.
-  inline int getpid(void) {
+  inline int getpid() {
     return _pid;
   }
 
-  void epochBegin (void);
+  void epochBegin();
   void epochEnd (bool endOfProgram);
 private:
-  void syscallsInitialize(void);
-  void stopAllThreads(void);
+  void syscallsInitialize();
+  void stopAllThreads();
 
 
   // Handling the signal SIGUSR2
@@ -183,7 +183,7 @@ private:
 
   /// @brief Install a handler for SIGUSR2 signals.
   /// We are using the SIGUSR2 to stop all other threads.
-  void installSignalHandler (void) {
+  void installSignalHandler() {
     struct sigaction sigusr2;
 
     static stack_t _sigstk;

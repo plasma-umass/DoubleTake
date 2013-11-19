@@ -32,7 +32,7 @@ xpheap<xoneheap<xheap > > xmemory::_pheap;
  
 // This function is called inside the segmentation fault handler
 // So we must utilize the "context" to achieve our target 
-void xmemory::handleSegFault(void)
+void xmemory::handleSegFault()
 {
 #ifdef DETECT_OVERFLOW
   DEBUG("Returning from segmentation fault error\n"); 
@@ -56,11 +56,11 @@ void xmemory::handleSegFault(void)
 #endif
 }
  
-void xmemory::cleanupFreeList(void) {
+void xmemory::cleanupFreeList() {
   freelist::getInstance().postFreeAllObjects(); 
 }
  
-void xmemory::freeAllObjects(void)
+void xmemory::freeAllObjects()
 {
   freelist::getInstance().preFreeAllObjects(); 
   struct freeObject * obj = NULL;

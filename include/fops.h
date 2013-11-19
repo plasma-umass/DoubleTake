@@ -77,7 +77,7 @@ public:
   }
 
   // This is called after we are sure that there is no need to rollback.
-  void updateOpenedFiles(void) {
+  void updateOpenedFiles() {
     // Get file position for all files in the global hash table.
     filesHashMap::iterator i;
     fileInfo * thisFile;
@@ -215,7 +215,7 @@ public:
     }
   }
 
-  DIR * getDirAtOpen(void) {
+  DIR * getDirAtOpen() {
     dirInfo * dinfo;
     DIR * dir = NULL;
 
@@ -341,7 +341,7 @@ public:
  
 
   // Now we have to rollback current transaction
-  void prepareRollback(void) {
+  void prepareRollback() {
     // We must recove all file offsets of all files now.
     filesHashMap::iterator i;
 
@@ -392,7 +392,7 @@ public:
   // We are trying to open a file in the rollback phase
   // There is no need to allocate a new block of memory since
   // we already have one.
-  FILE * getFopen(void) {
+  FILE * getFopen() {
     int fd = getFdAtOpen();
     FILE * file;
 
@@ -431,7 +431,7 @@ public:
   // Called in the rollback phase
   // Try to get fd for open operation.
   // The function now can only support single threaded function
-  int getFdAtOpen(void) {
+  int getFdAtOpen() {
     int fd = -1;
 
     if(!getRecord()->getFileOps(Record::E_OP_FILE_OPEN, &fd)) {
@@ -516,7 +516,7 @@ public:
 
   // Handling all delayed close after the commit.
   // There is no need to rollback any more.
-  void cleanClosedFiles(void) {
+  void cleanClosedFiles() {
     int fd = -1;
     struct fileInfo * thisFile = NULL;
 

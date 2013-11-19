@@ -134,7 +134,7 @@ public:
   }
  
   // Update the synchronization list.
-  void advanceThreadSyncList(void) {
+  void advanceThreadSyncList() {
     struct syncEvent * nextEvent = NULL;
     
     global_lock();
@@ -148,7 +148,7 @@ public:
   }
   
   // peekSyncEvent return the saved event value for current synchronization.
-  inline int peekSyncEvent(void) {
+  inline int peekSyncEvent() {
     int result = -1;
     struct syncEvent * event = (struct syncEvent *)current->syncevents.getEntry();
     if(event) {

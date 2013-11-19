@@ -217,8 +217,8 @@ struct debug_reg_state
    command.  */
 
 /* Use this function to reset the i386-nat.c debug register state.  */
-extern void init_debug_registers (void);
-extern struct debug_reg_state * debug_reg_state (void);
+extern void init_debug_registers();
+extern struct debug_reg_state * debug_reg_state();
 extern int insert_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid);
 extern int remove_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid);
 extern unsigned long get_watching_address (pid_t pid);

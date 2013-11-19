@@ -45,7 +45,7 @@ public:
 	 // DEBUG("GLOBALS_START is %x\n", GLOBALS_START);
   }
 
-  void initialize(void) {
+  void initialize() {
     // We check those mappings to find out existing globals.
     int numb;
     int i;
@@ -63,11 +63,11 @@ public:
     }
   }
 
-  void finalize(void) {
+  void finalize() {
     // Nothing need to do here.
   }
 
-  int getRegions(void) {
+  int getRegions() {
     return _numbRegions; 
   }
 
@@ -82,7 +82,7 @@ public:
     }
   }
 
-  void recoverMemory(void) {
+  void recoverMemory() {
     for(int i = 0; i < _numbRegions; i++) {
       //DEBUG("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
       _maps[i].recoverMemory(NULL);
@@ -90,7 +90,7 @@ public:
   }
 
   // Commit all regions in the end of each transaction.
-  void backup(void) {
+  void backup() {
     for(int i = 0; i < _numbRegions; i++) {
       _maps[i].backup(NULL);
     }

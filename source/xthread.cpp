@@ -49,17 +49,17 @@ int getThreadIndex() {
   }
 }
 
-void xthread::invokeCommit(void) {
+void xthread::invokeCommit() {
   xrun::getInstance().epochEnd(false);
   xrun::getInstance().epochBegin();
 }
  
-void xthread::epochBegin(void) {
+void xthread::epochBegin() {
   current->qlist.restore();
   current->syncevents.cleanup();
 }
  
-void xthread::prepareRollback(void) {
+void xthread::prepareRollback() {
   syscalls::getInstance().prepareRollback();
 
   // Initialize the semaphores for threads at first since preparing synchronization may
@@ -71,7 +71,7 @@ void xthread::prepareRollback(void) {
 }
 
 
-void xthread::setThreadSafe(void) {
+void xthread::setThreadSafe() {
     bool toRollback = false;
     lock_thread(current);
     current->isSafe = true;
@@ -86,7 +86,7 @@ bool xthread::addQuarantineList(void * ptr, size_t sz) {
   return current->qlist.addFreeObject(ptr, sz);
 }
 
-void xthread::rollback(void) {
+void xthread::rollback() {
   current->qlist.restore();
 
   // Recover the context for current thread.

@@ -311,32 +311,32 @@ public:
     setcontext(oldContext->getContext());
   }
   
-  void * getStackTop(void) {
+  void * getStackTop() {
     return _privateTop;
   }
 
 private:
-  ucontext_t * getContext(void) {
+  ucontext_t * getContext() {
     return &_context;
   }
    
-  void * getPrivateStart(void) {
+  void * getPrivateStart() {
     return _privateStart;
   }
 
-  void * getPrivateTop(void) {
+  void * getPrivateTop() {
     return _privateTop;
   }
   
-  size_t getBackupSize(void) {
+  size_t getBackupSize() {
     return _backupSize;
   }
 
-  size_t getStackSize(void) {
+  size_t getStackSize() {
     return _stackSize;
   }
 
-  void * getBackupStart(void) {
+  void * getBackupStart() {
     return _backup;
   }
   // How to get ESP/RSP from the specified context.

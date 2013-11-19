@@ -65,13 +65,13 @@ public:
       bool     hasOverflowed;
   };
       
-  static watchpoint& getInstance (void) {
+  static watchpoint& getInstance() {
     static char buf[sizeof(watchpoint)];
     static watchpoint * theOneTrueObject = new (buf) watchpoint();
     return *theOneTrueObject;
   }
 
-  void initialize(void) {
+  void initialize() {
     init_debug_registers();
   }
 
@@ -89,12 +89,12 @@ public:
     } 
   }
 
-  bool hasToRollback(void) {
+  bool hasToRollback() {
     return (_numWatchpoints > 0 ? true : false);
   }
 
   // Set all watch points before rollback. 
-  void installWatchpoints(void)
+  void installWatchpoints()
   {
     pid_t child;
     struct sigaction trap_action;
@@ -166,12 +166,12 @@ public:
   }
 
   // How many watchpoints that we should care about.
-  int getWatchpointsNumber(void) {
+  int getWatchpointsNumber() {
     return _numWatchpoints;
   }
 
   
-  bool printWatchpoints(void) {
+  bool printWatchpoints() {
     bool isOverflowing = false;
     bool hasOverflowed = false;
 

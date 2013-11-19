@@ -98,7 +98,7 @@ public:
    * In the rollback phase, we only reuse those previous allocated objects. 
    */ 
   /// We will save those pointers to the backup ones.
-  inline void saveHeapMetadata(void) {
+  inline void saveHeapMetadata() {
     _positionBackup = _position;
     _remainingBackup = _remaining;
     DEBUG("save heap metadata, _position %p remaining %#lx\n", _position, _remaining);
@@ -106,23 +106,23 @@ public:
 
   /// We will overlap the metadata with the saved ones
   /// when we need to backup
-  inline void recoverHeapMetadata(void) {
+  inline void recoverHeapMetadata() {
     _position = _positionBackup;
     _remaining = _remainingBackup;
     DEBUG("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
   }
 
-  inline void * getHeapStart(void) {
+  inline void * getHeapStart() {
     return (void *)_start;
   }
 
-  inline void * getHeapEnd(void) {
+  inline void * getHeapEnd() {
     return (void *)_end;
   }
 
   // Get current heap position
   // We only need to do the sanity check until current position.
-  inline void * getHeapPosition(void) {
+  inline void * getHeapPosition() {
     //DEBUG("GetHeapPosition %p\n", _position);
 	  return  _position;
   }

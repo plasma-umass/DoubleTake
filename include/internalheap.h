@@ -102,7 +102,7 @@ public:
   perheap() {
   }
 
-  void initialize(void) {
+  void initialize() {
     int  metasize = alignup(sizeof(SuperHeap), xdefines::PageSize);
 
     // Initialize the SourceHeap before malloc from there.
@@ -152,12 +152,12 @@ public:
     _heap.initialize();
   }
  
-  virtual ~InternalHeap (void) {}
+  virtual ~InternalHeap() {}
   
   // Just one accessor.  Why? We don't want more than one (singleton)
   // and we want access to it neatly encapsulated here, for use by the
   // signal handler.
-  static InternalHeap& getInstance (void) {
+  static InternalHeap& getInstance() {
     static char buf[sizeof(InternalHeap)];
     static InternalHeap * theOneTrueObject = new (buf) InternalHeap();
     return *theOneTrueObject;

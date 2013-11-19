@@ -49,7 +49,7 @@ extern "C" {
 class selfmap {
 
 public:
-  static selfmap& getInstance (void) {
+  static selfmap& getInstance() {
     static char buf[sizeof(selfmap)];
     static selfmap * theOneTrueObject = new (buf) selfmap();
     return *theOneTrueObject;
@@ -86,7 +86,7 @@ public:
   }
   
   // Trying to get information about global regions. 
-  void getTextRegions(void) {
+  void getTextRegions() {
     ifstream iMapfile;
     string curentry;
 

@@ -50,7 +50,7 @@ public:
 
   // The single instance of sentinelmap. We only need this for 
   // heap. 
-  static sentinelmap& getInstance (void) {
+  static sentinelmap& getInstance() {
     static char buf[sizeof(sentinelmap)];
     static sentinelmap * theOneTrueObject = new (buf) sentinelmap();
     return *theOneTrueObject;

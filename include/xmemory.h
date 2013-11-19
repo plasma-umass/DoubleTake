@@ -58,7 +58,7 @@ class xmemory {
 private:
 
   // Private on purpose. See getInstance(), below.
-  xmemory (void) 
+  xmemory() 
   {
   }
 
@@ -66,13 +66,13 @@ public:
   // Just one accessor.  Why? We don't want more than one (singleton)
   // and we want access to it neatly encapsulated here, for use by the
   // signal handler.
-  static xmemory& getInstance (void) {
+  static xmemory& getInstance() {
     static char buf[sizeof(xmemory)];
     static xmemory * theOneTrueObject = new (buf) xmemory();
     return *theOneTrueObject;
   }
 
-  void initialize(void) {
+  void initialize() {
     // Install a handler to intercept SEGV signals (used for trapping initial reads and
     // writes to pages).
     installSignalHandler();
@@ -84,12 +84,12 @@ public:
 	  _globals.initialize();
   }
 
-  void finalize(void) {
+  void finalize() {
 	  _globals.finalize();
 	  _pheap.finalize();
   }
  
-  inline int getGlobalRegionsNumb(void) {
+  inline int getGlobalRegionsNumb() {
     return _globals.getRegions();
   }
 
@@ -432,7 +432,7 @@ public:
   }
 
   /// Called when a thread need to rollback.
-  inline void rollback(void) {
+  inline void rollback() {
 
     // Release all private pages.
     DEBUG("Recoverring the global memory\n");
@@ -449,7 +449,7 @@ public:
   }
 
   /// Rollback only without install watchpoints.
-  inline void rollbackonly(void) {
+  inline void rollbackonly() {
 
     // Release all private pages.
     _globals.recoverMemory();
@@ -463,14 +463,14 @@ public:
     watchpoint::getInstance().installWatchpoints();
  } 
   
-  inline void printCallsite(void) {
+  inline void printCallsite() {
     selfmap::getInstance().printCallStack(NULL, NULL, true);
     DEBUG("Program exit becaue of double free or invalid free.\n");
     exit(-1);
   }
 
   /// Transaction begins.
-  inline void epochBegin (void) {
+  inline void epochBegin() {
     _pheap.saveHeapMetadata();
 
     // Backup all existing data. 
@@ -478,11 +478,11 @@ public:
 		_globals.backup();
   }
 
-  inline void * getHeapEnd(void) {
+  inline void * getHeapEnd() {
     return _pheap.getHeapEnd();
   }
 
-  inline void * getHeapBegin(void) {
+  inline void * getHeapBegin() {
     return (void *)_heapBegin;
   }
 
@@ -545,10 +545,10 @@ public:
     return (o - 1);
   }
 
-  void freeAllObjects(void);
+  void freeAllObjects();
 
   void realfree(void * ptr);
-  void cleanupFreeList(void);
+  void cleanupFreeList();
 
   /// Rollback to previous 
   static void handleSegFault();
@@ -574,7 +574,7 @@ public:
   }
 
   /// @brief Install a handler for SEGV signals.
-  void installSignalHandler (void) {
+  void installSignalHandler() {
 #if defined(linux)
     static stack_t _sigstk;
 

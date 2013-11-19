@@ -128,7 +128,7 @@ private:
   SuperHeap;
 
 public:
-  KingsleyStyleHeap (void) {
+  KingsleyStyleHeap() {
   }
 
 private:
@@ -143,7 +143,7 @@ template <int NumHeaps,
 	  class TheHeapType>
 class PerThreadHeap {
 public:
-  PerThreadHeap (void)
+  PerThreadHeap()
   {
   //  DEBUG("TheHeapType size is %ld\n", sizeof(TheHeapType)); 
   }
@@ -218,23 +218,23 @@ public:
 
 
   // Performing the actual sanity check.
-  bool checkHeapOverflow(void) {
+  bool checkHeapOverflow() {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
     return SourceHeap::checkHeapOverflow(heapEnd);
   }
 
-  void recoverMemory(void) {
+  void recoverMemory() {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
     //DEBUG("recoverMemory, heapEnd %p\n", heapEnd);
     SourceHeap::recoverMemory(heapEnd);
   }
 
-  void backup(void) {
+  void backup() {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
     return SourceHeap::backup(heapEnd);
   }
 
-  void * getHeapEnd(void) {
+  void * getHeapEnd() {
     return (void *)SourceHeap::getHeapPosition();
   }
  

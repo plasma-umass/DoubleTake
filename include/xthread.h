@@ -56,13 +56,13 @@ public:
   // Actually, it is not an actual singleton. 
   // Every process will have one copy. They can be used 
   // to hold different contents specific to different threads.
-  static xthread& getInstance (void) {
+  static xthread& getInstance() {
     static char buf[sizeof(xthread)]; 
     static xthread * xthreadObject = new(buf) xthread();
     return * xthreadObject;
   }
 
-  void initialize(void) {
+  void initialize() {
     //DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
     _thread.initialize();
 
@@ -86,7 +86,7 @@ public:
     DEBUG("Done with thread initialization"); 
   }
 
-  void finalize(void) {
+  void finalize() {
     threadmap::getInstance().finalize();
   }
 
@@ -94,7 +94,7 @@ public:
   // we should discard those record events since there is no
   // need to rollback anymore 
   // tnrere are three types of events here.
-  void epochEndWell(void) {
+  void epochEndWell() {
   //  runDeferredSyncs();
 
     // The global syncrecord
@@ -102,7 +102,7 @@ public:
   }
 
   // Register initial thread
-  inline void initialThreadRegister(void) {
+  inline void initialThreadRegister() {
     int tindex = allocThreadIndex();
  
     thread_t * tinfo = getThreadInfo(tindex);
@@ -621,17 +621,17 @@ public:
   }
 
   // Return actual thread index  
-  int getIndex(void) {
+  int getIndex() {
     return current->index;
   }
 
   // Preparing the rollback.
-  void prepareRollback(void);
+  void prepareRollback();
 
-  static void epochBegin(void);
+  static void epochBegin();
 
   // Rollback the whole process
-  static void rollback(void);
+  static void rollback();
  
   void rollbackInsideSignalHandler(ucontext * context) {
     
@@ -683,7 +683,7 @@ public:
   }
 
 
-  void invokeCommit(void);
+  void invokeCommit();
   bool addQuarantineList(void * ptr, size_t sz);
 
 private:
@@ -743,7 +743,7 @@ private:
     sema->get();
   }
 
-  semaphore * getSemaphore(void) {
+  semaphore * getSemaphore() {
     return &current->sema;
   }
 
@@ -838,7 +838,7 @@ private:
   }
 
 
-  static bool isThreadDetached(void) {
+  static bool isThreadDetached() {
     return current->isDetached;
   }
 

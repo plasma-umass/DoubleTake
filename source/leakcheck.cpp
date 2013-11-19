@@ -47,7 +47,7 @@
 #include "threadmap.h"
 #include "xmemory.h"
 
-void leakcheck::searchHeapPointersInsideGlobals(void) {
+void leakcheck::searchHeapPointersInsideGlobals() {
   int totalRegions;
 
   totalRegions = xmemory::getInstance().getGlobalRegionsNumb();

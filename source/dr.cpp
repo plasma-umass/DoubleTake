@@ -149,7 +149,7 @@ static void dr_set_addr (pid_t pid, int regnum, CORE_ADDR addr)
 
 /* Clear the reference counts and forget everything we knew about the
    debug registers.  */
-void init_debug_registers (void)
+void init_debug_registers()
 {
   int i;
 
@@ -168,7 +168,7 @@ void init_debug_registers (void)
 /* Per-inferior hook for register_inferior_data_with_cleanup.  */
 /* Get debug registers state. */
 //FIXME: maybe we have to use the per process related state.
-struct debug_reg_state * debug_reg_state (void)
+struct debug_reg_state * debug_reg_state()
 {
   return &state;
 }

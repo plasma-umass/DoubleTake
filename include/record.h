@@ -111,7 +111,7 @@ private:
 
 public:
 
-  void initialize(void) {
+  void initialize() {
 //    DEBUG("RECORD: _entries %p\n", &_entries);
     _entries.initialize(xdefines::MAX_RECORD_ENTRIES);
 
@@ -344,7 +344,7 @@ public:
    
   // For some list, we donot need to search one by one.
   // We can clear the whole list.
-  void epochBegin(void) {
+  void epochBegin() {
     // Do munmap for all entries
     struct recordMunmap * record = NULL;
     while(true) {
@@ -360,17 +360,17 @@ public:
   }
 
   // Prepare the traverse for all list.
-  void prepareRollback(void) {
+  void prepareRollback() {
     _entries.prepareRollback();
   }
 
 private:
 
-  void lock(void) {
+  void lock() {
     _lck.lock();
   }
 
-  void unlock(void) {
+  void unlock() {
     _lck.unlock();
   }
 

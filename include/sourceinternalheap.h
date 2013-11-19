@@ -35,7 +35,7 @@ class SourceInternalHeap
 {
 public:
 
-  SourceInternalHeap (void)
+  SourceInternalHeap()
   { }
 
   void * initialize(void * startaddr, size_t initSize, size_t metasize) {
@@ -90,16 +90,16 @@ public:
     return p;
   }
 
-  inline void * getHeapStart(void) {
+  inline void * getHeapStart() {
     DEBUG("*****XHEAP:_start %p*****\n", _start);
     return (void *)_start;
   }
 
-  inline void * getHeapEnd(void) {
+  inline void * getHeapEnd() {
     return (void *)_end;
   }
   
-  inline void * getHeapPosition(void) {
+  inline void * getHeapPosition() {
     return (void *)_position;
   }
 
@@ -109,15 +109,15 @@ public:
 
 private:
 
-  void lock(void) {
+  void lock() {
     Real::pthread_mutex_lock()(&_mutex);
   }
 
-  void unlock(void) {
+  void unlock() {
     Real::pthread_mutex_unlock()(&_mutex);
   }
 
-  void sanityCheck (void) {
+  void sanityCheck() {
     if (_magic != 0xCAFEBABE) {
       fprintf (stderr, "%d : WTF!\n", getpid());
       ::abort();

@@ -130,12 +130,12 @@
     return ret;
   }
 
-  inline void atomic_memoryBarrier(void) {
+  inline void atomic_memoryBarrier() {
     // Memory barrier: x86 only for now.
     __asm__ __volatile__ ("mfence": : :"memory");
   }
 
-  inline void atomic_cpuRelax(void) {
+  inline void atomic_cpuRelax() {
     asm volatile("pause\n": : :"memory");
   }
 #endif

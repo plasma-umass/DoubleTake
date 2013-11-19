@@ -52,7 +52,7 @@ extern "C" {
   void * CUSTOM_REALLOC(void *, size_t);
   void * CUSTOM_MEMALIGN(size_t, size_t);
 
-  static void my_init_hook (void);
+  static void my_init_hook();
 
   // New hooks for allocation functions.
   static void * my_malloc_hook (size_t, const void *);
@@ -70,9 +70,9 @@ extern "C" {
 #define __MALLOC_HOOK_VOLATILE
 #endif
 
-  void (* __MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = my_init_hook;
+  void (* __MALLOC_HOOK_VOLATILE __malloc_initialize_hook)() = my_init_hook;
 
-  static void my_init_hook (void) {
+  static void my_init_hook() {
     // Store the old hooks.
     old_malloc_hook = __malloc_hook;
     old_free_hook = __free_hook;
@@ -105,9 +105,9 @@ extern "C" {
   }
 
 #if 0
-  void finalizer (void) __attribute__((destructor));
+  void finalizer() __attribute__((destructor));
 
-  void finalizer (void) {
+  void finalizer() {
     printf ("counter = %d\n", counter);
   }
 #endif

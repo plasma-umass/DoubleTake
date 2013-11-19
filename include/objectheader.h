@@ -72,34 +72,34 @@ public:
 #define OBJECT_CHECKED_WORD (0x1)
 #define OBJECT_CHECKED_WORD_MASK (0xFFFFFFFE)
 
-  void* getNextObject(void) {
+  void* getNextObject() {
     return ((void *)((intptr_t)&_sentinel + 4*xdefines::SENTINEL_SIZE+_blockSize));
   }
 
   // Since _blockSize is always power of 2 in our allocator,
   // thus we are using the least significant bit to mark whether
   // an heap object is reachable or not.
-  void markObjectChecked(void) {
+  void markObjectChecked() {
     _blockSize |= OBJECT_CHECKED_WORD;
   }
 
-  void cleanObjectChecked(void) {
+  void cleanObjectChecked() {
     _blockSize &= OBJECT_CHECKED_WORD_MASK;
   }
 
   // Check whether a object is reachable or not.
   // An object is reachable if it is freed.
-  bool doCheckObject(void) {
+  bool doCheckObject() {
     return (isObjectFree() || isObjectChecked()) ? false : true;
   }
 
   // Whether we already checked this object or not.
-  bool isObjectChecked(void) {
+  bool isObjectChecked() {
     return (_blockSize & OBJECT_CHECKED_WORD) ? true : false;
   }
 
   // Check and clean object is reachable or not.
-  bool checkLeakageAndClean(void) {
+  bool checkLeakageAndClean() {
     // If an object is freed, it is consider to 
     // be reachable.
     bool isLeakage = true;

@@ -68,7 +68,7 @@ public:
 
   }
   
-  virtual ~xmapping (void) {
+  virtual ~xmapping() {
   }
 
   // Initialize the map and corresponding part.
@@ -107,16 +107,16 @@ public:
   }
 
   // Do nothing 
-  void finalize(void) {
+  void finalize() {
   }
 
   /// @return the start of the memory region being managed.
-  inline char * base (void) const {
+  inline char * base() const {
     return _userMemory;
   }
 
   /// @return the size in bytes of the underlying object.
-  inline size_t size (void) const {
+  inline size_t size() const {
     return _startsize;
   }
 

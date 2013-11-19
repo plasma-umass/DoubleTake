@@ -102,16 +102,16 @@ public:
   }
 
 
-  inline void * getSyncVariable(void) {
+  inline void * getSyncVariable() {
     return syncVariable;
   }
 
-  inline thrSyncCmd getSyncCmd(void) {
+  inline thrSyncCmd getSyncCmd() {
     return syncCmd; 
   }
  
   // Move forward for current thread event list 
-  inline struct syncEvent * advanceSyncEvent(void) {
+  inline struct syncEvent * advanceSyncEvent() {
     list_t * curentry = this->curentry;
 
     if(!isListTail(curentry, &this->list)) {
@@ -131,12 +131,12 @@ public:
     listInit(&this->list);
   }
 
-  struct syncEvent * allocSyncEvent(void) {
+  struct syncEvent * allocSyncEvent() {
     return current->syncevents.alloc();
   }
 
   // Set the first entry and return it
-  struct syncEvent * prepareRollback(void) {
+  struct syncEvent * prepareRollback() {
     struct syncEvent * event = NULL;
 
     if(!isListEmpty(&list)) {

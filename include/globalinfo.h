@@ -54,24 +54,24 @@ extern "C" {
   extern int g_waiters;  
   extern int g_waitersTotal;  
 
-  inline void global_lock(void) {
+  inline void global_lock() {
     Real::pthread_mutex_lock()(&g_mutex);
   }
 
-  inline void global_unlock(void) {
+  inline void global_unlock() {
     Real::pthread_mutex_unlock()(&g_mutex);
   } 
   
-  inline void global_lockInsideSignalhandler(void) {
+  inline void global_lockInsideSignalhandler() {
     Real::pthread_mutex_lock()(&g_mutexSignalhandler);
   }
 
-  inline void global_unlockInsideSignalhandler(void) {
+  inline void global_unlockInsideSignalhandler() {
     Real::pthread_mutex_unlock()(&g_mutexSignalhandler);
   }
 
 
-  inline void global_initialize(void) {
+  inline void global_initialize() {
     g_isRollback = false;
     g_hasRollbacked = false;
     g_phase = E_SYS_INIT;
@@ -84,39 +84,39 @@ extern "C" {
     Real::pthread_cond_init()(&g_condWaiters, NULL);
   }
  
-  inline void global_setEpochEnd(void) {
+  inline void global_setEpochEnd() {
     g_numOfEnds++;
     g_phase = E_SYS_EPOCH_END;
   }
 
-  inline bool global_isInitPhase(void) {
+  inline bool global_isInitPhase() {
     return g_phase == E_SYS_INIT;
   }
 
-  inline bool global_isEpochEnd(void) {
+  inline bool global_isEpochEnd() {
     return g_phase == E_SYS_EPOCH_END;
   }
 
-  inline bool global_isRollback(void) {
+  inline bool global_isRollback() {
     DEBUG("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
     return g_phase == E_SYS_ROLLBACK;
   }
 
-  inline bool global_isEpochBegin(void) {
+  inline bool global_isEpochBegin() {
     return g_phase == E_SYS_EPOCH_BEGIN;
   }
 
-  inline void global_setRollback(void) {
+  inline void global_setRollback() {
     g_phase = E_SYS_ROLLBACK;
     g_hasRollbacked = true;
     //DEBUG("setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
-  inline bool global_hasRollbacked(void) {
+  inline bool global_hasRollbacked() {
     return g_hasRollbacked;
   }
 
-  inline void global_rollback(void) {
+  inline void global_rollback() {
     global_setRollback();
 
     // Wakeup all other threads.
@@ -124,7 +124,7 @@ extern "C" {
 //    DEBUG("after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   }
 
-  inline void global_epochBegin(void) {
+  inline void global_epochBegin() {
     global_lockInsideSignalhandler();
 
     g_phase = E_SYS_EPOCH_BEGIN;
@@ -138,7 +138,7 @@ extern "C" {
     global_unlockInsideSignalhandler();
   }
 
-  inline thread_t * global_getCurrent(void) {
+  inline thread_t * global_getCurrent() {
     return current; 
   }
 
@@ -153,12 +153,12 @@ extern "C" {
     global_unlockInsideSignalhandler();
   }
 
-  inline void global_checkWaiters(void) {
+  inline void global_checkWaiters() {
     assert(g_waiters == 0);
   }
 
   // Notify the commiter and wait on the global conditional variable 
-  inline void global_waitForNotification(void) {
+  inline void global_waitForNotification() {
     assert(global_isEpochEnd() == true);
     
 //    printf("waitForNotification, waiters is %d at thread %p\n", g_waiters, pthread_self());

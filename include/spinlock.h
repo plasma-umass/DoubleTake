@@ -36,12 +36,12 @@ public:
     _lock = 0;
   }
 
-  void init(void) {
+  void init() {
     _lock = 0;
   }
 
   // Lock 
-  void lock(void) {
+  void lock() {
 #if 0
     int cnt = 0;
 	 
@@ -81,7 +81,7 @@ public:
 #endif
   }
   
-  void unlock(void) {
+  void unlock() {
     _lock = 0;
     atomic_memoryBarrier();
   }

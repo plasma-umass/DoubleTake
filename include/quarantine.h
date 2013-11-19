@@ -210,7 +210,7 @@ public:
 private:
 
   void realfree(void *ptr);
-  void rollback(void);
+  void rollback();
 
   freeObject *_objects;
   freeObject *_objectsBackup;

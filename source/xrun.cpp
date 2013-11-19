@@ -31,7 +31,7 @@
 #include "threadmap.h"
 #include "leakcheck.h"
 
-void xrun::startRollback(void) {
+void xrun::startRollback() {
   // Now we are going to rollback. Wakup all threads
   // waiting on the shared conditional variable
   global_rollback();
@@ -44,11 +44,11 @@ void xrun::startRollback(void) {
   xthread::getInstance().rollback();
 }
 
-void xrun::syscallsInitialize(void) {
+void xrun::syscallsInitialize() {
    syscalls::getInstance().initialize();
 }
 
-void xrun::rollbackandstop(void) {
+void xrun::rollbackandstop() {
     // Now we are going to rollback.
     startRollback();
 
@@ -60,7 +60,7 @@ void xrun::rollbackandstop(void) {
 
 
 // We are rollback the child process 
-void xrun::rollback(void) {
+void xrun::rollback() {
   DEBUG("\n\nNOW ROLLING BACK\n\n\n");
   DEBUG("\n\nNOW ROLLING BACK\n\n\n");
   // If this is the first time to rollback,
@@ -92,7 +92,7 @@ void xrun::rollback(void) {
 }
 
 /// @brief Start a new epoch.
-void xrun::epochBegin (void) {
+void xrun::epochBegin() {
   DEBUG("getpid %d: xrun::epochBegin. \n", getpid());
 
   threadmap::aliveThreadIterator i;
@@ -204,7 +204,7 @@ bool isThreadSafe(thread_t * thread) {
 }
 
 #ifdef DETECT_USAGE_AFTER_FREE
-void xrun::finalUAFCheck(void) {
+void xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
   for(i = threadmap::getInstance().begin(); 
@@ -224,7 +224,7 @@ void xrun::finalUAFCheck(void) {
 }
 #endif
 
-void xrun::stopAllThreads(void) {
+void xrun::stopAllThreads() {
   threadmap::aliveThreadIterator i;
   int waiters = 0;
   int count = 0;
@@ -289,7 +289,7 @@ void xrun::stopAllThreads(void) {
   global_unlock();
 }
 
-bool isNewThread(void) {
+bool isNewThread() {
   return current->isNewlySpawned;
 }
 

@@ -58,13 +58,13 @@ class leakcheck {
 
 public:
 
-  static leakcheck& getInstance (void) {
+  static leakcheck& getInstance() {
     static char buf[sizeof(leakcheck)];
     static leakcheck * theOneTrueObject = new (buf) leakcheck();
     return *theOneTrueObject;
   }
   
-  void searchHeapPointersInsideGlobals(void);
+  void searchHeapPointersInsideGlobals();
   
   bool doSlowLeakCheck(void * begin, void *end) {
     _heapBegin = (unsigned long)begin + sizeof(objectHeader);
@@ -178,7 +178,7 @@ private:
     }
   }
 
-  void traverseUnexploredList(void) {
+  void traverseUnexploredList() {
     objectListType  i;
     unsigned long addr;
 
@@ -199,7 +199,7 @@ private:
   }
 
   // In the end, we should report all of those non-reachable non-freed objects.
-  bool reportUnreachableNonfreedObjects(void) {
+  bool reportUnreachableNonfreedObjects() {
     unsigned long * ptr, *stop;
     bool hasLeakage = true;
 
@@ -279,7 +279,7 @@ private:
   }
   
   // Seearch heap pointers inside all stack area
-  void searchHeapPointersInsideStacks(void) {
+  void searchHeapPointersInsideStacks() {
 #if 0
     threadmap::aliveThreadIterator i;
     for(i = threadmap::getInstance().begin();
@@ -297,11 +297,11 @@ private:
     searchHeapPointers((intptr_t)start, (intptr_t)stop);
   }
 
-  void lock(void) {
+  void lock() {
     _lck.lock();
   }
 
-  void unlock(void) {
+  void unlock() {
     _lck.unlock();
   }
 
