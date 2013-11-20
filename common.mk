@@ -23,7 +23,7 @@ INCLUDE_DIRS ?=
 LIB_DIRS ?=
 
 # Which make targets should recur into DIRS?
-RECURSIVE_TARGETS ?= clean build
+RECURSIVE_TARGETS ?= clean build test
 
 # Match source files, targets, and include files
 SRCS ?= $(wildcard *.c) $(wildcard *.cpp)
@@ -93,6 +93,8 @@ release: build
 debug: DEBUG=1
 debug: build
 
+test:: build
+
 build:: $(TARGETS) $(INCLUDE_DIRS)
 
 obj32/%.o:: %.c Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
@@ -136,5 +138,5 @@ $(ROOT)/heaplayers:
 $(RECURSIVE_TARGETS)::
 	@for dir in $(DIRS); do \
 	  echo "$(INDENT)[$@] Entering $$dir"; \
-	  $(MAKE) -C $$dir $@ DEBUG=$(DEBUG); \
+	  $(MAKE) --no-print-directory -C $$dir $@ DEBUG=$(DEBUG); \
 	done
