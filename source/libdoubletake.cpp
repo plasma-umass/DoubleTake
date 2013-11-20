@@ -2086,11 +2086,11 @@ extern "C" {
                    struct mq_attr *oldattr){
     return syscalls::getInstance().mq_getsetattr(mqdes, newattr, oldattr);
   }
-#endif
 
   int kexec_load(void* entry, size_t nr_segments, struct kexec_segment* segments, unsigned long int flags) {
     return syscalls::getInstance().kexec_load(entry, nr_segments, segments, flags);
   }
+#endif
 
   int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options){
     DEBUG(" in doubletake at %d\n", __LINE__);

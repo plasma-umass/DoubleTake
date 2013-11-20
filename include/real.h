@@ -53,7 +53,7 @@
 
 extern "C" {
   // This header file doesn't properly wrap declarations for C++ inclusion
-  #include <linux/kexec.h>
+  //#include <linux/kexec.h>
 }
 
 #define MAKE_WRAPPER(name, handle) \
@@ -182,7 +182,7 @@ public:
   MAKE_WRAPPER(ioctl, RTLD_NEXT);
   MAKE_WRAPPER(ioperm, RTLD_NEXT);
   MAKE_WRAPPER(iopl, RTLD_NEXT);
-  MAKE_WRAPPER(kexec_load, RTLD_NEXT);
+//  MAKE_WRAPPER(kexec_load, RTLD_NEXT);
   MAKE_WRAPPER(kill, RTLD_NEXT);
   MAKE_WRAPPER(lchown, RTLD_NEXT);
   MAKE_WRAPPER(lgetxattr, RTLD_NEXT);

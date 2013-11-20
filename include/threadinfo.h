@@ -161,7 +161,7 @@ public:
 
   inline int incrementReapableThreads() {
     _reapableThreads++;
-    return _reapableThreads; // EDB
+    return _reapableThreads; 
   }
   
   inline bool hasReapableThreads() {

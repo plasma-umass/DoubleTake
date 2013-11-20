@@ -226,7 +226,7 @@ public:
 
   // We may record fd in order replay that.
   int open(const char *pathname, int flags) {
-    return open(pathname, flags, 0); // EDB
+    return open(pathname, flags, 0); 
   }
 
   // Tongping
@@ -2721,7 +2721,7 @@ public:
     ret = Real::mq_getsetattr()(mqdes, newattr, oldattr);
     epochBegin();
     return ret;
-  }*/
+  }
 
   long kexec_load(void* entry, unsigned long nr_segments,
                  struct kexec_segment *segments, unsigned long flags){
@@ -2731,6 +2731,7 @@ public:
     epochBegin();
     return ret;
   }
+*/
 
   int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options){
     int ret;

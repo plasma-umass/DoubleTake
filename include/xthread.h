@@ -331,18 +331,11 @@ public:
     if(retval == 0) {
       threadinfo::getInstance().cancelAliveThread(thread);
     }
-    return retval; // EDB
+    return retval; 
   }
 
   inline int thread_kill(pthread_t thread, int sig) {
     return Real::pthread_kill()(thread, sig);
-  }
-
-  inline void setRealSyncVariable(void * syncVar, void * realVar) {
-  }
-
-  inline bool setSyncEventList(void * syncVar, void * syncList) {
-    return true; // EDB FIX ME
   }
 
   /// Save those actual mutex address in original mutex.
@@ -447,7 +440,7 @@ public:
   // Add this event into the destory list.
   int mutex_destroy(pthread_mutex_t * mutex) {
     deferSync((void *)mutex, E_SYNCVAR_MUTEX);
-    return 0; // EDB
+    return 0; 
   }
   
   ///// conditional variable functions.
@@ -976,7 +969,7 @@ private:
       DEBUG("THREAD%d (at %p) is exiting now\n", current->index, current);
       unlock_thread(current);
     }
-    return result; // EDB
+    return result;
   }
   
   // They are claimed in xthread.cpp since I don't
