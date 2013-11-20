@@ -217,13 +217,13 @@ struct debug_reg_state
    command.  */
 
 /* Use this function to reset the i386-nat.c debug register state.  */
-extern void init_debug_registers();
-extern struct debug_reg_state * debug_reg_state();
-extern int insert_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid);
-extern int remove_watchpoint (CORE_ADDR addr, int len, int type, pid_t pid);
-extern unsigned long get_watching_address (pid_t pid);
-extern unsigned long get_watching_status (pid_t pid, unsigned long * value);
-extern void resume_process (pid_t pid);
-extern void pass_signals(pid_t pid, int signal);
-extern unsigned long get_eip_addr(pid_t pid);
+void init_debug_registers();
+struct debug_reg_state * debug_reg_state();
+int insert_watchpoint (CORE_ADDR addr, int len, enum target_hw_bp_type type, pid_t pid);
+int remove_watchpoint (CORE_ADDR addr, int len, enum target_hw_bp_type type, pid_t pid);
+unsigned long get_watching_address (pid_t pid);
+unsigned long get_watching_status (pid_t pid, unsigned long * value);
+void resume_process (pid_t pid);
+void pass_signals(pid_t pid, int signal);
+unsigned long get_eip_addr(pid_t pid);
 #endif
