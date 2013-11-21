@@ -47,7 +47,6 @@ public:
   void initialize() {
     _lck.init();
     _objects.initialize(xdefines::MAX_FREE_OBJECTS);
-    //DEBUG("FREELIST _objects at %p******************************\n", &_objects);
   }
 
   objectHeader * getObject (void * ptr) {
@@ -58,7 +57,6 @@ public:
   void cacheFreeObject(void * ptr, int tindex) {
     struct freeObject * obj;
   
-    DEBUG("cacheFreeObject %p with tindex %d\n", ptr, tindex);
     lock();
     obj = _objects.alloc();
     unlock();
@@ -95,8 +93,6 @@ public:
     struct freeObject * object;
 
     while ((object = retrieveFreeObject())) {
-      DEBUG("Object is %p ptr %p\n", object, object->ptr);
-      while(1);       // EDB: what is this?
       objectHeader * o = getObject(object->ptr);
       size_t size = o->getSize();
       if(hasUsageAfterFree(object, object->size)) {

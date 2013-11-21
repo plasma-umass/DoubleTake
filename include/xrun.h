@@ -53,7 +53,7 @@ private:
     _thread (xthread::getInstance()),
     _watchpoint (watchpoint::getInstance())
   {
-  //DEBUG("xrun constructor\n");
+  //PRINF("xrun constructor\n");
   }
 
 public:
@@ -73,20 +73,20 @@ public:
 
     // Get the stack size.
     if (Real::getrlimit()(RLIMIT_STACK, &rl) != 0) {
-      DEBUG("Get the stack size failed.\n");
+      PRWRN("Get the stack size failed.\n");
       Real::exit()(-1);
     }
     
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
-    //DEBUG("starting max_stacksize %lx!!!!!\n", __max_stack_size);
+    //PRINF("starting max_stacksize %lx!!!!!\n", __max_stack_size);
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;
     if(Real::setrlimit()(RLIMIT_NOFILE, &rl)) {
-      DEBUG("change limit failed, error %s\n", strerror(errno));
+      PRINF("change limit failed, error %s\n", strerror(errno));
     }
-    DEBUG("NUMBER files limit %d\n", rl.rlim_cur);
+    PRINF("NUMBER files limit %d\n", rl.rlim_cur);
 
     while(1);
 #endif
@@ -111,9 +111,9 @@ public:
     // Set the current _tid to our process id.
     _pid = pid;
     _main_id = pid;
-//    DEBUG("starting!!!!!\n");
+//    PRINF("starting!!!!!\n");
 
-//    DEBUG("starting!!!!!\n");
+//    PRINF("starting!!!!!\n");
     epochBegin();
   }
   
@@ -123,8 +123,8 @@ public:
       return;
     }
 
-    DEBUG("In the end of finalize function\n");
-    //DEBUG("%d: finalize now !!!!!\n", getpid());
+    PRINF("In the end of finalize function\n");
+    //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
 #ifdef DETECT_USAGE_AFTER_FREE
@@ -134,7 +134,7 @@ public:
       epochEnd(true);
     }
 
-    DEBUG("%d: finalize now !!!!!\n", getpid());
+    PRINF("%d: finalize now !!!!!\n", getpid());
     // Now we have to cleanup all semaphores.
     _thread.finalize();
     

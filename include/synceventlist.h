@@ -64,7 +64,7 @@ class SyncEventList {
 public:
   SyncEventList(void * variable, thrSyncCmd synccmd)
   {
-//    DEBUG("synceventlist initialization at list %p\n", &list);
+//    PRINF("synceventlist initialization at list %p\n", &list);
     // Initialize the sequence number   
     listInit(&list);
     Real::pthread_mutex_init()(&lock, NULL);
@@ -77,7 +77,7 @@ public:
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent * event = allocSyncEvent();
 
-    DEBUG("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
+    PRINF("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
     listInit(&event->list);
 
     // Change the event there.
@@ -95,7 +95,7 @@ public:
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);
     }
-   // DEBUG("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
+   // PRINF("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
   }
 
 
@@ -113,7 +113,7 @@ public:
 
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
-      DEBUG("advanceSyncEvent: curentry %p, now %p", curentry, this->curentry);
+      PRINF("advanceSyncEvent: curentry %p, now %p", curentry, this->curentry);
     }
     else {
       this->curentry = NULL;
@@ -141,7 +141,7 @@ public:
       event = (struct syncEvent *)this->curentry;
     }
 
-//    DEBUG("synceventlist at %p event %p\n", &list, event);
+//    PRINF("synceventlist at %p event %p\n", &list, event);
     return event;
   }
 

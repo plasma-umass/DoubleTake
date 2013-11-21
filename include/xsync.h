@@ -80,10 +80,10 @@ public:
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
       signalThread(thread);
-      WARN("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
+      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
     }
     else {
-      WARN("Thread %d adding pending event to next thread %d on event %p", current->index, thread->index, event);
+      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index, thread->index, event);
       addPendingSyncEvent(event, thread);
     }
   }
@@ -95,10 +95,10 @@ public:
     
     assert(thread == current);
 
-    //WARN("singalCurrentThread: event %p on variable %p command %d", event, event->eventlist->getSyncVariable(), event->eventlist->getSyncCmd()); 
+    //PRINF("singalCurrentThread: event %p on variable %p command %d", event, event->eventlist->getSyncVariable(), event->eventlist->getSyncCmd()); 
 
     if(!isListEmpty(eventlist)) {
- //     WARN("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event, thread); 
+ //     PRINF("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event, thread); 
       // Only signal itself when current event is first event of this thread.
       struct pendingSyncEvent * pe = NULL; 
 
@@ -107,7 +107,7 @@ public:
       while(true) {
         // We found this event
         if(pe->event == event) {
-          DEBUG("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event, pe->event); 
+          PRINF("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event, pe->event); 
           // Remove this event from the list.
           listRemoveNode(&pe->list);
           
@@ -129,7 +129,7 @@ public:
       } // while (true)
     } 
     else {
-      DEBUG("thread pending list is empty now!!!");
+      PRINF("thread pending list is empty now!!!");
     }
   }
  
@@ -236,7 +236,7 @@ public:
   
   void signalThread(thread_t * thread) {
     semaphore * sema = &thread->sema;
-    DEBUG("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
+    PRINF("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
     sema->put();
   }
 

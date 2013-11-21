@@ -42,7 +42,7 @@ public:
   xglobals ()
     : _numbRegions(0)
   {
-	 // DEBUG("GLOBALS_START is %x\n", GLOBALS_START);
+	 // PRINF("GLOBALS_START is %x\n", GLOBALS_START);
   }
 
   void initialize() {
@@ -84,7 +84,7 @@ public:
 
   void recoverMemory() {
     for(int i = 0; i < _numbRegions; i++) {
-      //DEBUG("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
+      //PRINF("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
       _maps[i].recoverMemory(NULL);
     }
   }

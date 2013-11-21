@@ -55,7 +55,7 @@ public:
   }
  
   void initialize() {
-//    DEBUG("xmap initializeNNNNNNNNNNNNNN\n");
+//    PRINF("xmap initializeNNNNNNNNNNNNNN\n");
     _xmap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::THREAD_MAP_SIZE);
     
     listInit(&_alivethreads);
@@ -63,7 +63,7 @@ public:
 
   // Destroy all semaphores
   void finalize() {
-    //DEBUG("Destroy all semaphores NOOOOOOOOO!\n");
+    //PRINF("Destroy all semaphores NOOOOOOOOO!\n");
     destroyAllSemaphores();
   }
 
@@ -85,7 +85,7 @@ public:
     listInit(&ath->list);
     ath->thread = thread;
 
-    DEBUG("Insert alive thread %p\n", thread);
+    PRINF("Insert alive thread %p\n", thread);
     listInsertTail(&ath->list, &_alivethreads);
 
     _xmap.insert((void *)tid, sizeof(void *), thread);
@@ -104,7 +104,7 @@ public:
     // Search the whole list for given tid.
     ath = (struct aliveThread *)nextEntry(&_alivethreads);
     while(true) {
-      DEBUG("Traverse thread %p\n", ath->thread);
+      PRINF("Traverse thread %p\n", ath->thread);
       // If we found the entry, remove this entry from the list.
       if(ath->thread == thread) {
         listRemoveNode(&ath->list);
@@ -112,7 +112,7 @@ public:
       }
       // It is impossible that we haven't find the node until the end of a list.
       if(isListTail(&ath->list, &_alivethreads) == true) {
-        DEBUG("WRong, we can't find alive thread %p in the list.", thread);
+        PRWRN("WRong, we can't find alive thread %p in the list.", thread);
         abort();
       }
       
@@ -205,7 +205,7 @@ public:
   void initThreadSemaphore(thread_t * thread) {
     semaphore * sema = &thread->sema;
 
-    DEBUG("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
     // We initialize the semaphore value to 0.
     sema->init((unsigned long)thread->self, 1, 0);
   }
@@ -266,7 +266,7 @@ public:
       thread_t * thread = ath->thread;
 
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
-	DEBUG("thread %p self %p status %d\n", thread, (void *) thread->self, thread->status);
+	PRINF("thread %p self %p status %d\n", thread, (void *) thread->self, thread->status);
       }
 
       // Update to the next thread.

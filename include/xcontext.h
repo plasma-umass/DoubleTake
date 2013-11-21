@@ -97,8 +97,8 @@ public:
 
     // Check whether we can utilize the temporary stack.
     if(espoffset > xdefines::TEMP_STACK_SIZE) {
-      DEBUG("Now esp %lx ebp %lx, stackbottom %lx\n", esp, ebp, _stackTop);
-      DEBUG("Now we can't use the reserved temporary stack, espoffset %lx temporary stack size %lx\n", espoffset, xdefines::TEMP_STACK_SIZE);
+      PRINF("Now esp %lx ebp %lx, stackbottom %lx\n", esp, ebp, _stackTop);
+      PRINF("Now we can't use the reserved temporary stack, espoffset %lx temporary stack size %lx\n", espoffset, xdefines::TEMP_STACK_SIZE);
       // FIXME: we might use some malloced memory, but not now.
       abort();
     }
@@ -149,15 +149,15 @@ public:
   // Now we need to save the context
   inline void saveContext() {
     size_t size;
-   // DEBUG("SAVECONTEXT: Current %p _privateTop %p at %p _backup %p\n", getpid(), _privateTop, &_privateTop, _backup);
-//    DEBUG("saveContext nownow!!!!!!\n");
+   // PRINF("SAVECONTEXT: Current %p _privateTop %p at %p _backup %p\n", getpid(), _privateTop, &_privateTop, _backup);
+//    PRINF("saveContext nownow!!!!!!\n");
     // Save the stack at first.
     _privateStart = &size;
     size = size_t((intptr_t)_privateTop - (intptr_t)_privateStart);
     _backupSize = size;
     
     if(size >= _stackSize) {
-      DEBUG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
+      PRWRN("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
               size, _privateTop, _privateStart, _stackSize);
       Real::exit()(-1);
     }
@@ -177,7 +177,7 @@ public:
     _backupSize = size;
     
     if(size >= _stackSize) {
-      DEBUG("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
+      PRWRN("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n",
               size, _privateTop, _privateStart, _stackSize);
       abort();
     }
@@ -233,7 +233,6 @@ public:
     c. setcontext to the context of newContext.
    */ 
   inline static void restoreContext(xcontext * oldContext, xcontext * newContext) {
-    //DEBUG("________RESTORECONTEX___________at line %d\n", __LINE__);
     // We can only do this when these two contexts are for the same thread.
     assert(oldContext->getPrivateTop() == newContext->getPrivateTop());
 
@@ -269,7 +268,6 @@ public:
 
     REQUIRE(espoffset <= xdefines::TEMP_STACK_SIZE, "Temporary stack exhausted");
 
-    //DEBUG("________RESTORECONTEX___________at line %d\n", __LINE__);
     // Calculate the new ebp and esp registers. 
     // We will set ebp to the bottom of temporary stack.
     newStackTop = (intptr_t)newContext->getBackupStart() + newContext->getStackSize(); 
@@ -302,11 +300,11 @@ public:
     );
 #endif 
 
-    //DEBUG("________RESTORECONTEX___________at line %d\n", __LINE__);
+    //PRINF("________RESTORECONTEX___________at line %d\n", __LINE__);
     // Now we will recover the stack from the saved oldContext.
     memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(), oldContext->getBackupSize());
 
-    DEBUG("Thread %p is calling actual setcontext", (void*)pthread_self());
+    PRINF("Thread %p is calling actual setcontext", (void*)pthread_self());
     // After recovery of the stack, we can call setcontext to switch to original stack. 
     setcontext(oldContext->getContext());
   }

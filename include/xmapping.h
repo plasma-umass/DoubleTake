@@ -75,7 +75,7 @@ public:
   void initialize(void * startaddr = 0, size_t size = 0, void * heapstart = NULL)
   {
     REQUIRE(size % xdefines::PageSize == 0, "Wrong size %lx, should be page aligned", size);
-    DEBUG("xmapping starts at %p, size %lx", startaddr, size);
+    PRINF("xmapping starts at %p, size %lx", startaddr, size);
     
     // Establish two maps to the backing file.
     // The persistent map is shared.
@@ -170,7 +170,7 @@ public:
       sz = size();
     }
 
-    //DEBUG("Recover memory %p end %p size %lx\n", _userMemory, end, sz);
+    //PRINF("Recover memory %p end %p size %lx\n", _userMemory, end, sz);
     customMemcpy(_userMemory, _backupMemory, sz);
   }
 

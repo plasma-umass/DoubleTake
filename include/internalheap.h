@@ -40,7 +40,7 @@ public:
 
     // We are adding one objectHeader and two "canary" words along the object
     // The layout will be:  objectHeader + "canary" + Object + "canary".
-    //DEBUG("InternalAdaptHeap before malloc sz %d\n", sz);
+    //PRINF("InternalAdaptHeap before malloc sz %d\n", sz);
     void * ptr = SourceHeap::malloc (sz + sizeof(objectHeader) + 2*xdefines::SENTINEL_SIZE);    if (!ptr) {
       return NULL;
     }
@@ -109,7 +109,7 @@ public:
     char * base = (char *) SourceHeap::initialize((void *)xdefines::INTERNAL_HEAP_BASE, xdefines::INTERNAL_HEAP_SIZE, metasize);
   
     REQUIRE(base != NULL, "Failed to allocated memory for heap metadata");
-    DEBUG("Internal heap base %p, metasize %xz", base, metasize);
+    PRINF("Internal heap base %p, metasize %xz", base, metasize);
     
     _heap = new (base) SuperHeap;
     

@@ -28,7 +28,7 @@
 #define BRIGHT_RED "\033[1m\033[31m"
 
 #define ESC_INF  NORMAL_CYAN
-#define ESC_LOG  NORMAL_GREEN
+#define ESC_DBG  NORMAL_GREEN
 #define ESC_WRN  BRIGHT_YELLOW
 #define ESC_ERR  BRIGHT_RED
 #define ESC_END  "\033[0m"
@@ -42,31 +42,40 @@ extern int outfd;
 /**
  * Print status-information message: level 0
  */
-#define DEBUG(fmt, ...) \
+#define PRINF(fmt, ...) \
   { if(DEBUG_LEVEL < 1) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_INF "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
       OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
 
 /**
+ * Print status-information message: level 0
+ */
+#define PRDBG(fmt, ...) \
+  { if(DEBUG_LEVEL < 2) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_DBG "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+
+/**
  * Print warning message: level 1
  */
-#define WARN(fmt, ...) \
+#define PRWRN(fmt, ...) \
   { if(DEBUG_LEVEL < 3) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_WRN "%lx [PROTO-WARNING]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
       OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 #else
-#define DEBUG(fmt, ...)
-#define WARN(fmt, ...) 
+#define PRDBG(fmt, ...)
+#define PRWRN(fmt, ...) 
 #endif
 
 /**
  * Print error message: level 2
  */
-#define ERROR(fmt, ...) \
+#define PRERR(fmt, ...) \
   { if(DEBUG_LEVEL < 4) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-ERROR]: %20s:%-4d: " fmt ESC_END "\n", \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-PRERR]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
       OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 

@@ -63,7 +63,7 @@ public:
     void * startHeap
       = (void *)((unsigned long) xdefines::USER_HEAP_BASE - (unsigned long) metasize);
     
-    //    DEBUG("heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
+    //    PRINF("heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
     ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, startHeap);
 
     // Initialize the lock.
@@ -83,7 +83,7 @@ public:
     // Initialize the freelist.
     freelist::getInstance().initialize();
     
-    DEBUG("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
+    PRINF("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
 
     return (void *)ptr;	
   }
@@ -102,7 +102,7 @@ public:
   inline void saveHeapMetadata() {
     _positionBackup = _position;
     _remainingBackup = _remaining;
-    DEBUG("save heap metadata, _position %p remaining %#lx\n", _position, _remaining);
+    PRINF("save heap metadata, _position %p remaining %#lx\n", _position, _remaining);
   }
 
   /// We will overlap the metadata with the saved ones
@@ -110,7 +110,7 @@ public:
   inline void recoverHeapMetadata() {
     _position = _positionBackup;
     _remaining = _remainingBackup;
-    DEBUG("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
+    PRINF("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
   }
 
   inline void * getHeapStart() {
@@ -124,7 +124,7 @@ public:
   // Get current heap position
   // We only need to do the sanity check until current position.
   inline void * getHeapPosition() {
-    //DEBUG("GetHeapPosition %p\n", _position);
+    //PRINF("GetHeapPosition %p\n", _position);
 	  return  _position;
   }
 

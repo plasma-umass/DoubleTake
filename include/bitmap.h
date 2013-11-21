@@ -59,7 +59,7 @@ public:
     _elements = elements;
     _words = words;
 
-//    DEBUG("*********************bitmap initialize %p****************\n", addr);
+//    PRINF("*********************bitmap initialize %p****************\n", addr);
     // Initialize the on and off
     for(unsigned long i = 0; i < WORDBITS; i++) {
       on[i] = ((unsigned long)1) << i;
@@ -111,10 +111,10 @@ public:
   // Inside a word with specifc index, which bits
   inline bool checkSetBit(unsigned long wordIndex, unsigned long bitIndex) {
     unsigned long * word = getWord(wordIndex);
- //   DEBUG("checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
+ //   PRINF("checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
     bool result = ((*word & on[bitIndex]) == 0) ? true : false;
     *word |= on[bitIndex];
-  //  DEBUG("checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
+  //  PRINF("checkSetBit wordIndex %d bitIndex %d word %lx\n", wordIndex, bitIndex, *word);
     return result;
   }
 
@@ -207,7 +207,7 @@ public:
 
     // Most common case
     if(firstBitIndex == 0 && lastBitIndex == 0) {
-   //   DEBUG("clearBits: supported cases. firstBitIndex %d lastBitIndex %d lastWordIndex %d\n", firstBitIndex, lastBitIndex, lastWordIndex);
+   //   PRINF("clearBits: supported cases. firstBitIndex %d lastBitIndex %d lastWordIndex %d\n", firstBitIndex, lastBitIndex, lastWordIndex);
       // Full words.
       void * start = getWord(firstWordIndex);
       int size = (lastWordIndex - firstWordIndex) * WORDSIZE;
@@ -215,7 +215,7 @@ public:
     }  
     else {
       assert(0);
-      //DEBUG("clearBits: none supported cases. firstBitIndex %d lastBitIndex %d\n", firstBitIndex, lastBitIndex);
+      //PRINF("clearBits: none supported cases. firstBitIndex %d lastBitIndex %d\n", firstBitIndex, lastBitIndex);
     }
   }
 
@@ -236,7 +236,7 @@ public:
     if(bitword != 0) {
       // Should we use lsbIndex or msbIndex?
       unsigned long lsbIndex = getLsbIndex(bitword);
-  //    DEBUG("lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
+  //    PRINF("lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
       //while(1);
       if(bitIndex > lsbIndex) {
         // Then it is possible that there is a bit between lsbIndex (small) and bitIndex (large)
@@ -245,7 +245,7 @@ public:
           if(isBitSetOnWord(bitword, bitIndex)) {
             hasLastBit = true;
             *lastBitIndex = getItemIndex(wordIndex, bitIndex);
-//            DEBUG("lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
+//            PRINF("lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
             break;
           }
         }

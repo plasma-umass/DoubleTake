@@ -92,7 +92,7 @@ public:
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
-      DEBUG("can't open /proc/self/maps, exit now\n");
+      PRWRN("can't open /proc/self/maps, exit now\n");
       abort();
     } 
 
@@ -140,12 +140,12 @@ public:
     count= Real::readlink()("/proc/self/exe", filename, MAX_BUF_SIZE);
     if (count <= 0 || count >= MAX_BUF_SIZE)
     {
-      DEBUG("Failed to get current executable file name\n" );
+      PRWRN("Failed to get current executable file name\n" );
       exit(1);
     }
     filename[count] = '\0';
 
-    DEBUG("INITIALIZATION: textStart %p textEnd %p stopgapStart %p stopgapEnd %p libStart %p libEnd %p\n", appTextStart, appTextEnd, stopgapStart, stopgapEnd, libraryStart, libraryEnd);
+    PRINF("INITIALIZATION: textStart %p textEnd %p stopgapStart %p stopgapEnd %p libStart %p libEnd %p\n", appTextStart, appTextEnd, stopgapStart, stopgapEnd, libraryStart, libraryEnd);
   } 
 
   // Check whether an address is inside the stopgap library itself
@@ -193,7 +193,7 @@ public:
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
-      DEBUG("can't open /proc/self/maps, exit now\n");
+      PRWRN("can't open /proc/self/maps, exit now\n");
       abort();
     } 
 
@@ -244,7 +244,7 @@ public:
       }
  
       if(toSaveRegion) { 
-        DEBUG("start startaddr %p endaddr %p\n", startaddr, endaddr); 
+        PRINF("start startaddr %p endaddr %p\n", startaddr, endaddr); 
         regions[*regionNumb].start = startaddr;
         regions[*regionNumb].end = endaddr;
         (*regionNumb)++;
@@ -262,7 +262,7 @@ public:
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
-      DEBUG("can't open /proc/self/maps, exit now\n");
+      PRWRN("can't open /proc/self/maps, exit now\n");
       abort();
     } 
 

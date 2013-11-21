@@ -196,7 +196,7 @@ inline void listPrintItems(list_t * head, int num) {
     entry = entry->next;
   }
     
- // DEBUG("HEAD %p Head->prev %p head->next %p\n", head, head->prev, head->next);
+ // PRINF("HEAD %p Head->prev %p head->next %p\n", head, head->prev, head->next);
 }
 
 /* Get the pointer to the struct this entry is part of

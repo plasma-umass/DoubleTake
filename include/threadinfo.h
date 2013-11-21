@@ -137,7 +137,7 @@ public:
         Real::pthread_mutex_init()(&thread->mutex, NULL);
         Real::pthread_cond_init()(&thread->cond, NULL);
     
-//        DEBUG("origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
+//        PRINF("origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex, _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
         break;
       }
       else {

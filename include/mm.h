@@ -67,7 +67,7 @@ private:
     void * ptr =  Real::mmap() (startaddr, sz, protInfo,
 			      sharedInfo, fd, 0);
     if (ptr == MAP_FAILED) {
-      DEBUG("Couldn't do mmap (%s) : startaddr %p, sz %lu, protInfo=%d, sharedInfo=%d\n", strerror(errno), startaddr, sz, protInfo, sharedInfo);
+      PRWRN("Couldn't do mmap (%s) : startaddr %p, sz %lu, protInfo=%d, sharedInfo=%d\n", strerror(errno), startaddr, sz, protInfo, sharedInfo);
       abort();
     } else {
       //      fprintf (stderr, "Successful map %lu.\n", sz);

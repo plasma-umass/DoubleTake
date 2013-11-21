@@ -61,7 +61,7 @@ public:
   }
 
   inline void * malloc (size_t sz) {
-//    DEBUG("inside source internal heap, sz %lx magic %lx at %p\n", sz, _magic, &_magic);
+//    PRINF("inside source internal heap, sz %lx magic %lx at %p\n", sz, _magic, &_magic);
     sanityCheck();
 
     // We need to page-align size, since we don't want two different
@@ -91,7 +91,7 @@ public:
   }
 
   inline void * getHeapStart() {
-    DEBUG("*****XHEAP:_start %p*****\n", _start);
+    PRINF("*****XHEAP:_start %p*****\n", _start);
     return (void *)_start;
   }
 

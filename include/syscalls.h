@@ -70,8 +70,8 @@ public:
   }
 
   void epochEnd() {
-//    DEBUG("$$$$$$epochEnd at line %d\n", __LINE__);
-//    DEBUG("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+//    PRINF("$$$$$$epochEnd at line %d\n", __LINE__);
+//    PRINF("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
  //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
     xrun::getInstance().epochEnd(false); 
   }
@@ -107,13 +107,13 @@ public:
     // Make those pages writable, otherwise, read may fail
     makeWritable(start, size);
 /*
-    DEBUG("CHECK whether system call can overflow\n");
+    PRINF("CHECK whether system call can overflow\n");
     if(_memory.checkOverflowBeforehand(start, size)) {
-      DEBUG("System call can overflow, start %p size %x\n", start, size);
+      PRINF("System call can overflow, start %p size %x\n", start, size);
       _memory.printCallsite();
       assert(0);
     }
-    DEBUG("CHECK whether system call can overflow done!!!!!\n");
+    PRINF("CHECK whether system call can overflow done!!!!!\n");
 */
   }
 
@@ -123,7 +123,7 @@ public:
     long pages = count/xdefines::PageSize;
 
     if(pages >= 1) {
-    //  DEBUG("fd %d buf %p count %d\n", fd, buf, count);
+    //  PRINF("fd %d buf %p count %d\n", fd, buf, count);
     // Trying to read on those pages, thus there won't be a segmenation fault in 
     // the system call.
       for(long i = 0; i < pages; i++) {
@@ -141,13 +141,13 @@ public:
     // Make those pages writable, otherwise, read may fail
     makeWritable(buf, count);
 
-    //DEBUG("read on fd %d\n", fd);
+    //PRINF("read on fd %d\n", fd);
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
       ret = Real::read()(fd, buf, count);
     }
     else {
-//      DEBUG("Reading special file\n");
+//      PRINF("Reading special file\n");
       epochEnd();
       ret = Real::read()(fd, buf, count);
       epochBegin();
@@ -213,7 +213,7 @@ public:
     epochEnd();
     ret = Real::mmap()(start, length, prot, flags, fd, offset);
     epochBegin();
-    DEBUG("in the end of mmap, ret %p length %lx\n", ret, length);
+    PRINF("in the end of mmap, ret %p length %lx\n", ret, length);
 #endif
     return ret;
   }
@@ -255,14 +255,14 @@ public:
     ret = Real::open()(pathname, flags, mode);
     epochBegin();
 #endif
-    //DEBUG("OPEN fd %d\n", ret);    
+    //PRINF("OPEN fd %d\n", ret);    
     return ret;
   }
 
   int close(int fd) {
     int ret;
 
-//     DEBUG("close fd %d at line %d\n", fd, __LINE__);
+//     PRINF("close fd %d at line %d\n", fd, __LINE__);
 #ifdef REPRODUCIBLE_FDS 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call 
@@ -279,7 +279,7 @@ public:
     }
 #endif
     else {
-//      DEBUG("close fd %d at line %d problem\n", fd, __LINE__);
+//      PRINF("close fd %d at line %d problem\n", fd, __LINE__);
       //selfmap::getInstance().printCallStack(NULL, NULL, true);
       //epochEnd();
       ret = Real::close()(fd);
@@ -307,7 +307,7 @@ public:
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveDir(ret);
 #endif
-    DEBUG("(((((((((((((((OPEN dir %s)))))))))\n", name);    
+    PRINF("(((((((((((((((OPEN dir %s)))))))))\n", name);    
 
     return ret;
   }
@@ -340,8 +340,8 @@ public:
         //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
         // Save current fd
         _fops.saveFopen(ret);
-        DEBUG("fopeeeeeeeeee fd %d\n", ret->_fileno);
-     // DEBUG("OPEN fd %d\n", ret->_fileno);    
+        PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
+     // PRINF("OPEN fd %d\n", ret->_fileno);    
       }
       else {
         _fops.saveFd(-1, NULL);
@@ -350,7 +350,7 @@ public:
     else {
       // rollback phase
       ret = _fops.getFopen();
-//      DEBUG("fopen ret %p fileno %d\n", ret, ret->_fileno);
+//      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
     }
 #else
     ret = Real::fopen()(filename, modes);
@@ -358,7 +358,7 @@ public:
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
       // Save current fd
-      DEBUG("fopeeeeeeeeee fd %d\n", ret->_fileno);
+      PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
       _fops.saveFopen(ret);
     }
 #endif
@@ -371,14 +371,14 @@ public:
     
 #ifdef REPRODUCIBLE_FDS 
     if(!global_isRollback()) { 
-      //DEBUG("fopeeeeeeeeee %x\n", sizeof(FILE));
+      //PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = Real::fopen64()(filename, modes);
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
       selfmap::getInstance().printCallStack(NULL, NULL, true);
-        DEBUG("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
-      //DEBUG("OPEN fd %d\n", ret->_fileno);    
+        PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
+      //PRINF("OPEN fd %d\n", ret->_fileno);    
       }
       else {
         _fops.saveFd(-1, NULL);
@@ -390,7 +390,7 @@ public:
     }
 #else
     ret = Real::fopen64()(filename, modes);
-    DEBUG("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
+    PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
     if(ret != NULL) {
       // Commit those local changes now.
       //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
@@ -559,7 +559,7 @@ public:
       ret = Real::fread()(ptr, size, nmemb, stream);
     }
     else {
-      //DEBUG("fd %d has no permisson for read\n", fd);
+      //PRINF("fd %d has no permisson for read\n", fd);
       epochEnd();
       ret = Real::fread()(ptr, size, nmemb, stream);
       epochBegin();
@@ -586,7 +586,7 @@ public:
       epochBegin();
     }
 
-    //DEBUG(" in stopgap at %d\n", __LINE__);
+    //PRINF(" in stopgap at %d\n", __LINE__);
     return ret;
   }
 
@@ -781,7 +781,7 @@ public:
         ret = _fops.getFdAtOpen();
       }
       else {
-      //  DEBUG("before, dup oldfd %d newfd %d\n", oldfd, ret);
+      //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
         ret = Real::dup()(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -1190,7 +1190,7 @@ public:
         break;
       } 
     }
-    //DEBUG("cmd is 
+    //PRINF("cmd is 
     return ret;
   }
 
@@ -2760,7 +2760,7 @@ public:
 
   long keyctl(int cmd, ...){
     // FIXME
-    DEBUG("keyctl is not supported now\n");
+    PRINF("keyctl is not supported now\n");
     return 0;
   }*/
   

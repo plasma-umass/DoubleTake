@@ -143,7 +143,7 @@ public:
     int mysize = sz;
 #if 0
     if(sz == 0) {
-//      DEBUG("allocation size %d zzzzzzzzzzzzero\n", sz);
+//      PRINF("allocation size %d zzzzzzzzzzzzero\n", sz);
       return NULL;
     }
 #endif
@@ -151,7 +151,7 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-    //DEBUG("In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+    //PRINF("In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
     ptr = (unsigned char *)_pheap.malloc(mysize);
     objectHeader * o = getObject (ptr);
 
@@ -189,16 +189,16 @@ public:
         // We are using the first byte to mark the size of magic bytes.
         // It will end up with (02eeee).
         // If there is only
-        //DEBUG("************size%x sz %x ptr %p, p %p nonAlignedBytes %d\n", size, sz, ptr, p, nonAlignedBytes);      
+        //PRINF("************size%x sz %x ptr %p, p %p nonAlignedBytes %d\n", size, sz, ptr, p, nonAlignedBytes);      
         if(setBytes >= 2) {
-          //DEBUG("******setBytes %d\n", setBytes); 
+          //PRINF("******setBytes %d\n", setBytes); 
           p[0] = setBytes - 1;
           for(int i = 1; i < setBytes; i++) {
             p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
           }
         }
         else if(setBytes == 1){
-          //DEBUG("******setBytes %d\n", setBytes); 
+          //PRINF("******setBytes %d\n", setBytes); 
           p[0] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
         }
 
@@ -213,10 +213,10 @@ public:
     }
 #endif
 //    if((unsigned long)ptr < 0x100003000) {
-//      DEBUG("DoubleTake: malloc ptr %p size %d mysize %d\n", ptr, sz, mysize);
+//      PRINF("DoubleTake: malloc ptr %p size %d mysize %d\n", ptr, sz, mysize);
 //    }
     // We donot need to do anything if size is equal to sz
-    //DEBUG("malloc with sz %d ptr %p\n", sz, ptr);
+    //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
     return ptr;
   }
 
@@ -250,7 +250,7 @@ public:
     void ** origptr = (void **)((intptr_t)newptr - 2 * sizeof(size_t)); 
     *origptr = ptr;
 
-//    DEBUG("offset is %x ptr %p and newptr %p\n", offset, ptr, newptr);
+//    PRINF("offset is %x ptr %p and newptr %p\n", offset, ptr, newptr);
     return newptr;
   }
 
@@ -269,7 +269,7 @@ public:
     size_t sz = o->getObjectSize();
 
     if(size < sz) {
-      DEBUG("Free isObjectOverflow size %#lx sz %#lx\n", size, sz);
+      PRWRN("Free isObjectOverflow size %#lx sz %#lx\n", size, sz);
       assert(size >= sz);
     }
     // Add another guard zone if block size is larger than actual size
@@ -286,21 +286,21 @@ public:
         // check up whether the sentinel is intact or not.
         if(sentinelmap::getInstance().checkAndClearSentinel(p) != true) {
           // Add this address to watchpoint
-          DEBUG("xmemory: checkandclearsentinal now\n");
-          //DEBUG("xmemory: checkandclearsentinal at line %d\n", __LINE__);
+          PRINF("xmemory: checkandclearsentinal now\n");
+          //PRINF("xmemory: checkandclearsentinal at line %d\n", __LINE__);
           watchpoint::getInstance().addWatchpoint(p, *((size_t*)p)); 
           isOverflow = true;
         }
       } 
 //#ifdef DETECT_NONALIGNED_OVERFLOW
       else {
-        // DEBUG("xmemory line %d: nonAlignedBytes %d\n", __LINE__, nonAlignedBytes);
+        // PRINF("xmemory line %d: nonAlignedBytes %d\n", __LINE__, nonAlignedBytes);
         // For those less than one word access, maybe we do not care since memory block is 
         // always returned by 8bytes aligned or 16bytes aligned.
         // However, some weird test cases has this overflow. So we should detect this now.
         void * startp = (void *)((intptr_t)p - nonAlignedBytes);
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes; 
-        //DEBUG("xmemory line %d: nonAlignedBytes %d startp %p setBytes %d\n", __LINE__, nonAlignedBytes, startp, setBytes);
+        //PRINF("xmemory line %d: nonAlignedBytes %d startp %p setBytes %d\n", __LINE__, nonAlignedBytes, startp, setBytes);
         if(setBytes > 1 && (int)p[0] == (setBytes - 1)) {
           for(int i = 1; i < setBytes; i++) {
             if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
@@ -318,8 +318,8 @@ public:
         }
       
         if(isOverflow) {
-          //DEBUG("xmemory: checkandclearsentinal now 222\n");
- //         DEBUG("xmemory: nonaligned byte ptr %p. size %d sz %d\n", ptr, size, sz);
+          //PRINF("xmemory: checkandclearsentinal now 222\n");
+ //         PRINF("xmemory: nonaligned byte ptr %p. size %d sz %d\n", ptr, size, sz);
           watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);
@@ -371,25 +371,25 @@ public:
    void free (void * ptr) {
     void * origptr;
    
-   // DEBUG("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+   // PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     if(!inRange((intptr_t)ptr)) {
       return;
     }
 
    // if((unsigned long)ptr < 0x100003000) {
-   //   DEBUG("DoubleTake: free ptr %p\n", ptr);
+   //   PRINF("DoubleTake: free ptr %p\n", ptr);
    // }
     // Check whether this is an memaligned object.
     origptr = getObjectPtrAtFree(ptr);
     objectHeader * o = getObject (origptr);
 
-    //DEBUG("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+    //PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     		
 #ifdef DETECT_OVERFLOW
     // Check for double free
     if(o->isObjectFree() || !o->isGoodObject()) {
-      DEBUG("Caught double free or invalid free error\n");
-      DEBUG("DoubleTake: Caught double free or invalid free error\n");
+      PRWRN("Caught double free or invalid free error\n");
+      PRWRN("DoubleTake: Caught double free or invalid free error\n");
       printCallsite();
       abort();
     }
@@ -400,14 +400,14 @@ public:
       return;
     }
 #else
-    //DEBUG("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+    //PRWRN("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     if(o->isObjectFree() || !o->isGoodObject()) {
       return;
     }
 #endif
 
     _pheap.free(origptr);
-//    DEBUG("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+//    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
 
     // We only remove the size 
     o->setObjectFree();
@@ -435,13 +435,13 @@ public:
   inline void rollback() {
 
     // Release all private pages.
-    DEBUG("Recoverring the global memory\n");
+    PRINF("Recoverring the global memory\n");
     _globals.recoverMemory();
     _pheap.recoverMemory();
     
     _pheap.recoverHeapMetadata(); 
  
-  //  DEBUG("INSTALL watching points nowwwwww!!!\n"); 
+  //  PRINF("INSTALL watching points nowwwwww!!!\n"); 
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
@@ -465,7 +465,7 @@ public:
   
   inline void printCallsite() {
     selfmap::getInstance().printCallStack(NULL, NULL, true);
-    DEBUG("Program exit becaue of double free or invalid free.\n");
+    PRINF("Program exit becaue of double free or invalid free.\n");
     exit(-1);
   }
 
@@ -501,7 +501,7 @@ public:
         // We simply check whether this area has sentinels or not.
         // If there exists some sentinels there, it is a possible overflow.
         hasProblem = sentinelmap::getInstance().hasSentinels(start, size);
-        DEBUG("CAN NOT write to an area with sentinels\n");
+        PRINF("CAN NOT write to an area with sentinels\n");
       }
       else {
         hasProblem = true;
@@ -560,8 +560,8 @@ public:
     void * addr = siginfo->si_addr; // address of access
 
 //    while(1) ;
-    DEBUG("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    DEBUG("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    PRWRN("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     current->internalheap = true;
     selfmap::getInstance().printCallStack(NULL, NULL, true);
     current->internalheap = false;

@@ -84,7 +84,7 @@ static unsigned long dr_get (pid_t pid, int regnum)
   value = ptrace (PTRACE_PEEKUSER, pid, offsetof(struct user, u_debugreg[regnum]), 0);
 
   if (errno != 0) {
-    DEBUG("Couldn't read debug register %d at pid %d\n", regnum, pid);
+    PRWRN("Couldn't read debug register %d at pid %d\n", regnum, pid);
   }
 
   return value;
@@ -94,10 +94,10 @@ static unsigned long dr_get (pid_t pid, int regnum)
 static void dr_set (pid_t pid, int regnum, unsigned long value)
 {
   errno = 0;
-//  DEBUG("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
+//  PRINF("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
   ptrace (PTRACE_POKEUSER, pid, offsetof (struct user, u_debugreg[regnum]), value);
   if (errno != 0) {
-    DEBUG("Couldn't set debug register %d error %s\n", regnum, strerror(errno));
+    PRWRN("Couldn't set debug register %d error %s\n", regnum, strerror(errno));
   //  abort();
   }
   
@@ -229,7 +229,7 @@ static unsigned dr_length_and_rw_bits (int len, int type)
 	    break;
      
     default:
-      DEBUG("Invalid watchpoint type %d in dr_length_and_rw_bits.\n", (int) type);
+      PRWRN("Invalid watchpoint type %d in dr_length_and_rw_bits.\n", (int) type);
       break;
   }
 
@@ -258,7 +258,7 @@ static unsigned dr_length_and_rw_bits (int len, int type)
     }
 	/* ELSE FALL THROUGH */
     default:
-      DEBUG("Invalid watchpoint length %d in dr_length_and_rw_bits.\n", len);
+      PRWRN("Invalid watchpoint length %d in dr_length_and_rw_bits.\n", len);
       break;
     }
     return value;
@@ -401,7 +401,7 @@ handle_nonaligned_watchpoint (struct debug_reg_state *state,
 	      else if (what == WP_REMOVE)
 	        retval = remove_aligned_watchpoint (state, addr, len_rw);
 	      else
-            DEBUG("Invalid value %d handle_nonaligned_watchpoint.\n", (int)what);
+            PRWRN("Invalid value %d handle_nonaligned_watchpoint.\n", (int)what);
 	      if (retval)
 	        break;
 	    }
@@ -420,7 +420,7 @@ static void update_inferior_debug_regs (pid_t pid, struct debug_reg_state *new_s
   struct debug_reg_state *state = debug_reg_state ();
   int i;
 
-//  DEBUG("pid is %d\n", pid);
+//  PRINF("pid is %d\n", pid);
 
   ALL_DEBUG_ADDR_REGISTERS (i)
   {
@@ -641,7 +641,7 @@ void  resume_process (pid_t pid)
  // if(ptrace (PTRACE_CONT, pid, 0, SIGCONT) == -1) {
   //if(ptrace (PTRACE_CONT, pid, 0, SIGUSR2) == -1) {
   if(ptrace (PTRACE_CONT, pid, 0, SIGCONT) == -1) {
-    DEBUG("Can't start the child process.\n");
+    PRWRN("Can't start the child process.\n");
     abort();
   }
 }
@@ -652,7 +652,7 @@ void  pass_signals (pid_t pid, int signal)
   // Send corresponding child a SIGUSR2
   if(ptrace (PTRACE_CONT, pid, 0, signal) == -1) {
 //  if(ptrace (PTRACE_CONT, pid, 0, signal) == -1) {
-    DEBUG("Can't pass process %d a signal %d, the error %s\n", pid, signal, strerror(errno));
+    PRWRN("Can't pass process %d a signal %d, the error %s\n", pid, signal, strerror(errno));
   //  abort();
   }
 }

@@ -36,7 +36,7 @@ void xrun::startRollback() {
   // waiting on the shared conditional variable
   global_rollback();
 
-  WARN("Starting rollback for other threads\n");
+  PRDBG("Starting rollback for other threads\n");
 
   // Set context for current thread.
   // Since the new context is not valid, how to 
@@ -52,7 +52,7 @@ void xrun::rollbackandstop() {
     // Now we are going to rollback.
     startRollback();
 
-    DEBUG("\n\nNOW ROLLING BACK\n\n\n");
+    PRINF("\n\nNOW ROLLING BACK\n\n\n");
   
     // Rollback all memory before rolling back the context.
     _memory.rollbackonly();
@@ -61,12 +61,12 @@ void xrun::rollbackandstop() {
 
 // We are rollback the child process 
 void xrun::rollback() {
-  DEBUG("\n\nNOW ROLLING BACK\n\n\n");
-  DEBUG("\n\nNOW ROLLING BACK\n\n\n");
+  PRINF("\n\nNOW ROLLING BACK\n\n\n");
+  PRINF("\n\nNOW ROLLING BACK\n\n\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
-    DEBUG("HAS rollback, now exit\n");
+    PRINF("HAS rollback, now exit\n");
     rollbackandstop();
     abort();
   }
@@ -81,7 +81,7 @@ void xrun::rollback() {
   _thread.prepareRollback();
 
   //while(1);
-  DEBUG("\n\nset rollback\n\n\n");
+  PRINF("\n\nset rollback\n\n\n");
 
   // Now we are going to rollback
   startRollback();
@@ -93,7 +93,7 @@ void xrun::rollback() {
 
 /// @brief Start a new epoch.
 void xrun::epochBegin() {
-  DEBUG("getpid %d: xrun::epochBegin. \n", getpid());
+  PRINF("getpid %d: xrun::epochBegin. \n", getpid());
 
   threadmap::aliveThreadIterator i;
   for(i = threadmap::getInstance().begin(); 
@@ -122,7 +122,7 @@ void xrun::epochBegin() {
   xthread::getInstance().runDeferredSyncs();
   
   // Now waken up all other threads then threads can do its cleanup.
-  DEBUG("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
+  PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   global_epochBegin();
 
 #ifdef HANDLE_SYSCALL
@@ -130,7 +130,7 @@ void xrun::epochBegin() {
   syscalls::getInstance().handleEpochBegin();
 #endif
 
-  DEBUG("getpid %d: xrun::epochBegin\n", getpid());
+  PRINF("getpid %d: xrun::epochBegin\n", getpid());
   
   // Save the context of this thread
   saveContext(); 
@@ -138,7 +138,7 @@ void xrun::epochBegin() {
 
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd (bool endOfProgram) {
-  //DEBUG("in the end of an epoch with endOfProgram %d\n", endOfProgram);
+  //PRINF("in the end of an epoch with endOfProgram %d\n", endOfProgram);
   // Tell other threads to stop and save context.
   stopAllThreads();
 
@@ -154,11 +154,11 @@ void xrun::epochEnd (bool endOfProgram) {
 #ifdef DETECT_MEMORY_LEAKAGE
   bool hasMemoryLeak;
   if(endOfProgram) {
-  //  DEBUG("DETECTING MEMORY LEAKABE in the end of program!!!!\n");
+  //  PRINF("DETECTING MEMORY LEAKABE in the end of program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd()); 
   }
   else {
-   // DEBUG("DETECTING MEMORY LEAKABE inside a program!!!!\n");
+   // PRINF("DETECTING MEMORY LEAKABE inside a program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
   }
 #endif
@@ -188,8 +188,8 @@ void xrun::epochEnd (bool endOfProgram) {
     _memory.cleanupFreeList();
 #endif
     _memory.freeAllObjects();
-    DEBUG("getpid %d: xrun::epochEnd without overflow\n", getpid());
-    //DEBUG("getpid %d: xrun::epochEnd without overflow\n", getpid());
+    PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
+    //PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
 #ifndef EVALUATING_PERF
@@ -244,27 +244,27 @@ void xrun::stopAllThreads() {
   // In order to avoid this problem, we may avoid the thread spawning in this phase.
   global_lock();
 
-  //DEBUG("EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
-  DEBUG("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. Stopping other threads\n", current, current->index, (void*)pthread_self());
+  //PRINF("EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
+  PRINF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. Stopping other threads\n", current, current->index, (void*)pthread_self());
   for(i = threadmap::getInstance().begin(); 
       i != threadmap::getInstance().end(); i++)
   {
     thread_t * thread = i.getThread();
 
-    //DEBUG("in epochend, thread%d mutex is %p\n", thread->index, &thread->mutex);
+    //PRINF("in epochend, thread%d mutex is %p\n", thread->index, &thread->mutex);
     if(thread != current) {
       lock_thread(thread);
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
         if(thread->isSafe) {
         // If the thread is in cond_wait or barrier_wait, 
-          DEBUG("in epochend, stopping thread %p self %p status %d\n", thread, (void*)thread->self, thread->status);
-          //DEBUG("in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
+          PRINF("in epochend, stopping thread %p self %p status %d\n", thread, (void*)thread->self, thread->status);
+          //PRINF("in epochend, thread %p self %p status %d\n", thread, thread->self, thread->status);
           waiters++;
           Real::pthread_kill()(thread->self, SIGUSR2);
         }
         else {
-          //DEBUG("NOTSAFE!!! Thread %p self %p status %d\n", thread, thread->self, thread->status);
+          //PRINF("NOTSAFE!!! Thread %p self %p status %d\n", thread, thread->self, thread->status);
           thread->waitSafe = true;
           while(!thread->isSafe) {
             wait_thread(thread);
@@ -294,7 +294,7 @@ bool isNewThread() {
 }
 
 void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr) {
-    DEBUG("%p: inside signal handler %p.\n", (void*)pthread_self(), (void*)cxt->uc_mcontext.gregs[REG_RIP]);
+    PRINF("%p: inside signal handler %p.\n", (void*)pthread_self(), (void*)cxt->uc_mcontext.gregs[REG_RIP]);
     //selfmap::getInstance().printCallStack(NULL, NULL, true);
     cxt->uc_mcontext.gregs[REG_RIP] = funcaddr;
 }
@@ -315,8 +315,8 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
 
   // Check what is the current phase: rollback or resume
   if(global_isEpochBegin()) {
-    DEBUG("%p wakeup from notification.\n", (void*)pthread_self());
-  // DEBUG("%p reset contexts~~~~~\n", pthread_self());
+    PRINF("%p wakeup from notification.\n", (void*)pthread_self());
+  // PRINF("%p reset contexts~~~~~\n", pthread_self());
     xthread::epochBegin();
     xthread::getInstance().saveSpecifiedContext((ucontext_t *)context);   
     syscalls::getInstance().handleEpochBegin();
@@ -325,7 +325,7 @@ void xrun::sigusr2Handler(int signum, siginfo_t * siginfo, void * context) {
     // since the exiting from signal handler can do this automatically.
   } 
   else {
-    DEBUG("epochBegin %d rollback %d\n", global_isEpochBegin(), global_isRollback());
+    PRINF("epochBegin %d rollback %d\n", global_isEpochBegin(), global_isRollback());
     assert(global_isRollback() == true);
   
     if(isNewThread()) {

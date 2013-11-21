@@ -73,7 +73,7 @@ public:
     // Eachword has 64 bits, so itemShiftBits is 6
     _itemShiftBits = calcShiftBits(WORDBITS);
 
-//    DEBUG("WORDBYTES %d and shiftbits %d _itemShiftBits %d\n", WORDBYTES, _wordShiftBits, _itemShiftBits);
+//    PRINF("WORDBYTES %d and shiftbits %d _itemShiftBits %d\n", WORDBYTES, _wordShiftBits, _itemShiftBits);
     // Calculate how many words in the specified size.
     _elements = size >> _wordShiftBits;
 
@@ -82,12 +82,12 @@ public:
     _totalBytes = getBytes(_elements);
     _heapStart = (intptr_t)addr;
  
-    //DEBUG("Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
+    //PRINF("Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
     // Now we allocate specific size of shared memory 
     void * buf = MM::mmapAllocatePrivate(_totalBytes);
     _bitmap.initialize(buf, _elements, _elements/sizeof(unsigned long));
 
-    //DEBUG("bitmap start at buf %p\n", buf);
+    //PRINF("bitmap start at buf %p\n", buf);
     // We won't cleanup all bitmap since the actual memory usage can be very small.
     _lastSentinelAddr = NULL; 
   }
@@ -97,7 +97,7 @@ public:
     unsigned long item = getIndex(start);
     unsigned long bits = getBitSize(size);
 
-    //DEBUG("clearBits item %ld, bits %ld\n", item, bits);
+    //PRINF("clearBits item %ld, bits %ld\n", item, bits);
     _bitmap.clearBits(item, bits); 
   }
 
@@ -129,7 +129,7 @@ public:
       int words = bytes / WORDBYTES;
       bool hasCorrupted = false; 
 
-   //   DEBUG("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %d\n", begin, end, bytes, words, startIndex);
+   //   PRINF("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %d\n", begin, end, bytes, words, startIndex);
       // We are trying to calculate 
       // We know that for a bit, we can use it for a word.
       // For a word with specified bytes, then we can use it for multiple words.
@@ -150,7 +150,7 @@ public:
   /// If we are given the address, we have to calculate the "index" at first.
   inline bool tryToSet (void * addr) {
     unsigned long item = getIndex(addr);
-   // DEBUG("SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
+   // PRINF("SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
     return _bitmap.checkSetBit(item);
   }
 
@@ -165,7 +165,7 @@ public:
   void setupSentinels(void * ptr, size_t objectsize) {
     size_t * sentinelFirst, * sentinelLast;
    
-//    DEBUG("Setup sentinels ptr %p objectsize %d\n", ptr, objectsize); 
+//    PRINF("Setup sentinels ptr %p objectsize %d\n", ptr, objectsize); 
     // Calculate the address of two sentinels
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
@@ -174,10 +174,10 @@ public:
     *sentinelFirst = xdefines::SENTINEL_WORD;
     *sentinelLast = xdefines::SENTINEL_WORD;
   
-  // DEBUG("SET sentinels: first %p (with value %lx) last %p (with value %lx)\n", sentinelFirst,*sentinelFirst, sentinelLast, *sentinelLast); 
+  // PRINF("SET sentinels: first %p (with value %lx) last %p (with value %lx)\n", sentinelFirst,*sentinelFirst, sentinelLast, *sentinelLast); 
     // Now we have to set up corresponding bitmap so that we can check heap overflow sometime
     tryToSet((void *)sentinelFirst);  
-   // DEBUG("SET sentinels: setting last %p\n", sentinelLast); 
+   // PRINF("SET sentinels: setting last %p\n", sentinelLast); 
     tryToSet((void *)sentinelLast);  
   }
   
@@ -198,7 +198,7 @@ public:
   void setMemalignSentinelAt(void * ptr) {
     size_t * sentinel = (size_t *)ptr;
    
-    //DEBUG("****************Setup sentinels ptr %p************\n", ptr); 
+    //PRINF("****************Setup sentinels ptr %p************\n", ptr); 
     // Calculate the address of two sentinels
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
@@ -231,7 +231,7 @@ public:
       // this address is inside a valid object. 
       // There are at least two cases for a normal object.
       canaryAddr = (unsigned long *)getHeapAddressFromItem(startIndex);
-     // DEBUG("findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
+     // PRINF("findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
       if(*canaryAddr == xdefines::SENTINEL_WORD) {
         *objectStart = (intptr_t)canaryAddr + xdefines::SENTINEL_SIZE;
         hasValidObject = true;
@@ -243,7 +243,7 @@ public:
       }
       else {
         hasValidObject = false;
-    //DEBUG("findObjectStartAddr line %d\n", __LINE__);
+    //PRINF("findObjectStartAddr line %d\n", __LINE__);
         break;
       }
     }
@@ -268,7 +268,7 @@ private:
     }
 
     if((1UL << i) != sectorsize) {
-      DEBUG("Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
+      PRWRN("Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
       abort(); 
     }
 
@@ -311,7 +311,7 @@ private:
 
 
   inline bool isBitSet(unsigned long word, int index) {
-   // DEBUG("isBitSet word %lx index %d getMask(Index) %lx\n", word, index, getMask(index));
+   // PRINF("isBitSet word %lx index %d getMask(Index) %lx\n", word, index, getMask(index));
     return (((word & getMask(index)) != 0) ? true: false); 
   }
 
@@ -349,17 +349,14 @@ private:
     bool checkNonAligned = false;
     bool hasCorrupted = false;
 
-    //DEBUG("checkSentinelOnBMD: word %d, bitword %lx address %lx\n", wordIndex, bits, address);
-    //DEBUG("checkSentinelOnBMD: at %lx with value %lx\n", 0x100000028, *((unsigned long *)0x100000028));
+    //PRINF("checkSentinelOnBMD: word %d, bitword %lx address %lx\n", wordIndex, bits, address);
+    //PRINF("checkSentinelOnBMD: at %lx with value %lx\n", 0x100000028, *((unsigned long *)0x100000028));
 
     for(int i = 0; i < WORDBITS; i++) {
       // Only check those address when corresponding bit has been set
       if(isBitSet(bits, i)) {
         if(address[i] != xdefines::SENTINEL_WORD && address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
           unsigned long * ptr = &address[i];
-          if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400) {
-            DEBUG("Bits %d is set (total %lx), address %p with value %lu\n", i, bits, &address[i], address[i]);
-          }
           bool isBadSentinel = false;
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.
@@ -387,7 +384,7 @@ private:
               j--;
             } 
 
-            //DEBUG(" __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
+            //PRWRN(" __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
             // If there is no magic bytes, it is wrong since 
             // we should have MAGIC_BYTE_NOT_ALIGNED if a bit is set.
             if(magicBytesSize == 0) {
@@ -402,7 +399,7 @@ private:
           }
           if(isBadSentinel) {
             //if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
-            DEBUG("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
+            PRINF("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
             watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]));
           }
         }
@@ -416,7 +413,7 @@ private:
 
   /// @return a "mask" for the given position.
   inline static unsigned long getMask (unsigned long bitIndex) {
-    //DEBUG("getMask at %d on %lx\n", bitIndex, on[bitIndex]);
+    //PRINF("getMask at %d on %lx\n", bitIndex, on[bitIndex]);
     return (on[bitIndex]);
   }
 

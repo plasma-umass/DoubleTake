@@ -45,12 +45,12 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
   int size;
   int skip = 0;
 
-  DEBUG("Try to get backtrace with array %p\n", array);
+  PRINF("Try to get backtrace with array %p\n", array);
   // get void*'s for all entries on the stack
   current->internalheap = true;
   size = backtrace(array, 10);
   current->internalheap = false;
-  DEBUG("After get backtrace with array %p\n", array);
+  PRINF("After get backtrace with array %p\n", array);
 
   for(int i = 0; i < size; i++) {
     if(isStopgapLibrary(array[i])) {
@@ -65,12 +65,12 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
 
   // Print out the source code information if it is a overflow site.
   if(isOverflow) {
-    DEBUG("\nSource code information about overflow site:\n");
+    fprintf(stderr, "\nSource code information about overflow site:\n");
     char buf[MAX_BUF_SIZE];
 
     for(int i = skip; i < size-skip; i++) {
       if(isApplication(array[i])) {
-        DEBUG("callstack frame %d: ", i);
+        fprintf(stderr, "callstack frame %d: ", i);
         // Print out the corresponding source code information
         sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
         system(buf);

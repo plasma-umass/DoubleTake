@@ -72,14 +72,14 @@ public:
     void * newptr = getPointer(o);
 
     // Now we are adding two sentinels and mark them on the shared bitmap.
-    //DEBUG("AdaptAppHeap malloc sz %d ptr %p nextp %lx\n", sz, ptr, (intptr_t)ptr + sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
+    //PRINF("AdaptAppHeap malloc sz %d ptr %p nextp %lx\n", sz, ptr, (intptr_t)ptr + sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
 #if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE) 
     sentinelmap::getInstance().setupSentinels(newptr, sz); 
 #endif
 
     assert (getSize(newptr) == sz);
 
-  //  DEBUG("NEWSOURCEHEAP: sz is %x - %d, newptr %p\n", sz, sz, newptr); 
+  //  PRINF("NEWSOURCEHEAP: sz is %x - %d, newptr %p\n", sz, sz, newptr); 
     return newptr;
   }
 
@@ -144,12 +144,12 @@ class PerThreadHeap {
 public:
   PerThreadHeap()
   {
-  //  DEBUG("TheHeapType size is %ld\n", sizeof(TheHeapType)); 
+  //  PRINF("TheHeapType size is %ld\n", sizeof(TheHeapType)); 
   }
 
   void * malloc (int ind, size_t sz)
   {
-//    DEBUG("PerThreadheap malloc ind %d sz %d _heap[ind] %p\n", ind, sz, &_heap[ind]);
+//    PRINF("PerThreadheap malloc ind %d sz %d _heap[ind] %p\n", ind, sz, &_heap[ind]);
     // Try to get memory from the local heap first.
     void * ptr = _heap[ind].malloc (sz);
     return ptr;
@@ -160,7 +160,7 @@ public:
   { 
     REQUIRE(ind < NumHeaps, "Invalid free status");
     _heap[ind].free (ptr);
-    //DEBUG("now first word is %lx\n", *((unsigned long*)ptr));
+    //PRINF("now first word is %lx\n", *((unsigned long*)ptr));
   }
 
   // For getSize, it doesn't matter which heap is used 
@@ -194,7 +194,7 @@ public:
     REQUIRE(base != NULL, "Failed to allocate memory for heap metadata");
 
     _heap = new (base) SuperHeap;
-    //DEBUG("xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
+    //PRINF("xpheap calling sourceHeap::malloc size %lx base %p metasize %lx\n", metasize, base, metasize);
   
     // Get the heap start and heap end;
     _heapStart = SourceHeap::getHeapStart();
@@ -206,7 +206,7 @@ public:
     size_t sentinelmapSize;
     sentinelmapStart = _heapStart;
     sentinelmapSize = xdefines::USER_HEAP_SIZE;
-    //DEBUG("INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
+    //PRINF("INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
 
     // Initialize bitmap
     sentinelmap::getInstance().initialize(sentinelmapStart, sentinelmapSize);
@@ -224,7 +224,7 @@ public:
 
   void recoverMemory() {
     void * heapEnd =(void *)SourceHeap::getHeapPosition();
-    //DEBUG("recoverMemory, heapEnd %p\n", heapEnd);
+    //PRINF("recoverMemory, heapEnd %p\n", heapEnd);
     SourceHeap::recoverMemory(heapEnd);
   }
 

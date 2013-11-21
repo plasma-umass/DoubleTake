@@ -76,7 +76,7 @@ inline void global_initialize() {
   g_phase = E_SYS_INIT;
   g_numOfEnds = 0;
 
- //DEBUG("global initializee............\n");
+ //PRINF("global initializee............\n");
   Real::pthread_mutex_init()(&g_mutex, NULL);
   Real::pthread_mutex_init()(&g_mutexSignalhandler, NULL);
   Real::pthread_cond_init()(&g_condCommitter, NULL);
@@ -97,7 +97,7 @@ inline bool global_isEpochEnd() {
 }
 
 inline bool global_isRollback() {
-  DEBUG("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+  PRINF("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   return g_phase == E_SYS_ROLLBACK;
 }
 
@@ -108,7 +108,7 @@ inline bool global_isEpochBegin() {
 inline void global_setRollback() {
   g_phase = E_SYS_ROLLBACK;
   g_hasRollbacked = true;
-  //DEBUG("setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+  //PRINF("setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
 }
 
 inline bool global_hasRollbacked() {
@@ -120,14 +120,14 @@ inline void global_rollback() {
 
   // Wakeup all other threads.
   Real::pthread_cond_broadcast()(&g_condWaiters);
-//    DEBUG("after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+//    PRINF("after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
 }
 
 inline void global_epochBegin() {
   global_lockInsideSignalhandler();
 
   g_phase = E_SYS_EPOCH_BEGIN;
-  DEBUG("waken up all waiters\n");
+  PRINF("waken up all waiters\n");
   // Wakeup all other threads.
   Real::pthread_cond_broadcast()(&g_condWaiters);
 
@@ -145,7 +145,7 @@ inline thread_t * global_getCurrent() {
 inline void global_waitThreadsStops(int totalwaiters) {
   global_lockInsideSignalhandler();
   g_waitersTotal = totalwaiters;
-//    DEBUG("During waiting: g_waiters %d g_waitersTotal %d\n", g_waiters, g_waitersTotal);
+//    PRINF("During waiting: g_waiters %d g_waitersTotal %d\n", g_waiters, g_waitersTotal);
   while(g_waiters != g_waitersTotal) {
     Real::pthread_cond_wait()(&g_condCommitter, &g_mutexSignalhandler);
   }
@@ -162,21 +162,21 @@ inline void global_waitForNotification() {
   
 //    printf("waitForNotification, waiters is %d at thread %p\n", g_waiters, pthread_self());
   global_lockInsideSignalhandler();
-  DEBUG("waitForNotification g_waiters %d totalWaiters %d\n", g_waiters, g_waitersTotal);
+  PRINF("waitForNotification g_waiters %d totalWaiters %d\n", g_waiters, g_waitersTotal);
 
   g_waiters++;
 
   if(g_waiters == g_waitersTotal) {
     //printf("NNNNNNNNNN, waiters is %d at thread %p. WWWWWWWWWWWWWWWWWWWWWWWWWWW\n", g_waiters, pthread_self());
     Real::pthread_cond_signal()(&g_condCommitter); 
-    DEBUG("waitForNotification after calling cond_broadcast\n");
+    PRINF("waitForNotification after calling cond_broadcast\n");
   }
 
   // Only waken up when it is not the end of epoch anymore.
   while(global_isEpochEnd()) {
-    DEBUG("waitForNotification before waiting again\n");
+    PRINF("waitForNotification before waiting again\n");
     Real::pthread_cond_wait()(&g_condWaiters, &g_mutexSignalhandler);
-    DEBUG("waitForNotification after waken up. isEpochEnd() %d \n", global_isEpochEnd());
+    PRINF("waitForNotification after waken up. isEpochEnd() %d \n", global_isEpochEnd());
   }
 
   g_waiters--;
@@ -184,7 +184,7 @@ inline void global_waitForNotification() {
   if(g_waiters == 0) {
     Real::pthread_cond_signal()(&g_condCommitter); 
   }
-  DEBUG("waitForNotification decrement waiters. status %d\n", g_phase);
+  PRINF("waitForNotification decrement waiters. status %d\n", g_phase);
     
   global_unlockInsideSignalhandler();
 }
