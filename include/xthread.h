@@ -63,12 +63,15 @@ public:
   }
 
   void initialize() {
-    //DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
+    fprintf(stderr, "THREADD initialize nnnnnnnnnnnnnnnnnnnn\n");
     _thread.initialize();
+    DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
 
     // Initialize the syncmap and threadmap.
     _sync.initialize();
+    DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
     threadmap::getInstance().initialize();
+    DEBUG("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
  
     DEBUG("Starting thread initialization");
 

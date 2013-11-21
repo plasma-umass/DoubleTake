@@ -94,7 +94,7 @@ public:
 
     installSignalHandler();
     
-  //  DEBUG("xrun::initialize line %d\n", __LINE__);
+  	//fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
     InternalHeap::getInstance().initialize();
 
     // Initialize the internal heap at first.
@@ -123,7 +123,7 @@ public:
       return;
     }
 
-    //DEBUG("In the end of finalize function\n");
+    DEBUG("In the end of finalize function\n");
     //DEBUG("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {

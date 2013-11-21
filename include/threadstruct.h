@@ -81,6 +81,10 @@ typedef struct thread {
   // if a thread is detached, then the current thread don't need to wait its parent
   bool isDetached;    
 
+  // Local output buffer for each thread. In order to avoid malloc requests in the 
+  // replaying.
+  char  outputBuf[LOG_SIZE];
+
   // What is the parent of this thread 
   struct thread * parent;
 

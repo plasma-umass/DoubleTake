@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "xdefines.h"
+
 #define NORMAL_CYAN "\033[36m"
 #define NORMAL_MAGENTA "\033[35m"
 #define NORMAL_BLUE "\033[34m"
@@ -25,30 +27,59 @@
 #define BRIGHT_GREEN "\033[1m\033[32m"
 #define BRIGHT_RED "\033[1m\033[31m"
 
+#define ESC_INF  NORMAL_CYAN
 #define ESC_LOG  NORMAL_GREEN
 #define ESC_WRN  BRIGHT_YELLOW
 #define ESC_ERR  BRIGHT_RED
 #define ESC_END  "\033[0m"
+extern int outfd;
 
-// Print a warning message, regardless of debug build level
-#define WARN(fmt, ...)  fprintf(stderr, ESC_WRN " [%s:%d] Warning: " fmt ESC_END "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_SIZE 4096
 
-// Print an error message, regardless of debug build level
-#define ERROR(fmt, ...) fprintf(stderr, ESC_ERR " [%s:%d] Error: " fmt ESC_END "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define OUTPUT write
+
+#ifndef NDEBUG
+/**
+ * Print status-information message: level 0
+ */
+#define DEBUG(fmt, ...) \
+  { if(DEBUG_LEVEL < 1) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_INF "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+
+/**
+ * Print warning message: level 1
+ */
+#define WARN(fmt, ...) \
+  { if(DEBUG_LEVEL < 3) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_WRN "%lx [PROTO-WARNING]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
+#else
+#define DEBUG(fmt, ...)
+#define WARN(fmt, ...) 
+#endif
+
+/**
+ * Print error message: level 2
+ */
+#define ERROR(fmt, ...) \
+  { if(DEBUG_LEVEL < 4) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-ERROR]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
+
+
+/**
+ * Print fatal error message, the program is going to exit.
+ */
+#define FATAL(fmt, ...) \
+  {   ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
+                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
+      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
 
 // Check a condition. If false, print an error message and abort
-#define REQUIRE(cond, ...) if(!(cond)) { ERROR(__VA_ARGS__); abort(); }
-
-#if !defined(NDEBUG)
-// Print a debug message
-# define DEBUG(fmt, ...) fprintf(stderr, ESC_LOG " [%s:%d] " fmt ESC_END "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-// Check a condition and abort if false
-# define PREFER(cond, ...) if(!(cond)) { WARN(__VA_ARGS__); abort(); }
-#else
-// Hide debug message in release mode
-# define DEBUG(...)
-// Check a condition and warn if false
-# define PREFER(cond, ...) if(!(cond)) { WARN(__VA_ARGS__); abort(); }
-#endif
+#define REQUIRE(cond, ...) if(!(cond)) { FATAL(__VA_ARGS__) }
 
 #endif

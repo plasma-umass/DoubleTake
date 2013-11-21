@@ -36,6 +36,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 inline size_t getMarkWords(size_t size) {
   int words;
 
+  assert(size % sizeof(unsigned long) == 0);
+
   // Get a size for checking
   if(size > xdefines::FREE_OBJECT_CANARY_SIZE) {
     words = xdefines::FREE_OBJECT_CANARY_WORDS;

@@ -106,8 +106,10 @@ __attribute__((constructor)) void initializer() {
   // before initialized.
   // We can not use stack variable here since different process
   // may use this to share information.
+		fprintf(stderr, "initializer now, funcInitialized %d!!!!\n", funcInitialized);
   if(!funcInitialized) {
     funcInitialized = true;
+		fprintf(stderr, "initializer now!!!!\n");
     xrun::getInstance().initialize();
     initialized = true;
   }
@@ -124,7 +126,7 @@ static void * tempmalloc(int size) {
   static int _allocated = 0;
   
   if(_allocated + size > InitialMallocSize) {
-    ERROR("Not enough space for tempmalloc");
+   	ERROR("Not enough space for tempmalloc");
     abort();
   } else {
     void* p = (void*)&_buf[_allocated];
@@ -132,6 +134,7 @@ static void * tempmalloc(int size) {
     return p;
   }
 }
+
 
 bool addThreadQuarantineList(void * ptr, size_t sz) {
   return xthread::getInstance().addQuarantineList(ptr, sz);
@@ -142,7 +145,7 @@ extern "C" {
   void * doubletake_malloc (size_t sz) {
     void * ptr;
     if (!initialized) {
-      DEBUG("tempmalloc sz %ld\n", sz);
+    //  DEBUG("tempmalloc sz %ld\n", sz);
       ptr = tempmalloc(sz);
     } else {
 //      printf("doubletakemalloc sz %d\n", sz);

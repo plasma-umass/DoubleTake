@@ -10,7 +10,8 @@ CFLAGS_ALL          = $(CFLAGS_OVERFLOW) $(CFLAGS_USEAFTERFREE) $(CFLAGS_LEAKS)
 
 CFLAGS = -fPIC -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' \
 	-DDEBUG_LEVEL=0 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL \
-	$(CFLAGS_ALL) \
+	$(CFLAGS_ALL) 
+#\
 	-ferror-limit=1 -Werror
 
 include $(ROOT)/common.mk

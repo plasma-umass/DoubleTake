@@ -34,7 +34,6 @@ using std::cout;
 using std::endl;
 
 #include "xdefines.h"
-#include "utility/ilog2.h"
 #include "utility/sassert.h"
 #include "wrappers/ansiwrapper.h"
 #include "heaps/general/kingsleyheap.h"

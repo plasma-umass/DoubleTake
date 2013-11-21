@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv) {
   int* p = (int*)malloc(sizeof(int));
-  p = NULL;
   printf("Hello leak\n");
+  p = NULL;
   return 0;
 }

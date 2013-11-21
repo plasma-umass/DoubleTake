@@ -49,6 +49,12 @@ int getThreadIndex() {
   }
 }
 
+char * getThreadBuffer(void) {
+  int index = getThreadIndex();
+
+  return threadinfo::getInstance().getThreadBuffer(index);
+}
+
 void xthread::invokeCommit() {
   xrun::getInstance().epochEnd(false);
   xrun::getInstance().epochBegin();

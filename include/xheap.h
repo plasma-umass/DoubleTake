@@ -82,9 +82,10 @@ public:
 
     // Initialize the freelist.
     freelist::getInstance().initialize();
+    
+    DEBUG("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
 
     return (void *)ptr;	
-    DEBUG("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
   }
 
   /*

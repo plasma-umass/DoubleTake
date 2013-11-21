@@ -66,6 +66,7 @@ extern runtime_data_t *global_data;
 extern size_t __max_stack_size; 
 typedef void * threadFunction (void *);
 extern int getThreadIndex();
+extern char * getThreadBuffer();
 extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void * ptr, size_t size);
 
@@ -97,7 +98,7 @@ class xdefines {
 public:
   enum { USER_HEAP_SIZE     = 1048576UL * 8192 }; // 8G
 //  enum { USER_HEAP_SIZE     = 1048576UL * 1024 }; // 8G
-  enum { USER_HEAP_BASE     = 0x100000000 }; // 1G
+  enum { USER_HEAP_BASE     = 0x100000000 }; // 4G
   enum { MAX_USER_SPACE     = USER_HEAP_BASE + USER_HEAP_SIZE };
   enum { INTERNAL_HEAP_BASE = 0x100000000000 };
   //enum { INTERNAL_HEAP_BASE = 0xC0000000 };
