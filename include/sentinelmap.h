@@ -203,6 +203,7 @@ public:
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast
     *sentinel = xdefines::MEMALIGN_SENTINEL_WORD;
+    /// EDB FIX ME: WHAT ARE THESE MAGIC NUMBERS? THEY NEED TO BE IN ENUMS AND DOCUMENTED.
     if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
       DEBUG("****************set memalign sentinel at ptr %p to %lx ************\n", ptr, *sentinel); 
     tryToSet((void *)sentinel); 
