@@ -194,7 +194,7 @@ private:
   void insertLeakageMap(void * ptr, size_t objectSize, size_t size) {
     _totalLeakageSize += size;
     // Update the total size.
-//    PRINF("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
+    PRWRN("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
     // We only start to rollback when leakage is too large?
   }
 

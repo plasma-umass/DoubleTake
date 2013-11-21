@@ -112,12 +112,16 @@ obj32/%.o:: %.cpp Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
 obj64/%.o:: %.c Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
 	@mkdir -p obj64
 	@echo $(INDENT)[$(notdir $(firstword $(CC)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CC) $(CFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+
+#	@$(CC) $(CFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
 
 obj64/%.o:: %.cpp Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
 	@mkdir -p obj64
 	@echo $(INDENT)[$(notdir $(firstword $(CXX)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CXX) $(CXXFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+
+#	@$(CXX) $(CXXFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
 
 $(LIB_TARGETS32):: $(OBJS32) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common.mk
 	@echo $(INDENT)[$(notdir $(firstword $(CXXLIB)))] Linking $@ for $(if $(DEBUG),Debug,Release) build

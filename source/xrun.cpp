@@ -61,8 +61,7 @@ void xrun::rollbackandstop() {
 
 // We are rollback the child process 
 void xrun::rollback() {
-  PRINF("\n\nNOW ROLLING BACK\n\n\n");
-  PRINF("\n\nNOW ROLLING BACK\n\n\n");
+  printf("\n\nNOW EXECUTION!!!\n\n\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
