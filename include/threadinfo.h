@@ -159,6 +159,12 @@ public:
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
+  inline char * getThreadBuffer(int index) {
+    thread_t * thread = getThreadInfo(index);
+
+    return thread->outputBuf;
+  }
+
   inline int incrementReapableThreads() {
     _reapableThreads++;
     return _reapableThreads; 
@@ -180,7 +186,7 @@ public:
     syncVar = (struct deferSyncVariable *)InternalHeap::getInstance().malloc(sizeof(struct deferSyncVariable));
 
     if(syncVar == NULL) {
-      WARN("No enough private memory, syncVar %p\n", syncVar);
+      fprintf(stderr, "No enough private memory, syncVar %p\n", syncVar);
       return;
     }
 

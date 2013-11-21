@@ -165,7 +165,6 @@ public:
   
   void * malloc (size_t sz) {
     void * ptr = NULL;
-		fprintf(stderr, "malloc sz %lx\n", sz);
     ptr = _heap.malloc (getThreadIndex(), sz);
   
     REQUIRE(ptr != NULL, "Shareheap is exhausted");
