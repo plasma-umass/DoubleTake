@@ -73,14 +73,12 @@ public:
     // Shared the threads information. 
     memset(&_threads, 0, sizeof(_threads));
 
-		fprintf(stderr, "threadinfo::initialize %d\n", __LINE__);
     // Initialize the backup stacking information.
     size_t perStackSize = __max_stack_size;
 
     unsigned long totalStackSize = perStackSize * 2 * xdefines::MAX_ALIVE_THREADS;
     unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
     unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
-		fprintf(stderr, "threadinfo::initialize %d\n", __LINE__);
 
     char * stackStart = (char *)MM::mmapAllocatePrivate(totalStackSize + qbufSize);
     char * qbufStart = (char *)((intptr_t)stackStart + totalStackSize);
@@ -112,12 +110,6 @@ public:
   }
 
   void finalize() {
-  }
-
-  inline char * getThreadBuffer(int index) {
-    thread_t * thread = getThreadInfo(index);
-
-    return thread->outputBuf;
   }
 
   /// @ internal function: allocation a thread index when spawning.
@@ -188,7 +180,7 @@ public:
     syncVar = (struct deferSyncVariable *)InternalHeap::getInstance().malloc(sizeof(struct deferSyncVariable));
 
     if(syncVar == NULL) {
-      fprintf(stderr, "No enough private memory, syncVar %p\n", syncVar);
+      WARN("No enough private memory, syncVar %p\n", syncVar);
       return;
     }
 

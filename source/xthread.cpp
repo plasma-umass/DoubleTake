@@ -50,9 +50,7 @@ int getThreadIndex() {
 }
 
 char * getThreadBuffer(void) {
-  int index = getThreadIndex();
-
-  return threadinfo::getInstance().getThreadBuffer(index);
+  return current->outputBuf;
 }
 
 void xthread::invokeCommit() {
