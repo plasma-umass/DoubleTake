@@ -53,7 +53,7 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
   PRINF("After get backtrace with array %p\n", array);
 
   for(int i = 0; i < size; i++) {
-    if(isStopgapLibrary(array[i])) {
+    if(isDoubleTakeLibrary(array[i])) {
       skip++;
     } 
     else {
@@ -72,7 +72,7 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
       if(isApplication(array[i])) {
         fprintf(stderr, "callstack frame %d: ", i);
         // Print out the corresponding source code information
-        sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]-2);
+        sprintf(buf, "addr2line -e %s %x", _filename,  (unsigned long)array[i]-2);
         system(buf);
       }
     }

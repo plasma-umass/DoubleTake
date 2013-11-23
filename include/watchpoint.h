@@ -207,8 +207,8 @@ public:
     // check the address of trap
     // Get correponding ip information.
     //PRINF("CAPTURING write at %p: %lx at ip %lx. sivalue %d address %p, signal code %d\n", addr, *((unsigned long *)addr), trapcontext->uc_mcontext.gregs [REG_RIP], siginfo->si_value, siginfo->si_ptr, siginfo->si_code);
-    // We omit those modifications by stopgap library itself.
-    if(selfmap::getInstance().isStopgapLibrary(addr)) {
+    // We omit those modifications by doubletake library itself.
+    if(selfmap::getInstance().isDoubleTakeLibrary(addr)) {
       return;
     }
     

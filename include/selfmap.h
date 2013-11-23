@@ -99,21 +99,20 @@ public:
     // Now we analyze each line of this maps file.
     void * startaddr, * endaddr;
     bool   hasLibStart = false;
-    while(getline(iMapfile, curentry)) {
+    while (getline(iMapfile, curentry)) {
       // Check whether this entry is the text segment of application.
       if((curentry.find(" r-xp ", 0) != string::npos) 
-        && (curentry.find(" 08:0b ", 0) != string::npos)) {
+	 && (curentry.find(" 08:0b ", 0) != string::npos)) {
         getRegionInfo(curentry, &startaddr, &endaddr);
 
-        // Check whether this is stopgap or application
-        if(curentry.find("libstopgap", 0) != string::npos) {
-          stopgapStart = startaddr;
-          stopgapEnd = endaddr;
+        // Check whether this is doubletake or application
+        if (curentry.find("libdoubletake", 0) != string::npos) {
+          _doubletakeStart = startaddr;
+          _doubletakeEnd = endaddr;
           break;
-        }
-        else {
-          appTextStart = startaddr;
-          appTextEnd = endaddr;
+        } else {
+          _appTextStart = startaddr;
+          _appTextEnd = endaddr;
         } 
       }
       else if((curentry.find(" r-xp ") != string::npos) 
@@ -122,13 +121,12 @@ public:
         // Now it is start of global of applications
         getRegionInfo(curentry, &startaddr, &endaddr);
 
-        if(hasLibStart == false) {
-          libraryStart = startaddr;
-          libraryEnd = endaddr;
+        if (!hasLibStart) {
+          _libraryStart = startaddr;
+          _libraryEnd = endaddr;
           hasLibStart = true;
-        }    
-        else {
-          libraryEnd = endaddr;
+        } else {
+          _libraryEnd = endaddr;
         }
       }
     }
@@ -137,20 +135,20 @@ public:
     int    count;
 
     /* Get current executable file name. */
-    count= Real::readlink()("/proc/self/exe", filename, MAX_BUF_SIZE);
+    count = Real::readlink()("/proc/self/exe", _filename, MAX_BUF_SIZE);
     if (count <= 0 || count >= MAX_BUF_SIZE)
     {
       PRWRN("Failed to get current executable file name\n" );
       exit(1);
     }
-    filename[count] = '\0';
+    _filename[count] = '\0';
 
-    PRINF("INITIALIZATION: textStart %p textEnd %p stopgapStart %p stopgapEnd %p libStart %p libEnd %p\n", appTextStart, appTextEnd, stopgapStart, stopgapEnd, libraryStart, libraryEnd);
+    PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
   } 
 
-  // Check whether an address is inside the stopgap library itself
-  bool isStopgapLibrary(void * pcaddr) {
-    if(pcaddr >= stopgapStart && pcaddr <= stopgapEnd) {
+  // Check whether an address is inside the doubletake library itself
+  bool isDoubleTakeLibrary(void * pcaddr) {
+    if(pcaddr >= _doubletakeStart && pcaddr <= _doubletakeEnd) {
       return true;
     }
     else {
@@ -159,7 +157,7 @@ public:
   }
 
   bool isApplication(void * pcaddr) {
-    if(pcaddr >= appTextStart && pcaddr <= appTextEnd) {
+    if(pcaddr >= _appTextStart && pcaddr <= _appTextEnd) {
       return true;
     }
     else {
@@ -298,13 +296,13 @@ public:
   }
 
 private:
-  char filename[MAX_BUF_SIZE];
-  void * appTextStart;
-  void * appTextEnd;
-  void * libraryStart;
-  void * libraryEnd;
-  void * stopgapStart;
-  void * stopgapEnd; 
+  char _filename[MAX_BUF_SIZE];
+  void * _appTextStart;
+  void * _appTextEnd;
+  void * _libraryStart;
+  void * _libraryEnd;
+  void * _doubletakeStart;
+  void * _doubletakeEnd; 
 };
 
 #endif
