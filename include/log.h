@@ -66,6 +66,7 @@ extern int outfd;
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
       OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
 #else
+#define PRINF(fmt, ...)
 #define PRDBG(fmt, ...)
 #define PRWRN(fmt, ...) 
 #endif
