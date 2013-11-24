@@ -1,7 +1,7 @@
 // -*- C++ -*-
 
 /*
-  Copyright (c) 2012, University of Massachusetts Amherst.
+  Copyright (c) 2013, University of Massachusetts Amherst.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,17 +21,20 @@
 
 /*
  * @file   selfmap.h
- * @brief  Analyze the self mapping. 
+ * @brief  Process the /proc/self/map file.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
+ * @author Emery Berger <http://www.cs.umass.edu/~emery>
  */
 
-#ifndef _SELFMAP_H_
-#define _SELFMAP_H_
+#ifndef DOUBLETAKE_SELFMAP_H
+#define DOUBLETAKE_SELFMAP_H
 
+#include <linux/limits.h>
 #include <sys/resource.h>
 #include <iostream>
 #include <fstream>
 #include <execinfo.h>
+#include <stdint.h>
 
 //#include <libunwind-ptrace.h>
 //#include <sys/ptrace.h>
@@ -54,8 +57,11 @@ public:
     return *theOneTrueObject;
   }
 
-  // We may use a inode attribute to analyze whether we need to do this.
-  void getRegionInfo(std::string & curentry, void ** start, void ** end) {
+  // We may use an inode attribute to analyze whether we need to do this.
+  void getRegionInfo (std::string & curentry,
+		      void ** start,
+		      void ** end) 
+  {
 
     // Now this entry is about globals of libc.so.
     string::size_type pos = 0;
@@ -65,7 +71,8 @@ public:
     // "00797000-00798000 rw-p ...."
     string beginstr, endstr;
 
-    while(curentry[pos] != '-') pos++;
+    while (curentry[pos] != '-') 
+      pos++;
 
     beginstr = curentry.substr(0, pos);
   
@@ -84,7 +91,7 @@ public:
     return;
   }
   
-  // Trying to get information about global regions. 
+  // @brief Get information about global regions. 
   void getTextRegions() {
     ifstream iMapfile;
     string curentry;
@@ -96,13 +103,32 @@ public:
       abort();
     } 
 
-    // Now we analyze each line of this maps file.
+    // Now we analyze each line of the map file.
     void * startaddr, * endaddr;
     bool   hasLibStart = false;
+    _appTextStart = (void *) (-1ULL);
+    _appTextEnd = (void *) 0ULL;
+
+    printf ("start = %lx, end = %x\n", _appTextStart, _appTextEnd);
+
     while (getline(iMapfile, curentry)) {
+      size_t start, end, offset, inode;
+      char file[PATH_MAX];
+      char prot[15];
+      unsigned int dev1, dev2;
+      printf ("Read in %s\n", curentry.c_str());
+      int count = sscanf (curentry.c_str(), "%lx-%lx %4s %lx %x:%x %u %s",
+			  &start, &end, prot, &offset, &dev1, &dev2, &inode, file);
+      if (count != 0) {
+	printf ("start = %lx, end = %lx, prot = %s, offset = %lx, dev1 = %x, dev2 = %x, inode = %x, file = %s\n",
+		start, end, prot, offset, dev1, dev2, inode, file);
+      }
+
       // Check whether this entry is the text segment of application.
       if((curentry.find(" r-xp ", 0) != string::npos) 
-	 && (curentry.find(" 08:0b ", 0) != string::npos)) {
+	 && (curentry.find(" 08:0", 0) != string::npos)) {
+
+	printf ("checking text segment.\n");
         getRegionInfo(curentry, &startaddr, &endaddr);
 
         // Check whether this is doubletake or application
@@ -111,13 +137,17 @@ public:
           _doubletakeEnd = endaddr;
           break;
         } else {
-          _appTextStart = startaddr;
-          _appTextEnd = endaddr;
+	  printf ("CHECKING.\n");
+	  if ((size_t) startaddr < (size_t) _appTextStart) {
+	    _appTextStart = startaddr;
+	  }
+	  if ((size_t) endaddr > (size_t) _appTextEnd) {
+	    _appTextEnd = endaddr;
+	  }
         } 
-      }
-      else if((curentry.find(" r-xp ") != string::npos) 
+      } else if((curentry.find(" r-xp ") != string::npos) 
               && (curentry.find("lib", 0) != string::npos) 
-              && (curentry.find(" 08:06 ") != string::npos)) {
+              && (curentry.find(" 08:0") != string::npos)) {
         // Now it is start of global of applications
         getRegionInfo(curentry, &startaddr, &endaddr);
 
@@ -131,6 +161,8 @@ public:
       }
     }
     iMapfile.close();
+
+    printf ("NOW: start = %lx, end = %lx\n", _appTextStart, _appTextEnd);
 
     int    count;
 
