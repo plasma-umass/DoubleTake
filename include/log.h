@@ -5,13 +5,18 @@
  * @author: Charlie Curtsinger & Tongping Liu
  */
 
-#ifndef _LOG_H_
-#define _LOG_H_
+#ifndef DOUBLETAKE_LOG_H
+#define DOUBLETAKE_LOG_H
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "xdefines.h"
+
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL 0
+#endif
 
 #define NORMAL_CYAN "\033[36m"
 #define NORMAL_MAGENTA "\033[35m"
@@ -32,7 +37,7 @@
 #define ESC_WRN  BRIGHT_YELLOW
 #define ESC_ERR  BRIGHT_RED
 #define ESC_END  "\033[0m"
-extern int outfd;
+int outfd = 2; // stderr
 
 #define LOG_SIZE 4096
 

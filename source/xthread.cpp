@@ -49,7 +49,7 @@ int getThreadIndex() {
   }
 }
 
-char * getThreadBuffer(void) {
+char * getThreadBuffer() {
   int index = getThreadIndex();
 
   return threadinfo::getInstance().getThreadBuffer(index);

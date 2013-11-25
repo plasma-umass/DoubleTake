@@ -36,11 +36,23 @@
 #include <fstream>
 #include <execinfo.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ucontext.h>
+
+#include "real.h"
 
 //#include <libunwind-ptrace.h>
 //#include <sys/ptrace.h>
 
-#include "xdefines.h"
+//#include "xdefines.h"
+
+#ifndef PRINF
+#define PRINF(fmt, ...)
+#define PRDBG(fmt, ...)
+#define PRWRN(fmt, ...) 
+#endif
+
 using namespace std;
 
 struct regioninfo {

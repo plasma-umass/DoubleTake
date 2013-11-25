@@ -85,7 +85,6 @@ size_t __max_stack_size;
 
 bool funcInitialized = false;
 bool initialized = false;
-int outfd = 2; // We are going to output the standard error
 
 #define fprintf(stderr, ...)
 // Some global information. 
