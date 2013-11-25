@@ -49,7 +49,7 @@ struct regioninfo {
 };
 
 class selfmap {
-private:
+public:
 
   /// @brief Check whether an address is inside the DoubleTake library itself.
   bool isDoubleTakeLibrary (void * pcaddr) {
@@ -60,6 +60,8 @@ private:
   bool isApplication(void * pcaddr) {
     return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
   }
+
+private:
 
   // A class that represents process information, extracted from the maps file.
   class pmap {
@@ -99,10 +101,10 @@ public:
     // Get application file name.
     int count = Real::readlink()("/proc/self/exe", _filename, PATH_MAX);
     if (count <= 0 || count >= PATH_MAX)
-    {
-      PRWRN("Failed to get current executable file name\n" );
-      exit(1);
-    }
+      {
+	PRWRN("Failed to get current executable file name\n" );
+	exit(1);
+      }
     _filename[count] = '\0';
 
     // Read the maps to compute ranges for text regions (code).
@@ -132,30 +134,31 @@ public:
 
         // Check whether we are in DoubleTake, another library, or in the application itself.
         if (strstr(p.file, "libdoubletake") != NULL) {
-          _doubletakeStart = p.startaddr;
-          _doubletakeEnd =   p.endaddr;
+          _doubletakeStart = (void *) p.startaddr;
+          _doubletakeEnd   = (void *) p.endaddr;
         } else if (strcmp(p.file, _filename) == 0) {
 	  if (p.startaddr < (size_t) _appTextStart) {
-	    _appTextStart = p.startaddr;
+	    _appTextStart = (void *) p.startaddr;
 	  }
 	  if (p.endaddr > (size_t) _appTextEnd) {
-	    _appTextEnd = p.endaddr;
+	    _appTextEnd = (void *) p.endaddr;
 	  }
         } else {
 	  // Must be in a library.
 	  if (p.startaddr < (size_t) _libraryStart) {
-	    _libraryStart = p.startaddr;
+	    _libraryStart = (void *) p.startaddr;
 	  }
-	  if (p.endaddr > (size_t) _appTextEnd) {
-	    _libraryEnd = p.endaddr;
+	  if (p.endaddr > (size_t) _libraryEnd) {
+	    _libraryEnd = (void *) p.endaddr;
 	  }
+	}
       }
-    }
 
-    iMapfile.close();
+      iMapfile.close();
 
-    PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
-  } 
+      PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
+    } 
+  }
 
   /// @brief Extract stack bottom and top information.
   void getStackInformation(void** stackBottom, void ** stackTop) {
@@ -170,8 +173,8 @@ public:
       abort();
     } 
 
-    *stackbottom = NULL;
-    *stacktop = NULL;
+    *stackBottom = NULL;
+    *stackTop = NULL;
 
     // Now we analyze each line of this maps file, looking for the stack.
     while (getline(iMapfile, curentry)) {
@@ -180,8 +183,8 @@ public:
 
       // Find the entry for the stack.
       if (strstr(p.file, "[stack]") != NULL) {
-	*stackBottom = p.startaddr;
-	*stackTop    = p.endaddr;
+	*stackBottom = (void *) p.startaddr;
+	*stackTop    = (void *) p.endaddr;
 	// Got it. We're out.
 	break;
       }
@@ -223,49 +226,19 @@ public:
       if ((foundGlobals == false) && (strstr(p.prot, "rw-p") != NULL)) {
         // Now it is start of global of applications.
    
-        getline (iMapfile, nextentry);
-
-        void * newstart;
-        // Check whether next entry should be also included or not.
-        if(nextentry.find("lib", 0) == string::npos && nextentry.find(" 00:00 ") == string::npos) {
-          getRegionInfo(nextentry, &newstart, &endaddr);
-        }
-        foundGlobals = true;
-        toSaveRegion = true;
-      }
-      // Check the globals for libc.so
-      else if((curentry.find("libc-", 0) != string::npos && (curentry.find(" rw-p ") != string::npos))) {
-        getRegionInfo(curentry, &startaddr, &endaddr);
-        getline(iMapfile, nextentry);
-        getRegionInfo(nextentry, &newstart, &endaddr);
-        toSaveRegion = true;
-      }
-#if 0
-      // Check the globals for libpthread-***.so
-      else if((curentry.find("libpthread-", 0) != string::npos && (curentry.find(" rw-p ") != string::npos))) {
-        // The first entry can not intercepted since it includes the PLT table of mmap?
-        getRegionInfo(curentry, &startaddr, &endaddr);
-        getline(iMapfile, nextentry);
-        getRegionInfo(nextentry, &newstart, &endaddr);
-        toSaveRegion = true;
-      }
-#endif
-      else {
-        toSaveRegion = false;
-      }
- 
-      if(toSaveRegion) { 
-        PRINF("start startaddr %p endaddr %p\n", startaddr, endaddr); 
-        regions[*regionNumb].start = startaddr;
-        regions[*regionNumb].end = endaddr;
-        (*regionNumb)++;
+	if(toSaveRegion) { 
+	  PRINF("start startaddr %p endaddr %p\n", p.startaddr, p.endaddr); 
+	  regions[*regionNumb].start = (void *) p.startaddr;
+	  regions[*regionNumb].end   = (void *) p.endaddr;
+	  (*regionNumb)++;
+	}
       }
     }
     iMapfile.close();
-  } 
+  }
   
-
 private:
+  
   char _filename[PATH_MAX];
   void * _appTextStart;
   void * _appTextEnd;

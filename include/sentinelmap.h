@@ -414,7 +414,7 @@ private:
   /// @return a "mask" for the given position.
   inline static unsigned long getMask (unsigned long bitIndex) {
     //PRINF("getMask at %d on %lx\n", bitIndex, on[bitIndex]);
-    return (on[bitIndex]);
+    return (1UL << bitIndex);
   }
 
   /// The number of BYTES in a WORD.

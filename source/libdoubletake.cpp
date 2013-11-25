@@ -99,8 +99,6 @@ pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;  
 int g_waitersTotal;  
-unsigned long on[WORDBITS];
-unsigned long off[WORDBITS];
 
 __attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
