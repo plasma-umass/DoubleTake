@@ -144,11 +144,12 @@ public:
   enum { MAGIC_BYTE_NOT_ALIGNED = 0xEE };
   enum { FREE_OBJECT_CANARY_WORDS = 16 };
   enum { FREE_OBJECT_CANARY_SIZE = 16 * WORD_SIZE };
-  
+  enum { CALLSITE_MAXIMUM_LENGTH = 10 }; 
 
   // FIXME: the following definitions are sensitive to 
   // glibc version (possibly?)
   enum { FILES_MAP_SIZE = 4096 }; 
+  enum { MEMTRACK_MAP_SIZE = 4096 }; 
   enum { FOPEN_ALLOC_SIZE = 0x238 };
   enum { DIRS_MAP_SIZE = 1024 }; 
   enum { DIROPEN_ALLOC_SIZE = 0x8038 };

@@ -52,6 +52,8 @@
 #include "spinlock.h"
 //#include "leakcheck.h"
 
+#include "memtrack.h"
+
 class leakcheck {
 
   leakcheck() { }
@@ -194,7 +196,7 @@ private:
   void insertLeakageMap(void * ptr, size_t objectSize, size_t size) {
     _totalLeakageSize += size;
     // Update the total size.
-    PRWRN("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld**************\n", ptr, size, objectSize);
+    PRWRN("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld. Total leakage size %ld**************\n", ptr, size, objectSize, _totalLeakageSize);
     // We only start to rollback when leakage is too large?
   }
 
@@ -226,7 +228,7 @@ private:
         if(object->checkLeakageAndClean()) {
  //         PRINF("Leakage at %p\n", object->getStartPtr());
           hasLeakage = true;
-          // Adding this object to freelist
+          // Adding this object to the global leakage map, which should be tracked in re-execution
           insertLeakageMap(object->getStartPtr(), object->getObjectSize(), object->getSize());
         }
         ptr = (unsigned long *)object->getNextObject();

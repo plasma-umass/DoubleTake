@@ -78,4 +78,30 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
     }
   }
 }
+
+void selfmap::printCallStack(int depth, void ** array) {
+  char buf[MAX_BUF_SIZE];
+
+  for(int i = 0; i < depth; i++) {
+    fprintf(stderr, "callstack frame %d: ", i);
+    // Print out the corresponding source code information
+    sprintf(buf, "addr2line -e %s %lu", filename,  (unsigned long)array[i]);
+    system(buf);
+  }
+}
+// Print out the code information about an eipaddress
+// Also try to print out stack trace of given pcaddr.
+int selfmap::getCallStack(void ** array) {
+  int size;
+
+  PRINF("Try to get backtrace with array %p\n", array);
+  // get void*'s for all entries on the stack
+  current->internalheap = true;
+  size = backtrace(array, xdefines::CALLSITE_MAXIMUM_LENGTH);
+  current->internalheap = false;
+  PRINF("After get backtrace with array %p\n", array);
+  
+  return size;
+}
+ 
  

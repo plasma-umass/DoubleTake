@@ -212,9 +212,11 @@ public:
       }
     }
 #endif
-//    if((unsigned long)ptr < 0x100003000) {
-//      PRINF("DoubleTake: malloc ptr %p size %d mysize %d\n", ptr, sz, mysize);
-//    }
+
+    // Check the malloc if it is in rollback phase.
+    if(global_isRollback()) {
+      memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
+    }
     // We donot need to do anything if size is equal to sz
     //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
     return ptr;
@@ -405,6 +407,10 @@ public:
       return;
     }
 #endif
+    // Check the malloc if it is in rollback phase.
+    if(global_isRollback()) {
+      memtrack::getInstance().check(ptr, o->getObjectSize(), MEM_TRACK_FREE);
+    }
 
     _pheap.free(origptr);
 //    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);

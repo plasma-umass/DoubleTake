@@ -61,7 +61,7 @@ void xrun::rollbackandstop() {
 
 // We are rollback the child process 
 void xrun::rollback() {
-  printf("\n\nNOW EXECUTION!!!\n\n\n");
+  printf("\n\nNOW RE-EXECUTION!!!\n\n\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
@@ -166,13 +166,17 @@ void xrun::epochEnd (bool endOfProgram) {
   // First, attempt to commit.
   #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
   if(hasOverflow || hasMemoryLeak) {
+    #ifdef TRACK_OWNER
     _memory.cleanupFreeList();
+    #endif
     rollback();
   }
   else {
   #elif defined(DETECT_OVERFLOW)
   if(hasOverflow) {
+    #ifdef TRACK_OWNER
     _memory.cleanupFreeList();
+    #endif
     rollback();
   }
   else {
@@ -214,11 +218,6 @@ void xrun::finalUAFCheck() {
     if(thread->qlist.finalUAFCheck()) {
       rollback();
     }
-  }
-
-  // Check freelist
-  if(freelist::getInstance().checkUAF()) {
-    rollback();
   }
 }
 #endif

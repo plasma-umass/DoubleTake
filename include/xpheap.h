@@ -48,7 +48,6 @@ using std::endl;
 // Implemented for stopgap to check buffer overflow
 #include "sentinelmap.h"
 #include "quarantine.h"
-#include "freelist.h"
 
 template <class SourceHeap>
 class AdaptAppHeap : public SourceHeap {
@@ -245,35 +244,16 @@ public:
   void free(void * ptr) {
     int tid = getThreadIndex();
 
-    // Check whether it is the same tid with the owner
-    int owner = SourceHeap::getOwner(ptr);
-#ifndef DETECT_USAGE_AFTER_FREE
-    if(tid == owner) {  
+  #ifndef DETECT_USAGE_AFTER_FREE
+    _heap->free(tid, ptr);
+  #else
+    size_t size = getSize(ptr); 
+    // Adding this to the quarantine list
+    if(addThreadQuarantineList(ptr, size) == false) {
+      // If an object is too large, we simply freed this object.
       _heap->free(tid, ptr);
     }
-    else {
-      // Add this into a global list.
-      freelist::getInstance().cacheFreeObject(ptr, owner);
-    }
-#else
-    size_t size = getSize(ptr); 
-    if(tid == owner) { 
-      // Adding this to the quarantine list
-      if(addThreadQuarantineList(ptr, size) == false) {
-        // If an object is too large, we simply freed this object.
-        _heap->free(tid, ptr);
-      }
-      //quarantine::getInstance().addFreeObject(ptr, size); 
-    }
-    else {
-      // Add this into a global list.
-      freelist::getInstance().cacheFreeObject(ptr, owner);
-    }
-#endif
-  }
-
-  void realfree(void * ptr, int tindex) {
-    _heap->free(tindex, ptr);
+  #endif
   }
 
   void realfree(void * ptr) {

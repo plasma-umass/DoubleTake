@@ -180,6 +180,8 @@ public:
   // Print out the code information about an eipaddress
   // Also try to print out stack trace of given pcaddr.
   void printCallStack(ucontext_t * context, void * addr, bool isOverflow);
+  void printCallStack(int depth, void ** callstack);
+  static int getCallStack(void ** array);
  
   // Trying to get information about global regions. 
   void getGlobalRegions(regioninfo * regions, int * regionNumb) {

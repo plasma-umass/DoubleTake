@@ -55,23 +55,6 @@ void xmemory::handleSegFault()
   xrun::getInstance().rollbackandstop();
 #endif
 }
- 
-void xmemory::cleanupFreeList() {
-  freelist::getInstance().postFreeAllObjects(); 
-}
- 
-void xmemory::freeAllObjects()
-{
-  freelist::getInstance().preFreeAllObjects(); 
-  struct freeObject * obj = NULL;
-
-  while ((obj = freelist::getInstance().retrieveFreeObject())) {
-    _pheap.realfree(obj->ptr, obj->owner);
-  }
- 
-  freelist::getInstance().postFreeAllObjects(); 
-//  _pheap.realfree(ptr, tindex);
-}
 
 void xmemory::realfree(void * ptr) {
   _pheap.realfree(ptr);

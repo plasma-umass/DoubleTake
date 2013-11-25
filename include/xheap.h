@@ -53,18 +53,13 @@ public:
   void * initialize(void * startaddr, size_t startsize, size_t metasize) 
   {
     void * ptr;
-    
-    // Initialize corresponding heapowner
-    _unitSize = xdefines::USER_HEAP_CHUNK + xdefines::PageSize;
-    int units = startsize/_unitSize;
-    int ownermapSize = alignup(units * sizeof(int), xdefines::PageSize);
-
+   
     // We must initialize the heap now.
     void * startHeap
       = (void *)((unsigned long) xdefines::USER_HEAP_BASE - (unsigned long) metasize);
     
     //    PRINF("heap size %lx metasize %lx, startHeap %p\n", startsize, metasize, startHeap); 
-    ptr = MM::mmapAllocatePrivate(startsize+metasize+ownermapSize, startHeap);
+    ptr = MM::mmapAllocatePrivate(startsize+metasize, startHeap);
 
     // Initialize the lock.
     pthread_mutex_init(&_lock, NULL);
@@ -75,14 +70,10 @@ public:
     _position  = (char *)_start;
     _remaining = startsize;
     _magic     = 0xCAFEBABE;
-    _owners     = (int *)_end;
     
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize+metasize, (void*)_start);
 
-    // Initialize the freelist.
-    freelist::getInstance().initialize();
-    
     PRINF("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
 
     return (void *)ptr;	
@@ -128,46 +119,12 @@ public:
 	  return  _position;
   }
 
-  inline void registerOwner(void * start, size_t sz) {
-    int threadindex = getThreadIndex();
-    int units = sz/_unitSize;
-
-    for(int i = 0; i < units; i++) {
-      _owners[i] = threadindex;
-    }
-  }
-
-  inline size_t findSize(size_t sz) {
-    int units = sz/_unitSize;
-
-    if(sz%_unitSize != 0) {
-      units++;
-    } 
-    return units * _unitSize;
-  }
-
-  inline size_t getMapIndex(void * addr) {
-    return ((intptr_t)addr - (intptr_t)_start)/_unitSize;
-  }
-
-  inline int getOwner(void * addr) {
-    if(addr > _position) {
-      return -1;
-    }
-    else {
-      return _owners[getMapIndex(addr)];
-    }
-  }
-
   // We need to page-aligned size, we don't want that
   // two different threads are using the same page here.
   inline void * malloc (size_t sz) {
     // Roud up the size to page aligned.
 	  sz = xdefines::PageSize * ((sz + xdefines::PageSize - 1) / xdefines::PageSize);
-      
-    // Find smallest sz which is multiple of _unitSize
-    sz = findSize(sz);
-
+   
     void * p;
 
 	  lock();
@@ -182,8 +139,6 @@ public:
     p = _position;
     // Increment the bump pointer and drop the amount of memory.
     _position += sz;
-
-    registerOwner(p, sz);
 
 	  unlock();
     
@@ -226,7 +181,6 @@ private:
   /// Pointer to the amount of memory remaining.
   size_t  _remaining;
 
-  size_t _unitSize; 
 
   /// For single thread program, we are simply adding
   /// two backup pointers to backup the metadata.
@@ -234,9 +188,6 @@ private:
 
   /// Pointer to the amount of memory remaining.
   size_t  _remainingBackup;
-
-
-  int    * _owners;
 
   /// A magic number, used for sanity checking only.
   size_t  _magic;
