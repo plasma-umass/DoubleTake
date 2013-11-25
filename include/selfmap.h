@@ -128,12 +128,10 @@ public:
     } 
 
     // Now we analyze each line of the map file.
-    _appTextStart = (void *) (-1ULL);  // largest possible address
-    _appTextEnd   = (void *) 0ULL;     // smallest possible address
+    _appTextStart    = (void *) (-1ULL);  // largest possible address
+    _appTextEnd      = (void *) 0ULL;     // smallest possible address
     _libraryStart    = _appTextStart;
     _libraryEnd      = _appTextEnd;
-
-    printf ("start = %lx, end = %x\n", _appTextStart, _appTextEnd);
 
     while (getline(iMapfile, curentry)) {
 
@@ -141,10 +139,13 @@ public:
 
       // Check whether this entry is the text segment of application.
       if (strcmp (p.prot, "r-xp") == 0) {
-	// We're in.
-	printf ("checking text segment.\n");
+	// We're in a text segment.
 
-        // Check whether we are in DoubleTake, another library, or in the application itself.
+	//	printf ("file = %s\n", p.file);
+
+        // Check whether we are in DoubleTake, another library, or in
+        // the application itself.
+
         if (strstr(p.file, "libdoubletake") != NULL) {
           _doubletakeStart = (void *) p.startaddr;
           _doubletakeEnd   = (void *) p.endaddr;
@@ -155,7 +156,7 @@ public:
 	  if (p.endaddr > (size_t) _appTextEnd) {
 	    _appTextEnd = (void *) p.endaddr;
 	  }
-        } else {
+        } else if (strcmp(p.file, "lib")) {
 	  // Must be in a library.
 	  if (p.startaddr < (size_t) _libraryStart) {
 	    _libraryStart = (void *) p.startaddr;
@@ -165,11 +166,12 @@ public:
 	  }
 	}
       }
+    }
 
-      iMapfile.close();
+    iMapfile.close();
 
-      PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
-    } 
+    PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
+    
   }
 
   /// @brief Extract stack bottom and top information.
@@ -186,7 +188,7 @@ public:
     } 
 
     *stackBottom = NULL;
-    *stackTop = NULL;
+    *stackTop    = NULL;
 
     // Now we analyze each line of this maps file, looking for the stack.
     while (getline(iMapfile, curentry)) {
@@ -212,9 +214,6 @@ public:
     ifstream iMapfile;
     string curentry;
 
-    //#define PAGE_ALIGN_DOWN(x) (((size_t) (x)) & ~xdefines::PAGE_SIZE_MASK)
-    //void * globalstart = (void *)PAGE_ALIGN_DOWN(&__data_start);
-
     try {
       iMapfile.open("/proc/self/maps");
     } catch(...) {
@@ -222,28 +221,41 @@ public:
       abort();
     } 
 
-    // Now we analyze each line of this maps file.
-    bool toExit = false;
-    bool toSaveRegion = false;
- 
-    string nextentry;
-    void * newstart;
-    bool foundGlobals = false;
+    // Now we analyze each line of this maps file, looking for globals.
+
+    // We only take the second entry for libc and libstdc++.
+    int libcCount = 0;
+    int libstdcCount = 0;
 
     while (getline(iMapfile, curentry)) {
 
       pmap p (curentry.c_str());
 
-      // Check the globals for the application. It is the first entry.
-      if ((foundGlobals == false) && (strstr(p.prot, "rw-p") != NULL)) {
-        // Now it is start of global of applications.
-   
-	if(toSaveRegion) { 
-	  PRINF("start startaddr %p endaddr %p\n", p.startaddr, p.endaddr); 
-	  regions[*regionNumb].start = (void *) p.startaddr;
-	  regions[*regionNumb].end   = (void *) p.endaddr;
-	  (*regionNumb)++;
+      // Globals are read-write and copy-on-write = rw-p.
+      if (strstr(p.prot, "rw-p") != NULL) {
+	PRINF("start startaddr %p endaddr %p\n", p.startaddr, p.endaddr); 
+
+	// Are we in the application, the C library, or the C++ library?
+	// If so, add that region to the array.
+
+	if (strstr(p.file, "libc-") != NULL) {
+	  libcCount++;
 	}
+
+	if (strstr(p.file, "libstdc++") != NULL) {
+	  libstdcCount++;
+	}
+
+
+	if ((strstr(p.file, _filename) != NULL)
+	    || ((libcCount == 1) && (strstr(p.file, "libc-") != NULL))
+	    || ((libstdcCount == 1) && (strstr(p.file, "libstdc++") != NULL)))
+	  {
+	    regions[*regionNumb].start = (void *) p.startaddr;
+	    regions[*regionNumb].end   = (void *) p.endaddr;
+	    (*regionNumb)++;
+	  }
+	  
       }
     }
     iMapfile.close();

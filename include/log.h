@@ -37,7 +37,9 @@
 #define ESC_WRN  BRIGHT_YELLOW
 #define ESC_ERR  BRIGHT_RED
 #define ESC_END  "\033[0m"
-int outfd = 2; // stderr
+
+#define OUTFD 2
+
 
 #define LOG_SIZE 4096
 
@@ -51,7 +53,7 @@ int outfd = 2; // stderr
   { if(DEBUG_LEVEL < 1) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_INF "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  } }
 
 /**
  * Print status-information message: level 0
@@ -60,7 +62,7 @@ int outfd = 2; // stderr
   { if(DEBUG_LEVEL < 2) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_DBG "%lx [PROTO-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  } }
 
 /**
  * Print warning message: level 1
@@ -69,7 +71,7 @@ int outfd = 2; // stderr
   { if(DEBUG_LEVEL < 3) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_WRN "%lx [PROTO-WARNING]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } }
 #else
 #define PRINF(fmt, ...)
 #define PRDBG(fmt, ...)
@@ -83,7 +85,7 @@ int outfd = 2; // stderr
   { if(DEBUG_LEVEL < 4) { \
       ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-PRERR]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer())); } }
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
 
 /**
@@ -92,7 +94,7 @@ int outfd = 2; // stderr
 #define FATAL(fmt, ...) \
   {   ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [PROTO-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
-      OUTPUT(outfd, getThreadBuffer(), strlen(getThreadBuffer()));  }
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  }
 
 // Check a condition. If false, print an error message and abort
 #define REQUIRE(cond, ...) if(!(cond)) { FATAL(__VA_ARGS__) }
