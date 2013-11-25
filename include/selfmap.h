@@ -82,11 +82,12 @@ private:
     /// @brief Extract information from one line of a /proc/<pid>/maps file.
     pmap (const char * str)
     {
-      sscanf (str, "%lx-%lx %4s %lx %x:%x %u %s",
+      sscanf (str, "%lx-%lx %4s %lx %x:%x %lu %s",
 	      &startaddr, &endaddr, prot, &offset, &dev1, &dev2, &inode, file);
     }
   
-    size_t startaddr, endaddr, offset, inode;
+    uintptr_t startaddr, endaddr;
+    size_t offset, inode;
     char file[PATH_MAX];
     char prot[15];
     unsigned int dev1, dev2;
@@ -233,7 +234,7 @@ public:
 
       // Globals are read-write and copy-on-write = rw-p.
       if (strstr(p.prot, "rw-p") != NULL) {
-	PRINF("start startaddr %p endaddr %p\n", p.startaddr, p.endaddr); 
+	PRINF("start startaddr %p endaddr %p\n", (void*)p.startaddr, (void*)p.endaddr); 
 
 	// Are we in the application, the C library, or the C++ library?
 	// If so, add that region to the array.

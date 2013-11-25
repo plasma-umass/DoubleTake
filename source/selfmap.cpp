@@ -72,7 +72,7 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
       if(isApplication(array[i])) {
         fprintf(stderr, "callstack frame %d: ", i);
         // Print out the corresponding source code information
-        sprintf(buf, "addr2line -e %s %x", _filename,  (unsigned long)array[i]-2);
+        sprintf(buf, "addr2line -e %s %p", _filename,  (void*)((uintptr_t)array[i]-2));
         system(buf);
       }
     }

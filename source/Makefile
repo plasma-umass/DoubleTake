@@ -10,10 +10,8 @@ CFLAGS_USEAFTERFREE = -DDETECT_USAGE_AFTER_FREE
 CFLAGS_LEAKS        = -DDETECT_MEMORY_LEAKAGE
 CFLAGS_ALL          = $(CFLAGS_OVERFLOW) $(CFLAGS_USEAFTERFREE) $(CFLAGS_LEAKS)
 
-CFLAGS = -fPIC -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' \
+CFLAGS = -fPIC -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' -Werror \
 	-DDEBUG_LEVEL=0 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL \
 	$(CFLAGS_ALL) 
-#\
-	-ferror-limit=1 -Werror
 
 include $(ROOT)/common.mk
