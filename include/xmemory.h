@@ -181,15 +181,12 @@ public:
         // However, some weird test cases has this overflow. So we should detect this now.
         void * startp = (void *)((intptr_t)p - nonAlignedBytes);
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes; 
-//#ifdef DETECT_NONALIGNED_OVERFLOW
         // Check how much magic bytes we should put there. 
         // The first byte of this is to specify how many bytes there.
         // For example, at 64bit, when nonAlignedBytes is 5,
         // Totally, we should put 3 bytes there.
         // We are using the first byte to mark the size of magic bytes.
         // It will end up with (02eeee).
-        // If there is only
-        //PRINF("************size%x sz %x ptr %p, p %p nonAlignedBytes %d\n", size, sz, ptr, p, nonAlignedBytes);      
         if(setBytes >= 2) {
           //PRINF("******setBytes %d\n", setBytes); 
           p[0] = setBytes - 1;
@@ -203,7 +200,6 @@ public:
         }
 
         sentinelmap::getInstance().markSentinelAt(startp);
-//#endif
         // We actually setup a next word to capture the next word
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p + setBytes);
@@ -290,7 +286,7 @@ public:
           // Add this address to watchpoint
           PRINF("xmemory: checkandclearsentinal now\n");
           //PRINF("xmemory: checkandclearsentinal at line %d\n", __LINE__);
-          watchpoint::getInstance().addWatchpoint(p, *((size_t*)p)); 
+          watchpoint::getInstance().addWatchpoint(p, *((size_t*)p), OBJECT_TYPE_OVERFLOW, ptr, sz); 
           isOverflow = true;
         }
       } 
@@ -320,8 +316,8 @@ public:
         }
       
         if(isOverflow) {
-          //PRINF("xmemory: checkandclearsentinal now 222\n");
- //         PRINF("xmemory: nonaligned byte ptr %p. size %d sz %d\n", ptr, size, sz);
+          //FIXME
+          watchpoint::getInstance().addWatchpoint(startp, *((size_t*)p), OBJECT_TYPE_OVERFLOW, ptr, sz); 
           watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);
@@ -385,26 +381,19 @@ public:
     origptr = getObjectPtrAtFree(ptr);
     objectHeader * o = getObject (origptr);
 
-    //PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
-    		
-#ifdef DETECT_OVERFLOW
     // Check for double free
     if(o->isObjectFree() || !o->isGoodObject()) {
-      PRWRN("Caught double free or invalid free error\n");
       PRWRN("DoubleTake: Caught double free or invalid free error\n");
       printCallsite();
       abort();
     }
-
-    //printf("free ptr %p\n", ptr);
+    		
+#ifdef DETECT_OVERFLOW
     // If this object has a overflow, we donot need to free this object
-    if(isObjectOverflow(origptr)) {
-      return;
-    }
-#else
-    //PRWRN("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
-    if(o->isObjectFree() || !o->isGoodObject()) {
-      return;
+    if(!global_isRollback()) {
+      if(isObjectOverflow(origptr)) {
+        return;
+      }
     }
 #endif
     // Check the malloc if it is in rollback phase.
@@ -413,9 +402,8 @@ public:
     }
 
     _pheap.free(origptr);
-//    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
 
-    // We only remove the size 
+    // We remove the actual size of this object to set free on an object. 
     o->setObjectFree();
     // Cleanup this object with sentinel except the first word. 
   }
@@ -551,11 +539,7 @@ public:
     return (o - 1);
   }
 
-  void freeAllObjects();
-
   void realfree(void * ptr);
-  void cleanupFreeList();
-
   /// Rollback to previous 
   static void handleSegFault();
   /* Signal-related functions for tracking page accesses. */

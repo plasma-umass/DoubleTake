@@ -97,7 +97,7 @@ inline bool global_isEpochEnd() {
 }
 
 inline bool global_isRollback() {
-  PRINF("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
+//  PRINF("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
   return g_phase == E_SYS_ROLLBACK;
 }
 

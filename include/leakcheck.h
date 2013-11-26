@@ -198,6 +198,7 @@ private:
     // Update the total size.
     PRWRN("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld. Total leakage size %ld**************\n", ptr, size, objectSize, _totalLeakageSize);
     // We only start to rollback when leakage is too large?
+    memtrack::getInstance().insert(ptr, objectSize, OBJECT_TYPE_LEAK);
   }
 
   // In the end, we should report all of those non-reachable non-freed objects.

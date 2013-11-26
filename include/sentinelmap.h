@@ -398,8 +398,9 @@ private:
             isBadSentinel = true;
           }
           if(isBadSentinel) {
-            //if((unsigned long)ptr > 0x1006aa300 && (unsigned long)ptr < 0x1006aa400)
             PRINF("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
+            // Find the starting address of this object.
+            
             watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]));
           }
         }

@@ -49,7 +49,7 @@ public:
   void print()
   {
     for(int i = 0; i < _depth; i++) {
-      printf("%lx\t", _callsite[i]);
+      printf("%p\t", _callsite[i]);
     }
     printf("\n");
   }

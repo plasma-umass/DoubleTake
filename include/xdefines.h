@@ -70,6 +70,13 @@ extern char * getThreadBuffer();
 extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void * ptr, size_t size);
 
+typedef enum e_faultyObjectType {
+  OBJECT_TYPE_OVERFLOW = 1,
+  OBJECT_TYPE_USEAFTERFREE,
+  OBJECT_TYPE_LEAK,
+  OBJECT_TYPE_INVALID,
+} faultyObjectType;
+
 inline size_t alignup(size_t size, size_t alignto) {
   return ((size + (alignto - 1)) & ~(alignto -1));
 }

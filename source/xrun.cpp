@@ -36,7 +36,7 @@ void xrun::startRollback() {
   // waiting on the shared conditional variable
   global_rollback();
 
-  PRDBG("Starting rollback for other threads\n");
+  PRINF("Starting rollback for other threads\n");
 
   // Set context for current thread.
   // Since the new context is not valid, how to 
@@ -166,17 +166,11 @@ void xrun::epochEnd (bool endOfProgram) {
   // First, attempt to commit.
   #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
   if(hasOverflow || hasMemoryLeak) {
-    #ifdef TRACK_OWNER
-    _memory.cleanupFreeList();
-    #endif
     rollback();
   }
   else {
   #elif defined(DETECT_OVERFLOW)
   if(hasOverflow) {
-    #ifdef TRACK_OWNER
-    _memory.cleanupFreeList();
-    #endif
     rollback();
   }
   else {
@@ -187,10 +181,7 @@ void xrun::epochEnd (bool endOfProgram) {
   }
   else {
   #endif
-#else
-    _memory.cleanupFreeList();
 #endif
-    _memory.freeAllObjects();
     PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     //PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();

@@ -57,20 +57,20 @@ inline void markFreeObject(void * ptr, size_t size) {
   }
 }
 
-inline bool hasUsageAfterFree(void * ptr, size_t size) {
+inline bool hasUsageAfterFree(freeObject *object) {
+//void * ptr, size_t size) {
   bool hasUAF = false;
-  int words = getMarkWords(size);
+  int words = getMarkWords(object->size);
 
   // We only check specified size
-  unsigned long * addr = (unsigned long *)ptr;
+  unsigned long * addr = (unsigned long *)object->ptr;
 
   for(int i = 0; i < words; i++) {
     if(addr[i] != xdefines::SENTINEL_WORD) {
       hasUAF = true;
-     
       printf("Usage-after-free problem at address %p!!!!!!\n", &addr[i]); 
       // install watchpoints on this point.
-      watchpoint::getInstance().addWatchpoint(&addr[i], addr[i]); 
+      watchpoint::getInstance().addWatchpoint(&addr[i], addr[i], OBJECT_TYPE_USEAFTERFREE, object->ptr, object->size); 
     }     
   }
 
@@ -151,7 +151,7 @@ public:
     freeObject * object = getLRObject();
 
     // No usage-after-free operation?
-    if(!hasUsageAfterFree(object->ptr, object->size)) {
+    if(!hasUsageAfterFree(object)) {
       // Calling actual heap object to free this object.
       realfree(object->ptr);
  
@@ -189,7 +189,7 @@ public:
 //    PRINF("FFFFFFFFFFFinal check\n");
 
     while ((object = retrieveLRObject())) {
-      if(hasUsageAfterFree(object->ptr, object->size)) {
+      if(hasUsageAfterFree(object)) {
         UAFErrors++;
         hasUAF = true;
 

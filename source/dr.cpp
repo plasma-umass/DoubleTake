@@ -94,7 +94,7 @@ static unsigned long dr_get (pid_t pid, int regnum)
 static void dr_set (pid_t pid, int regnum, unsigned long value)
 {
   errno = 0;
-//  PRINF("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
+//  PRWRN("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
   ptrace (PTRACE_POKEUSER, pid, offsetof (struct user, u_debugreg[regnum]), value);
   if (errno != 0) {
     PRWRN("Couldn't set debug register %d error %s\n", regnum, strerror(errno));
@@ -420,7 +420,7 @@ static void update_inferior_debug_regs (pid_t pid, struct debug_reg_state *new_s
   struct debug_reg_state *state = debug_reg_state ();
   int i;
 
-//  PRINF("pid is %d\n", pid);
+//  PRWRN("pid is %d\n", pid);
 
   ALL_DEBUG_ADDR_REGISTERS (i)
   {
