@@ -400,8 +400,15 @@ private:
           if(isBadSentinel) {
             PRINF("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
             // Find the starting address of this object.
-            
-            watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]));
+            unsigned long objectStart = 0;
+            if(findObjectStartAddr((void *)&address[i], &objectStart)) {
+              objectHeader *object = (objectHeader *)(objectStart - sizeof(objectHeader));
+              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, (void *)objectStart, object->getSize());
+            }
+            else {
+              // Maybe we can't get the starting address, in this case, we only report when there is a overflow
+              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, NULL, 0);
+            }
           }
         }
         _lastSentinelAddr = &address[i];

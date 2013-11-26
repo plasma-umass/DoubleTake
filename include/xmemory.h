@@ -240,10 +240,10 @@ public:
 
     // Check whether the offset is valid?
     assert(offset >= 2 * sizeof(size_t));
-#ifdef DETECT_OVERFLOW
-    // Put a sentinel before the this memory block.
+
+    // Put a sentinel before the this memory block. We should do this
     sentinelmap::getInstance().setMemalignSentinelAt((void *)((intptr_t)newptr - sizeof(size_t)));
-#endif
+
     // Put the offset before the sentinel too
     void ** origptr = (void **)((intptr_t)newptr - 2 * sizeof(size_t)); 
     *origptr = ptr;
@@ -292,7 +292,6 @@ public:
       } 
 //#ifdef DETECT_NONALIGNED_OVERFLOW
       else {
-        // PRINF("xmemory line %d: nonAlignedBytes %d\n", __LINE__, nonAlignedBytes);
         // For those less than one word access, maybe we do not care since memory block is 
         // always returned by 8bytes aligned or 16bytes aligned.
         // However, some weird test cases has this overflow. So we should detect this now.
@@ -316,9 +315,7 @@ public:
         }
       
         if(isOverflow) {
-          //FIXME
-          watchpoint::getInstance().addWatchpoint(startp, *((size_t*)p), OBJECT_TYPE_OVERFLOW, ptr, sz); 
-          watchpoint::getInstance().addWatchpoint(startp, *((size_t *)startp)); 
+          watchpoint::getInstance().addWatchpoint(startp, *((size_t*)startp), OBJECT_TYPE_OVERFLOW, ptr, sz); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);
     
@@ -327,7 +324,7 @@ public:
           void * nextp = (void *)((intptr_t)p - nonAlignedBytes + xdefines::WORD_SIZE);
           if(sentinelmap::getInstance().checkAndClearSentinel(nextp) != true) {
             // Add this address to watchpoint
-            watchpoint::getInstance().addWatchpoint(nextp, *((size_t *)nextp)); 
+            watchpoint::getInstance().addWatchpoint(nextp, *((size_t*)nextp), OBJECT_TYPE_OVERFLOW, ptr, sz); 
             isOverflow = true;
           }
         }
@@ -458,7 +455,7 @@ public:
  } 
   
   inline void printCallsite() {
-    selfmap::getInstance().printCallStack(NULL, NULL, true);
+    selfmap::getInstance().printCallStack();
     PRINF("Program exit becaue of double free or invalid free.\n");
     exit(-1);
   }
@@ -553,7 +550,7 @@ public:
     PRWRN("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     current->internalheap = true;
-    selfmap::getInstance().printCallStack(NULL, NULL, true);
+    selfmap::getInstance().printCallStack();
     current->internalheap = false;
     while(1);
 

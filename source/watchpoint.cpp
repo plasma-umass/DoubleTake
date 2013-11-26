@@ -35,9 +35,21 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
   ucontext_t * trapcontext = (ucontext_t *)context;
   size_t * addr = (size_t *)trapcontext->uc_mcontext.gregs[REG_RIP]; // address of access
 
-  fprintf(stderr, "\n\n\nCAPTURING writes at watchpoints from ip %p, detailed information:\n", addr);
-  isOverflow = watchpoint::getInstance().printWatchpoints();
-  isOverflow = true;
-  selfmap::getInstance().printCallStack(trapcontext, addr, isOverflow);
+  // Finding the starting address of current heap object holding trap address
+  faultyObject * object;
+  if(!watchpoint::getInstance().findFaultyObject(addr, &object)) {
+    PRERR("Can't find faulty object!!!!\n");
+    abort();
+  }
+
+  if(object->objectstart == NULL) {
+    if(object->objtype == OBJECT_TYPE_OVERFLOW) {
+      PRWRN("Caught accesses of heap overflow, current value %lx faulty value %lx. Callsite information:\n", *addr, object->faultyvalue);
+    }
+    else if(object->objtype == OBJECT_TYPE_USEAFTERFREE) {
+      PRWRN("Caught accesses of use-after-free errors, current value %lx faulty value %lx. Callsite information:\n", *addr, object->faultyvalue);
+    }
+    selfmap::getInstance().printCallStack();
+  }
 }
  

@@ -70,6 +70,7 @@ public:
 
   /// @brief Check whether an address is inside the main application.
   bool isApplication(void * pcaddr) {
+    fprintf(stderr, "Application information: start %p end %p pcaddr %p\n", _appTextStart, _appTextEnd, pcaddr);
     return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
   }
 
@@ -103,9 +104,9 @@ public:
 
   // Print out the code information about an eip address.
   // Also try to print out the stack trace of given pcaddr.
-  void printCallStack (ucontext_t * context, void * addr, bool isOverflow);
+  void printCallStack ();
   void printCallStack (int depth, void ** array);
-  int  getCallStack (void ** array);
+  static int getCallStack (void ** array);
 
   /// @brief Get information about global regions. 
   void getTextRegions() 
@@ -118,10 +119,10 @@ public:
     // Get application file name.
     int count = Real::readlink()("/proc/self/exe", _filename, PATH_MAX);
     if (count <= 0 || count >= PATH_MAX)
-      {
-	PRWRN("Failed to get current executable file name\n" );
-	exit(1);
-      }
+    {
+	    PRWRN("Failed to get current executable file name\n" );
+	    exit(1);
+    }
     _filename[count] = '\0';
 
     // Read the maps to compute ranges for text regions (code).
@@ -144,9 +145,9 @@ public:
 
       // Check whether this entry is the text segment of application.
       if (strcmp (p.prot, "r-xp") == 0) {
-	// We're in a text segment.
+	      // We're in a text segment.
 
-	//	printf ("file = %s\n", p.file);
+	      //	printf ("file = %s\n", p.file);
 
         // Check whether we are in DoubleTake, another library, or in
         // the application itself.
@@ -155,21 +156,21 @@ public:
           _doubletakeStart = (void *) p.startaddr;
           _doubletakeEnd   = (void *) p.endaddr;
         } else if (strcmp(p.file, _filename) == 0) {
-	  if (p.startaddr < (size_t) _appTextStart) {
-	    _appTextStart = (void *) p.startaddr;
-	  }
-	  if (p.endaddr > (size_t) _appTextEnd) {
-	    _appTextEnd = (void *) p.endaddr;
-	  }
+	        if (p.startaddr < (size_t) _appTextStart) {
+	          _appTextStart = (void *) p.startaddr;
+	        }
+	        if (p.endaddr > (size_t) _appTextEnd) {
+	          _appTextEnd = (void *) p.endaddr;
+	        }
         } else if (strcmp(p.file, "lib")) {
-	  // Must be in a library.
-	  if (p.startaddr < (size_t) _libraryStart) {
-	    _libraryStart = (void *) p.startaddr;
-	  }
-	  if (p.endaddr > (size_t) _libraryEnd) {
-	    _libraryEnd = (void *) p.endaddr;
-	  }
-	}
+	        // Must be in a library.
+	        if (p.startaddr < (size_t) _libraryStart) {
+	          _libraryStart = (void *) p.startaddr;
+	        }
+	        if (p.endaddr > (size_t) _libraryEnd) {
+	          _libraryEnd = (void *) p.endaddr;
+	        }
+	      }
       }
     }
 
@@ -204,10 +205,10 @@ public:
 
       // Find the entry for the stack.
       if (strstr(p.file, "[stack]") != NULL) {
-	*stackBottom = (void *) p.startaddr;
-	*stackTop    = (void *) p.endaddr;
-	// Got it. We're out.
-	break;
+	      *stackBottom = (void *) p.startaddr;
+	      *stackTop    = (void *) p.endaddr;
+	      // Got it. We're out.
+	      break;
       }
     }
     iMapfile.close();
@@ -244,33 +245,33 @@ public:
 
       // Globals are read-write and copy-on-write = rw-p.
       if (strstr(p.prot, "rw-p") != NULL) {
-	PRINF("start startaddr %p endaddr %p\n", (void*)p.startaddr, (void*)p.endaddr); 
+	      PRINF("start startaddr %p endaddr %p\n", (void*)p.startaddr, (void*)p.endaddr); 
 
-	// Are we in the application, the C library, or the C++ library?
-	// If so, add that region to the array.
+	      // Are we in the application, the C library, or the C++ library?
+	      // If so, add that region to the array.
 
-	if (strstr(p.file, _filename) != NULL) {
-	  fileCount++;
-	}
+	      if (strstr(p.file, _filename) != NULL) {
+	        fileCount++;
+	      }
 
-	if (strstr(p.file, "libc-") != NULL) {
-	  libcCount++;
-	}
+	      if (strstr(p.file, "libc-") != NULL) {
+	        libcCount++;
+	      }
 
-	if (strstr(p.file, "libstdc++") != NULL) {
-	  libstdcCount++;
-	}
+	      if (strstr(p.file, "libstdc++") != NULL) {
+	        libstdcCount++;
+	      }
 
 
-	if (((fileCount == 1) && (strstr(p.file, _filename) != NULL))
-	    || ((libcCount == 2) && (strstr(p.file, "libc-") != NULL))
-	    || ((libstdcCount == 2) && (strstr(p.file, "libstdc++") != NULL)))
-	  {
-	    //	    printf ("adding a global region: %s, start=%lx, end=%lx\n", p.file, p.startaddr, p.endaddr);
-	    regions[*regionNumb].start = (void *) p.startaddr;
-	    regions[*regionNumb].end   = (void *) p.endaddr;
-	    (*regionNumb)++;
-	  }
+	      if (((fileCount == 1) && (strstr(p.file, _filename) != NULL))
+	          || ((libcCount == 2) && (strstr(p.file, "libc-") != NULL))
+	          || ((libstdcCount == 2) && (strstr(p.file, "libstdc++") != NULL)))
+	      {
+	        //	    printf ("adding a global region: %s, start=%lx, end=%lx\n", p.file, p.startaddr, p.endaddr);
+	        regions[*regionNumb].start = (void *) p.startaddr;
+	        regions[*regionNumb].end   = (void *) p.endaddr;
+	        (*regionNumb)++;
+	      }
 	  
       }
     }
