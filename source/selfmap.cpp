@@ -65,17 +65,46 @@ void selfmap::printCallStack(ucontext_t * context, void * addr, bool isOverflow)
 
   // Print out the source code information if it is a overflow site.
   if(isOverflow) {
-    fprintf(stderr, "\nSource code information about overflow site:\n");
+    PRINF("\nSource code information about overflow site:\n");
     char buf[MAX_BUF_SIZE];
 
     for(int i = skip; i < size-skip; i++) {
       if(isApplication(array[i])) {
-        fprintf(stderr, "callstack frame %d: ", i);
+        PRINF("callstack frame %d: ", i);
         // Print out the corresponding source code information
         sprintf(buf, "addr2line -e %s %p", _filename,  (void*)((uintptr_t)array[i]-2));
         system(buf);
       }
     }
   }
+}
+ 
+void selfmap::printCallStack(int depth, void ** array) {
+  char buf[MAX_BUF_SIZE];
+  int index = 0;
+  //fprintf(stderr, "printCallStack:_filename %s\n", _filename);
+  for(int i = 0; i < depth; i++) {
+    if(isApplication(array[i])) {
+      index++;
+      fprintf(stderr, "callstack frame %d: %p\n", index, array[i]);
+      // Print out the corresponding source code information
+      sprintf(buf, "addr2line -e %s 0x%lx", _filename, (unsigned long)array[i]);
+      system(buf);
+    }
+  }
+}
+// Print out the code information about an eipaddress
+// Also try to print out stack trace of given pcaddr.
+int selfmap::getCallStack(void ** array) {
+  int size;
+
+  PRINF("Try to get backtrace with array %p\n", array);
+  // get void*'s for all entries on the stack
+  current->internalheap = true;
+  size = backtrace(array, xdefines::CALLSITE_MAXIMUM_LENGTH);
+  current->internalheap = false;
+  PRINF("After get backtrace with array %p\n", array);
+
+  return size;
 }
  

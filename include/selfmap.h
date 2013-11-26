@@ -104,7 +104,9 @@ public:
   // Print out the code information about an eip address.
   // Also try to print out the stack trace of given pcaddr.
   void printCallStack (ucontext_t * context, void * addr, bool isOverflow);
- 
+  void printCallStack (int depth, void ** array);
+  int  getCallStack (void ** array);
+
   /// @brief Get information about global regions. 
   void getTextRegions() 
   {
