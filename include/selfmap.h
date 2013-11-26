@@ -89,7 +89,7 @@ private:
     uintptr_t startaddr, endaddr;
     size_t offset, inode;
     char file[PATH_MAX];
-    char prot[15];
+    char prot[4];
     unsigned int dev1, dev2;
   };
 
@@ -108,6 +108,8 @@ public:
   /// @brief Get information about global regions. 
   void getTextRegions() 
   {
+    //    printf ("getting text regions.\n");
+
     ifstream iMapfile;
     string curentry;
 
@@ -176,7 +178,9 @@ public:
   }
 
   /// @brief Extract stack bottom and top information.
-  void getStackInformation(void** stackBottom, void ** stackTop) {
+  void getStackInformation (void** stackBottom, void ** stackTop) {
+    //    printf ("getting stack info.\n");
+
     using namespace std;
     ifstream iMapfile;
     string curentry;
@@ -211,6 +215,8 @@ public:
 
   /// @brief Collect all global regions.
   void getGlobalRegions(regioninfo * regions, int * regionNumb) {
+    //    printf ("getting global regions.\n");
+
     using namespace std;
     ifstream iMapfile;
     string curentry;
@@ -223,8 +229,10 @@ public:
     } 
 
     // Now we analyze each line of this maps file, looking for globals.
+    // We only take the second entry for libc and libstdc++,
+    // and only the first for the file.
 
-    // We only take the second entry for libc and libstdc++.
+    int fileCount = 0;
     int libcCount = 0;
     int libstdcCount = 0;
 
@@ -239,6 +247,10 @@ public:
 	// Are we in the application, the C library, or the C++ library?
 	// If so, add that region to the array.
 
+	if (strstr(p.file, _filename) != NULL) {
+	  fileCount++;
+	}
+
 	if (strstr(p.file, "libc-") != NULL) {
 	  libcCount++;
 	}
@@ -248,10 +260,11 @@ public:
 	}
 
 
-	if ((strstr(p.file, _filename) != NULL)
-	    || ((libcCount == 1) && (strstr(p.file, "libc-") != NULL))
-	    || ((libstdcCount == 1) && (strstr(p.file, "libstdc++") != NULL)))
+	if (((fileCount == 1) && (strstr(p.file, _filename) != NULL))
+	    || ((libcCount == 2) && (strstr(p.file, "libc-") != NULL))
+	    || ((libstdcCount == 2) && (strstr(p.file, "libstdc++") != NULL)))
 	  {
+	    //	    printf ("adding a global region: %s, start=%lx, end=%lx\n", p.file, p.startaddr, p.endaddr);
 	    regions[*regionNumb].start = (void *) p.startaddr;
 	    regions[*regionNumb].end   = (void *) p.endaddr;
 	    (*regionNumb)++;
