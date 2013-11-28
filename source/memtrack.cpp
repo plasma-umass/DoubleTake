@@ -75,7 +75,7 @@ void memtrack::check(void * start, size_t size, memTrackType type) {
         // Insert or print.
         if(toPrintCallsite) {
           assert(object->objecttype == OBJECT_TYPE_LEAK);
-          PRINT("Leak object at address %p size %ld. Current call stack:\n", object->start, object->objectSize);
+          PRINT("\nLeak object at address %p size %ld. Current call stack:", object->start, object->objectSize);
           selfmap::getInstance().printCallStack(depth, (void **)&callsites[0]); 
         } 
         else {
@@ -99,8 +99,7 @@ void memtrack::print(void * start) {
     // Now we should verify the size information for buffer overflow and memory leakage.
     // For use-after-free errors, since it is impossible to know actual object size information,
     // then we do not verify its size information.
-    PRINT("");
-    PRINT("Memory allocation call stack:\n");
+    PRINT("\nMemory allocation call stack:");
     assert(object->isMallocTraced() == true);
      
     // Print its allocation stack.     
@@ -108,8 +107,7 @@ void memtrack::print(void * start) {
     
     if(object->objecttype == OBJECT_TYPE_USEAFTERFREE) {
       assert(object->isFreeTraced() == true);
-      PRINT("");
-      PRINT("\nMemory deallocation call stack:\n");
+      PRINT("\nMemory deallocation call stack:");
       selfmap::getInstance().printCallStack(object->freeSite.depth(), object->freeSite.getCallsite()); 
     }
   }

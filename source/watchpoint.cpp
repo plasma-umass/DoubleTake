@@ -81,10 +81,10 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
 
   // Now we should check whether objectstart is existing or not.
   if(object->objtype == OBJECT_TYPE_OVERFLOW) {
-    PRINT("Caught heap overflow at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("\nCaught heap overflow at %p. Current call stack:", object->faultyaddr);
   }
   else if(object->objtype == OBJECT_TYPE_USEAFTERFREE) {
-    PRINT("Caught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("\nCaught use-after-free error at %p. Current call stack:", object->faultyaddr);
   }
   selfmap::getInstance().printCallStack();
 
