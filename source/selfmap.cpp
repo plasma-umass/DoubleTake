@@ -68,7 +68,7 @@ void selfmap::printCallStack(int depth, void ** array) {
     if(isApplication(array[i])) {
       index++;
       unsigned long addr = (unsigned long)array[i] - PREV_INSTRUCTION_OFFSET;
-      PRINT("callstack frame %d: 0x%x", index, addr);
+      PRINT("\tcallstack frame %d: 0x%x\n\t", index, addr);
       // Print out the corresponding source code information
       sprintf(buf, "addr2line -e %s 0x%lx", _filename, addr);
       system(buf);
