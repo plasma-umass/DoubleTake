@@ -38,6 +38,11 @@
 #include "threadstruct.h"
 #include "selfmap.h"
 
+// Normally, callstack only saves next instruction address. 
+// To get current callstack, we should substract 1 here. 
+// Then addr2line can figure out which instruction correctly
+#define PREV_INSTRUCTION_OFFSET 1
+
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.
 void selfmap::printCallStack() {
@@ -52,16 +57,16 @@ void selfmap::printCallStack() {
   current->internalheap = false;
   PRINF("After get backtrace with array %p\n", array);
 
-  backtrace_symbols_fd(&array[0], size, 2);
+  //backtrace_symbols_fd(&array[0], size, 2);
 
   // Print out the source code information if it is a overflow site.
   char buf[MAX_BUF_SIZE];
 
   for(int i = 0; i < size; i++) {
     if(isApplication(array[i])) {
-      PRWRN("callstack frame %d: ", i);
+      //fprintf(stderr, "callstack frame %d: %p\n", i, array[i]);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s %p", _filename,  (void*)((uintptr_t)array[i]));
+      sprintf(buf, "addr2line -e %s 0x%lx", _filename,  (unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
       system(buf);
     }
   }
@@ -70,13 +75,13 @@ void selfmap::printCallStack() {
 void selfmap::printCallStack(int depth, void ** array) {
   char buf[MAX_BUF_SIZE];
   int index = 0;
-  fprintf(stderr, "printCallStack:_filename %s\n", _filename);
+  //fprintf(stderr, "printCallStack:_filename %s\n", _filename);
   for(int i = 0; i < depth; i++) {
     if(isApplication(array[i])) {
       index++;
-      fprintf(stderr, "callstack frame %d: %p\n", index, array[i]);
+  //    fprintf(stderr, "callstack frame %d: %p\n", index, array[i]);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s 0x%lx", _filename, (unsigned long)array[i]);
+      sprintf(buf, "addr2line -e %s 0x%lx", _filename, (unsigned long)array[i]-PREV_INSTRUCTION_OFFSET);
       system(buf);
     }
   }

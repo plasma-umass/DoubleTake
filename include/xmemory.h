@@ -393,8 +393,9 @@ public:
       }
     }
 #endif
-    // Check the malloc if it is in rollback phase.
+    // Check the free if it is in rollback phase.
     if(global_isRollback()) {
+      //PRERR("Check free on ptr %p size %d\n", ptr, o->getObjectSize());
       memtrack::getInstance().check(ptr, o->getObjectSize(), MEM_TRACK_FREE);
     }
 

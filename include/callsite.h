@@ -67,6 +67,11 @@ public:
     }
   }
 
+  // Return the callsite
+  void** getCallsite() {
+    return &_callsite[0];
+  }
+
 private:
   unsigned long _depth; // Actual callsite depth
   void * _callsite[xdefines::CALLSITE_MAXIMUM_LENGTH];

@@ -70,7 +70,7 @@ public:
 
   /// @brief Check whether an address is inside the main application.
   bool isApplication(void * pcaddr) {
-    fprintf(stderr, "Application information: start %p end %p pcaddr %p\n", _appTextStart, _appTextEnd, pcaddr);
+    //fprintf(stderr, "Application information: start %p end %p pcaddr %p\n", _appTextStart, _appTextEnd, pcaddr);
     return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
   }
 
@@ -85,6 +85,7 @@ private:
     {
       sscanf (str, "%lx-%lx %4s %lx %x:%x %lu %s",
 	      &startaddr, &endaddr, prot, &offset, &dev1, &dev2, &inode, file);
+     // fprintf(stderr, "startaddr %lx endaddr %lx prot %s\n", startaddr, endaddr, prot); 
     }
   
     uintptr_t startaddr, endaddr;
@@ -142,16 +143,13 @@ public:
     while (getline(iMapfile, curentry)) {
 
       pmap p (curentry.c_str());
-
       // Check whether this entry is the text segment of application.
-      if (strcmp (p.prot, "r-xp") == 0) {
+      if (strncmp(p.prot, "r-xp", 4) == 0) {
 	      // We're in a text segment.
-
-	      //	printf ("file = %s\n", p.file);
+	    //  PRWRN ("file = %s\n", p.file);
 
         // Check whether we are in DoubleTake, another library, or in
         // the application itself.
-
         if (strstr(p.file, "libdoubletake") != NULL) {
           _doubletakeStart = (void *) p.startaddr;
           _doubletakeEnd   = (void *) p.endaddr;

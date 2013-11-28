@@ -193,12 +193,12 @@ private:
     }
   }
 
-  void insertLeakageMap(void * ptr, size_t objectSize, size_t size) {
-    _totalLeakageSize += size;
+  void insertLeakageMap(void * ptr, size_t size, size_t blocksize) {
+    _totalLeakageSize += blocksize;
     // Update the total size.
-    PRWRN("**********************DoubleTake: Leakage at ptr %p with size %ld. objectsize %ld. Total leakage size %ld**************\n", ptr, size, objectSize, _totalLeakageSize);
+    PRERR("DoubleTake: Leakage at ptr %p with size %ld. block size %ld. Now total leak size %ld\n", ptr, size, blocksize, _totalLeakageSize);
     // We only start to rollback when leakage is too large?
-    memtrack::getInstance().insert(ptr, objectSize, OBJECT_TYPE_LEAK);
+    memtrack::getInstance().insert(ptr, size, OBJECT_TYPE_LEAK);
   }
 
   // In the end, we should report all of those non-reachable non-freed objects.
