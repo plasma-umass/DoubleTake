@@ -1,0 +1,172 @@
+// -*- C++ -*-
+
+/*
+  Copyright (c) 2012 , University of Massachusetts Amherst.
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+*/
+#ifndef _memtrack_H_
+#define _memtrack_H_
+#include <sys/types.h>
+#include <syscall.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/mman.h>
+
+#include "internalheap.h"
+#include "real.h"
+#include "hashfuncs.h"
+#include "hashmap.h"
+#include "callsite.h"
+
+typedef enum e_memtrackType{ 
+  MEM_TRACK_MALLOC = 1,
+  MEM_TRACK_FREE = 2
+} memTrackType;
+
+  
+class trackObject {
+  public:
+    void * start;
+    size_t objectSize; // Actual object size.
+    int    objecttype;
+    int    tracktype; 
+    // It is important to have this for use-after-free operation.
+    // For example, an object can be re-used. It is possible that 
+    // a object are going to use before this, then we do not report any
+    // message on this.
+    int tracedOps;
+    CallSite allocSite;
+    CallSite freeSite;
+ 
+    trackObject() {}
+ 
+    void initialize(void * addr, size_t sz, faultyObjectType type) {
+      assert(addr != NULL);
+      assert(sz != 0);
+
+      start = addr;
+      objectSize = sz;
+      objecttype = type;
+
+      // Now we should set up tracking type correspondingly.
+      switch(type) {
+        case OBJECT_TYPE_OVERFLOW:
+          tracktype = MEM_TRACK_MALLOC;
+          break;
+
+        case OBJECT_TYPE_USEAFTERFREE:
+          tracktype = MEM_TRACK_MALLOC | MEM_TRACK_FREE;
+          break;
+        
+        case OBJECT_TYPE_LEAK:
+          // For memory leak, we simply output the callsite.
+          tracktype = MEM_TRACK_MALLOC;
+          break;
+
+        default:
+          assert(0);
+      } 
+    
+      tracedOps = 0;
+    }
+
+    void saveCallsite(memTrackType type, int depth, void ** callsites) {
+      if(type == MEM_TRACK_MALLOC) {
+        allocSite.save(depth, callsites);
+      }
+      else {
+        freeSite.save(depth, callsites);
+      }
+
+      tracedOps |= type;
+      //fprintf(stderr, "tracedOps %lx. Now type is %lx\n", tracedOps, type);
+    }
+
+    void setMallocTraced() {
+      tracedOps |= MEM_TRACK_MALLOC;
+    }
+
+    void setFreeTraced() {
+      tracedOps |= MEM_TRACK_FREE;
+    }
+
+    bool isMallocTraced() {
+      return (tracedOps & MEM_TRACK_MALLOC);
+    }
+
+    bool isFreeTraced() {
+      //fprintf(stderr, "tracedOps %lx to isFreeTraced\n", tracedOps);
+      return (tracedOps & MEM_TRACK_FREE);
+    }
+};
+
+class memtrack {
+
+public:
+  // Just one accessor.  Why? We don't want more than one (singleton)
+  // and we want access to it neatly encapsulated here, for use by the
+  // signal handler.
+  static memtrack& getInstance() {
+    static char buf[sizeof(memtrack)];
+    static memtrack * theOneTrueObject = new (buf) memtrack();
+    return *theOneTrueObject;
+  }
+
+  memtrack()
+  : _initialized(false) 
+  {
+  }
+
+  void initialize(void) {
+    _initialized = true;
+    // Initialize a global track map.
+    _trackMap.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::MEMTRACK_MAP_SIZE); 
+//    fprintf(stderr, "initializee!!!!!!!!!!!!!!\n");
+  }
+
+  void insert(void * start, size_t size, faultyObjectType type) {
+    if(!_initialized) {
+      initialize();
+    }
+
+    // Check whether tracktype is valid. 
+    trackObject * object;
+    object = (trackObject *)InternalHeap::getInstance().malloc(sizeof(trackObject));
+
+    object->initialize(start, size, type);
+    //(start, size, type);
+
+    _trackMap.insert(start, sizeof(start), object);
+//    fprintf(stderr, "Insert start %p size %ld\n", start, size);
+  }
+
+  // Check whether an object should be reported or not. Type is to identify whether it is 
+  // a malloc or free operation. 
+  // Then we can match to find whether it is good to tell
+  void check(void * start, size_t size, memTrackType type);
+
+  void print(void * start);
+private:
+
+  bool _initialized; 
+  HashMap<void *, trackObject *, spinlock, InternalHeapAllocator> _trackMap;
+};
+
+
+#endif /* _memtrack_H_ */
