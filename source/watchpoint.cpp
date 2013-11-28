@@ -75,7 +75,7 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
 
   // Find faulty object. 
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
-    PRERR("Can't find faulty object!!!!\n");
+    //PRERR("Can't find faulty object!!!!\n");
     return;
   }
 

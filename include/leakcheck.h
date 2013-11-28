@@ -196,7 +196,7 @@ private:
   void insertLeakageMap(void * ptr, size_t size, size_t blocksize) {
     _totalLeakageSize += blocksize;
     // Update the total size.
-    PRERR("DoubleTake: Leakage at ptr %p with size %ld. block size %ld. Now total leak size %ld\n", ptr, size, blocksize, _totalLeakageSize);
+    PRINT("DoubleTake: Leakage at ptr %p with size %ld. block size %ld. Now total leak size %ld\n", ptr, size, blocksize, _totalLeakageSize);
     // We only start to rollback when leakage is too large?
     memtrack::getInstance().insert(ptr, size, OBJECT_TYPE_LEAK);
   }
