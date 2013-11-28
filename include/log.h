@@ -85,6 +85,15 @@
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
       OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } }
 
+// Can't be turned off. But we don't want to output those line number information.
+#define PRINT(fmt, ...) { \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, BRIGHT_MAGENTA fmt ESC_END "\n", ##__VA_ARGS__ );  \
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } 
+      
+
+
+/**
+ * Print fatal error message, the program is going to exit.
 
 /**
  * Print fatal error message, the program is going to exit.

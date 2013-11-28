@@ -33,11 +33,11 @@
 void watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize) {
   
   if(objtype == OBJECT_TYPE_OVERFLOW) { 
-    PRERR("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
+    PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   }
   else {
     assert(objtype == OBJECT_TYPE_USEAFTERFREE);
-    PRERR("DoubleTake: Use-after-free error at address %p with value 0x%lx. \n", addr, value);
+    PRINT("DoubleTake: Use-after-free error at address %p with value 0x%lx. \n", addr, value);
   }
 
   if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
@@ -81,10 +81,10 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
 
   // Now we should check whether objectstart is existing or not.
   if(object->objtype == OBJECT_TYPE_OVERFLOW) {
-    PRWRN("Caught heap overflow at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("Caught heap overflow at %p. Current call stack:\n", object->faultyaddr);
   }
   else if(object->objtype == OBJECT_TYPE_USEAFTERFREE) {
-    PRWRN("Caught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("Caught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
   }
   selfmap::getInstance().printCallStack();
 

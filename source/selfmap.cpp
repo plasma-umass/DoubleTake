@@ -48,28 +48,16 @@
 void selfmap::printCallStack() {
   void * array[10];
   int size;
-  int skip = 0;
 
-  PRINF("Try to get backtrace with array %p\n", array);
   // get void*'s for all entries on the stack
   current->internalheap = true;
   size = backtrace(array, 10);
   current->internalheap = false;
-  PRINF("After get backtrace with array %p\n", array);
 
   //backtrace_symbols_fd(&array[0], size, 2);
 
   // Print out the source code information if it is a overflow site.
-  char buf[MAX_BUF_SIZE];
-
-  for(int i = 0; i < size; i++) {
-    if(isApplication(array[i])) {
-      //fprintf(stderr, "callstack frame %d: %p\n", i, array[i]);
-      // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s 0x%lx", _filename,  (unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
-      system(buf);
-    }
-  }
+  selfmap::getInstance().printCallStack(size, &array[0]);
 }
  
 void selfmap::printCallStack(int depth, void ** array) {
@@ -79,9 +67,10 @@ void selfmap::printCallStack(int depth, void ** array) {
   for(int i = 0; i < depth; i++) {
     if(isApplication(array[i])) {
       index++;
-  //    fprintf(stderr, "callstack frame %d: %p\n", index, array[i]);
+      unsigned long addr = (unsigned long)array[i] - PREV_INSTRUCTION_OFFSET;
+      PRINT("callstack frame %d: 0x%x", index, addr);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s 0x%lx", _filename, (unsigned long)array[i]-PREV_INSTRUCTION_OFFSET);
+      sprintf(buf, "addr2line -e %s 0x%lx", _filename, addr);
       system(buf);
     }
   }
