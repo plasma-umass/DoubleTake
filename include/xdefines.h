@@ -70,11 +70,12 @@ extern char * getThreadBuffer();
 extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void * ptr, size_t size);
 
+// A project can have multiple problems. 
+// So we make them to use different bits.
 typedef enum e_faultyObjectType {
   OBJECT_TYPE_OVERFLOW = 1,
-  OBJECT_TYPE_USEAFTERFREE,
-  OBJECT_TYPE_LEAK,
-  OBJECT_TYPE_INVALID,
+  OBJECT_TYPE_USEAFTERFREE = 2,
+  OBJECT_TYPE_LEAK = 4
 } faultyObjectType;
 
 inline size_t alignup(size_t size, size_t alignto) {

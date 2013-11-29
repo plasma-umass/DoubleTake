@@ -74,7 +74,7 @@ public:
     _nonStartAddrs = 0;
     _totalLeakageSize = 0;
 
-    PRINT("doSlowLeakCheck begin %p end %p\n", begin, end);
+    PRINF("doSlowLeakCheck begin %p end %p\n", begin, end);
     // Search all existing registers to find possible heap pointers
     ucontext_t context;
 

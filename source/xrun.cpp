@@ -163,7 +163,7 @@ void xrun::epochEnd (bool endOfProgram) {
 #endif
 
 #ifndef EVALUATING_PERF
-  PRINT("in the endof epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRINF("in the endof epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   // First, attempt to commit.
   #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
   if(hasOverflow || hasMemoryLeak) {

@@ -56,34 +56,39 @@ class trackObject {
  
     trackObject() {}
  
-    void initialize(void * addr, size_t sz, faultyObjectType type) {
+    void setup(void * addr, size_t sz, faultyObjectType type, bool objectExist) {
       assert(addr != NULL);
       assert(sz != 0);
 
       start = addr;
       objectSize = sz;
-      objecttype = type;
 
-      // Now we should set up tracking type correspondingly.
-      switch(type) {
-        case OBJECT_TYPE_OVERFLOW:
-          tracktype = MEM_TRACK_MALLOC;
-          break;
-
-        case OBJECT_TYPE_USEAFTERFREE:
-          tracktype = MEM_TRACK_MALLOC | MEM_TRACK_FREE;
-          break;
+      if(objectExist) {
+        objecttype |= type;
+      }
+      else {
+        objecttype = type;
+        tracktype = MEM_TRACK_MALLOC;
+      }
         
-        case OBJECT_TYPE_LEAK:
-          // For memory leak, we simply output the callsite.
-          tracktype = MEM_TRACK_MALLOC;
-          break;
+      if(type == OBJECT_TYPE_USEAFTERFREE) {
+        tracktype |= MEM_TRACK_FREE;
+      }
 
-        default:
-          assert(0);
-      } 
-    
       tracedOps = 0;
+    }
+  
+    bool hasUseafterfree() {
+      return (objecttype & OBJECT_TYPE_USEAFTERFREE) != 0;
+    }
+
+    bool hasLeak() {
+      //PRINT("check has leak: tracktype %d(%b)\n", tracktype, tracktype);
+      return (objecttype & OBJECT_TYPE_LEAK) != 0;
+    }
+
+    bool hasOverflow() {
+      return (objecttype & OBJECT_TYPE_OVERFLOW) != 0;
     }
 
     void saveCallsite(memTrackType type, int depth, void ** callsites) {
@@ -144,16 +149,23 @@ public:
     if(!_initialized) {
       initialize();
     }
-
+    
     // Check whether tracktype is valid. 
-    trackObject * object;
-    object = (trackObject *)InternalHeap::getInstance().malloc(sizeof(trackObject));
+    trackObject * object = NULL;
+    bool objectExist = false;
+     
+    // Check whether an object is existing or not. 
+    // A object can has mulitple errors. 
+    if(_trackMap.find(start, sizeof(start), &object)) {
+  //    PRINT("object is there at start %p\n", start);
+      objectExist = true;
+    }
+    else {
+      object = (trackObject *)InternalHeap::getInstance().malloc(sizeof(trackObject));
+      _trackMap.insert(start, sizeof(start), object);
+    }
 
-    object->initialize(start, size, type);
-    //(start, size, type);
-
-    _trackMap.insert(start, sizeof(start), object);
-//    fprintf(stderr, "Insert start %p size %ld\n", start, size);
+    object->setup(start, size, type, objectExist);
   }
 
   // Check whether an object should be reported or not. Type is to identify whether it is 
