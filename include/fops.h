@@ -350,16 +350,16 @@ public:
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       fileInfo * thisFile;
       thisFile = (fileInfo *)i.getData();
-
+#ifndef REPRODUCIBLE_FDS
+      if(thisFile->isNew) {
+        closeFile(thisFile->fd, thisFile->origStream);
+      }
+#else
       Real::lseek()(thisFile->fd, thisFile->pos, SEEK_SET);
 
       // The file has already existed before current epoch
       if(thisFile->origStream) {
         memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
-      }
-#ifndef REPRODUCIBLE_FDS
-      if(thisFile->isNew) {
-        closeFile(thisFile->fd, thisFile->origStream);
       }
 #endif
     }
@@ -501,14 +501,15 @@ public:
         InternalHeap::getInstance().free(thisFile->backupStream);
       }
       InternalHeap::getInstance().free(thisFile);
-    }
-    
-    // Remove this 
-    if(fp == NULL) {
-      return Real::close()(fd);
-    }
-    else {
-      return Real::fclose()(fp);
+   
+      PRINT("fd is %d fp %p\n", fd, fp); 
+      // Remove this 
+      if(fp == NULL) {
+        return Real::close()(fd);
+      }
+      else {
+        return Real::fclose()(fp);
+      }
     }
 #endif
   }

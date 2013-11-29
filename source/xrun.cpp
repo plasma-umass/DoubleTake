@@ -151,7 +151,7 @@ void xrun::epochEnd (bool endOfProgram) {
 #endif
 
 #ifdef DETECT_MEMORY_LEAKAGE
-  bool hasMemoryLeak;
+  bool hasMemoryLeak = false;
   if(endOfProgram) {
   //  PRINF("DETECTING MEMORY LEAKABE in the end of program!!!!\n");
     hasMemoryLeak = leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd()); 
@@ -163,6 +163,7 @@ void xrun::epochEnd (bool endOfProgram) {
 #endif
 
 #ifndef EVALUATING_PERF
+  PRINT("in the endof epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   // First, attempt to commit.
   #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
   if(hasOverflow || hasMemoryLeak) {

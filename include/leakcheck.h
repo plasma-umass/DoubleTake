@@ -74,7 +74,7 @@ public:
     _nonStartAddrs = 0;
     _totalLeakageSize = 0;
 
- //   PRINF("doSlowLeakCheck begin %p end %p\n", begin, end);
+    PRINT("doSlowLeakCheck begin %p end %p\n", begin, end);
     // Search all existing registers to find possible heap pointers
     ucontext_t context;
 
@@ -204,7 +204,7 @@ private:
   // In the end, we should report all of those non-reachable non-freed objects.
   bool reportUnreachableNonfreedObjects() {
     unsigned long * ptr, *stop;
-    bool hasLeakage = true;
+    bool hasLeakage = false;
 
     // We basically report those non-checked and non-freed objects in
     // the system by traverse all objects.
