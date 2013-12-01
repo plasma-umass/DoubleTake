@@ -774,7 +774,9 @@ private:
     current->tid = tid;
     current->status = E_THREAD_RUNNING;
     current->isNewlySpawned = true;
-  
+ 
+    current->disablecheck = false;
+ 
     // FIXME: problem
     current->joiner = NULL;
 

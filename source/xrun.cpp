@@ -171,7 +171,7 @@ void xrun::epochEnd (bool endOfProgram) {
   }
   else {
   #elif defined(DETECT_OVERFLOW)
-  //PRINT("in the endof epoch, hasOverflow %d\n", hasOverflow);
+  PRINT("in the endof epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   }

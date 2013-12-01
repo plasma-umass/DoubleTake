@@ -53,17 +53,27 @@ void selfmap::printCallStack() {
   current->internalheap = true;
   size = backtrace(array, 10);
   current->internalheap = false;
-
   //backtrace_symbols_fd(&array[0], size, 2);
 
   // Print out the source code information if it is a overflow site.
   selfmap::getInstance().printCallStack(size, &array[0]);
 }
+
+// Calling system involves a lot of irrevocable system calls.
  
+void disableCheck() {
+  current->disablecheck = true;
+}
+
+void enableCheck() {
+  current->disablecheck = false;
+}
+
 void selfmap::printCallStack(int depth, void ** array) {
   char buf[MAX_BUF_SIZE];
   int index = 0;
   //fprintf(stderr, "printCallStack:_filename %s\n", _filename);
+  disableCheck();
   for(int i = 0; i < depth; i++) {
     if(isApplication(array[i])) {
       index++;
@@ -74,6 +84,7 @@ void selfmap::printCallStack(int depth, void ** array) {
       system(buf);
     }
   }
+  enableCheck();
 }
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.

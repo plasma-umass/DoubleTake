@@ -5,4 +5,5 @@ ARGS="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 #rm -f aaa aaa.gz
 #echo "This is a test!" >aaa
-LD_PRELOAD=/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so $BENCHDIRS $ARGS
+#LD_PRELOAD=/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so $BENCHDIRS $ARGS
+$BENCHDIRS $ARGS

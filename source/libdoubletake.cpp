@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-#define fprintf(stderr, ...)
+//#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;
@@ -652,13 +652,23 @@ extern "C" {
   }
 
   int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
-    fprintf(stderr, "sigaction in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().sigaction(signum, act, oldact); 
+    if(current->disablecheck) {
+      return Real::sigaction()(signum, act, oldact);
+    }
+    else {
+      //fprintf(stderr, "%d: sigaction in doubletake at %d. Disablecheck %d\n", __LINE__, getpid(), current->disablecheck);
+      return syscalls::getInstance().sigaction(signum, act, oldact); 
+    }
   }
 
   int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
-    fprintf(stderr, "sigprocmask in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().sigprocmask(how, set, oldset);
+    if(current->disablecheck) {
+      return Real::sigprocmask()(how, set, oldset);
+    }
+    else {
+      //fprintf(stderr, "sigprocmask in doubletake at %d\n", __LINE__);
+      return syscalls::getInstance().sigprocmask(how, set, oldset);
+    }
   }
 
 //  int sigreturn(unsigned long __unused) {
@@ -933,8 +943,13 @@ extern "C" {
   int execve(const char *filename, char *const argv[],
              char *const envp[]){
 
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().execve(filename, argv, envp);
+    fprintf(stderr, " in doubletake at %d. filename %s\n", __LINE__, filename);
+    if(current->disablecheck) {
+      return Real::execve()(filename, argv, envp);
+    }
+    else {
+      return syscalls::getInstance().execve(filename, argv, envp);
+    }
   }
 #if 0
   void exit(int status){

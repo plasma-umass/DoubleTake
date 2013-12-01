@@ -52,6 +52,8 @@ typedef enum e_thrstatus {
 typedef struct thread {
   bool      available; // True: the thread index is free.
   bool      internalheap;
+  // Should we disable check or not?
+  bool      disablecheck; 
   bool      isSpawning; // Whether a new thread is spawning?  
   bool      isNewlySpawned;  // whether this thread is spawned in this epoch?
   // Whether this thread has been joined or not. 
