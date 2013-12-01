@@ -235,12 +235,11 @@ public:
     // If bitIndex is the msb, then we have to traverse back 
     // to find last bit in other words. 
     unsigned long bitword = readWord(wordIndex);
+    //PRINT("wordindex %lx bitword %lx bitIndex %ld\n", wordIndex, bitword, bitIndex);
 
     if(bitword != 0) {
       // Should we use lsbIndex or msbIndex?
       unsigned long lsbIndex = getLsbIndex(bitword);
-  //    PRINF("lsbIndex is %ld bitIndex %ld\n", lsbIndex, bitIndex);
-      //while(1);
       if(bitIndex > lsbIndex) {
         // Then it is possible that there is a bit between lsbIndex (small) and bitIndex (large)
         while(bitIndex > lsbIndex) {
@@ -248,7 +247,6 @@ public:
           if(isBitSetOnWord(bitword, bitIndex)) {
             hasLastBit = true;
             *lastBitIndex = getItemIndex(wordIndex, bitIndex);
-//            PRINF("lastBitIndex is %d at line %d\n", *lastBitIndex, __LINE__);
             break;
           }
         }
@@ -263,7 +261,8 @@ public:
         bitword = readWord(wordIndex);
         if(bitword != 0) {
           bitIndex = getMsbIndex(bitword);
-          *lastBitIndex = getItemIndex(wordIndex, bitIndex);
+          //PRINT("bitword %lx wordIndex %d bitIndex %d\n", bitword, wordIndex, bitIndex);
+          *lastBitIndex = getItemIndex(wordIndex, bitIndex+1);
           hasLastBit = true;
           break;
         }        

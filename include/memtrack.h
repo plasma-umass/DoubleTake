@@ -149,7 +149,14 @@ public:
     if(!_initialized) {
       initialize();
     }
-    
+
+    // When an overflow flushs several object, then there is no need to track all 
+    // overflows. 
+    if(start == NULL && type == OBJECT_TYPE_OVERFLOW) {
+      PRINT("An overflow with start address NULL, not need to track.\n");
+      return;
+    }
+ 
     // Check whether tracktype is valid. 
     trackObject * object = NULL;
     bool objectExist = false;
@@ -165,6 +172,7 @@ public:
       _trackMap.insert(start, sizeof(start), object);
     }
 
+   PRINT("Insert object at start %p\n", start);
     object->setup(start, size, type, objectExist);
   }
 

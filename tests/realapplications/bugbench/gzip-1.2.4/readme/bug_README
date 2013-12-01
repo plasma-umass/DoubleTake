@@ -1,0 +1,29 @@
+* gzip-1.2.4
+program description:
+---------------------
+(GNU) compression and decompression program:
+gzip <filename>	(filename.gz is generated)
+gzip -d <filename> (filename.gz --> filename)
+
+bug explanation:
+--------------------
+global array overflow
+gzip.c(line 828) in function get_istat
+	     
+line 828: strcpy(ifname, iname)
+ifname is a static array with fixed length,
+the string in iname is from file-name string in input
+when inputing a long file name, array ifname would be overflowed
+
+bug triggering input:
+---------------------
+Input in script/run-bug can cause application crash with core dump.
+
+correct inputs:
+--------------------
+script/run-normal is a simple normal run script
+The input files in input/ folder are copied from SPEC95 164.gzip
+
+bug detection preliminary results:
+--------------------
+Purify, Valgrind and CCured can all detect this bug.

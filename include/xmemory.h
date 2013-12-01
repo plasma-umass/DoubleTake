@@ -213,8 +213,9 @@ public:
     if(global_isRollback()) {
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
+      
     // We donot need to do anything if size is equal to sz
-    //PRINF("malloc with sz %d ptr %p\n", sz, ptr);
+    //PRINT("malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
     return ptr;
   }
 
@@ -433,11 +434,12 @@ public:
     
     _pheap.recoverHeapMetadata(); 
  
-  //  PRINF("INSTALL watching points nowwwwww!!!\n"); 
+    PRINF("INSTALL watching points!!!\n");
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
   //  WARN("Recoverring the global memory, after install watchpoints\n");
+    PRINF("After INSTALL watching points nowwwwww!!!\n"); 
   }
 
   /// Rollback only without install watchpoints.

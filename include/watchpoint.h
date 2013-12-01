@@ -81,7 +81,7 @@ public:
   }
 
   // Add a watch point with its value to watchpoint list.
-  void addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize);
+  bool addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize);
 
   bool findFaultyObject(faultyObject ** object) {
     bool hasFound = false;
@@ -114,6 +114,7 @@ public:
     pid_t parent = getpid();
 
     PRINF("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+    //PRINF("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Initialize those debug registers. 
     init_debug_registers();
 
@@ -131,15 +132,16 @@ public:
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     Real::sigaction()(SIGTRAP, &trap_action, NULL);
 //    sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
+    PRINF("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork());    
 
     // Creating a child to setup the watchpoints for the parent.
     child = Real::fork()();
     if (child == 0)
     {
-      sleep(1); // This is not necessarily enough but let's try it.
+      PRINF("Child install %d!!!!!!!!!\n", __LINE__);    
+      sleep(2); // This is not necessarily enough but let's try it.
 
-      PRINF("CHILD installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
-
+      PRINF("install %d!!!!!!!!!\n", __LINE__);    
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
@@ -148,12 +150,14 @@ public:
       }
       //PRINF("child install watchpoints now, before sleep\n");
 
+      PRINF("install %d!!!!!!!!!\n", __LINE__);    
       // Child will wait the parent to stop.
-      sleep(1);
+      sleep(2);
 
      // PRINF("child install watchpoints now\n");
 
       // Install all watchpoints now.
+      PRINF("install %d!!!!!!!!!\n", __LINE__);    
       PRINF("child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
         PRINF("child install watchpoints %d at %p\n", i, _wp[i].faultyaddr);
@@ -179,7 +183,7 @@ public:
       }
     }
     else {
-      PRERR("Can't fork when installing watch points, with error: %s\n", strerror(errno));
+      PRINT("Can't fork when installing watch points, with error: %s\n", strerror(errno));
       while(1);
     }
   }

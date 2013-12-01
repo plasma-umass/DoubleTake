@@ -501,8 +501,7 @@ public:
         InternalHeap::getInstance().free(thisFile->backupStream);
       }
       InternalHeap::getInstance().free(thisFile);
-   
-      PRINT("fd is %d fp %p\n", fd, fp); 
+//      PRINT("fd is %d fp %p\n", fd, fp); 
       // Remove this 
       if(fp == NULL) {
         return Real::close()(fd);

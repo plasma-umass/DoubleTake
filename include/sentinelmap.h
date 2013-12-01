@@ -224,6 +224,7 @@ public:
     bool hasValidObject = false;
    
     unsigned long item = getIndex(addr);
+    //PRINF("addr %p item %ld\n", addr, item);
     unsigned long * canaryAddr;
     unsigned long startIndex;
     while(_bitmap.getLastBit(item, &startIndex)) {
@@ -231,7 +232,6 @@ public:
       // this address is inside a valid object. 
       // There are at least two cases for a normal object.
       canaryAddr = (unsigned long *)getHeapAddressFromItem(startIndex);
-     // PRINF("findObjectStartAddr line %d startIndex %lx canaryAddr %lx\n", __LINE__, startIndex, canaryAddr);
       if(*canaryAddr == xdefines::SENTINEL_WORD) {
         *objectStart = (intptr_t)canaryAddr + xdefines::SENTINEL_SIZE;
         hasValidObject = true;
@@ -243,7 +243,6 @@ public:
       }
       else {
         hasValidObject = false;
-    //PRINF("findObjectStartAddr line %d\n", __LINE__);
         break;
       }
     }
@@ -401,13 +400,15 @@ private:
             PRINF("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
             // Find the starting address of this object.
             unsigned long objectStart = 0;
+
             if(findObjectStartAddr((void *)&address[i], &objectStart)) {
               objectHeader *object = (objectHeader *)(objectStart - sizeof(objectHeader));
               watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, (void *)objectStart, object->getSize());
             }
             else {
               // Maybe we can't get the starting address, in this case, we only report when there is a overflow
-              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, NULL, 0);
+              continue;
+              //watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, NULL, 0);
             }
           }
         }

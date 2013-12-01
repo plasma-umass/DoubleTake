@@ -30,8 +30,9 @@
 #include "watchpoint.h"
 #include "memtrack.h"
 
-void watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize) {
-  
+bool watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize) {
+  bool hasWatchpoint = true;
+    
   if(objtype == OBJECT_TYPE_OVERFLOW) { 
     PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   }
@@ -49,11 +50,15 @@ void watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objty
     _wp[_numWatchpoints].faultyvalue = value;
     _wp[_numWatchpoints].hasCaught = false;
     _numWatchpoints++;
-  } 
+  }
+  else  {
+    hasWatchpoint = false;
+  }
   
   // Add it to memtrack too.
   memtrack::getInstance().insert(objectstart, objectsize, objtype);
 
+  return !hasWatchpoint;
 }
 
 // Handle those traps on watchpoints now.  

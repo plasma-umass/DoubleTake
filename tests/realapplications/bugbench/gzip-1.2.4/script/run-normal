@@ -1,0 +1,8 @@
+#!/bin/sh
+
+BENCHDIRS="../src/gzip"
+ARGS="aaa"
+
+rm -f aaa aaa.gz
+echo "This is a test!" >aaa
+$BENCHDIRS $ARGS
