@@ -1,0 +1,68 @@
+===============================================================================
+assorted - Assorted functions                                        2006-02-25 
+
+
+DESCRIPTION
+
+    Some functions have been taken out of libHX because they are largely unused
+    in code I write. Since there are currently not too many users of libHX that
+    seem to need these functions, they currently remain out.
+
+
+SYNOPSIS
+
+    size_t HX_pack(char *fmt, size_t len, ...);
+    int HX_tofrac(size_t *num, size_t *denom, double arg);
+
+
+HX_pack()
+
+    Mimics perl's pack function. FMT can contain:
+    
+      A    Pascal-style string: a uint8_t length specifier and a string
+           with up to 255 chars
+      a    (same)
+      C    encode as uint8_t
+      c    encode as int8_t
+      H    encode as uint16_t
+      h    encode as int16_t
+      L    encode as uint32_t
+      l    encode as int32_t
+      S    Like A, but with a uint16_t length specifier and a string
+           with up to 64K chars
+      s    (same)
+      V    fixed-size string; first argument is string, second is length
+
+    Example:
+    
+      HX_pack(dest, sizeof(dest), "LLSV", 1337, 2006, "64k test string",
+              "fixed test", 5);
+
+    will produce this byte sequence on x86:
+
+      39 05 00 00        1337
+      D6 07 00 00        2006
+      0E 00              15
+      36 34 6B 20 74 65  "64k test string" (length=15)
+      73 74 20 73 74 72
+      69 6E 67
+      66 69 78 65 64     "fixed"
+
+
+HX_tofrac()
+
+    Calculates a readable fraction (i.e. 1/3) from arg and puts the
+    *numerator into num, the denominator into *denom. Since the fraction
+    is found out by an iterative loop, you can specify the minimum value
+    of the denominator in *num and the maximum value of the denominator
+    into *denom before calling the function.
+
+    If a suitable fraction has been found (within the range of the
+    minimum / maximum denominator, *num and *denom will be overwritten
+    with the results and 1 is returned; 0 for no success.
+
+    You need to re-put your min/max denom values into *num and *denom
+    then.
+
+
+    

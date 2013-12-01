@@ -1,0 +1,26 @@
+===============================================================================
+ux-mmap - Unix compatibility functions                               2006-02-25
+
+
+DESCRIPTION
+
+    libHX provides a Linux-style mmap() function for Win32.
+
+
+SYNOPSIS
+
+    #include <libHX.h>
+
+    void *mmap(void *START, size_t LENGTH, int PROT, int FLAGS, int FD,
+        off_t OFFSET);
+
+
+mmap()
+
+    See the Linux manual page mmap(2) for details. Many flags described in
+    mmap(2) do not work. What does work: PROT_NONE, PROT_READ, PROT_WRITE,
+    PROT_EXEC (only WinPX SP2 or WinServer2003 SP1 or up), MAP_SHARED and
+    MAP_PRIVATE. MAP_SHARED is the default if no MAP_PRIVATE is given.
+
+
+===============================================================================

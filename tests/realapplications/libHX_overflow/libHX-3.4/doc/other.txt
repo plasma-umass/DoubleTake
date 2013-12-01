@@ -1,0 +1,52 @@
+===============================================================================
+other - Uncategorized                                                2006-02-25
+
+
+DESCRIPTION
+
+    It did not fit into any other category.
+
+
+SYNOPSIS
+
+    #include <libHX.h>
+
+    void HX_zvecfree(char **VECP);
+    int HX_fsystem(unsigned long OPTS, const char *PROG,
+        const char *ARG0, ...);
+    int HX_vfsystem(unsigned long OPTS, const char *PROG,
+        const char *ARG0, va_list ARGP);
+
+
+HX_zvecfree()
+
+    Frees every element of VECP, and then VECP itself. VECP must have a NULL
+    terminator element.
+
+
+HX_fsystem()
+
+    vfsystem() runs (execs or fork-execs) an external program just like
+    execvp()/system() but it wraps system peculiarities up nicely.
+
+    OPTS is a bitfield; the following options can be applied:
+
+        HX_FSYSTEM_ARGV1
+
+            This flag specifies that the first dynamic argument is a
+            NULL-terminated array of strings that are to be prepended to the
+            final program arguments.
+
+        HX_FSYSTEM_ARGV
+
+            This flag specifies that the first dynamic argument is a
+            NULL-terminated array of strings that are to be appended to the
+            final program arguments.
+
+        HX_FSYSTEM_EXEC
+
+            exec()s instead of fork-exec()ing. Under Win32, this is emulated
+            using system-exit.
+
+
+===============================================================================

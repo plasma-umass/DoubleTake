@@ -1,0 +1,4 @@
+Documentation updates to the .lyx file are generally made as part of
+the commit that changed something. The updated PDF however shall only
+be committed to the repository on a release, because the semi-binary
+nature produces bigger deltas.
