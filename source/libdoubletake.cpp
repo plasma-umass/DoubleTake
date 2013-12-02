@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-//#define fprintf(stderr, ...)
+#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;

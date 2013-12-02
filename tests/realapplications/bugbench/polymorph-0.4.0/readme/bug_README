@@ -1,0 +1,42 @@
+* polymorph-0.4.0
+program description:
+---------------------
+(GNU) a Win32 -> Unix filename convertor
+e.g. turn all upper-case characters to lower-case ones in file name
+
+polymorph <filename>
+
+
+bug explanation:
+--------------------
+global array overflow and Stack array overflow bug
+
+First, in polymorph.c function void grok_commandLine(...) line 120,
+'strcpy(target, optarg)' may overflow the static array target, when
+program input argument (file name string) is too long.
+
+Second, in polymorph.c(line 896) in function 
+void convert_fileName(char *original){
+             char  newname[MAX];
+	     ...
+}
+A for-loop (line193--line199) copies elements from 'original'
+array to newname array one by one. Similarly, long input file name would 
+overflow array newname and causes stack return address overwritten.
+
+bug triggering input:
+---------------------
+Just try a very long file name.
+We use polymortph -f AAA...A (lots of 'A')
+(refer to script/run-bug)
+
+correct inputs:
+--------------------
+Use any file with reasonable name length
+(refer to script/run-normal)
+
+bug detection preliminary results:
+--------------------
+purify and ccured can always catch the bug.
+valgrind can catch the bug with some bug-triggering inputs, and failes to
+  catch the bug for some other bug-triggering inputs.
