@@ -37,9 +37,7 @@
 
 enum SystemPhase {
   E_SYS_INIT, // Initialization phase
-  E_SYS_NORMAL_EXECUTION, 
   E_SYS_EPOCH_END, // We are just before commit.  
-  E_SYS_ROLLBACK, // We are trying to rollback the whole system.
   E_SYS_EPOCH_BEGIN, // We have to start a new epoch when no overflow. 
 };
 extern bool g_isRollback;
@@ -97,8 +95,7 @@ inline bool global_isEpochEnd() {
 }
 
 inline bool global_isRollback() {
-//  PRINF("ISROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
-  return g_phase == E_SYS_ROLLBACK;
+  return g_isRollback;
 }
 
 inline bool global_isEpochBegin() {
@@ -106,9 +103,8 @@ inline bool global_isEpochBegin() {
 }
 
 inline void global_setRollback() {
-  g_phase = E_SYS_ROLLBACK;
+  g_isRollback = true;
   g_hasRollbacked = true;
-  //PRINF("setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);
 }
 
 inline bool global_hasRollbacked() {
@@ -127,7 +123,7 @@ inline void global_epochBegin() {
   global_lockInsideSignalhandler();
 
   g_phase = E_SYS_EPOCH_BEGIN;
-  PRINF("waken up all waiters\n");
+  PRINT("waken up all waiters\n");
   // Wakeup all other threads.
   Real::pthread_cond_broadcast()(&g_condWaiters);
 

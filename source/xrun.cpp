@@ -141,6 +141,16 @@ void xrun::epochEnd (bool endOfProgram) {
   // Tell other threads to stop and save context.
   stopAllThreads();
 
+  // To avoid endless rollback
+  if(global_isRollback()) {
+    PRINT("in the endof epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
+    while(1);
+  }
+  else {
+  PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
+
+  }
+
 #ifdef DEBUG_ROLLBACK
   //rollback();
   //assert(0);
