@@ -83,6 +83,8 @@ private:
     /// @brief Extract information from one line of a /proc/<pid>/maps file.
     pmap (const char * str)
     {
+      // Cleanup old data
+      file[0] = '\0';
       sscanf (str, "%lx-%lx %4s %lx %x:%x %lu %s",
 	      &startaddr, &endaddr, prot, &offset, &dev1, &dev2, &inode, file);
      // fprintf(stderr, "startaddr %lx endaddr %lx prot %s\n", startaddr, endaddr, prot); 
@@ -232,16 +234,14 @@ public:
     // We only take the second entry for libc and libstdc++,
     // and only the first for the file.
     int globalCount = 0;
-
-  
+    int prevRegionNumb = 0;
+ 
     while (getline(iMapfile, curentry)) {
-
       pmap p (curentry.c_str());
 
       // Globals are read-write and copy-on-write = rw-p.
       if (strstr(p.prot, "rw-p") != NULL) {
-	      PRINF("start startaddr %p endaddr %p\n", (void*)p.startaddr, (void*)p.endaddr); 
-
+        //PRINT("p.file %p\n", p.file); 
 	      // Are we in the application, the C library, or the C++ library?
 	      // If so, add that region to the array.
 	      if((strstr(p.file, _filename) != NULL) ||
@@ -250,17 +250,40 @@ public:
 	         (strstr(p.file, "libpthread") != NULL))
         {
           globalCount++;
+      //    fprintf(stderr, "p.file %s regionNumb %d\n", p.file, *regionNumb);
 
           if(globalCount == 1) {
 	          regions[*regionNumb].start = (void *) p.startaddr;
 	          regions[*regionNumb].end   = (void *) p.endaddr;
+            (*regionNumb)++;
+          //  PRINT("region number %d\n", *regionNumb);
+            assert(*regionNumb <= xdefines::NUM_GLOBALS);
           }
           else {
+            prevRegionNumb = *regionNumb - 1;
             // We only update the end address when there are more than one entry.
-            // We assume that two map entries are continuous!! Fixme if not.
-	          regions[*regionNumb].end   = (void *) p.endaddr;
+            if(regions[prevRegionNumb].end != (void *)p.startaddr) {
+              // We assume that two map entries are continuous!! Fixme if not.
+//              PRINT("previous end %p current startaddr %lx\n", regions[prevRegionNumb].end, p.startaddr);
+              regions[*regionNumb].start = (void *) p.startaddr;
+              regions[*regionNumb].end   = (void *) p.endaddr;
+              (*regionNumb)++;
+            }
+            else {
+              // Combine the new entry to the previous entry
+              assert(regions[prevRegionNumb].end == (void *)p.startaddr);
+	            regions[prevRegionNumb].end   = (void *) p.endaddr;
+            }
           } 
 	      }
+        else if(globalCount > 0) {
+          prevRegionNumb = *regionNumb - 1;
+          
+          // Those marked as "[heap]" should be added to the same map if existing.
+          if(regions[prevRegionNumb].end == (void *)p.startaddr) {
+	          regions[prevRegionNumb].end   = (void *) p.endaddr;
+          }
+        }
       }
       else {
         globalCount = 0;
