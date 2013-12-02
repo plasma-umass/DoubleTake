@@ -58,9 +58,11 @@ public:
 
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
-  //    printf("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
+      fprintf(stderr, "Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end); 
       _maps[i].initialize(_gRegions[i].start, (size_t)((intptr_t)_gRegions[i].end - (intptr_t)_gRegions[i].start));
     }
+
+    while(1);
   }
 
   void finalize() {

@@ -217,7 +217,6 @@ public:
   /// @brief Collect all global regions.
   void getGlobalRegions(regioninfo * regions, int * regionNumb) {
     //    printf ("getting global regions.\n");
-
     using namespace std;
     ifstream iMapfile;
     string curentry;
@@ -232,11 +231,9 @@ public:
     // Now we analyze each line of this maps file, looking for globals.
     // We only take the second entry for libc and libstdc++,
     // and only the first for the file.
+    int globalCount = 0;
 
-    int fileCount = 0;
-    int libcCount = 0;
-    int libstdcCount = 0;
-
+  
     while (getline(iMapfile, curentry)) {
 
       pmap p (curentry.c_str());
@@ -247,30 +244,26 @@ public:
 
 	      // Are we in the application, the C library, or the C++ library?
 	      // If so, add that region to the array.
+	      if((strstr(p.file, _filename) != NULL) ||
+           (strstr(p.file, "libc-") != NULL) ||
+	         (strstr(p.file, "libstdc++") != NULL) ||
+	         (strstr(p.file, "libpthread") != NULL))
+        {
+          globalCount++;
 
-	      if (strstr(p.file, _filename) != NULL) {
-	        fileCount++;
+          if(globalCount == 1) {
+	          regions[*regionNumb].start = (void *) p.startaddr;
+	          regions[*regionNumb].end   = (void *) p.endaddr;
+          }
+          else {
+            // We only update the end address when there are more than one entry.
+            // We assume that two map entries are continuous!! Fixme if not.
+	          regions[*regionNumb].end   = (void *) p.endaddr;
+          } 
 	      }
-
-	      if (strstr(p.file, "libc-") != NULL) {
-	        libcCount++;
-	      }
-
-	      if (strstr(p.file, "libstdc++") != NULL) {
-	        libstdcCount++;
-	      }
-
-
-	      if (((fileCount == 1) && (strstr(p.file, _filename) != NULL))
-	          || ((libcCount == 2) && (strstr(p.file, "libc-") != NULL))
-	          || ((libstdcCount == 2) && (strstr(p.file, "libstdc++") != NULL)))
-	      {
-	        //	    printf ("adding a global region: %s, start=%lx, end=%lx\n", p.file, p.startaddr, p.endaddr);
-	        regions[*regionNumb].start = (void *) p.startaddr;
-	        regions[*regionNumb].end   = (void *) p.endaddr;
-	        (*regionNumb)++;
-	      }
-	  
+      }
+      else {
+        globalCount = 0;
       }
     }
     iMapfile.close();

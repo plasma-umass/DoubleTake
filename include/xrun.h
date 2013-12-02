@@ -116,7 +116,7 @@ public:
 //    PRINF("starting!!!!!\n");
     epochBegin();
 
-    //PRINT("Starting in xrun\n");
+    PRINT("Starting in xrun\n");
   }
   
   void finalize()
