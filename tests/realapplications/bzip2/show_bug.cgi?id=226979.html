@@ -1,0 +1,1436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                      "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+  <head>
+    <title>Bug 226979 &ndash; Buffer overflow in bzip2's bzip2recover</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">  
+    <meta name="verify-v1" content="1hLjVPyIYh2cX7CL+s5A0k6pKt2FRq7/FSQ/cqGi9J8=">
+    <meta name="y_key" content="1cdf458efae704ba">
+
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+<link rel="Top" href="https://bugzilla.redhat.com/">
+
+  
+
+
+  
+    <link rel="Show" title="Dependency Tree"
+          href="showdependencytree.cgi?id=226979&amp;hide_resolved=1">
+      <link rel="Show" title="Dependency Graph"
+            href="showdependencygraph.cgi?id=226979">
+
+      <link rel="Show" title="Bug Activity"
+            href="show_activity.cgi?id=226979">
+      <link rel="Show" title="Printer-Friendly Version"
+            href="show_bug.cgi?format=multiple&amp;id=226979">
+
+
+
+    
+    
+    <link href="skins/standard/global.css?1345790098"
+          rel="alternate stylesheet" 
+          title="Classic"><link href="js/yui/assets/skins/sam/autocomplete.css?1334045264" rel="stylesheet"
+        type="text/css" ><link href="js/yui/assets/skins/sam/calendar.css?1334045264" rel="stylesheet"
+        type="text/css" ><link href="skins/standard/global.css?1345790098" rel="stylesheet"
+        type="text/css" ><link href="skins/standard/show_bug.css?1346634376" rel="stylesheet"
+        type="text/css" ><link href="extensions/VCS/web/style.css?1334045264" rel="stylesheet"
+        type="text/css" ><!--[if lte IE 7]>
+      
+
+
+
+  <link href="skins/standard/IE-fixes.css?1334045264" rel="stylesheet"
+        type="text/css" >
+<![endif]-->
+
+    <link href="skins/contrib/RedHat/global.css?1353454362" rel="stylesheet"
+        type="text/css" title="RedHat"><link href="skins/contrib/RedHat/show_bug.css?1351471672" rel="stylesheet"
+        type="text/css" title="RedHat">
+<link href="skins/contrib/Dusk/global.css?1345790098" rel="alternate stylesheet"
+        type="text/css" title="Dusk">
+
+    
+
+    
+
+    
+<script type="text/javascript" src="js/yui/yahoo-dom-event/yahoo-dom-event.js?1334045264"></script><script type="text/javascript" src="js/yui/cookie/cookie-min.js?1334045264"></script><script type="text/javascript" src="js/yui/datasource/datasource-min.js?1334045264"></script><script type="text/javascript" src="js/yui/connection/connection-min.js?1334045264"></script><script type="text/javascript" src="js/yui/json/json-min.js?1334045264"></script><script type="text/javascript" src="js/yui/autocomplete/autocomplete-min.js?1334045264"></script><script type="text/javascript" src="js/yui/calendar/calendar-min.js?1334045264"></script><script type="text/javascript" src="js/global.js?1334045264"></script>
+
+    
+    <script src="js/cookies.js" type="text/javascript" language="JavaScript"></script>
+    
+
+    <script type="text/javascript">
+    <!--
+        YAHOO.namespace('bugzilla');
+        YAHOO.util.Event.addListener = function (el, sType, fn, obj, overrideContext) {
+               if ( ("onpagehide" in window || YAHOO.env.ua.gecko) && sType === "unload") { sType = "pagehide"; };
+               var capture = ((sType == "focusin" || sType == "focusout") && !YAHOO.env.ua.ie) ? true : false;
+               return this._addListener(el, this._getType(sType), fn, obj, overrideContext, capture);
+         };
+        if ( "onpagehide" in window || YAHOO.env.ua.gecko) {
+            YAHOO.util.Event._simpleRemove(window, "unload", 
+                                           YAHOO.util.Event._unload);
+        }
+        
+        function unhide_language_selector() { 
+            YAHOO.util.Dom.removeClass(
+                'lang_links_container', 'bz_default_hidden'
+            ); 
+        } 
+        YAHOO.util.Event.onDOMReady(unhide_language_selector);
+
+        
+        var BUGZILLA = {
+            param: {
+                cookiepath: '\/',
+                maxusermatches: 1000
+            },
+            constant: {
+                COMMENT_COLS: 80
+            },
+            string: {
+                
+
+                attach_desc_required:
+                    'You must enter a Description for this attachment.',
+                component_required:
+                    'You must select a Component for this bug.',
+                description_required:
+                    'You must enter a Description for this bug.',
+                short_desc_required:
+                    'You must enter a Summary for this bug.',
+                version_required:
+                    'You must select a Version for this bug.'
+            }
+        };
+
+    if( !document.location.href.match(/show_bug\.cgi/) && history && history.replaceState ) {
+      history.replaceState( null, 
+                         "Bug 226979 – Buffer overflow in bzip2\'s bzip2recover",  
+                         "show_bug.cgi?id=226979" );
+      document.title = "Bug 226979 – Buffer overflow in bzip2\'s bzip2recover";
+    }
+    // -->
+    </script>
+<script type="text/javascript" src="js/util.js?1334045264"></script><script type="text/javascript" src="js/field.js?1345790098"></script><script type="text/javascript" src="js/productform.js?1336993663"></script><script type="text/javascript" src="js/rpc-min.js?1334045264"></script><script type="text/javascript" src="js/show_bug.js?1336993663"></script>
+
+    <script type="text/javascript">
+      // REDHAT EXTENSION 441550
+      // Set use_ajax for use in the js files
+      var use_ajax = '1';
+      // REDHAT EXTENSION 426374
+      // Server URL is set here since we cannot access urlbase
+      // in the js/ files.
+      var server_url = 'https://bugzilla.redhat.com/xmlrpc.cgi';
+    </script>
+
+    
+
+    
+    <link rel="search" type="application/opensearchdescription+xml"
+                       title="Red Hat Bugzilla" href="./search_plugin.cgi">
+    <link rel="shortcut icon" href="images/favicon.ico" >
+  </head>
+
+
+
+  
+  <body onload="
+                setcookie('Bugzilla_javascript',1,1,'/','bugzilla.redhat.com',0);"
+        class="bugzilla-redhat-com bz_bug bz_status_CLOSED bz_product_Fedora bz_component_bzip2 bz_bug_226979 yui-skin-sam">
+
+
+
+<div id="header">
+<div id="banner">
+  </div>
+
+<table border="0" cellspacing="0" cellpadding="0" id="titles">
+<tr>
+    <td id="title">
+      <p>Red Hat Bugzilla &ndash; Bug&nbsp;226979</p>
+    </td>
+
+    <td id="subtitle">
+      <p class="subheader">Buffer overflow in bzip2's bzip2recover</p>
+    </td>
+
+    <td id="information">
+      <p class="header_addl_info">Last modified: 2007-11-30 17:11:56 EST</p>
+    </td>
+</tr>
+</table>
+
+<table id="lang_links_container" cellpadding="0" cellspacing="0"
+       class="bz_default_hidden"><tr><td>
+</td></tr></table>
+<ul class="links">
+  <li><a href="./">Home</a></li>
+  <li><span class="separator">| </span><a href="enter_bug.cgi">New</a></li>
+  <li><span class="separator">| </span><a href="query.cgi">Search</a></li>
+<li><span class="separator"> | </span><a href="page.cgi?id=browse.html">Browse</a></li>
+
+  <li class="form">
+    <span class="separator">| </span>
+    <form action="buglist.cgi" method="get"
+        onsubmit="if (this.quicksearch.value == '')
+                  { alert('Please enter one or more search terms first.');
+                    return false; } return true;">
+    <input class="txt" type="text" id="quicksearch_top" name="quicksearch" 
+           title="Quick Search" value="">
+    <input class="btn" type="submit" value="Search" 
+           id="find_top"></form>
+  <a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">[?]</a></li>
+
+  <li><span class="separator">| </span><a href="report.cgi">Reports</a></li>
+
+  <li>
+      <span class="separator">| </span>
+        <a href="request.cgi">Requests</a></li>
+
+  <li>
+        <span class="separator">| </span>
+        <a href="/docs/en/html/bug_page.html" target="_blank">Help</a>
+      </li>
+    
+      <li id="new_account_container_top">
+        <span class="separator">| </span>
+        <a href="createaccount.cgi">New&nbsp;Account</a>
+      </li>
+
+    <li id="mini_login_container_top">
+  <span class="separator">| </span>
+  <a id="login_link_top" href="https://bugzilla.redhat.com/show_bug.cgi?id=226979&amp;GoAheadAndLogIn=1"
+     onclick="return show_mini_login_form('_top')">Log In</a>
+
+  
+  <form action="https://bugzilla.redhat.com/show_bug.cgi?id=226979" method="POST" 
+        class="mini_login bz_default_hidden"
+        id="mini_login_top"
+        onsubmit="return check_mini_login_fields( '_top' );"
+  >
+    <input id="Bugzilla_login_top" 
+           class="bz_login"
+           name="Bugzilla_login"
+           title="Login"
+           onfocus="mini_login_on_focus('_top')"
+    >
+    <input class="bz_password" 
+           id="Bugzilla_password_top" 
+           name="Bugzilla_password"
+           type="password"
+           title="Password"
+    >
+    <input class="bz_password bz_default_hidden bz_mini_login_help" type="text" 
+           id="Bugzilla_password_dummy_top" value="password"
+           title="Password"
+           onfocus="mini_login_on_focus('_top')"
+    >
+    <input type="submit" name="GoAheadAndLogIn" value="Log in" 
+            id="log_in_top">
+    <script type="text/javascript">
+      mini_login_constants = {
+          "login" : "login",
+          "warning" : "You must set the login and password before logging in."
+      };
+      
+      if (YAHOO.env.ua.gecko || YAHOO.env.ua.ie || YAHOO.env.ua.opera) {
+          YAHOO.util.Event.onDOMReady(function() {
+              init_mini_login_form('_top');
+          });
+      }
+      else {
+          YAHOO.util.Event.on(window, 'load', function () {
+              window.setTimeout(function() {
+                  init_mini_login_form('_top');
+              }, 200);
+          });
+    }
+    </script>
+    <a href="#" onclick="return hide_mini_login_form('_top')">[x]</a>
+  </form>
+</li>
+<li id="forgot_container_top">
+  <span class="separator">| </span>
+  <a id="forgot_link_top" href="https://bugzilla.redhat.com/show_bug.cgi?id=226979&amp;GoAheadAndLogIn=1#forgot"
+     onclick="return show_forgot_form('_top')">Forgot Password</a>
+  <form action="token.cgi" method="post" id="forgot_form_top"
+        class="mini_forgot bz_default_hidden">
+    <label for="login_top">Login:</label>
+    <input type="text" name="loginname" size="20" id="login_top">
+    <input id="forgot_button_top" value="Reset Password" 
+           type="submit">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" id="token" name="token" value="1360890174-e5f5f9a3e26759ee78a8a60c782cdbab">
+    <a href="#" onclick="return hide_forgot_form('_top')">[x]</a>
+  </form>
+</li>
+  
+  
+</ul>
+</div> 
+
+<div id="bugzilla-body">
+
+<ul class="related_actions">
+    <li><a href="show_bug.cgi?format=multiple&amp;id=226979">Format For Printing</a></li>
+    <li>&nbsp;-&nbsp;<a href="show_bug.cgi?ctype=xml&amp;id=226979">XML</a></li>
+    <li>&nbsp;-&nbsp;<a href="enter_bug.cgi?cloned_bug_id=226979">Clone This Bug</a></li>
+    <li>&nbsp;-&nbsp;<a href="#c3">Last Comment</a></li>        
+    </ul>
+
+
+<div class="navigation">
+  
+  <i><font color="#777777">First</font></i>
+  <i><font color="#777777">Last</font></i>
+  <i><font color="#777777">Prev</font></i>
+  <i><font color="#777777">Next</font></i>
+  &nbsp;&nbsp;
+  <i><font color="#777777">This bug is not in your last
+    search results.</font></i>
+</div>
+<script type="text/javascript">
+<!--
+  /* Outputs a link to call replyToComment(); used to reduce HTML output */
+  function addReplyLink(id, real_id) {
+      /* XXX this should really be updated to use the DOM Core's
+       * createElement, but finding a container isn't trivial.
+       */
+        document.write('[<a href="#add_comment" onclick="replyToComment(' + 
+                       id + ',' + real_id + '); return false;">reply<' + '/a>]');
+  }
+
+  /* Adds the reply text to the `comment' textarea */
+  function replyToComment(id, real_id) {
+      var prefix = "(In reply to comment #" + id + ")\n";
+      var replytext = "";
+        /* pre id="comment_name_N" */
+        var text_elem = document.getElementById('comment_text_'+id);
+        var text = getText(text_elem);
+        replytext = prefix + wrapReplyText(text);
+
+
+      /* <textarea id="comment"> */
+      var textarea = document.getElementById('comment');
+      textarea.value += replytext;
+
+      textarea.focus();
+  }
+
+  if (typeof Node == 'undefined') {
+      /* MSIE doesn't define Node, so provide a compatibility object */
+      window.Node = {
+          TEXT_NODE: 3,
+          ENTITY_REFERENCE_NODE: 5
+      };
+  }
+
+  /* Concatenates all text from element's childNodes. This is used
+   * instead of innerHTML because we want the actual text (and
+   * innerText is non-standard).
+   */
+  function getText(element) {
+      var child, text = "";
+      for (var i=0; i < element.childNodes.length; i++) {
+          child = element.childNodes[i];
+          var type = child.nodeType;
+          if (type == Node.TEXT_NODE || type == Node.ENTITY_REFERENCE_NODE) {
+              text += child.nodeValue;
+          } else {
+              /* recurse into nodes of other types */
+              text += getText(child);
+          }
+      }
+      return text;
+  }
+
+
+  
+  setcookie('Bugzilla_javascript',1,1,'/','bugzilla.redhat.com',0);
+
+//-->
+</script>
+
+<form name="changeform" id="changeform" method="post" action="process_bug.cgi">
+
+
+
+
+
+  <input type="hidden" name="delta_ts" value="2007-11-30 17:11:56">
+  <input type="hidden" name="longdesclength" value="4">
+  <input type="hidden" name="id" value="226979">
+  <input type="hidden" name="token" value="1360890174-9abc29e17eab433b2a6c0c875bd44b39">
+<div class="bz_alias_short_desc_container edit_form">
+
+    
+    
+
+    <a href="show_bug.cgi?id=226979"><b>Bug&nbsp;226979</b></a> -<span id="summary_alias_container" class="bz_default_hidden"> 
+    <span id="short_desc_nonedit_display">Buffer overflow in bzip2's bzip2recover</span>
+    </span>
+
+    
+    
+
+    
+    
+
+     </span>
+       
+    <div id="summary_alias_input">
+      <table id="summary"> 
+          <tr>
+            <td>
+              <label 
+                for="alias" 
+                title="a name for the bug that can be used in place of its ID number,  e.g. when adding it to a list of dependencies"
+                >Aliases</label>:</td>
+            <td>
+            </td>
+          </tr>
+        
+        <tr>
+          <td>
+            <label accesskey="s" for="short_desc"><u>S</u>ummary</label>:
+          </td>
+          <td>Buffer overflow in bzip2's bzip2recover
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <script type="text/javascript">
+    hideAliasAndSummary('Buffer overflow in bzip2\'s bzip2recover', '');
+  </script>
+  <table class="edit_form">
+    <tr>
+      
+      <td id="bz_show_bug_column_1" class="bz_show_bug_column">     
+        <table>
+          <tr>
+    <td class="field_label">
+      <b><a href="page.cgi?id=fields.html#status">Status</a></b>:
+    </td>
+    <td id="bz_field_status">
+      <span id="static_bug_status">CLOSED
+          RAWHIDE
+      </span>
+    </td>
+  </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+<tr>
+        <td class="field_label">
+          <label for="newalias" accesskey="l"><b>Aliases</b>:</label>
+        </td>
+        <td>
+          <label for="bugaliaslist">
+              None
+          </label>
+          <span id="alias_edit_area_showhide_container" class="bz_default_hidden">
+            (<a href="#" id="alias_edit_area_showhide">edit</a>)
+          </span>
+          <br>
+          <div id="alias_edit_area">
+            <div>
+            </div>
+          </div>
+          <script type="text/javascript">
+            hideEditableField( 'alias_edit_area_showhide_container', 
+                               'alias_edit_area', 
+                               'alias_edit_area_showhide', 
+                               '', 
+                               '');  
+          </script>
+        </td>
+    </tr>
+<tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          <tr><th class="field_label "
+    id="field_label_product">
+
+
+  <a 
+      title="Bugs are categorised into Products and Components. Select a Classification to narrow down this list."
+      class="field_help_link"
+      href="describecomponents.cgi"
+  >Product:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_product" >Fedora</td>
+    </tr>
+
+    
+    <tr class="bz_default_hidden"><th class="field_label "
+    id="field_label_classification">
+
+
+  <a 
+      title="Bugs are categorised into Classifications, Products and Components. classifications is the top-level categorisation."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#classification"
+  >Classification:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_classification" >Fedora</td>
+    </tr>
+        
+    
+    
+    <tr><th class="field_label "
+    id="field_label_component">
+
+
+  <a 
+      title="Components are second-level categories; each belongs to a particular Product. Select a Product to narrow down this list."
+      class="field_help_link"
+      href="describecomponents.cgi?product=Fedora"
+  >Component:</a>
+
+</th>
+      <td>
+        
+
+            <input type="hidden" id="component" name="component" value="bzip2">bzip2
+        
+        
+        (<a href="buglist.cgi?component=bzip2&product=Fedora" 
+            target="new_window">Show other bugs</a>)
+        
+      </td>
+    </tr>
+    <tr>
+      <td class="field_label">
+        <label for="version"><b>Version(s)</b></label>:
+      </td>
+<td>6</td>
+    </tr>
+        
+    
+        
+    <tr>
+      <td class="field_label">
+        <label for="rep_platform" accesskey="h"><b>Platform</b></label>:
+      </td>
+      <td class="field_value">All
+       Linux
+       <script type="text/javascript">
+         assignToDefaultOnChange(['product', 'component']);
+       </script>
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          
+          <tr>
+      <td class="field_label">
+        <label for="priority" accesskey="i">
+          <b><a href="page.cgi?id=fields.html#priority">Pr<u>i</u>ority</a></b></label>:
+      </td>
+      <td>low
+          <span class="field_label"><b><a href="page.cgi?id=fields.html#bug_severity">Severity</a></b></label>:</span>
+       low
+      </td>
+    </tr>
+
+      <tr>
+        <td class="field_label">
+          <label for="target_milestone">
+              <a href="page.cgi?id=fields.html#target_milestone">
+            Target&nbsp;Milestone</a></label>:
+        </td><td>---</td>
+      </tr>
+  
+      <tr>
+        <td class="field_label">
+          <label for="target_release">
+              <a href="page.cgi?id=fields.html#target_release">
+            Target&nbsp;Release</a></label>:
+        </td><td>---</td>
+      </tr>            
+          
+          <tr>
+      <td class="field_label">
+        <b><a href="page.cgi?id=fields.html#assigned_to">Assigned To</a></b>:
+      </td>
+      <td><span class="vcard redhat_user"><span class="fn">Ivana Varekova</span>
+</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="field_label">
+        <label for="qa_contact" accesskey="q"><b><u>Q</u>A Contact</b></label>:
+      </td>
+      <td><span class="vcard redhat_user"><span class="fn">Ben Levenson</span>
+</span>
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          <tr><th class="field_label "
+    id="field_label_bug_file_loc">
+
+    <label for="bug_file_loc" accesskey="u">
+
+  <a 
+      title="Bugs can have a URL associated with them - for example, a pointer to a web site where the problem is seen."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#bug_file_loc"
+  >URL:</a>
+</label>
+</th>
+    <td>
+      <span id="bz_url_input_area">
+      </span>
+    </td>
+  </tr>
+  
+    <tr>
+      <td class="field_label">
+        <label for="status_whiteboard" accesskey="w"><b><u>W</u>hiteboard</b></label>:
+      </td><td colspan="2">impact=none  
+  </td>
+    </tr>
+  
+    <tr>
+      <td class="field_label">
+        <label for="keywords" accesskey="k">
+          <b><a href="describekeywords.cgi"><u>K</u>eywords</a></b></label>:
+      </td>
+      <td class="field_value" colspan="2">Reopened
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          
+          <tr><th class="field_label "
+    id="field_label_dependson">
+
+
+  <a 
+      title="The bugs listed here must be resolved before this bug can be resolved."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#dependson"
+  >Depends On:</a>
+
+</th>
+
+  <td>
+    <span id="dependson_input_area">
+    </span>
+    
+  </td>
+  </tr>
+  
+  <tr><th class="field_label "
+    id="field_label_blocked">
+
+
+  <a 
+      title="This bug must be resolved before the bugs listed in this field can be resolved."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#blocked"
+  >Blocks:</a>
+
+</th>
+
+  <td>
+    <span id="blocked_input_area">
+    </span>
+    
+  </td>
+  
+  <tr>
+    <th>&nbsp;</th>
+  
+    <td colspan="2" align="left" id="show_dependency_tree_or_graph">
+      Show dependency <a href="showdependencytree.cgi?id=226979&amp;hide_resolved=1">tree</a>
+  
+        /&nbsp;<a href="showdependencygraph.cgi?id=226979">graph</a>
+    </td>
+  </tr>
+          
+        </table>
+      </td>
+      <td>
+        <div class="bz_column_spacer">&nbsp;</div>
+      </td>
+      
+      <td id="bz_show_bug_column_2" class="bz_show_bug_column">
+        <table cellpadding="3" cellspacing="1">
+        <tr>
+    <td class="field_label">
+      <b>Reported</b>:
+    </td>
+    <td>2007-02-02 08:39 EST by <span class="vcard redhat_user"><span class="fn">Lubomir Kundrak</span>
+</span>
+    </td>
+  </tr>
+  
+  <tr>
+    <td class="field_label">
+      <b> Modified</b>:
+    </td>
+    <td>2007-11-30 17:11 EST 
+      (<a href="show_activity.cgi?id=226979">History</a>)
+    </td>
+  
+  </tr>
+         <tr>
+      <td class="field_label">
+        <label for="newcc" accesskey="a"><b>CC List</b>:</label>
+      </td>
+      <td>1 
+          user
+          <span id="cc_edit_area_showhide_container" class="bz_default_hidden">
+            (<a href="#" id="cc_edit_area_showhide">show</a>)
+          </span>
+        <div id="cc_edit_area">
+          <br>
+            <select id="cc" multiple="multiple" size="5">
+                <option value="sgrubb">sgrubb</option>
+            </select>
+        </div>
+          <script type="text/javascript">
+            hideEditableField( 'cc_edit_area_showhide_container', 
+                               'cc_edit_area', 
+                               'cc_edit_area_showhide', 
+                               '', 
+                               '');  
+          </script>
+      </td>
+    </tr>
+         <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+<tr><th class="field_label "
+    id="field_label_see_also">
+
+
+  <a 
+      title="This allows you to refer to bugs in other installations. You can enter a URL to a bug in the 'Add Bug URLs' field to note that that bug is related to this one. You can enter multiple URLs at once by separating them with a comma. You should normally use this field to refer to bugs in other installations. For bugs in this installation, it is better to use the Depends on and Blocks fields."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#see_also"
+  >See Also:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_see_also" ></td>
+    </tr> 
+         <tr><th class="field_label "
+    id="field_label_cf_fixed_in">
+
+
+  <a 
+      title="The full package version. PGM uses to check if brew build is in errata tool."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_fixed_in"
+  >Fixed In Version:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_fixed_in"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_doc_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_doc_type"
+  >Doc Type:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_doc_type"  colspan="2">Bug Fix</td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_release_notes">
+
+
+  <a 
+      title="A custom Large Text Box field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_release_notes"
+  >Doc Text:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_release_notes"  colspan="2">
+      <div class="uneditable_textarea"></div></td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_story_points">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_story_points"
+  >Story Points:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_story_points"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_clone_of">
+
+
+  <a 
+      title="The bug listed here was the bug cloned to create this bug"
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_clone_of"
+  >Clone Of:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_clone_of"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_environment">
+
+
+  <a 
+      title="A custom Large Text Box field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_environment"
+  >Environment:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_environment"  colspan="2">
+      <div class="uneditable_textarea"></div></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_last_closed">
+
+
+  <a 
+      title="When this bug was last marked as closed. Used for statistical purposes."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_last_closed"
+  >Last Closed:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_last_closed"  colspan="2">2007-02-06 10:00:03</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_type"
+  >Type:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_type"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_regression_status">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_regression_status"
+  >Regression:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_regression_status"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_mount_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_mount_type"
+  >Mount Type:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_mount_type"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_documentation_action">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_documentation_action"
+  >Documentation:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_documentation_action"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_crm">
+
+
+  <a 
+      title="A custom Free Text field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_crm"
+  >CRM:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_crm"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_verified_branch">
+
+
+  <a 
+      title="A custom Free Text field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_verified_branch"
+  >Verified Versions:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_verified_branch"  colspan="2"></td>
+    </tr>
+         <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+         
+                
+
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <hr id="bz_top_half_spacer">
+      </td>
+    </tr>
+  </table>
+
+  <table id="bz_big_form_parts" cellspacing="0" cellpadding="0"><tr>
+  <td>
+
+    
+    
+
+    
+<script type="text/javascript">
+<!--
+function toggle_display(link) {
+    var table = document.getElementById("attachment_table");
+    var view_all = document.getElementById("view_all");
+    var hide_obsolete_url_parameter = "&hide_obsolete=1";
+    // Store current height for scrolling later
+    var originalHeight = table.offsetHeight;
+    var rows = YAHOO.util.Dom.getElementsByClassName(
+        'bz_tr_obsolete', 'tr', table);
+
+    for (var i = 0; i < rows.length; i++) {
+        bz_toggleClass(rows[i], 'bz_default_hidden');
+    }
+
+    if (YAHOO.util.Dom.hasClass(rows[0], 'bz_default_hidden')) {
+        link.innerHTML = "Show Obsolete";
+        view_all.href = view_all.href + hide_obsolete_url_parameter 
+    }
+    else {
+        link.innerHTML = "Hide Obsolete";
+        view_all.href = view_all.href.replace(hide_obsolete_url_parameter,"");
+    }
+
+    var newHeight = table.offsetHeight;
+    // This scrolling makes the window appear to not move at all.
+    window.scrollBy(0, newHeight - originalHeight);
+
+    return false;
+}
+//-->
+</script>
+
+<br>
+<table id="attachment_table" cellspacing="0" cellpadding="4">
+  <tr id="a0">
+    
+    <th align="left">
+      Attachments
+    </th>
+    <th colspan="2" align="right">
+      <a href="page.cgi?id=terms-conditions.html">(Terms of Use)</a>
+    </th>
+    
+  </tr>
+
+
+
+  <tr class="bz_attach_footer">
+    <td colspan="3">
+        <a href="attachment.cgi?bugid=226979&amp;action=enter">Add an attachment</a>
+        (proposed patch, testcase, etc.)
+    </td>
+  </tr>
+</table>
+<br>
+
+    
+
+    
+    
+
+
+  </td>
+  <td><div id="bz_group_edit_container" class="bz_default_hidden">
+    <div class="bz_group_visibility_section">
+      <label><b>Groups:</b></label>
+        &nbsp;None
+        (<a href="#" id="bz_group_edit_action"
+        onclick="updateSelectField('groups');">edit</a>)
+    </div>
+  </div>
+  <div id="bz_group_visibility_container" class="bz_group_visibility_section">
+
+
+
+
+          <div id="bz_restrict_group_visibility_help">
+            <b>Only users in any 
+              of the selected groups can view this bug:</b>
+             <p class="instructions">
+               Unchecking all boxes makes this a more public bug.
+             </p>
+          </div>
+
+
+      <input type="checkbox" value="private"
+             name="groups" id="group_218">
+      <label for="group_218">Private Group (Bug is not viewable by public)</label>
+      <br>
+
+
+
+
+      <input type="checkbox" value="security"
+             name="groups" id="group_71">
+      <label for="group_71">Security Sensitive Bug (Check if this is a security related issue and should not be public)</label>
+      <br>
+
+        <p class="instructions">Only members of a group can change the 
+          visibility of a bug for that group.</p>
+
+  </div> 
+
+  <script type="text/javascript">
+    hideEditableField(
+        'bz_group_edit_container',
+        'bz_group_visibility_container',
+        'bz_group_edit_action');
+  </script>
+  </td>
+  </tr></table>
+
+  
+  <div id="comments"><script src="js/comments.js?1334925785" type="text/javascript">
+</script>
+
+
+
+
+
+
+
+<!-- This auto-sizes the comments and positions the collapse/expand links 
+     to the right. -->
+
+<table class="bz_comment_table" cellpadding="0" cellspacing="0" width="100%"><tr>
+
+<td>
+<div id="c0" class="bz_comment bz_first_comment">
+
+      <div class="bz_first_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=226979#c0">Description</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Lubomir Kundrak</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2007-02-02 08:39:31 EST
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Description of problem:
+
+bzip2-1.0.3/bzip2recover.c copies argv[0] to a statically sized buffer
+progName which is declared as:
+
+ 92 #define BZ_MAX_FILENAME 2000
+ 93
+ 94 Char inFileName[BZ_MAX_FILENAME];
+ 95 Char outFileName[BZ_MAX_FILENAME];
+ 96 Char progName[BZ_MAX_FILENAME];
+
+here, in main():
+
+344    strcpy ( progName, argv[0] );
+
+If we trick argv[0] into being more than 2000 characters long, we can
+overwrite arbitrary locations in heap following the progName[] buffer.
+If compiler put buffers that store file names after this location,
+the exploitation of the flaw could lead to arbitrary file overwrite,
+however this does not happen.
+
+Version-Release number of selected component (if applicable):
+
+At least FC-6 and RHEL-5 bzip2recover. Seems like the code originates from
+mid-90's, so it likely affects other releases.
+
+How reproducible:
+
+Allways.
+
+Steps to Reproduce:
+
+$ DIR=$(perl -e 'print (((&quot;x&quot; x 200).&quot;/&quot;) x 20)')
+$ mkdir -p $DIR
+$ ln -s $(which bzip2recover) $DIR
+$ $DIR/bzip2recover
+*** buffer overflow detected ***
+  
+Actual results:
+
+In releases with FORTIFY_SOURCE, glibc catches the bug.
+In other cases a random corruption on heap occurs, possibly causing
+the program to receive a SIGSEGV signal.
+
+Additional info:
+
+This has no security implications, as is would need a victim to
+voluntarily interact with the attack mechanism and all he would get
+would be to execute commands as himself.</pre>
+    </div>
+  <div id="c1" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=226979#c1">Comment 1</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Ivana Varekova</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2007-02-05 06:31:31 EST
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Fixed in bzip2-1.0.4-2.fc7 (bzip2-1.0.3-4.fc6  in fc6 branch).</pre>
+    </div>
+  
+  <div id="c3" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=226979#c3">Comment 3</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Ivana Varekova</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2007-02-06 09:59:22 EST
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Fixed in bzip2-1.0.4-3.fc7 (bzip2-1.0.3-6.fc6  in fc6 branch).
+
+</pre>
+    </div>
+  
+
+
+  
+
+</td>
+<td>
+</td>
+</tr></table>
+  </div>
+
+    <hr><div id="add_comment" class="bz_section_additional_comments">
+      <table>
+        <tr>
+          <td>
+            <fieldset>
+              <legend>Note</legend>
+              You need to
+              <a href="show_bug.cgi?id=226979&amp;GoAheadAndLogIn=1">log in</a>
+              before you can comment on or make changes to this bug.
+            </fieldset>
+          </td>
+        </tr> 
+      </table>
+  </div>        
+
+</form>
+
+<hr>
+<ul class="related_actions">
+    <li><a href="show_bug.cgi?format=multiple&amp;id=226979">Format For Printing</a></li>
+    <li>&nbsp;-&nbsp;<a href="show_bug.cgi?ctype=xml&amp;id=226979">XML</a></li>
+    <li>&nbsp;-&nbsp;<a href="enter_bug.cgi?cloned_bug_id=226979">Clone This Bug</a></li>
+    
+    <li>&nbsp;-&nbsp;<a href="#">Top of page </a></li>        
+    </ul>
+
+
+<div class="navigation">
+  
+  <i><font color="#777777">First</font></i>
+  <i><font color="#777777">Last</font></i>
+  <i><font color="#777777">Prev</font></i>
+  <i><font color="#777777">Next</font></i>
+  &nbsp;&nbsp;
+  <i><font color="#777777">This bug is not in your last
+    search results.</font></i>
+</div>
+
+<br>
+</div>
+
+
+
+<div id="footer">
+  <div class="intro"></div>
+
+
+
+
+<ul id="useful-links">
+  <li id="links-actions"><ul class="links">
+  <li><a href="./">Home</a></li>
+  <li><span class="separator">| </span><a href="enter_bug.cgi">New</a></li>
+  <li><span class="separator">| </span><a href="query.cgi">Search</a></li>
+<li><span class="separator"> | </span><a href="page.cgi?id=browse.html">Browse</a></li>
+
+  <li class="form">
+    <span class="separator">| </span>
+    <form action="buglist.cgi" method="get"
+        onsubmit="if (this.quicksearch.value == '')
+                  { alert('Please enter one or more search terms first.');
+                    return false; } return true;">
+    <input class="txt" type="text" id="quicksearch_bottom" name="quicksearch" 
+           title="Quick Search" value="">
+    <input class="btn" type="submit" value="Search" 
+           id="find_bottom"></form>
+  <a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">[?]</a></li>
+
+  <li><span class="separator">| </span><a href="report.cgi">Reports</a></li>
+
+  <li>
+      <span class="separator">| </span>
+        <a href="request.cgi">Requests</a></li>
+
+  <li>
+        <span class="separator">| </span>
+        <a href="/docs/en/html/bug_page.html" target="_blank">Help</a>
+      </li>
+    
+      <li id="new_account_container_bottom">
+        <span class="separator">| </span>
+        <a href="createaccount.cgi">New&nbsp;Account</a>
+      </li>
+
+    <li id="mini_login_container_bottom">
+  <span class="separator">| </span>
+  <a id="login_link_bottom" href="https://bugzilla.redhat.com/show_bug.cgi?id=226979&amp;GoAheadAndLogIn=1"
+     onclick="return show_mini_login_form('_bottom')">Log In</a>
+
+  
+  <form action="https://bugzilla.redhat.com/show_bug.cgi?id=226979" method="POST" 
+        class="mini_login bz_default_hidden"
+        id="mini_login_bottom"
+        onsubmit="return check_mini_login_fields( '_bottom' );"
+  >
+    <input id="Bugzilla_login_bottom" 
+           class="bz_login"
+           name="Bugzilla_login"
+           title="Login"
+           onfocus="mini_login_on_focus('_bottom')"
+    >
+    <input class="bz_password" 
+           id="Bugzilla_password_bottom" 
+           name="Bugzilla_password"
+           type="password"
+           title="Password"
+    >
+    <input class="bz_password bz_default_hidden bz_mini_login_help" type="text" 
+           id="Bugzilla_password_dummy_bottom" value="password"
+           title="Password"
+           onfocus="mini_login_on_focus('_bottom')"
+    >
+    <input type="submit" name="GoAheadAndLogIn" value="Log in" 
+            id="log_in_bottom">
+    <script type="text/javascript">
+      mini_login_constants = {
+          "login" : "login",
+          "warning" : "You must set the login and password before logging in."
+      };
+      
+      if (YAHOO.env.ua.gecko || YAHOO.env.ua.ie || YAHOO.env.ua.opera) {
+          YAHOO.util.Event.onDOMReady(function() {
+              init_mini_login_form('_bottom');
+          });
+      }
+      else {
+          YAHOO.util.Event.on(window, 'load', function () {
+              window.setTimeout(function() {
+                  init_mini_login_form('_bottom');
+              }, 200);
+          });
+    }
+    </script>
+    <a href="#" onclick="return hide_mini_login_form('_bottom')">[x]</a>
+  </form>
+</li>
+<li id="forgot_container_bottom">
+  <span class="separator">| </span>
+  <a id="forgot_link_bottom" href="https://bugzilla.redhat.com/show_bug.cgi?id=226979&amp;GoAheadAndLogIn=1#forgot"
+     onclick="return show_forgot_form('_bottom')">Forgot Password</a>
+  <form action="token.cgi" method="post" id="forgot_form_bottom"
+        class="mini_forgot bz_default_hidden">
+    <label for="login_bottom">Login:</label>
+    <input type="text" name="loginname" size="20" id="login_bottom">
+    <input id="forgot_button_bottom" value="Reset Password" 
+           type="submit">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" id="token" name="token" value="1360890175-f66b36a0bb364d6cdf982499dd2ab622">
+    <a href="#" onclick="return hide_forgot_form('_bottom')">[x]</a>
+  </form>
+</li>
+  
+  <li><span class="separator">| </span><a href="/enter_bug.cgi?product=Bugzilla&amp;version=4.2">Report Bugzilla Bug</a></li>
+  
+</ul>
+  </li>
+
+  
+    
+
+  
+
+
+  
+</ul>
+
+  <div class="outro"><div align="left">
+  <ul id="useful-links">
+    <li id="links-actions">
+      <a href="page.cgi?id=terms-conditions.html" >Legal</a>
+    </li>
+  </ul>
+</div></div>
+</div>
+<!-- Piwik -->
+<script type="text/javascript">
+var pkBaseURL = (("https:" == document.location.protocol) ? "https://engstats.redhat.com/piwik/" : "http://engstats.redhat.com/piwik/");
+document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+</script><script type="text/javascript">
+try {
+    var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 2);
+    piwikTracker.setCustomVariable(1, "bz_user", "");
+    piwikTracker.setCustomVariable(2, "bz_bug_id", "226979");
+    piwikTracker.setCustomVariable(3, "bz_product", "Fedora");
+    piwikTracker.setCustomVariable(4, "bz_groups", "");
+    piwikTracker.setCustomVariable(5, "bz_ext_trackers", "");
+    piwikTracker.trackPageView();
+    piwikTracker.enableLinkTracking();
+} catch( err ) {}
+</script><noscript><p><img src="https://engstats.redhat.com/piwik/piwik.php?idsite=2" style="border:0" alt="" /></p></noscript>
+<!-- End Piwik Tracking Code -->
+
+</body>
+</html>

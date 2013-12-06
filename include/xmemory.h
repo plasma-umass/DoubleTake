@@ -211,6 +211,7 @@ public:
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
+			PRINT("track memory at ptr %p sz %d\n", ptr, sz);
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
       
@@ -266,6 +267,7 @@ public:
 
     // Set actual size there.
     size_t sz = o->getObjectSize();
+    //PRINF("xmemory: isObjectOverflow at line %d sz %d\n", __LINE__, sz);
 
     if(size < sz) {
       PRWRN("Free isObjectOverflow size %#lx sz %#lx\n", size, sz);

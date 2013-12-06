@@ -100,7 +100,7 @@ class trackObject {
       }
 
       tracedOps |= type;
-      //fprintf(stderr, "tracedOps %lx. Now type is %lx\n", tracedOps, type);
+      PRINF("tracedOps %lx. Now type is %lx isMallocTraced %d\n", tracedOps, type, isMallocTraced());
     }
 
     void setMallocTraced() {
@@ -161,10 +161,10 @@ public:
     trackObject * object = NULL;
     bool objectExist = false;
      
+    //PRINF("TRACKING object NNNNNNNOw: start %p size %d\n", start, size);
     // Check whether an object is existing or not. 
     // A object can has mulitple errors. 
     if(_trackMap.find(start, sizeof(start), &object)) {
-  //    PRINT("object is there at start %p\n", start);
       objectExist = true;
     }
     else {
@@ -172,7 +172,7 @@ public:
       _trackMap.insert(start, sizeof(start), object);
     }
 
-   PRINT("Insert object at start %p\n", start);
+   	//PRINF("Insert object at start %p\n", start);
     object->setup(start, size, type, objectExist);
   }
 

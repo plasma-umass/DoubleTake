@@ -403,7 +403,7 @@ private:
 
             if(findObjectStartAddr((void *)&address[i], &objectStart)) {
               objectHeader *object = (objectHeader *)(objectStart - sizeof(objectHeader));
-              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, (void *)objectStart, object->getSize());
+              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]), OBJECT_TYPE_OVERFLOW, (void *)objectStart, object->getObjectSize());
             }
             else {
               // Maybe we can't get the starting address, in this case, we only report when there is a overflow
