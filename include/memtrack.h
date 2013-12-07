@@ -100,7 +100,7 @@ class trackObject {
       }
 
       tracedOps |= type;
-      PRINF("tracedOps %lx. Now type is %lx isMallocTraced %d\n", tracedOps, type, isMallocTraced());
+      PRINF("tracedOps %lx. Now type is %lx isMallocTraced %d\n", (unsigned long) tracedOps, (unsigned long) type, isMallocTraced());
     }
 
     void setMallocTraced() {

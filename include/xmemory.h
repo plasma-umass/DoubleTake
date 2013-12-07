@@ -211,7 +211,7 @@ public:
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
-			PRINT("track memory at ptr %p sz %d\n", ptr, sz);
+      PRINT("track memory at ptr %p sz %lx\n", ptr, sz);
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
       
