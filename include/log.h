@@ -94,10 +94,8 @@
 
 /**
  * Print fatal error message, the program is going to exit.
-
-/**
- * Print fatal error message, the program is going to exit.
  */
+
 #define FATAL(fmt, ...) \
   {   ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [DOUBLETAKE-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
                 pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
