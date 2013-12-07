@@ -123,7 +123,7 @@ inline void global_epochBegin() {
   global_lockInsideSignalhandler();
 
   g_phase = E_SYS_EPOCH_BEGIN;
-  PRINT("waken up all waiters\n");
+  PRINF("waken up all waiters\n");
   // Wakeup all other threads.
   Real::pthread_cond_broadcast()(&g_condWaiters);
 

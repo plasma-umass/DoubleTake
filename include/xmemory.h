@@ -26,8 +26,8 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */ 
 
-#ifndef _XMEMORY_H_
-#define _XMEMORY_H_
+#ifndef DOUBLETAKE_XMEMORY_H
+#define DOUBLETAKE_XMEMORY_H
 
 #include <signal.h>
 
@@ -78,15 +78,17 @@ public:
     installSignalHandler();
 
     // Call _pheap so that xheap.h can be initialized at first and then can work normally.
-    _heapBegin = (intptr_t) _pheap.initialize((void *)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
+    _heapBegin =
+      (intptr_t)
+      _pheap.initialize ((void *)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
 
     _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
-	  _globals.initialize();
+    _globals.initialize();
   }
 
   void finalize() {
-	  _globals.finalize();
-	  _pheap.finalize();
+    _globals.finalize();
+    _pheap.finalize();
   }
  
   inline int getGlobalRegionsNumb() {
@@ -211,7 +213,7 @@ public:
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
-      PRINT("track memory at ptr %p sz %lx\n", ptr, sz);
+      //      PRINT("track memory at ptr %p sz %lx\n", ptr, sz);
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
       

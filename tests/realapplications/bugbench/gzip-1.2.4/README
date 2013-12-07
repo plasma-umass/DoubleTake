@@ -1,2 +1,0 @@
-Here, we specifically change the bug of global array to heap buffer overflow.
-As shown in results, we can identify this bug by printing out the line number.

