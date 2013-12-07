@@ -510,6 +510,7 @@ public:
         return Real::fclose()(fp);
       }
     }
+    return ret; // EDB: Added.
 #endif
   }
 
