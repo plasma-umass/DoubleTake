@@ -34,6 +34,7 @@ bool watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objty
   bool hasWatchpoint = true;
     
   if(objtype == OBJECT_TYPE_OVERFLOW) { 
+    PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. size %lx start %p\n", addr, value, objectsize, objectstart);
     PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   }
   else {

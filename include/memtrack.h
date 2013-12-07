@@ -151,8 +151,12 @@ public:
     }
 
     // When an overflow flushs several object, then there is no need to track all 
-    // overflows. 
-    if(start == NULL && type == OBJECT_TYPE_OVERFLOW) {
+    // overflows.
+		if(size == 0) {
+			return;
+		}
+ 
+    if((start == NULL || size == 0) && type == OBJECT_TYPE_OVERFLOW) {
       PRINT("An overflow with start address NULL, not need to track.\n");
       return;
     }

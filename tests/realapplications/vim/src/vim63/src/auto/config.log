@@ -1,0 +1,897 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:620: checking whether make sets ${MAKE}
+configure:650: checking for gcc
+configure:763: checking whether the C compiler (/usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread ) works
+configure:779: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   conftest.c  1>&5
+configure:805: checking whether the C compiler (/usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread ) is a cross-compiler
+configure:810: checking whether we are using GNU C
+configure:819: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -E conftest.c
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:838: checking whether /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so accepts -g
+configure:869: checking how to run the C preprocessor
+configure:890: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -E  conftest.c >/dev/null 2>conftest.out
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure: failed program was:
+#line 884 "configure"
+#include "confdefs.h"
+#include <assert.h>
+Syntax Error
+configure:907: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -E -traditional-cpp  conftest.c >/dev/null 2>conftest.out
+In file included from /usr/include/features.h:362,
+                 from /usr/include/assert.h:38,
+                 from configure:903:
+/usr/include/sys/cdefs.h:32: error: #error "You need a ISO C conforming compiler to use the glibc headers"
+configure: failed program was:
+#line 901 "configure"
+#include "confdefs.h"
+#include <assert.h>
+Syntax Error
+configure:924: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -nologo -E  conftest.c >/dev/null 2>conftest.out
+gcc: unrecognized option '-nologo'
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure: failed program was:
+#line 918 "configure"
+#include "confdefs.h"
+#include <assert.h>
+Syntax Error
+configure:958: checking for POSIXized ISC
+configure:982: checking for mawk
+configure:982: checking for gawk
+configure:1014: checking for strip
+configure:1043: checking for Cygwin environment
+configure:1059: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:1055: error: '__CYGWIN32__' undeclared (first use in this function)
+configure:1055: error: (Each undeclared identifier is reported only once
+configure:1055: error: for each function it appears in.)
+configure: failed program was:
+#line 1048 "configure"
+#include "confdefs.h"
+
+int main() {
+
+#ifndef __CYGWIN__
+#define __CYGWIN__ __CYGWIN32__
+#endif
+return __CYGWIN__;
+; return 0; }
+configure:1076: checking for mingw32 environment
+configure:1088: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:1084: error: '__MINGW32__' undeclared (first use in this function)
+configure:1084: error: (Each undeclared identifier is reported only once
+configure:1084: error: for each function it appears in.)
+configure: failed program was:
+#line 1081 "configure"
+#include "confdefs.h"
+
+int main() {
+return __MINGW32__;
+; return 0; }
+configure:1107: checking for executable suffix
+configure:1117: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   conftest.c  1>&5
+configure:1164: checking for buggy tools
+configure:1171: checking for BeOS
+configure:1179: checking for QNX
+configure:1189: checking for Darwin (Mac OS X)
+configure:1292: checking --with-vim-name argument
+configure:1303: checking --with-ex-name argument
+configure:1314: checking --with-view-name argument
+configure:1326: checking --with-global-runtime argument
+configure:1340: checking --with-modified-by argument
+configure:1354: checking if character set is EBCDIC
+configure:1369: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:1364: error: 'make' undeclared (first use in this function)
+configure:1364: error: (Each undeclared identifier is reported only once
+configure:1364: error: for each function it appears in.)
+configure:1364: error: expected ';' before 'an'
+configure: failed program was:
+#line 1356 "configure"
+#include "confdefs.h"
+ 
+int main() {
+ /* TryCompile function for CharSet.
+   Treat any failure as ASCII for compatibility with existing art.
+   Use compile-time rather than run-time tests for cross-compiler
+   tolerance.  */
+#if '0'!=240
+make an error "Character set is not EBCDIC"
+#endif 
+; return 0; }
+configure:1434: checking --with-features argument
+configure:1477: checking --with-compiledby argument
+configure:1489: checking --disable-xsmp argument
+configure:1502: checking --disable-xsmp-interact argument
+configure:1525: checking --enable-perlinterp argument
+configure:1688: checking --enable-pythoninterp argument
+configure:1964: checking --enable-tclinterp argument
+configure:2192: checking --enable-rubyinterp argument
+configure:2297: checking --enable-cscope argument
+configure:2315: checking --enable-workshop argument
+configure:2340: checking --disable-netbeans argument
+configure:2352: checking for socket in -lsocket
+configure:2371: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lsocket   1>&5
+/usr/bin/ld: cannot find -lsocket
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 2360 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char socket();
+
+int main() {
+socket()
+; return 0; }
+configure:2399: checking for gethostbyname in -lnsl
+configure:2418: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lnsl   1>&5
+configure:2446: checking whether compiling netbeans integration is possible
+configure:2478: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lnsl  1>&5
+configure:2503: checking --enable-sniff argument
+configure:2525: checking --enable-multibyte argument
+configure:2543: checking --enable-hangulinput argument
+configure:2555: checking --enable-xim argument
+configure:2566: checking --enable-fontset argument
+configure:2586: checking for xmkmf
+configure:2624: checking for X
+configure:2691: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:2687:27: error: X11/Intrinsic.h: No such file or directory
+configure: failed program was:
+#line 2686 "configure"
+#include "confdefs.h"
+#include <X11/Intrinsic.h>
+configure:2767: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lXt -lnsl  1>&5
+/usr/bin/ld: cannot find -lXt
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 2760 "configure"
+#include "confdefs.h"
+
+int main() {
+XtMalloc()
+; return 0; }
+configure:3483: checking if X11 header files can be found
+configure:3494: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread    conftest.c 1>&5
+configure:3488:22: error: X11/Xlib.h: No such file or directory
+configure: failed program was:
+#line 3487 "configure"
+#include "confdefs.h"
+#include <X11/Xlib.h>
+int main() {
+
+; return 0; }
+configure:3695: checking --enable-gui argument
+configure:4943: checking for X11/SM/SMlib.h
+configure:4953: /lib/cpp    conftest.c >/dev/null 2>conftest.out
+configure:4949:26: error: X11/SM/SMlib.h: No such file or directory
+configure: failed program was:
+#line 4948 "configure"
+#include "confdefs.h"
+#include <X11/SM/SMlib.h>
+configure:5211: checking quality of toupper
+configure:5221: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lnsl  1>&5
+configure: In function 'main':
+configure:5218: warning: incompatible implicit declaration of built-in function 'exit'
+configure: failed program was:
+#line 5216 "configure"
+#include "confdefs.h"
+#include <ctype.h>
+main() { exit(toupper('A') == 'A' && tolower('z') == 'z'); }
+configure:5238: checking whether __DATE__ and __TIME__ work
+configure:5247: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:5243: warning: incompatible implicit declaration of built-in function 'printf'
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:5263: checking for elf.h
+configure:5273: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5296: checking for main in -lelf
+configure:5311: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lelf  -lnsl  1>&5
+/usr/bin/ld: cannot find -lelf
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 5304 "configure"
+#include "confdefs.h"
+
+int main() {
+main()
+; return 0; }
+configure:5345: checking for dirent.h that defines DIR
+configure:5358: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:5383: checking for opendir in -ldir
+configure:5402: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -ldir  -lnsl  1>&5
+/usr/bin/ld: cannot find -ldir
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 5391 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char opendir();
+
+int main() {
+opendir()
+; return 0; }
+configure:5467: checking for ANSI C header files
+configure:5480: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5547: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lnsl  1>&5
+configure: In function 'main':
+configure:5542: warning: incompatible implicit declaration of built-in function 'exit'
+configure:5571: checking for sys/wait.h that is POSIX.1 compatible
+configure:5592: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:5655: checking for stdarg.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for stdlib.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for string.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/select.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/utsname.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for termcap.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for fcntl.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sgtty.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/ioctl.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/time.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for termio.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for iconv.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for langinfo.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for unistd.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for stropts.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:21: error: stropts.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <stropts.h>
+configure:5655: checking for errno.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/resource.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/systeminfo.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:28: error: sys/systeminfo.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <sys/systeminfo.h>
+configure:5655: checking for locale.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/stream.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:24: error: sys/stream.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <sys/stream.h>
+configure:5655: checking for sys/ptem.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:22: error: sys/ptem.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <sys/ptem.h>
+configure:5655: checking for termios.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for libc.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:18: error: libc.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <libc.h>
+configure:5655: checking for sys/statfs.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for poll.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/poll.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for pwd.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for utime.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/param.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for libintl.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for libgen.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for util/debug.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:24: error: util/debug.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <util/debug.h>
+configure:5655: checking for util/msg18n.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:25: error: util/msg18n.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <util/msg18n.h>
+configure:5655: checking for frame.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:19: error: frame.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <frame.h>
+configure:5655: checking for pthread_np.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:24: error: pthread_np.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <pthread_np.h>
+configure:5655: checking for sys/acl.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:21: error: sys/acl.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <sys/acl.h>
+configure:5655: checking for sys/access.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5661:24: error: sys/access.h: No such file or directory
+configure: failed program was:
+#line 5660 "configure"
+#include "confdefs.h"
+#include <sys/access.h>
+configure:5655: checking for sys/sysctl.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for sys/sysinfo.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5655: checking for wchar.h
+configure:5665: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5697: checking for strings.h
+configure:5707: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:5736: checking if strings.h can be included after string.h
+configure:5761: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread    conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:5779: checking whether /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so needs -traditional
+configure:5825: checking for working const
+configure:5879: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:5900: checking for mode_t
+configure:5933: checking for off_t
+configure:5966: checking for pid_t
+configure:5999: checking for size_t
+configure:6032: checking for uid_t in sys/types.h
+configure:6066: checking whether time.h and sys/time.h may both be included
+configure:6080: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:6101: checking for ino_t
+configure:6134: checking for dev_t
+configure:6168: checking for rlim_t
+configure:6205: checking for stack_t
+configure:6240: checking whether stack_t has an ss_base field
+configure:6257: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:6253: error: 'stack_t' has no member named 'ss_base'
+configure: failed program was:
+#line 6242 "configure"
+#include "confdefs.h"
+
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <signal.h>
+#include "confdefs.h"
+			
+int main() {
+stack_t sigstk; sigstk.ss_base = 0; 
+; return 0; }
+configure:6273: checking --with-tlib argument
+configure:6291: checking for tgetent in -lncurses
+configure:6310: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses  -lnsl  1>&5
+configure:6350: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:6347: warning: incompatible implicit declaration of built-in function 'exit'
+configure:6372: checking whether we talk terminfo
+configure:6386: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:6383: warning: incompatible implicit declaration of built-in function 'exit'
+configure: failed program was:
+#line 6377 "configure"
+#include "confdefs.h"
+
+#ifdef HAVE_TERMCAP_H
+# include <termcap.h>
+#endif
+main()
+{char *s; s=(char *)tgoto("%p1%d", 0, 1); exit(!strcmp(s==0 ? "" : s, "1")); }
+configure:6407: checking what tgetent() returns for an unknown terminal
+configure:6421: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:6418: warning: incompatible implicit declaration of built-in function 'exit'
+configure:6439: checking whether termcap.h contains ospeed
+configure:6452: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6496: checking whether termcap.h contains UP, BC and PC
+configure:6509: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6553: checking whether tputs() uses outfuntype
+configure:6566: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:6562: error: 'outfuntype' undeclared (first use in this function)
+configure:6562: error: (Each undeclared identifier is reported only once
+configure:6562: error: for each function it appears in.)
+configure:6562: error: expected ')' before 'xx'
+configure: failed program was:
+#line 6555 "configure"
+#include "confdefs.h"
+
+#ifdef HAVE_TERMCAP_H
+# include <termcap.h>
+#endif
+			
+int main() {
+extern int xx(); tputs("test", 1, (outfuntype)xx)
+; return 0; }
+configure:6581: checking whether sys/select.h and sys/time.h may both be included
+configure:6593: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:6610: checking for /dev/ptc
+configure:6622: checking for SVR4 ptys
+configure:6632: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6650: checking for ptyranges
+configure:6691: checking default tty permissions/group
+configure:6729: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:6709: warning: incompatible implicit declaration of built-in function 'exit'
+configure:6760: checking return type of signal handlers
+configure:6782: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:6814: checking for struct sigcontext
+configure:6830: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:6846: checking getcwd implementation
+configure:6863: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for bcmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'bcmp'
+configure:6888: checking for fchdir
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for fchown
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for fseeko
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for fsync
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for ftello
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for getcwd
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for getpseudotty
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/cc2IHOnW.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: undefined reference to `getpseudotty'
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 6893 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char getpseudotty(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char getpseudotty();
+
+int main() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_getpseudotty) || defined (__stub___getpseudotty)
+choke me
+#else
+getpseudotty();
+#endif
+
+; return 0; }
+configure:6888: checking for getpwnam
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for getpwuid
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for getrlimit
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for gettimeofday
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for getwd
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/cc7BXHaz.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: warning: the `getwd' function is dangerous and should not be used.
+configure:6888: checking for lstat
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for memcmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'memcmp'
+configure:6888: checking for memset
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'memset'
+configure:6888: checking for nanosleep
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for opendir
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for putenv
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for qsort
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for readlink
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for select
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for setenv
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for setpgid
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for setsid
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for sigaltstack
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for sigstack
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/cc3nrneV.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: warning: the `sigstack' function is dangerous.  `sigaltstack' should be used instead.
+configure:6888: checking for sigset
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for sigsetjmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/ccCt4iwa.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: undefined reference to `sigsetjmp'
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 6893 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char sigsetjmp(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char sigsetjmp();
+
+int main() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_sigsetjmp) || defined (__stub___sigsetjmp)
+choke me
+#else
+sigsetjmp();
+#endif
+
+; return 0; }
+configure:6888: checking for sigaction
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for sigvec
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for snprintf
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'snprintf'
+configure:6888: checking for strcasecmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'strcasecmp'
+configure:6888: checking for strerror
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for strftime
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'strftime'
+configure:6888: checking for stricmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/cc2zSMkZ.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: undefined reference to `stricmp'
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 6893 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char stricmp(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char stricmp();
+
+int main() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_stricmp) || defined (__stub___stricmp)
+choke me
+#else
+stricmp();
+#endif
+
+; return 0; }
+configure:6888: checking for strncasecmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'strncasecmp'
+configure:6888: checking for strnicmp
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+/tmp/ccIcx8S1.o: In function `main':
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/configure:6910: undefined reference to `strnicmp'
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 6893 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char strnicmp(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char strnicmp();
+
+int main() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_strnicmp) || defined (__stub___strnicmp)
+choke me
+#else
+strnicmp();
+#endif
+
+; return 0; }
+configure:6888: checking for strpbrk
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'strpbrk'
+configure:6888: checking for strtol
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for tgetent
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for towlower
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'towlower'
+configure:6888: checking for towupper
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6900: warning: conflicting types for built-in function 'towupper'
+configure:6888: checking for usleep
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for utime
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6888: checking for utimes
+configure:6916: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:6942: checking for st_blksize
+configure:6956: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:6971: checking whether stat() ignores a trailing slash
+configure:6982: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:6979: warning: incompatible implicit declaration of built-in function 'exit'
+configure: failed program was:
+#line 6976 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+main() {struct stat st;  exit(stat("configure/", &st) != 0); }
+configure:6999: checking for iconv_open()
+configure:7014: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  -liconv 1>&5
+/usr/bin/ld: cannot find -liconv
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 7003 "configure"
+#include "confdefs.h"
+
+#ifdef HAVE_ICONV_H
+# include <iconv.h>
+#endif
+    
+int main() {
+iconv_open("fr", "to");
+; return 0; }
+configure:7037: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:7055: checking for nl_langinfo(CODESET)
+configure:7068: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:7083: checking --disable-acl argument
+configure:7095: checking for acl_get_file in -lposix1e
+configure:7114: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lposix1e  -lncurses -lnsl  1>&5
+/usr/bin/ld: cannot find -lposix1e
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 7103 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char acl_get_file();
+
+int main() {
+acl_get_file()
+; return 0; }
+configure:7133: checking for acl_get_file in -lacl
+configure:7152: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lacl  -lncurses -lnsl  1>&5
+/usr/bin/ld: cannot find -lacl
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 7141 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char acl_get_file();
+
+int main() {
+acl_get_file()
+; return 0; }
+configure:7216: checking for POSIX ACL support
+configure:7232: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:7224: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'acl'
+configure: In function 'main':
+configure:7226: error: 'acl' undeclared (first use in this function)
+configure:7226: error: (Each undeclared identifier is reported only once
+configure:7226: error: for each function it appears in.)
+configure:7226: error: 'ACL_TYPE_ACCESS' undeclared (first use in this function)
+configure: failed program was:
+#line 7218 "configure"
+#include "confdefs.h"
+
+#include <sys/types.h>
+#ifdef HAVE_SYS_ACL_H
+# include <sys/acl.h>
+#endif
+acl_t acl;
+int main() {
+acl = acl_get_file("foo", ACL_TYPE_ACCESS);
+	acl_set_file("foo", ACL_TYPE_ACCESS, acl);
+	acl_free(acl);
+; return 0; }
+configure:7247: checking for Solaris ACL support
+configure:7260: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:7255: error: 'GETACLCNT' undeclared (first use in this function)
+configure:7255: error: (Each undeclared identifier is reported only once
+configure:7255: error: for each function it appears in.)
+configure:7255: error: 'NULL' undeclared (first use in this function)
+configure: failed program was:
+#line 7249 "configure"
+#include "confdefs.h"
+
+#ifdef HAVE_SYS_ACL_H
+# include <sys/acl.h>
+#endif
+int main() {
+acl("foo", GETACLCNT, 0, NULL);
+	
+; return 0; }
+configure:7275: checking for AIX ACL support
+configure:7299: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:7292: error: invalid application of 'sizeof' to incomplete type 'struct acl' 
+configure:7293: warning: incompatible implicit declaration of built-in function 'malloc'
+configure:7294: error: 'STX_NORMAL' undeclared (first use in this function)
+configure:7294: error: (Each undeclared identifier is reported only once
+configure:7294: error: for each function it appears in.)
+configure: failed program was:
+#line 7277 "configure"
+#include "confdefs.h"
+
+#ifdef HAVE_SYS_ACL_H
+# include <sys/acl.h>
+#endif
+#ifdef HAVE_SYS_ACCESS_H
+# include <sys/access.h>
+#endif
+#define _ALL_SOURCE
+
+#include <sys/stat.h>
+
+int aclsize;
+struct acl *aclent;
+int main() {
+aclsize = sizeof(struct acl);
+	aclent = (void *)malloc(aclsize);
+	statacl("foo", STX_NORMAL, aclent, aclsize);
+	
+; return 0; }
+configure:7317: checking --disable-gpm argument
+configure:7330: checking for gpm
+configure:7344: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lgpm 1>&5
+configure:7337:17: error: gpm.h: No such file or directory
+configure: In function 'main':
+configure:7340: error: 'NULL' undeclared (first use in this function)
+configure:7340: error: (Each undeclared identifier is reported only once
+configure:7340: error: for each function it appears in.)
+configure: failed program was:
+#line 7336 "configure"
+#include "confdefs.h"
+#include <gpm.h>
+	    #include <linux/keyboard.h>
+int main() {
+Gpm_GetLibVersion(NULL);
+; return 0; }
+configure:7371: checking for vsnprintf()
+configure:7397: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:7392: warning: incompatible implicit declaration of built-in function 'exit'
+configure:7415: checking for rename
+configure:7424: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:7439: checking for sysctl
+configure:7456: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+configure: In function 'main':
+configure:7448: error: 'CTL_HW' undeclared (first use in this function)
+configure:7448: error: (Each undeclared identifier is reported only once
+configure:7448: error: for each function it appears in.)
+configure:7449: error: 'HW_USERMEM' undeclared (first use in this function)
+configure: failed program was:
+#line 7441 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+#include <sys/sysctl.h>
+int main() {
+	int mib[2], r;
+	size_t len;
+
+	mib[0] = CTL_HW;
+	mib[1] = HW_USERMEM;
+	len = sizeof(r);
+	(void)sysctl(mib, 2, &r, &len, (void *)0, (size_t)0);
+	
+; return 0; }
+configure:7471: checking for sysinfo
+configure:7486: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:7501: checking for sysconf
+configure:7512: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -c -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread  conftest.c 1>&5
+gcc: /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so: linker input file unused because linking not done
+configure:7528: checking size of int
+configure:7547: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:7541: warning: incompatible implicit declaration of built-in function 'exit'
+configure:7568: checking whether memmove/bcopy/memcpy handle overlaps
+configure:7592: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure: In function 'main':
+configure:7592: warning: incompatible implicit declaration of built-in function 'strcpy'
+configure:7593: warning: incompatible implicit declaration of built-in function 'memmove'
+configure:7595: warning: incompatible implicit declaration of built-in function 'exit'
+configure:7710: checking for _xpg4_setrunelocale in -lxpg4
+configure:7729: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lxpg4  -lncurses -lnsl  1>&5
+/usr/bin/ld: cannot find -lxpg4
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 7718 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char _xpg4_setrunelocale();
+
+int main() {
+_xpg4_setrunelocale()
+; return 0; }
+configure:7751: checking how to create tags
+Exuberant Ctags 5.8, Copyright (C) 1996-2009 Darren Hiebert
+configure:7768: checking how to run man with a section nr
+configure:7780: checking --disable-nls argument
+configure:7795: checking for msgfmt
+configure:7822: checking for NLS
+configure:7963: checking for dlfcn.h
+configure:7973: /lib/cpp  conftest.c >/dev/null 2>conftest.out
+configure:8033: checking for dlopen()
+configure:8045: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:8090: checking for dlsym()
+configure:8102: /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so -o conftest -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread   -L/usr/local/lib conftest.c -lncurses -lnsl  1>&5
+configure:8213: checking for setjmp.h
+configure:8223: /lib/cpp  conftest.c >/dev/null 2>conftest.out

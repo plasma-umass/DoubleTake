@@ -1,0 +1,150 @@
+[1m[35mStarting in xrun
+[0mVim: Warning: Output is not to a terminal
+7[?47h[?1h=[1;26r[m[H[2J[26;1H"sploit/foo%;eval eval `echo 0:64617465203e3e2070776e6564 | xxd -r`;'bar" is a directory[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x2a2f7261622227. size d1 start 0x1000bc5f0
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x2a2f7261622227. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x2a2f7261622227. size d1 start 0x1000bc5f0
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x2a2f7261622227. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x313634363a30206f. size 0 start 0x1000bc5f0
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x313634363a30206f. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c7a98 with value 0x61206a626f2e2c70. size 0 start 0x1000c7a70
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c7a98 with value 0x61206a626f2e2c70. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c9a98 with value 0x0. size cafebabe start 0x1000c9a88
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c9a98 with value 0x0. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x313634363a30206f. size 0 start 0x1000bc5f0
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000bc6c0 with value 0x313634363a30206f. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c7a98 with value 0x61206a626f2e2c70. size 0 start 0x1000c7a70
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c7a98 with value 0x61206a626f2e2c70. 
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c9a98 with value 0x0. size cafebabe start 0x1000c9a88
+[0m[1m[35mDoubleTake: Buffer overflow at address 0x1000c9a98 with value 0x0. 
+[0m[1m[35m
+Caught heap overflow at 0x1000c7a98. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4cdfb0
+	[0m[1m[35m
+Caught heap overflow at 0x1000c7a98. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4cdfb0
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4803
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4803
+[1m[35m	callstack frame 2: 0x49f4ed
+	[0m[1m[35m	callstack frame 2: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m	callstack frame 3: 0x49f147
+	[0m[1m[35m	callstack frame 3: 0x49f147
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+[1m[35m	callstack frame 4: 0x465daa
+	[0m[1m[35m	callstack frame 4: 0x465daa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+[1m[35m	callstack frame 5: 0x46485e
+	[0m[1m[35m	callstack frame 5: 0x46485e
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+[1m[35m	callstack frame 6: 0x43684d
+	[0m[1m[35m	callstack frame 6: 0x43684d
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+[1m[35m	callstack frame 7: 0x434a81
+	[0m[1m[35m	callstack frame 7: 0x434a81
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+[1m[35m
+Caught heap overflow at 0x1000bc6c0. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4ce070
+	[0m[1m[35m
+Caught heap overflow at 0x1000bc6c0. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4ce070
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4808
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4808
+[1m[35m	callstack frame 2: 0x49f4ed
+	[0m[1m[35m	callstack frame 2: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m	callstack frame 3: 0x49f147
+	[0m[1m[35m	callstack frame 3: 0x49f147
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+[1m[35m	callstack frame 4: 0x465daa
+	[0m[1m[35m	callstack frame 4: 0x465daa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+[1m[35m	callstack frame 5: 0x46485e
+	[0m[1m[35m	callstack frame 5: 0x46485e
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+[1m[35m	callstack frame 6: 0x43684d
+	[0m[1m[35m	callstack frame 6: 0x43684d
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+[1m[35m	callstack frame 7: 0x434a81
+	[0m[1m[35m	callstack frame 7: 0x434a81
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+[1m[35mMemory allocation call stack for object starting at 0x1000bc5f0:
+[0m[1m[35m	callstack frame 1: 0x4a0b28
+	[0m[1m[35mMemory allocation call stack for object starting at 0x1000bc5f0:
+[0m[1m[35m	callstack frame 1: 0x4a0b28
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:843
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:843
+[1m[35m	callstack frame 2: 0x4a0a3b
+	[0m[1m[35m	callstack frame 2: 0x4a0a3b
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:742
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:742
+[1m[35m	callstack frame 3: 0x4cddaa
+	[0m[1m[35m	callstack frame 3: 0x4cddaa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4740
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4740
+[1m[35m	callstack frame 4: 0x49f4ed
+	[0m[1m[35m	callstack frame 4: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m
+Caught heap overflow at 0x1000bc6c0. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4ce070
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4808
+[1m[35m	callstack frame 2: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m	callstack frame 3: 0x49f147
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+[1m[35m	callstack frame 4: 0x465daa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+[1m[35m	callstack frame 5: 0x46485e
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+[1m[35m	callstack frame 6: 0x43684d
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+[1m[35m	callstack frame 7: 0x434a81
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+[1m[35mMemory allocation call stack for object starting at 0x1000bc5f0:
+[0m[1m[35m	callstack frame 1: 0x4a0b28
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:843
+[1m[35m	callstack frame 2: 0x4a0a3b
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:742
+[1m[35m	callstack frame 3: 0x4cddaa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4740
+[1m[35m	callstack frame 4: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m
+Caught heap overflow at 0x1000bc6c0. Current call stack:
+[0m[1m[35m	callstack frame 1: 0x4ce070
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4808
+[1m[35m	callstack frame 2: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116
+[1m[35m	callstack frame 3: 0x49f147
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:7674
+[1m[35m	callstack frame 4: 0x465daa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:3770
+[1m[35m	callstack frame 5: 0x46485e
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/ex_getln.c:2923
+[1m[35m	callstack frame 6: 0x43684d
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:4658
+[1m[35m	callstack frame 7: 0x434a81
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/eval.c:3216
+[1m[35mMemory allocation call stack for object starting at 0x1000bc5f0:
+[0m[1m[35m	callstack frame 1: 0x4a0b28
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:843
+[1m[35m	callstack frame 2: 0x4a0a3b
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc2.c:742
+[1m[35m	callstack frame 3: 0x4cddaa
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/os_unix.c:4740
+[1m[35m	callstack frame 4: 0x49f4ed
+	[0m/nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/tests/realapplications/vim/src/vim63/src/misc1.c:8116

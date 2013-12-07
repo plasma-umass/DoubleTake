@@ -34,8 +34,7 @@ void memtrack::check(void * start, size_t size, memTrackType type) {
   }
  
   if(_trackMap.find(start, sizeof(start), &object)) {
-    PRINT("_initialized %d objectype %d hasLeak %d\n", _initialized, object->objecttype, object->hasLeak());
-    PRINT("objectsize %d, current size %d\n", object->objectSize, size);
+   // PRINT("objectsize %d, current size %d\n", object->objectSize, size);
     // Now we should verify the size information for buffer overflow and memory leakage.
     // For use-after-free errors, since it is impossible to know actual object size information,
     // then we do not verify its size information.
