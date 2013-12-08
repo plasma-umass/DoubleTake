@@ -74,7 +74,7 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
     return;
   }
 
-  PRINF("CAPTURING write at %p: ip %llx. signal pointer %p, code %d. \n", addr, trapcontext->uc_mcontext.gregs[REG_RIP], siginfo->si_ptr, siginfo->si_code);
+  PRINF("CAPTURING write at %p: ip %lx. signal pointer %p, code %d. \n", addr, trapcontext->uc_mcontext.gregs[REG_RIP], siginfo->si_ptr, siginfo->si_code);
 
   // Finding the starting address of current heap object holding trap address
   faultyObject * object;
