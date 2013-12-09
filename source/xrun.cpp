@@ -52,7 +52,7 @@ void xrun::rollbackandstop() {
     // Now we are going to rollback.
     startRollback();
 
-    PRINF("\n\nNOW ROLLING BACK\n\n\n");
+    PRINF("\n[DoubleTake: Rolling back.]\n");
   
     // Rollback all memory before rolling back the context.
     _memory.rollbackonly();
@@ -64,7 +64,7 @@ void xrun::rollback() {
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
-    PRINF("HAS rollback, now exit\n");
+    PRINF("HAS rolled back, now exiting.\n");
     rollbackandstop();
     abort();
   }
@@ -102,16 +102,15 @@ void xrun::epochBegin() {
   {
     thread_t * thread = i.getThread();
 
-    if(thread != current) {
+    if (thread != current) {
       lock_thread(thread);
         
-      if(thread->hasJoined == true) {
+      if (thread->hasJoined) {
         thread->status = E_THREAD_EXITING;
         Real::pthread_cond_signal()(&thread->cond);
         unlock_thread(thread);
         Real::pthread_join()(thread->self, NULL);
-      }
-      else {
+      } else {
         unlock_thread(thread);
       }
     }
