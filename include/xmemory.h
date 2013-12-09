@@ -289,7 +289,7 @@ public:
         // check up whether the sentinel is intact or not.
         if(sentinelmap::getInstance().checkAndClearSentinel(p) != true) {
           // Add this address to watchpoint
-          PRINF("xmemory: checkandclearsentinal now\n");
+          PRINT("xmemory: free find overflow\n");
           //PRINF("xmemory: checkandclearsentinal at line %d\n", __LINE__);
           watchpoint::getInstance().addWatchpoint(p, *((size_t*)p), OBJECT_TYPE_OVERFLOW, ptr, sz); 
           isOverflow = true;
@@ -320,6 +320,7 @@ public:
         }
       
         if(isOverflow) {
+          PRINT("xmemory: free find overflow\n");
           watchpoint::getInstance().addWatchpoint(startp, *((size_t*)startp), OBJECT_TYPE_OVERFLOW, ptr, sz); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);

@@ -181,7 +181,7 @@ public:
 
   void insert(const KeyType & key, size_t keylen, ValueType value) {
     if(_initialized != true) {
-      PRINF("process %d index %d: initialized at  %p hashmap is not true\n", getpid(), getThreadIndex(), &_initialized);
+      PRINT("process %d index %d: initialized at  %p hashmap is not true\n", getpid(), getThreadIndex(), &_initialized);
     }
 
     assert(_initialized == true);
@@ -268,9 +268,10 @@ private:
     // Check whether the first entry is empty or not.
     // Create an entry
     struct Entry * entry = createNewEntry(key, keylen, value);
-
     listInsertTail(&entry->list, &head->list);
     head->count++;
+		PRINF("insertEntry entry %p at head %p, headcount %ld\n", entry, head, head->count);
+		PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", entry, entry->list.next, head, &head->list, head->list.next);
   }
  
   // Search the entry in the corresponding list. 
@@ -299,17 +300,17 @@ public:
   class iterator
   {
     friend class HashMap<KeyType, ValueType, LockType, SourceHeap>;
-    struct Entry * entry;         // Which entry in the current hash entry?
-    size_t pos;                   // which bucket at the moment? [0, nbucket-1]
-    HashMap * hashmap;
+    struct Entry * _entry;         // Which entry in the current hash entry?
+    size_t _pos;                   // which bucket at the moment? [0, nbucket-1]
+    HashMap * _hashmap;
 
     public:
     iterator(struct Entry * ientry = NULL, int ipos = 0, HashMap * imap = NULL) 
     {
 //      cout << "In default constructor of iterator\n";
-      pos = ipos;
-      entry = ientry;
-      hashmap = imap;
+      _pos = ipos;
+      _entry = ientry;
+      _hashmap = imap;
     }
 
     ~iterator()
@@ -319,26 +320,31 @@ public:
     iterator& operator++(int unused)// in postfix ++
     {
   //    cout << "In postfix ++\n";
-      struct HashEntry * hashentry = hashmap->getHashEntry(pos);
+      struct HashEntry * hashentry = _hashmap->getHashEntry(_pos);
 
+			PRINF("firstentry %p its next %p hashentry first entry %p\n", _entry, _entry->list.next, hashentry);
+//			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry, _hashmap);
+			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry, _hashmap);
       // Check whether this entry is the last entry in current hash entry.
-      if(!isListTail(&entry->list, &hashentry->list)) {
+      if(!isListTail(&_entry->list, &hashentry->list)) {
+//				PRINF("****enty->list->next %p, hashentry->list %p hashentry %p hashlist next %p\n", _entry->list.next, &hashentry->list, hashentry, hashentry->list.next);
+//				PRINF("opertor__, hashentry %p _pos %ld _entry %p _entry->list %p, _hashmap %p\n", hashentry, _pos, _entry, &_entry->list, _hashmap);
         // If not, then we simply get next entry. No need to change pos.
-        entry = entry->nextEntry();
+        _entry = _entry->nextEntry();
       }
       else {
         // Since current list is empty, we must search next hash entry.
-        pos++;
-        while((hashentry = hashmap->getHashEntry(pos)) != NULL) {
+        _pos++;
+        while((hashentry = _hashmap->getHashEntry(_pos)) != NULL) {
           if(hashentry->count != 0) {
             // Now we can return it.
-            entry = (struct Entry *)hashentry->getFirstEntry(); 
+            _entry = (struct Entry *)hashentry->getFirstEntry(); 
             return *this; 
           }
-          pos++; 
+          _pos++; 
         } 
         
-        entry = NULL;
+        _entry = NULL;
       }
         
       return *this;
@@ -347,24 +353,24 @@ public:
     //iterator& operator -- ();
     // Iterpreted as a = b is treated as a.operator=(b)
     iterator& operator=(const iterator & that) {
-      this->entry = that.entry;
-      this->pos = that.pos;
-      this->hashmap = that.hashmap;
+      _entry = that._entry;
+      _pos = that._pos;
+      _hashmap = that._hashmap;
       return *this;
     } 
 
     bool operator==(const iterator& that) const
-    { return entry == that.entry; }
+    { return _entry == that._entry; }
 
     bool operator != (const iterator& that) const
-    { return entry != that.entry; }
+    { return _entry != that._entry; }
 
     ValueType getData() {
-      return entry->getValue(); 
+      return _entry->getValue(); 
     }
 
     KeyType getkey() {
-      return entry->getKey();
+      return _entry->getKey();
     } 
   };
 
@@ -374,12 +380,15 @@ public:
     struct HashEntry * head = NULL;
     struct Entry * entry;
 
+		//PRINF("in the beginiing of begin\n");
     // Get the first non-null entry
     while(pos < _buckets) {
       head = getHashEntry(pos);
+			//PRINF("begin, head %p pos %ld head->count %ld\n", head, pos, head->count);
       if(head->count != 0) {
         // Now we can return it.
         entry = (struct Entry *)head->getFirstEntry(); 
+			//	PRINF("In begin() function, head %p, firstentry %p, firstentry next %p\n", head, entry, entry->list.next);
         return iterator(entry, pos, this); 
       } 
       pos++;

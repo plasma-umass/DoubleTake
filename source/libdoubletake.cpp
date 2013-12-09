@@ -475,7 +475,37 @@ extern "C" {
     return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
     //return Real::mmap()(start, length, prot, flags, fd, offset);
   }
-  
+
+	int puts(const char * s) {
+		if(!global_isRollback()) {
+    	Real::puts()(s);
+		}
+		return 0;
+	}
+
+ 	int printf(const char *format, ...) {
+//		PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
+		if(!global_isRollback()) {
+    	va_list ap;
+    	va_start(ap, format);
+    	vprintf(format, ap);
+		}
+			
+		return 0;
+	}
+ 
+#if 0	
+	int fprintf(FILE *stream, const char *format, ...) {
+		if(!global_isRollback()) {
+    	va_list ap;
+    	va_start(ap, format);
+    	vfprintf(stream, format, ap);
+		}
+			
+		return 0;
+	}
+#endif
+ 
   //int open(const char *pathname, int flags, mode_t mode) {
   int open(const char *pathname, int flags, ...) {
     int mode;

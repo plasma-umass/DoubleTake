@@ -113,7 +113,10 @@ public:
     int status = 0;
     pid_t parent = getpid();
 
-    PRINF("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+    //PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+		if(_numWatchpoints == 0) {
+			return;
+		}
     //PRINF("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
     // Initialize those debug registers. 
     init_debug_registers();
@@ -138,7 +141,7 @@ public:
     child = Real::fork()();
     if (child == 0)
     {
-      PRINF("Child install %d!!!!!!!!!\n", __LINE__);    
+      PRINT("Child install %d!!!!!!!!!\n", __LINE__);    
       sleep(2); // This is not necessarily enough but let's try it.
 
       PRINF("install %d!!!!!!!!!\n", __LINE__);    

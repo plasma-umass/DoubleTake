@@ -93,7 +93,7 @@ public:
   // Prepare rollback for system calls
   void prepareRollback() {
     getRecord()->prepareRollback();
-   
+  
     // Handle those closed files
     _fops.prepareRollback();
   }

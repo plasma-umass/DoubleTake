@@ -66,12 +66,15 @@ void xthread::epochBegin() {
 }
  
 void xthread::prepareRollback() {
+	PRINF("calling syscalls::prepareRollback\n");
   syscalls::getInstance().prepareRollback();
 
+	PRINF("calling threadmap::prepareRollback\n");
   // Initialize the semaphores for threads at first since preparing synchronization may
   // increment corresponding semaphore.
   threadmap::getInstance().prepareRollback();
 
+	PRINF("calling xsync::prepareRollback\n");
   // Update the semaphores and synchronization entry 
   _sync.prepareRollback();
 }
@@ -94,7 +97,8 @@ bool xthread::addQuarantineList(void * ptr, size_t sz) {
 
 void xthread::rollback() {
   current->qlist.restore();
-
+	
+//	PRINT("xthread::rollback now\n");
   // Recover the context for current thread.
   restoreContext(); 
 }

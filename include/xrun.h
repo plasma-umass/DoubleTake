@@ -125,7 +125,7 @@ public:
       return;
     }
 
-    PRINF("In the end of finalize function\n");
+    PRINT("In the end of finalize function\n");
     //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {

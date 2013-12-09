@@ -344,15 +344,19 @@ public:
   void prepareRollback() {
     // We must recove all file offsets of all files now.
     filesHashMap::iterator i;
-
-  //  PRINF("***************fops rollback now!**************\n");
+    filesHashMap::iterator itemp;
+    //PRINT("***************fops rollback now, _filesMap at %p**************\n", &_filesMap);
     /*  Traverse each entry of the hash table. */
-    for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
+    for(i = _filesMap.begin(); i != _filesMap.end(); ) {
+			itemp = i;
+			itemp++;
+
       fileInfo * thisFile;
       thisFile = (fileInfo *)i.getData();
 #ifndef REPRODUCIBLE_FDS
       if(thisFile->isNew) {
-        closeFile(thisFile->fd, thisFile->origStream);
+			//	PRINT("close fd %d\n", thisFile->fd); 
+        closeFile(thisFile->fd, thisFile->origStream); //EBD
       }
 #else
       Real::lseek()(thisFile->fd, thisFile->pos, SEEK_SET);
@@ -362,12 +366,16 @@ public:
         memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
       }
 #endif
+			i = itemp;
     }
     
-    dirsHashMap::iterator j;
+    dirsHashMap::iterator j, jtemp;
     dirInfo * thisDir;
 
-    for(j = _dirsMap.begin(); j != _dirsMap.end(); j++) {
+    for(j = _dirsMap.begin(); j != _dirsMap.end();) {
+			jtemp = j;
+			jtemp++;
+
       thisDir = (dirInfo *)j.getData();
 #ifdef REPRODUCIBLE_FDS 
       seekdir(thisDir->dir, thisDir->pos);
@@ -386,6 +394,7 @@ public:
       }
 #endif
       // For those newly created file, maybe we should remove them from the table.
+			j = jtemp;
     }
   }
  
@@ -494,14 +503,16 @@ public:
     hasFound = _filesMap.find(fd, sizeof(fd), &thisFile);
 
     if(hasFound) {
-      // Remove this entry from the filemap. FIXME
+      // Remove this entry from the filemap. 
       _filesMap.erase(fd, sizeof(fd));
 
       if(thisFile->backupStream) {
         InternalHeap::getInstance().free(thisFile->backupStream);
       }
-      InternalHeap::getInstance().free(thisFile);
+     
+			InternalHeap::getInstance().free(thisFile);
 //      PRINT("fd is %d fp %p\n", fd, fp); 
+		//  PRINT("close at %p fclose at %p\n", Real::close(), Real::fclose());
       // Remove this 
       if(fp == NULL) {
         return Real::close()(fd);
@@ -510,7 +521,7 @@ public:
         return Real::fclose()(fp);
       }
     }
-    return ret; // EDB: Added.
+    return ret; 
 #endif
   }
 
@@ -630,6 +641,7 @@ private:
   // A list is to record those newly opened files, which will be added into
   // the global hash map in next transaction.
   dirsHashMap _dirsMap;
+
 };
 
 #endif
