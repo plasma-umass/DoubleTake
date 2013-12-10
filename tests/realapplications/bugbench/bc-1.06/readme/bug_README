@@ -1,0 +1,50 @@
+* bc-1.06
+program description:
+---------------------
+bc is an interactive calculator (GNU); it can also processes
+ calculation task in *.b files.
+bc 		interactive calculator
+bc <file.b>   
+
+
+bug explanation:
+--------------------
+1. heap buffer overflow
+storage.c in function void more_arrays()
+
+heap buffer array: a_names may be overflowed at line 176--line 177 loop
+the root-cause is the for-loop conditio on line 176:
+'indx<a_count' is mistook for 'indx<v_count'.
+a_count is the number of array identifiers; v_count is the 
+current number of variable identifiers. When v_count is larger than
+a_count and more_arrays is called (when current array identifier quota
+is used up), the bug will be triggered.
+
+2. heap buffer overflow
+util.c line 577 in function int lookup(char* name, int namekind)
+
+in sentence: a_names[id->a_name] = name;
+the id->a_name may be (one element) beyond the boundary of heap buffer a_names.
+the root-cause if in line 580. if(id->a_name >= a_count) should be
+if(id->a_name >= (a_count-1)) or if(next_array >= a_count) [1].
+
+3. static fixed-length array overflow
+bc.c line 1425
+in the sentence: sprintf(genstr, "F%d,%s.%s[",...);
+genstr is a defined as char genstr[80], the sprintf source comes from input 
+file and may exceed 80 character length.
+
+bug triggering input:
+---------------------
+script/bad.b can trigger all of the above 3 bugs
+
+correct inputs:
+--------------------
+in inputs folder, there are a lot of non-bug-triggering input files.
+They are from the original bc package.
+
+bug detection preliminary results:
+--------------------
+Purify, Valgrind and CCured can all detect the bugs. 
+
+[1]: Thanks for Martin's correction :)

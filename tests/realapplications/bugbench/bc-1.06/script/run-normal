@@ -1,0 +1,4 @@
+#!/bin/sh
+BENCH=../src/bc/./bc
+ARGS="good.b"
+$BENCH $ARGS
