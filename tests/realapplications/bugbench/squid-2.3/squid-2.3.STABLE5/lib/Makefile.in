@@ -1,0 +1,80 @@
+#
+#  $Id: Makefile.in,v 1.44.2.3 2000/11/21 21:19:40 wessels Exp $
+#
+prefix		= @prefix@
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+
+CC		= @CC@
+MAKEDEPEND	= @MAKEDEPEND@
+INSTALL		= @INSTALL@
+INSTALL_BIN 	= @INSTALL_PROGRAM@
+INSTALL_FILE 	= @INSTALL_DATA@
+RANLIB		= @RANLIB@
+AC_CFLAGS	= @CFLAGS@
+LDFLAGS		= @LDFLAGS@
+XTRA_LIBS	= @XTRA_LIBS@
+RM		= @RM@
+LIBOBJS		= @LIBOBJS@
+AR_R		= @AR_R@
+
+INCLUDE		= -I../include -I$(top_srcdir)/include
+UTILOBJS	= rfc1123.o \
+		  rfc1738.o \
+		  rfc1035.o \
+		  util.o \
+		  getfullhostname.o \
+		  base64.o \
+		  uudecode.o \
+		  splay.o \
+		  safe_inet_addr.o \
+		  iso3307.o \
+		  snprintf.o \
+		  md5.o \
+		  radix.o \
+		  stub_memaccount.o \
+		  Array.o \
+		  Stack.o \
+		  hash.o \
+		  heap.o \
+                  html_quote.o \
+		  $(LIBOBJS)
+REGEXOBJS	= GNUregex.o
+DLMALLOCOBJS	= dlmalloc.o
+LIBS		= libmiscutil.a @LIBREGEX@ @LIBDLMALLOC@
+
+CFLAGS		= $(AC_CFLAGS) $(INCLUDE)
+
+all: $(LIBS)
+
+$(UTILOBJS): $(top_srcdir)/include/version.h
+
+libmiscutil.a: $(UTILOBJS)
+	$(RM) -f $@
+	$(AR_R) $@ $(UTILOBJS)
+	$(RANLIB) $@
+
+libregex.a: $(REGEXOBJS)
+	$(RM) -f $@
+	$(AR_R) $@ $(REGEXOBJS)
+	$(RANLIB) $@
+
+libdlmalloc.a: $(DLMALLOCOBJS)
+	$(RM) -f $@
+	$(AR_R) $@ $(DLMALLOCOBJS)
+	$(RANLIB) $@
+
+clean:
+	-rm -f *.o $(LIBS) core
+
+distclean: clean
+	-rm -f libregex.a
+	-rm -f Makefile Makefile.bak
+
+install: all
+
+depend:
+	$(MAKEDEPEND) -I../include -I. -fMakefile *.c
+

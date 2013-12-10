@@ -1,0 +1,64 @@
+* squid-2.3
+program description:
+---------------------
+Open source Squid Web Proxy Cache
+(The code is downloaded from Squid website)
+
+bug explanation:
+--------------------
+heap overflow
+(Refer to http://www.securiteam.com/unixfocus/5BP0P2A6AY.html)
+ftp.c in function ftpBuildTitleUrl
+
+static void
+ftpBuildTitleUrl(FtpStateData * ftpState)
+{
+    request_t *request = ftpState->request;
+    size_t len;
+    char *t;
+    len = 64
+       + strlen(ftpState->user)
+       + strlen(ftpState->password)
+       + strlen(request->host)
+       + strLen(request->urlpath);
+
+  ...
+    t = xcalloc (len, 1);
+    strcat(t, "ftp://");
+    if (strcmp(ftpState->user, "anonymous")) {
+       strcat(t, rfc1738_escape_part(ftpState->user));
+       if (ftpState->password_url) {
+           strcat(t, ":");
+           strcat(t, rfc1738_escape_part(ftpState->password));
+       }
+       strcat(t, "@");
+    }
+
+  ...
+}
+
+t is a heap buffer, allocated to hold the input request.
+Squid allocates the buffer based on its buffer length (variable len) 
+calculation, which is wrong.
+The calculation does not consider special characters in the url, in which case,
+the allocated buffer is small and causes heap buffer overflow.
+
+
+bug triggering input:
+---------------------
+ftp requests with large number of special characters ('\ ' in above example) 
+would probably trigger the bug. Following is an example:
+
+0. install the squid
+1. launch Squid server 
+2. run following client request
+./client ftp://username\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \:password@host.com
+
+
+correct inputs:
+--------------------
+too many
+
+bug detection preliminary results:
+--------------------
+Purify and Valgrind can both catch the bug
