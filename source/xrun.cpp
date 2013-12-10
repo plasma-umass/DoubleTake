@@ -71,8 +71,6 @@ void xrun::rollback() {
 
   PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
 
-  // Rollback all memory before rolling back the context.
-  _memory.rollback();
   
   PRINF("_memory rollback!!!\n");
   // We must prepare the rollback, for example, if multiple
@@ -80,6 +78,9 @@ void xrun::rollback() {
   // Also, we should setup those synchronization event list 
   _thread.prepareRollback();
   PRINF("_thread rollback and actual rollback\n");
+  
+	// Rollback all memory before rolling back the context.
+  _memory.rollback();
 
   //while(1);
   PRINF("\n\nset rollback\n\n\n");
@@ -151,7 +152,7 @@ void xrun::epochEnd (bool endOfProgram) {
 
 
 #ifdef DEBUG_ROLLBACK
-  rollback();
+  //rollback();
   //assert(0);
 #endif
 
@@ -180,7 +181,7 @@ void xrun::epochEnd (bool endOfProgram) {
   }
   else {
   #elif defined(DETECT_OVERFLOW)
-  PRINT("in the endof epoch, hasOverflow %d\n", hasOverflow);
+  PRDBG("in the endof epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   }

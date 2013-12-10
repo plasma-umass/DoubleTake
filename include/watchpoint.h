@@ -141,7 +141,7 @@ public:
     child = Real::fork()();
     if (child == 0)
     {
-      PRINT("Child install %d!!!!!!!!!\n", __LINE__);    
+      PRINF("Child install %d!!!!!!!!!\n", __LINE__);    
       sleep(2); // This is not necessarily enough but let's try it.
 
       PRINF("install %d!!!!!!!!!\n", __LINE__);    

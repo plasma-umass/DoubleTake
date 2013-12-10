@@ -307,7 +307,8 @@ public:
       thisFile->fd = fd;
       thisFile->pos = 0; 
       thisFile->origStream = file; 
-      
+     
+		//	PRINT("saveFD %d origStream %p\n", fd, file); 
 #ifdef REPRODUCIBLE_FDS
       thisFile->isClosed = false; 
       if(file) {
@@ -355,7 +356,7 @@ public:
       thisFile = (fileInfo *)i.getData();
 #ifndef REPRODUCIBLE_FDS
       if(thisFile->isNew) {
-			//	PRINT("close fd %d\n", thisFile->fd); 
+		//		PRINT("close fd %d filestream %p\n", thisFile->fd, thisFile->origStream); 
         closeFile(thisFile->fd, thisFile->origStream); //EBD
       }
 #else
@@ -510,8 +511,8 @@ public:
         InternalHeap::getInstance().free(thisFile->backupStream);
       }
      
-			InternalHeap::getInstance().free(thisFile);
-//      PRINT("fd is %d fp %p\n", fd, fp); 
+		//	InternalHeap::getInstance().free(thisFile);
+    //  PRINT("fd is %d fp %p. \n", fd, fp); 
 		//  PRINT("close at %p fclose at %p\n", Real::close(), Real::fclose());
       // Remove this 
       if(fp == NULL) {

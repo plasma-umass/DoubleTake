@@ -116,7 +116,7 @@ public:
 //    PRINF("starting!!!!!\n");
     epochBegin();
 
-    PRINT("Starting in xrun\n");
+    PRDBG("Starting in xrun\n");
   }
   
   void finalize()
@@ -125,7 +125,7 @@ public:
       return;
     }
 
-    PRINT("In the end of finalize function\n");
+    PRDBG("In the end of finalize function\n");
     //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
