@@ -38,7 +38,7 @@ void memtrack::check(void * start, size_t size, memTrackType type) {
     // Now we should verify the size information for buffer overflow and memory leakage.
     // For use-after-free errors, since it is impossible to know actual object size information,
     // then we do not verify its size information.
-    if(object->hasUseafterfree() | (object->objectSize == size)) {
+    if(object->hasUseafterfree() || object->hasOverflow() || (object->hasLeak() && (object->objectSize == size))) {
       // Now we check the type of this object.
       void * callsites[xdefines::CALLSITE_MAXIMUM_LENGTH]; 
       int depth = selfmap::getCallStack((void **)&callsites);
