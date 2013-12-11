@@ -256,6 +256,23 @@ public:
     return _bitmap.isBitSet(item);
   }
 
+	inline bool isOverflow(void * addr, void * objectStart, size_t objectSize) {
+		bool isOverflow = false;
+
+		// Check whether corresponding bit is set.
+		// If not set, it is not an overflow.
+		if(hasSentinels(addr, WORDBYTES)) {
+			WORD  curword = *((WORD *)addr);
+
+			// If this bit is set, then we check whether it is a integrate or not.
+			if(curword != xdefines::SENTINEL_WORD && curword != xdefines::MEMALIGN_SENTINEL_WORD) {
+				isOverflow = isCorruptedSentinel(addr);
+			}
+		}
+
+		return isOverflow;
+	}
+ 
  
 private:
   // How to calculate the shift bits according to the sector size
@@ -342,6 +359,34 @@ private:
 
   }
 
+	inline bool isCorruptedSentinel(void * addr) {
+		WORD  curword = *((WORD *)addr);
+		bool isCorrupted = false;
+          
+    // Calculate how many canary bytes here.
+    // We are using the ptr to varify the size
+    unsigned char * p = (unsigned char *)addr;
+    int j = xdefines::WORD_SIZE-1;
+    int magicBytesSize = 0;
+
+    while(p[j] == xdefines::MAGIC_BYTE_NOT_ALIGNED) {
+      magicBytesSize++;
+      j--;
+    } 
+
+    //PRWRN(" __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
+    // If there is no magic bytes, it is wrong since 
+    // we should have MAGIC_BYTE_NOT_ALIGNED if a bit is set.
+    if(magicBytesSize == 0) {
+      isCorrupted = true;
+    }
+    else if((int)p[j] != magicBytesSize && magicBytesSize != 1) {
+      // However, we should be careful on this. Since there is one extreme case,
+      isCorrupted = true;
+    }
+		return isCorrupted;
+	}
+
   // Check whether the sentinels has been corrupted with specified bit map word. 
   inline bool checkIntegrityOnBMW(unsigned long bits, unsigned long wordIndex) {
     WORD * address = (WORD *)getHeapAddressFromWordIndex(wordIndex);
@@ -369,33 +414,12 @@ private:
           // this word can be a non-aligned sentinel (partly) 
           // if next word is a normal sentinel
           if(checkNonAligned) {
-            // Calculate how many canary bytes there from the end of this object
-            WORD curword = address[i];
-
-            // Calculate how many canary bytes here.
-            // We are using the ptr to varify the size
-            unsigned char * p = (unsigned char *)&address[i];
-            int j = xdefines::WORD_SIZE-1;
-            int magicBytesSize = 0;
-
-            while(p[j] == xdefines::MAGIC_BYTE_NOT_ALIGNED) {
-              magicBytesSize++;
-              j--;
-            } 
-
-            //PRWRN(" __CHECK__ magicBytesSize is %d value %lx\n", magicBytesSize, address[i]);
-            // If there is no magic bytes, it is wrong since 
-            // we should have MAGIC_BYTE_NOT_ALIGNED if a bit is set.
-            if(magicBytesSize == 0) {
-              isBadSentinel = true;
-            }
-            else if((int)p[j] != magicBytesSize && magicBytesSize != 1) {
-              // However, we should be careful on this. Since there is one extreme case,
-              isBadSentinel = true;
-            }
+            isBadSentinel = isCorruptedSentinel(&address[i]);
           } else {
+						// If aligned, it should be one of preset sentinel
             isBadSentinel = true;
           }
+
           if(isBadSentinel) {
             PRINF("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits, checkNonAligned, address[i], &address[i]);
             // Find the starting address of this object.

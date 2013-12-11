@@ -75,14 +75,22 @@ void selfmap::printCallStack(int depth, void ** array) {
   //fprintf(stderr, "printCallStack:_filename %s\n", _filename);
   disableCheck();
   for(int i = 0; i < depth; i++) {
-    if(isApplication(array[i])) {
-      index++;
-      unsigned long addr = (unsigned long)array[i] - PREV_INSTRUCTION_OFFSET;
-      PRINT("\tcallstack frame %d: 0x%lx\n\t", index, addr);
+    void * addr = (void *)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
+    if(isApplication(addr)) {
+    	index++;
+      PRINT("\tcallstack frame %d: %p\t", index, addr);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s 0x%lx", _filename, addr);
+      sprintf(buf, "addr2line -e %s %p", _filename, addr);
       system(buf);
     }
+#if 0
+		// We print out the first one who do not belong to library itself
+		//else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {
+		else if(!isDoubleTakeLibrary((void *)addr)) {
+    	index++;
+      PRINT("\tcallstack frame %d: %p\n", index, addr);
+		}
+#endif
   }
   enableCheck();
 }

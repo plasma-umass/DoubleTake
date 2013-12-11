@@ -73,6 +73,7 @@ extern bool addThreadQuarantineList(void * ptr, size_t size);
 // A project can have multiple problems. 
 // So we make them to use different bits.
 typedef enum e_faultyObjectType {
+	OBJECT_TYPE_NO_ERROR = 0, // No error for this object
   OBJECT_TYPE_OVERFLOW = 1,
   OBJECT_TYPE_USEAFTERFREE = 2,
   OBJECT_TYPE_LEAK = 4

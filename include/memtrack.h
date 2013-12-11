@@ -43,7 +43,8 @@ typedef enum e_memtrackType{
 class trackObject {
   public:
     void * start;
-    size_t objectSize; // Actual object size.
+    size_t objectSize; // Object size, mostly using for memory leak only.
+		size_t currentObjectSize;  
     int    objecttype;
     int    tracktype; 
     // It is important to have this for use-after-free operation.
@@ -90,33 +91,29 @@ class trackObject {
       return (objecttype & OBJECT_TYPE_OVERFLOW) != 0;
     }
 
-    void saveCallsite(memTrackType type, int depth, void ** callsites) {
+    void saveCallsite(size_t size, memTrackType type, int depth, void ** callsites) {
       if(type == MEM_TRACK_MALLOC) {
         allocSite.save(depth, callsites);
+				currentObjectSize = size;
       }
       else {
         freeSite.save(depth, callsites);
       }
 
-      tracedOps |= type;
-      PRINF("tracedOps %lx. Now type is %lx isMallocTraced %d\n", (unsigned long) tracedOps, (unsigned long) type, isMallocTraced());
+			tracedOps = type;
     }
 
-    void setMallocTraced() {
-      tracedOps |= MEM_TRACK_MALLOC;
+		bool isInsideObject(void * addr) {
+			return((((char *)addr) >= ((char *)start)) && (((char *)addr) <= ((char *)start) + currentObjectSize));
+		}
+
+    bool isMalloced() {
+      return (tracedOps == MEM_TRACK_MALLOC);
     }
 
-    void setFreeTraced() {
-      tracedOps |= MEM_TRACK_FREE;
-    }
-
-    bool isMallocTraced() {
-      return (tracedOps & MEM_TRACK_MALLOC);
-    }
-
-    bool isFreeTraced() {
+    bool isFreed() {
       //fprintf(stderr, "tracedOps %lx to isFreeTraced\n", tracedOps);
-      return (tracedOps & MEM_TRACK_FREE);
+      return (tracedOps == MEM_TRACK_FREE);
     }
 };
 
@@ -179,8 +176,9 @@ public:
   // a malloc or free operation. 
   // Then we can match to find whether it is good to tell
   void check(void * start, size_t size, memTrackType type);
+  void print(void * start, faultyObjectType type);
+	faultyObjectType getFaultType(void * start, void * faultyaddr);
 
-  void print(void * start);
 private:
 
   bool _initialized; 

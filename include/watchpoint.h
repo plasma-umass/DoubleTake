@@ -63,11 +63,8 @@ public:
       faultyObjectType objtype;
       void   * faultyaddr;
       void   * objectstart;
-      size_t   objectsize;
       unsigned long faultyvalue;
-      // Whether we has got faulty value or not. 
-      // There is no need to track if it is already got.
-      bool   hasCaught;
+			unsigned long currentvalue;
   };
       
   static watchpoint& getInstance() {
@@ -84,21 +81,25 @@ public:
   bool addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize);
 
   bool findFaultyObject(faultyObject ** object) {
-    bool hasFound = false;
+		int watchpoints = 0;
 
     for(int i = 0; i < _numWatchpoints; i++) {
       unsigned long value = *((unsigned long *)_wp[i].faultyaddr);
 
       // Check whether now overflow actually happens
-      if(value == _wp[i].faultyvalue && _wp[i].hasCaught == false) {
-        _wp[i].hasCaught = true;        
+      if(value != _wp[i].currentvalue) {
+				_wp[i].currentvalue = value;
         *object = &_wp[i];
-        hasFound = true;
-        break;
+				watchpoints++;
+				continue;
       }
     }
 
-    return hasFound;
+		if(watchpoints != 1) {
+			PRINT("Error, we have %d watchpoints triggered at one time, only one watchpoint allowed.\n", watchpoints);
+		}
+
+    return (watchpoints != 0);
   }
 
   bool hasToRollback() {
@@ -164,6 +165,8 @@ public:
       PRINF("child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
         PRINF("child install watchpoints %d at %p\n", i, _wp[i].faultyaddr);
+				// Updatr the current value for this faulty address so that we can compare its value later.
+				_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
         insert_watchpoint ((unsigned long)_wp[i].faultyaddr, sizeof(void *), hw_write, parent);
       } 
       
