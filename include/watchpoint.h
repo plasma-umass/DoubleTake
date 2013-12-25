@@ -47,6 +47,7 @@
 #include "real.h"
 #include "dr.h"
 #include "selfmap.h"
+#include "callsite.h"
 
 class watchpoint {
   watchpoint() {
@@ -65,6 +66,7 @@ public:
       void   * objectstart;
       unsigned long faultyvalue;
 			unsigned long currentvalue;
+			CallSite  faultySite;
   };
       
   static watchpoint& getInstance() {
@@ -195,6 +197,10 @@ public:
   int getWatchpointsNumber() {
     return _numWatchpoints;
   }
+	
+	bool checkAndSaveCallsite(faultyObject * object, int depth, void ** callsite) {
+		return object->faultySite.saveAndCheck(depth, callsite); 
+	}
 
   // Handle those traps on watchpoints now.  
   static void trapHandler(int sig, siginfo_t* siginfo, void* context);

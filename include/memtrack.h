@@ -102,6 +102,7 @@ class trackObject {
 
 			tracedOps = type;
     }
+    
 
 		bool isInsideObject(void * addr) {
 			return((((char *)addr) >= ((char *)start)) && (((char *)addr) <= ((char *)start) + currentObjectSize));

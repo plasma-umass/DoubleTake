@@ -88,7 +88,16 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
 	if(faultType == OBJECT_TYPE_NO_ERROR) {
 		return;
 	}	
-		
+	
+	// Check whether this callsite is the same as the previous callsite.
+	void * callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];
+  int depth = selfmap::getCallStack((void **)&callsites);	
+
+	// If current callsite is the same as the previous one, we do not want to report again.
+	if(watchpoint::getInstance().checkAndSaveCallsite(object, depth, (void **)&callsites)) {
+		return;
+	}
+
   // Now we should check whether objectstart is existing or not.
   if(faultType == OBJECT_TYPE_OVERFLOW) {
     PRINT("\nCaught heap overflow at %p. Current call stack:\n", object->faultyaddr);
@@ -96,7 +105,7 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
   else if(faultType == OBJECT_TYPE_USEAFTERFREE) {
     PRINT("\nCaught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
   }
-  selfmap::getInstance().printCallStack();
+  selfmap::getInstance().printCallStack(depth, (void **)&callsites);
 
   // Check its allocation or deallocation inf 
   if(object->objectstart != NULL) {

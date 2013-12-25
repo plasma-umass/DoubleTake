@@ -67,6 +67,21 @@ public:
     }
   }
 
+	bool saveAndCheck(int depth, void ** addr) {
+		bool isSame = true;
+
+   	_depth = depth;
+
+    for(int i = 0; i < depth; i++) {
+			if(_callsite[i] != addr[i]) {
+				isSame = false;
+      	_callsite[i] = addr[i];
+			}
+    }
+
+		return isSame;
+	}
+
   // Return the callsite
   void** getCallsite() {
     return &_callsite[0];
