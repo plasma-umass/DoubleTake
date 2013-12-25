@@ -1,4 +1,4 @@
-
+#include<stdio.h>
 #include <iostream>
 using namespace std;
 char buf1[4];

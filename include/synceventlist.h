@@ -113,7 +113,6 @@ public:
 
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
-      PRINF("advanceSyncEvent: curentry %p, now %p", curentry, this->curentry);
     }
     else {
       this->curentry = NULL;

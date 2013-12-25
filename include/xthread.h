@@ -119,9 +119,9 @@ public:
   }
 
   /// Handling the specific thread event.
-  int thread_exit(void * value) {
+  void thread_exit(void * value) {
     // FIXME later.
-    abort();
+  //  abort();
   }
 
   // In order to improve the speed, those spawning operations will do in 
@@ -162,7 +162,6 @@ public:
       }
 
 
-      PRINF("thread creation with index %d\n", tindex);
       // WRAP up the actual thread function.
       // Get corresponding thread_t structure.
       thread_t * children = getThreadInfo(tindex);
@@ -193,14 +192,15 @@ public:
       
 
       // Now we are going to record this spawning event.
-      setThreadSpawning();
+      disableCheck();
       result =  Real::pthread_create()(tid, attr, xthread::startThread, (void *)children);
-      unsetThreadSpawning();
+      enableCheck();
       if(result != 0) {
         PRWRN("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
         Real::exit()(-1);
       }
     
+     // PRINT("thread creation with index %d result %p\n", tindex, result);
       // Record spawning event
       _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
       getRecord()->recordCloneOps(result, *tid);
@@ -211,7 +211,6 @@ public:
 
       global_unlock();
       
-      PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self); 
       if(result == 0) {
         // Waiting for the finish of registering children thread.
         lock_thread(children);
@@ -221,6 +220,7 @@ public:
     //     PRINF("Children %d status %d. now wakenup\n", children->index, children->status);
         }
         unlock_thread(children);
+    //  	PRINT("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self); 
       }
     }
     else {
@@ -389,7 +389,7 @@ public:
 
       // Record this event
     //  PRINF("do_mutex_lock before recording\n"); 
-      list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
+      list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
@@ -404,7 +404,6 @@ public:
       // Update thread synchronization event in order to handle the nesting lock.
       _sync.advanceThreadSyncList();
     }
-    //PRINF("do_mutex_lock done!!!!!\n"); 
     return ret;
   }
   
@@ -669,10 +668,19 @@ public:
     return threadinfo::getInstance().hasReapableThreads();
   }
   
-  inline bool threadSpawning() {
-    return current->isSpawning;
+  inline static void enableCheck() {
+    current->internalheap = false;
+    current->disablecheck = false;
   }
-
+	
+	inline static void disableCheck() {
+    current->internalheap = true;
+    current->disablecheck = true;
+  }
+  
+  inline static pid_t gettid() {
+    return syscall(SYS_gettid);
+  }
 
   void invokeCommit();
   bool addQuarantineList(void * ptr, size_t sz);
@@ -737,20 +745,7 @@ private:
   semaphore * getSemaphore() {
     return &current->sema;
   }
-
-  inline static void setThreadSpawning() {
-    current->internalheap = true;
-    current->isSpawning = true;
-  }
-
-  inline static void unsetThreadSpawning() {
-    current->internalheap = false;
-    current->isSpawning = false;
-  }
   
-  inline static pid_t gettid() {
-    return syscall(SYS_gettid);
-  }
     
   // Newly created thread should call this.
   inline static void threadRegister(bool isMainThread) {
@@ -781,7 +776,7 @@ private:
     current->joiner = NULL;
 
     // Initially, we should set to check system calls.
-    unsetThreadSpawning();
+    enableCheck();
 
     // Initialize the localized synchronization sequence number.
     //pthread_t thread = current->self;

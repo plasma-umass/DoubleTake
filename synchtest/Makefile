@@ -13,6 +13,7 @@ TESTS := $(SRCS:.cpp=)
 PTHREAD_LIBS += $(LIBS) -lpthread
 PTHREAD_OBJS := $(addsuffix -pthread, $(TESTS))
 
+#DTHREAD_LIBS = $(LIBS) -rdynamic ../debugsource/libdoubletake64.so
 DTHREAD_LIBS = $(LIBS) -rdynamic ../libdoubletake64.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/determ/libgrace.so
 #DTHREAD_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/stopgap/libgrace.so

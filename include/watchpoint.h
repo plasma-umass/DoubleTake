@@ -81,7 +81,7 @@ public:
   bool addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize);
 
   bool findFaultyObject(faultyObject ** object) {
-		int watchpoints = 0;
+		int trigPoints = 0;
 
     for(int i = 0; i < _numWatchpoints; i++) {
       unsigned long value = *((unsigned long *)_wp[i].faultyaddr);
@@ -90,16 +90,16 @@ public:
       if(value != _wp[i].currentvalue) {
 				_wp[i].currentvalue = value;
         *object = &_wp[i];
-				watchpoints++;
+				trigPoints++;
 				continue;
       }
     }
 
-		if(watchpoints != 1) {
-			PRINT("Error, we have %d watchpoints triggered at one time, only one watchpoint allowed.\n", watchpoints);
+		if(trigPoints != 1) {
+			PRINT("Error, we have %d watchpoints triggered at one time, only one watchpoint allowed.\n", trigPoints);
 		}
 
-    return (watchpoints != 0);
+    return (trigPoints != 0);
   }
 
   bool hasToRollback() {
@@ -140,12 +140,9 @@ public:
 
     // Creating a child to setup the watchpoints for the parent.
     child = Real::fork()();
-    if (child == 0)
-    {
-      PRINF("Child install %d!!!!!!!!!\n", __LINE__);    
+    if (child == 0) {
       sleep(2); // This is not necessarily enough but let's try it.
 
-      PRINF("install %d!!!!!!!!!\n", __LINE__);    
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
@@ -154,19 +151,13 @@ public:
       }
       //PRINF("child install watchpoints now, before sleep\n");
 
-      PRINF("install %d!!!!!!!!!\n", __LINE__);    
       // Child will wait the parent to stop.
       sleep(2);
 
      // PRINF("child install watchpoints now\n");
 
       // Install all watchpoints now.
-      PRINF("install %d!!!!!!!!!\n", __LINE__);    
-      PRINF("child install %d watchpoints at %p\n", _numWatchpoints, &_numWatchpoints);
       for(int i = 0; i < _numWatchpoints; i++) {
-        PRINF("child install watchpoints %d at %p\n", i, _wp[i].faultyaddr);
-				// Updatr the current value for this faulty address so that we can compare its value later.
-				_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
         insert_watchpoint ((unsigned long)_wp[i].faultyaddr, sizeof(void *), hw_write, parent);
       } 
       
@@ -187,6 +178,12 @@ public:
         PRWRN("child exit now!0\n");
         exit(-1);
       }
+
+			// Update all values of watchpoints before re-execution. 
+      for(int i = 0; i < _numWatchpoints; i++) {
+				// Updatr the current value for this faulty address so that we can compare its value later.
+				_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
+      } 
     }
     else {
       PRINT("Can't fork when installing watch points, with error: %s\n", strerror(errno));

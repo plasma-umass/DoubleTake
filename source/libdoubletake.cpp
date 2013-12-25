@@ -239,22 +239,36 @@ extern "C" {
   }
  
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
-    if (initialized) 
+    //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
+		if(current->disablecheck) {
+			return Real::pthread_mutex_lock()(mutex);  
+		}
+		else if (initialized) { 
       return xthread::getInstance().mutex_lock (mutex);
-
+		}
     return 0;
   }
 
   // FIXME: add support for trylock
   int pthread_mutex_trylock(pthread_mutex_t * mutex) {
-    if (initialized) 
+    //PRINT("inside pthread_mutex_lock, line %d!\n", __LINE__);
+		if(current->disablecheck) {
+			return Real::pthread_mutex_trylock()(mutex);  
+		}
+    else if (initialized) {
       return xthread::getInstance().mutex_trylock (mutex);
+		}
     return 0;
   }
   
   int pthread_mutex_unlock (pthread_mutex_t * mutex) {    
-    if (initialized) 
+    //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
+		if(current->disablecheck) {
+			return Real::pthread_mutex_unlock()(mutex);  
+		}
+    else if (initialized) {
       xthread::getInstance().mutex_unlock (mutex);
+		}
 
     return 0;
   }
@@ -322,8 +336,9 @@ extern "C" {
 
   // FIXME
   void pthread_exit (void * value_ptr) {
-    xthread::getInstance().thread_exit(value_ptr);
     // This should probably throw a special exception to be caught in spawn.
+		abort();
+    //xthread::getInstance().thread_exit(value_ptr);
   }
  
   int pthread_setconcurrency (int) {
@@ -439,7 +454,6 @@ extern "C" {
   
   ssize_t write (int fd, const void * buf, size_t count) {
     if (!initialized || fd == 1 || fd == 2) {
-    //  fprintf(stderr, " write in doubletake at %d\n", __LINE__);
       return Real::write()(fd, buf, count);
     }
     else {
@@ -468,7 +482,7 @@ extern "C" {
                   int fd, off_t offset) 
   {
     //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %x\n", __LINE__, start, fd, length);
-    if (!initialized) {
+    if (!initialized || current->disablecheck) {
       return Real::mmap()(start, length, prot, flags, fd, offset);
     }
 
@@ -637,7 +651,7 @@ extern "C" {
   }
 
   int mprotect(void *addr, size_t len, int prot) {
-    if (!initialized) {
+    if (!initialized || current->disablecheck) {
       return Real::mprotect()(addr, len, prot);
     }
     fprintf(stderr, "mprotect in doubletake at %d\n", __LINE__);

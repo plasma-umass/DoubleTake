@@ -56,6 +56,13 @@ extern "C" {
   //#include <linux/kexec.h>
 }
 
+/*
+static void* call_dlsym(const char* name, void* handle) {
+  void* p = dlsym(name, handle);
+  return p;
+}
+*/
+
 #define MAKE_WRAPPER(name, handle) \
   static typeof(::name)* name() { \
     static typeof(::name)* _fn = (typeof(::name)*)dlsym(handle, #name); \
@@ -64,6 +71,7 @@ extern "C" {
 
 class Real {
 private:
+	
   static void* pthread_handle() {
     static void* _handle = dlopen("libpthread.so.0", RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD);
     return _handle;

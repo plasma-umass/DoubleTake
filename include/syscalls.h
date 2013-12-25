@@ -195,10 +195,6 @@ public:
   {
     void * ret = NULL;
 
-    if(threadSpawning()) {
-      return Real::mmap()(start, length, prot, flags, fd, offset);
-    }
-
     if(!global_isRollback()) {
       // We only record these mmap requests.
       ret = Real::mmap()(start, length, prot, flags, fd, offset);
@@ -459,19 +455,9 @@ public:
 
   int mprotect(void *addr, size_t len, int prot) {
     int ret;
-    if(threadSpawning()) {
-      if(global_isRollback()) {
-        return 0;
-      }
-      else {
-        return Real::mprotect()(addr, len, prot);
-      }
-    }
 
     // FIXME: since pthread_create will call mprotect, we don't 
     // want to introduce some unnecessary checking here.
-    // Maybe we should set up some thread-specific variable to 
-    // avoid this condition.
     epochEnd();
     ret = Real::mprotect()(addr, len, prot);
     epochBegin();
@@ -3041,10 +3027,6 @@ public:
   }*/
 
 private:
-  bool threadSpawning() {
-    return xthread::getInstance().threadSpawning();
-  }
-
   Record * getRecord() {
     return (Record *)current->record;
   }

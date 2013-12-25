@@ -54,7 +54,7 @@ typedef struct thread {
   bool      internalheap;
   // Should we disable check or not?
   bool      disablecheck; 
-  bool      isSpawning; // Whether a new thread is spawning?  
+ // bool      isSpawning; // Whether a new thread is spawning?  
   bool      isNewlySpawned;  // whether this thread is spawned in this epoch?
   // Whether this thread has been joined or not. 
   // If the thread has not been joined, then we can't reap this thread.

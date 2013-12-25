@@ -36,6 +36,7 @@
 #define MAX_BUF_SIZE 4096
 #include "xdefines.h"
 #include "threadstruct.h"
+#include "xthread.h"
 #include "selfmap.h"
 
 // Normally, callstack only saves next instruction address. 
@@ -50,9 +51,9 @@ void selfmap::printCallStack() {
   int size;
 
   // get void*'s for all entries on the stack
-  current->internalheap = true;
+	xthread::disableCheck();
   size = backtrace(array, 10);
-  current->internalheap = false;
+	xthread::enableCheck();
   //backtrace_symbols_fd(&array[0], size, 2);
 
   // Print out the source code information if it is a overflow site.
@@ -60,20 +61,11 @@ void selfmap::printCallStack() {
 }
 
 // Calling system involves a lot of irrevocable system calls.
- 
-void disableCheck() {
-  current->disablecheck = true;
-}
-
-void enableCheck() {
-  current->disablecheck = false;
-}
-
 void selfmap::printCallStack(int depth, void ** array) {
   char buf[MAX_BUF_SIZE];
   int index = 0;
   //fprintf(stderr, "printCallStack:_filename %s\n", _filename);
-  disableCheck();
+  xthread::disableCheck();
   for(int i = 0; i < depth; i++) {
     void * addr = (void *)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
     if(isApplication(addr)) {
@@ -92,7 +84,7 @@ void selfmap::printCallStack(int depth, void ** array) {
 		}
 #endif
   }
-  enableCheck();
+  xthread::enableCheck();
 }
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.
@@ -101,9 +93,9 @@ int selfmap::getCallStack(void ** array) {
 
   PRINF("Try to get backtrace with array %p\n", array);
   // get void*'s for all entries on the stack
-  current->internalheap = true;
+	xthread::disableCheck();
   size = backtrace(array, xdefines::CALLSITE_MAXIMUM_LENGTH);
-  current->internalheap = false;
+	xthread::enableCheck();
   PRINF("After get backtrace with array %p\n", array);
 
   return size;

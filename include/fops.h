@@ -297,7 +297,7 @@ public:
  
   // Called in the execution phase when fopen or open
   void saveFd(int fd, FILE *file) {
-  //  PRINF("saveFd %d\n", fd);
+    PRINT("saveFd %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
     // Save it even when fopen/open is not successful. 
     getRecord()->recordFileOps(Record::E_OP_FILE_OPEN, fd);   

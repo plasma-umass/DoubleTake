@@ -129,7 +129,12 @@ $(LIB_TARGETS32):: $(OBJS32) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common
 
 $(LIB_TARGETS64):: $(OBJS64) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common.mk
 	@echo $(INDENT)[$(notdir $(firstword $(CXXLIB)))] Linking $@ for $(if $(DEBUG),Debug,Release) build
-	@$(CXXLIB) $(CXXFLAGS64) $(INCFLAGS) $(OBJS64) -o $@ $(LIBFLAGS)
+	$(CXXLIB) $(CXXFLAGS64) $(INCFLAGS) $(OBJS64) -o $@ $(LIBFLAGS) 
+
+#-rdynamic $(ROOT)/libdoubletake64.so 
+	
+#$(CXXFLAGS64) $(INCFLAGS) $(OBJS64) -o $@ $(LIBFLAGS) 
+	
 
 $(LIB_TARGETS_NATIVE):: $(patsubst %.$(SHLIB_SUFFIX), %$(BITS).$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
 	@cp $(patsubst %.$(SHLIB_SUFFIX), %$(BITS).$(SHLIB_SUFFIX), $@) $@
