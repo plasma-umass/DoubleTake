@@ -66,13 +66,13 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <dlfcn.h>
 
 #include <stdarg.h>
 
 #include "xrun.h"
 #include "xmemory.h"
 #include "syscalls.h"
-
 #ifdef _SYS_STAT_H
 #undef _SYS_STAT_H
 #endif
@@ -136,6 +136,19 @@ static void * tempmalloc(int size) {
 
 bool addThreadQuarantineList(void * ptr, size_t sz) {
   return xthread::getInstance().addQuarantineList(ptr, sz);
+}
+
+void* call_dlsym(void * handle, const char* funcname) {
+  if(initialized) {
+		xthread::disableCheck();
+	}
+
+  void* p = dlsym(handle, funcname);
+  
+	if(initialized) {
+		xthread::enableCheck();
+	}
+  return p;
 }
 
 extern "C" {

@@ -54,6 +54,7 @@
 extern "C" {
   // This header file doesn't properly wrap declarations for C++ inclusion
   //#include <linux/kexec.h>
+	extern void* call_dlsym(void * handle, const char* funcname);
 }
 
 /*
@@ -65,7 +66,7 @@ static void* call_dlsym(const char* name, void* handle) {
 
 #define MAKE_WRAPPER(name, handle) \
   static typeof(::name)* name() { \
-    static typeof(::name)* _fn = (typeof(::name)*)dlsym(handle, #name); \
+    static typeof(::name)* _fn = (typeof(::name)*)call_dlsym(handle, #name); \
     return _fn; \
   }
 
