@@ -139,14 +139,21 @@ bool addThreadQuarantineList(void * ptr, size_t sz) {
 }
 
 void* call_dlsym(void * handle, const char* funcname) {
+	bool isCheckDisabled = false;
   if(initialized) {
-		xthread::disableCheck();
+		isCheckDisabled = xthread::isCheckDisabled();
+
+		if(!isCheckDisabled) {
+			xthread::disableCheck();
+		}
 	}
 
   void* p = dlsym(handle, funcname);
   
 	if(initialized) {
-		xthread::enableCheck();
+		if(!isCheckDisabled) {
+			xthread::enableCheck();
+		}
 	}
   return p;
 }
@@ -664,10 +671,11 @@ extern "C" {
   }
 
   int mprotect(void *addr, size_t len, int prot) {
+    //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
+    PRINT("mprotect in doubletake at %d with current %p disablecheck %d\n", __LINE__, current, current->disablecheck);
     if (!initialized || current->disablecheck) {
       return Real::mprotect()(addr, len, prot);
     }
-    fprintf(stderr, "mprotect in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().mprotect(addr, len, prot);
   }
 

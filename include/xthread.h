@@ -192,7 +192,9 @@ public:
       
 
       // Now we are going to record this spawning event.
+			PRINT("Before pthread_create, current %p %d\n", current, current->disablecheck);
       disableCheck();
+			PRINT("After disablecheck pthread_create, current %p %d\n", current, current->disablecheck);
       result =  Real::pthread_create()(tid, attr, xthread::startThread, (void *)children);
       enableCheck();
       if(result != 0) {
@@ -671,11 +673,17 @@ public:
   inline static void enableCheck() {
     current->internalheap = false;
     current->disablecheck = false;
+		PRINT("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
+
+	inline static bool isCheckDisabled() {
+		return current->disablecheck;
+	}
 	
 	inline static void disableCheck() {
     current->internalheap = true;
     current->disablecheck = true;
+		PRINT("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
   
   inline static pid_t gettid() {
