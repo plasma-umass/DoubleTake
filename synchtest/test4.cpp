@@ -16,7 +16,7 @@ char outbuf[4096];
 int outfd = 2;
 #define PRINT_SIZE 4096
 //#define PRINT(fmt,...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#if 0
+#if 1
 #define PRINT(fmt,...) \
       { \
       ::snprintf(outbuf, PRINT_SIZE, "%20s:%-4d: " fmt "\n", \
@@ -108,13 +108,13 @@ void * thread(void * p) {
 //	pthread_mutex_lock(&mutex_exit);
 	pthread_mutex_lock(&mutex);
 	eat_finished++;
-	//PRINT("Thread %d (at %p) is checking, %d are waiting\n", i, (void *)pthread_self(), eat_finished);
+	PRINT("Thread %d (at %p) is checking, %d are waiting\n", i, (void *)pthread_self(), eat_finished);
 	if(eat_finished == PHIL_NUM) {
 //		PRINT("Thread %d waking all phylosophers up\n", i);
 		pthread_cond_broadcast(&cond_exit);
 	}
 	else {
-	//	PRINT("Thread %d (at %p) is waiting for others, it has done\n", i, (void *)pthread_self());
+		PRINT("Thread %d (at %p) is waiting for others, it has done\n", i, (void *)pthread_self());
 		pthread_cond_wait(&cond_exit, &mutex);
 	}
 	pthread_mutex_unlock(&mutex);
@@ -147,7 +147,7 @@ int main() {
 	// Create threads
 	for(i = 0; i < PHIL_NUM; i++) {
 		pthread_create(&threads[i], NULL, thread, (void *)i);
-   // fprintf(stderr, "Creating THREAD%d thread %p\n", i, threads[i]);
+   	PRINT("Creating THREAD%d thread %p\n", i, threads[i]);
 	}
 
   //fprintf(stderr, "Create threads %d PHIL_NUM %d\n", i, PHIL_NUM);

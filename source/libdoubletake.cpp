@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-#define fprintf(stderr, ...)
+//#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;
@@ -672,7 +672,7 @@ extern "C" {
 
   int mprotect(void *addr, size_t len, int prot) {
     //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
-    PRINT("mprotect in doubletake at %d with current %p disablecheck %d\n", __LINE__, current, current->disablecheck);
+//    PRINT("mprotect in doubletake at %d with current %p disablecheck %d\n", __LINE__, current, current->disablecheck);
     if (!initialized || current->disablecheck) {
       return Real::mprotect()(addr, len, prot);
     }
@@ -906,7 +906,10 @@ extern "C" {
   }
 
   int socket(int domain, int type, int protocol){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
+    fprintf(stderr, "%d: in doubletake at %d\n", getpid(), __LINE__);
+		while(1) {
+			;
+		}
     return syscalls::getInstance().socket(domain, type, protocol);
   }
 

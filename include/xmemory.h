@@ -154,7 +154,8 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-    //PRINF("In the beginning, THREAD%d at %p: malloc size %lx ptr %p\n", getThreadIndex(), pthread_self(), sz, ptr);
+    
+		PRINT("**********THREAD%d : malloc size %lx before malloc\n", getThreadIndex(), sz);
     ptr = (unsigned char *)_pheap.malloc(mysize);
     objectHeader * o = getObject (ptr);
 
@@ -218,7 +219,7 @@ public:
     }
       
     // We donot need to do anything if size is equal to sz
-    //PRINT("malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
+    PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
     return ptr;
   }
 
@@ -320,7 +321,7 @@ public:
         }
       
         if(isOverflow) {
-     //     PRINT("xmemory: free find overflow\n");
+         PRINT("xmemory: free find overflow\n");
           watchpoint::getInstance().addWatchpoint(startp, *((size_t*)startp), OBJECT_TYPE_OVERFLOW, ptr, sz); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);
@@ -372,7 +373,7 @@ public:
    void free (void * ptr) {
     void * origptr;
    
-   // PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+    //PRINT("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     if(!inRange((intptr_t)ptr)) {
       return;
     }
@@ -395,6 +396,7 @@ public:
     // If this object has a overflow, we donot need to free this object
     if(!global_isRollback()) {
       if(isObjectOverflow(origptr)) {
+				xthread::invokeCommit();
         return;
       }
     }
@@ -405,10 +407,12 @@ public:
       memtrack::getInstance().check(ptr, o->getObjectSize(), MEM_TRACK_FREE);
     }
 
+    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     _pheap.free(origptr);
 
     // We remove the actual size of this object to set free on an object. 
     o->setObjectFree();
+    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     // Cleanup this object with sentinel except the first word. 
   }
 

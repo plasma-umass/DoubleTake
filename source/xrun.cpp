@@ -150,7 +150,6 @@ void xrun::epochEnd (bool endOfProgram) {
   }
   //PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
 
-
 #ifdef DEBUG_ROLLBACK
   //rollback();
   //assert(0);

@@ -171,6 +171,7 @@ public:
   }
   
   inline bool hasReapableThreads() {
+		//fprintf(stderr, "_reapableThreads %d\n", _reapableThreads);
     return (_reapableThreads != 0);
   } 
 

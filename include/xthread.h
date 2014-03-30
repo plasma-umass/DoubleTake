@@ -137,23 +137,31 @@ public:
     int tindex;
     int result;
 
-//   PRINF("****in the beginning of thread_create, *tid is %lx\n", *tid);
+   PRINT("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
-//      PRINF("PTHREAD_CREATE it is not rollback phase!!!!!!\n");
+      PRINT("PTHREAD_CREATE it is not rollback phase!!!!!!\n");
       // Lock and record
       global_lock();
 
+			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
 
+			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // This can be caused by two reasons:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
       // Second, we haven't meet commit point for a long time.
       if(tindex == -1) {
+				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         REQUIRE(hasReapableThreads(), "No reapable threads");
+				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         global_unlock();
+				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         
+				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         invokeCommit();
+			
+				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
  
         global_lock();
         tindex = allocThreadIndex();
@@ -162,10 +170,12 @@ public:
       }
 
 
+			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // WRAP up the actual thread function.
       // Get corresponding thread_t structure.
       thread_t * children = getThreadInfo(tindex);
      
+			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       children->isDetached = false; 
       if(attr) { 
         int detachState;
@@ -177,6 +187,7 @@ public:
         }
       }
 
+			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       children->parent = current;
       children->index = tindex;
       children->startRoutine = fn;
@@ -673,7 +684,7 @@ public:
   inline static void enableCheck() {
     current->internalheap = false;
     current->disablecheck = false;
-		PRINT("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
+		//PRINT("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
 
 	inline static bool isCheckDisabled() {
@@ -683,14 +694,14 @@ public:
 	inline static void disableCheck() {
     current->internalheap = true;
     current->disablecheck = true;
-		PRINT("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
+		//PRINT("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
   
   inline static pid_t gettid() {
     return syscall(SYS_gettid);
   }
 
-  void invokeCommit();
+  static void invokeCommit();
   bool addQuarantineList(void * ptr, size_t sz);
 
 private:
