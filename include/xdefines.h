@@ -164,7 +164,7 @@ public:
   enum { DIROPEN_ALLOC_SIZE = 0x8038 };
 
 //  enum { MAX_RECORD_ENTRIES = 0x1000 };
-  enum { MAX_RECORD_ENTRIES = 0x1000000 };
+  enum { MAX_SYSCALL_ENTRIES = 0x100000 };
   enum { MAX_FREE_OBJECTS = 0x100000 };
   enum { MAX_SYNCEVENT_ENTRIES = 0x1000000 };
 

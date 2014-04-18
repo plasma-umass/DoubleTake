@@ -51,7 +51,6 @@
 #include "atomic.h"
 
 #include "xdefines.h"
-#include "wrappers/ansiwrapper.h"
 
 #include "mm.h"
 #include "sentinelmap.h"

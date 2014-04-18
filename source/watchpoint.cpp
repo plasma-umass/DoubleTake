@@ -70,8 +70,9 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
 
   // Find faulty object. 
   faultyObject * object;
+	// If it is a read, we only care about this if it is use-after-free error
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
-    PRERR("Can't find faulty object!!!!\n");
+  //  PRERR("Can't find faulty object!!!!\n");
 		return;
   }
 

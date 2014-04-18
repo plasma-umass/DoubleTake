@@ -91,7 +91,7 @@ public:
           assert(thisFile->backupStream != NULL);
         }
 #endif
-        off_t pos = Real::lseek()(thisFile->fd, 0, SEEK_CUR);
+        off_t pos = Real::lseek(thisFile->fd, 0, SEEK_CUR);
         thisFile->pos = pos;
 
 #ifndef REPRODUCIBLE_FDS
@@ -290,7 +290,7 @@ public:
     }
     
     // Remove this 
-    return Real::closedir()(dir);
+    return Real::closedir(dir);
 #endif
 
   }
@@ -360,7 +360,7 @@ public:
         closeFile(thisFile->fd, thisFile->origStream); //EBD
       }
 #else
-      Real::lseek()(thisFile->fd, thisFile->pos, SEEK_SET);
+      Real::lseek(thisFile->fd, thisFile->pos, SEEK_SET);
 
       // The file has already existed before current epoch
       if(thisFile->origStream) {
@@ -513,13 +513,13 @@ public:
      
 		//	InternalHeap::getInstance().free(thisFile);
     //  PRINT("fd is %d fp %p. \n", fd, fp); 
-		//  PRINT("close at %p fclose at %p\n", Real::close(), Real::fclose());
+		//  PRINT("close at %p fclose at %p\n", Real::close, Real::fclose);
       // Remove this 
       if(fp == NULL) {
-        return Real::close()(fd);
+        return Real::close(fd);
       }
       else {
-        return Real::fclose()(fp);
+        return Real::fclose(fp);
       }
     }
     return ret; 
@@ -546,14 +546,14 @@ public:
         // close a newfd won't affect the new fd. 
         // check whether this file is a file stream or not.
         if(thisFile->origStream) {
-          Real::fclose()(thisFile->origStream);
+          Real::fclose(thisFile->origStream);
         
           assert(thisFile->backupStream != NULL); 
           // Release temporary file stream now.
           InternalHeap::getInstance().free(thisFile->backupStream);
         }
         else {
-          Real::close()(fd);
+          Real::close(fd);
         }
       
         // Remove this entry from the filemap. FIXME
@@ -581,7 +581,7 @@ public:
         assert(dir == thisDir->dir);
 
         // check whether this file is a file stream or not.
-        Real::closedir()(dir);
+        Real::closedir(dir);
          
         // Release temporary file stream now.
         InternalHeap::getInstance().free(thisDir->backupDir);

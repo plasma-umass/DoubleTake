@@ -154,8 +154,7 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-    
-		PRINT("**********THREAD%d : malloc size %lx before malloc\n", getThreadIndex(), sz);
+   	
     ptr = (unsigned char *)_pheap.malloc(mysize);
     objectHeader * o = getObject (ptr);
 
@@ -215,11 +214,12 @@ public:
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
+			PRINT("malloc line %d tracking malloc\n", __LINE__);
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
       
     // We donot need to do anything if size is equal to sz
-    PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
+   // PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
     return ptr;
   }
 
@@ -321,7 +321,7 @@ public:
         }
       
         if(isOverflow) {
-         PRINT("xmemory: free find overflow\n");
+         //PRINT("xmemory: free find overflow\n");
           watchpoint::getInstance().addWatchpoint(startp, *((size_t*)startp), OBJECT_TYPE_OVERFLOW, ptr, sz); 
         }
         sentinelmap::getInstance().clearSentinelAt(startp);
@@ -566,7 +566,7 @@ public:
     current->internalheap = false;
     while(1);
 
-//    Real::exit()(-1);
+//    Real::exit(-1);
     // Set the context to handleSegFault
     jumpToFunction((ucontext_t *)context, (unsigned long)xmemory::getInstance().handleSegFault);   
 //    xmemory::getInstance().handleSegFault ();
@@ -581,7 +581,7 @@ public:
     _sigstk.ss_sp = MM::mmapAllocatePrivate (SIGSTKSZ);
     _sigstk.ss_size = SIGSTKSZ;
     _sigstk.ss_flags = 0;
-    Real::sigaltstack()(&_sigstk, (stack_t *) 0);
+    Real::sigaltstack(&_sigstk, (stack_t *) 0);
 #endif
     // Now set up a signal handler for SIGSEGV events.
     struct sigaction siga;
@@ -590,7 +590,7 @@ public:
     // Set the following signals to a set 
     sigaddset (&siga.sa_mask, SIGSEGV);
 
-    Real::sigprocmask()(SIG_BLOCK, &siga.sa_mask, NULL);
+    Real::sigprocmask(SIG_BLOCK, &siga.sa_mask, NULL);
 
     // Point to the handler function.
 #if defined(linux)
@@ -600,12 +600,12 @@ public:
 #endif
 
     siga.sa_sigaction = xmemory::segvHandle;
-    if (Real::sigaction()(SIGSEGV, &siga, NULL) == -1) {
+    if (Real::sigaction(SIGSEGV, &siga, NULL) == -1) {
       printf ("sfug.\n");
       exit (-1);
     }
 
-    Real::sigprocmask() (SIG_UNBLOCK, &siga.sa_mask, NULL);
+    Real::sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
   }
 
 private:

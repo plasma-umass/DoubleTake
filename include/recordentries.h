@@ -51,24 +51,19 @@ public:
     int i = 0;
 
     _size = alignup(entries * sizeof(Entry), xdefines::PageSize);
-    // We don't need to allocate all pages, only the difference between newnum and oldnum.
     ptr = MM::mmapAllocatePrivate(_size);
     if(ptr == NULL)  {
       PRWRN("%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
       ::abort();
     }
-	
-    //PRINF("recordentries.h::initialize at _cur at %p\n", &_cur);	
+
+  //  PRINT("recordentries.h::initialize at _cur at %p. memory from %p to 0x%lx\n", &_cur, ptr, (((unsigned long)ptr) + _size));	
     // start to initialize it.
     _start = (Entry *)ptr;
     _cur = 0;
     _total = entries;
     _iter = 0;
     return;
-  }
-
-  void finalize() {
-    MM::mmapDeallocate(_start, _size);
   }
 
   Entry * alloc() {

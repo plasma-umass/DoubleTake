@@ -72,9 +72,9 @@ public:
     struct rlimit rl;
 
     // Get the stack size.
-    if (Real::getrlimit()(RLIMIT_STACK, &rl) != 0) {
+    if (Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
       PRWRN("Get the stack size failed.\n");
-      Real::exit()(-1);
+      Real::exit(-1);
     }
     
     // Check the stack size.
@@ -83,7 +83,7 @@ public:
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;
-    if(Real::setrlimit()(RLIMIT_NOFILE, &rl)) {
+    if(Real::setrlimit(RLIMIT_NOFILE, &rl)) {
       PRINF("change limit failed, error %s\n", strerror(errno));
     }
     PRINF("NUMBER files limit %d\n", rl.rlim_cur);
@@ -115,8 +115,7 @@ public:
 
 //    PRINF("starting!!!!!\n");
     epochBegin();
-
-    PRDBG("Starting in xrun\n");
+    PRDBG("Starting in xrun noww\n");
   }
   
   void finalize()
@@ -194,12 +193,12 @@ private:
     _sigstk.ss_sp = MM::mmapAllocatePrivate ( SIGSTKSZ);
     _sigstk.ss_size = SIGSTKSZ;
     _sigstk.ss_flags = 0;
-    Real::sigaltstack()(&_sigstk, (stack_t *) 0);
+    Real::sigaltstack(&_sigstk, (stack_t *) 0);
 
     // We don't want to receive SIGUSR2 again when a thread is inside signal handler.
     sigemptyset (&sigusr2.sa_mask);
     sigaddset(&sigusr2.sa_mask, SIGUSR2);
-  //  Real::sigprocmask() (SIG_BLOCK, &sigusr2.sa_mask, NULL);
+  //  Real::sigprocmask (SIG_BLOCK, &sigusr2.sa_mask, NULL);
     /** 
       Some parameters used here:
        SA_RESTART: Provide behaviour compatible with BSD signal 
@@ -211,7 +210,7 @@ private:
     sigusr2.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
     sigusr2.sa_sigaction = xrun::sigusr2Handler;
-    if (Real::sigaction()(SIGUSR2, &sigusr2, NULL) == -1) {
+    if (Real::sigaction(SIGUSR2, &sigusr2, NULL) == -1) {
       fprintf (stderr, "setting signal handler SIGUSR2 failed.\n");
       abort();
     }

@@ -34,7 +34,7 @@ public:
   #define ALIGN_TO_CACHELINE(size) (size%64 == 0 ? size:(size+64)/64*64)
 
   static void mmapDeallocate (void * ptr, size_t sz) {
-    Real::munmap()(ptr, sz);
+    Real::munmap(ptr, sz);
   }
 
   static void * mmapAllocateShared (size_t sz,
@@ -64,7 +64,7 @@ private:
     sharedInfo     |= ((startaddr != (void *) 0) ? MAP_FIXED : 0);
     sharedInfo     |= MAP_NORESERVE;
 
-    void * ptr =  Real::mmap() (startaddr, sz, protInfo,
+    void * ptr =  Real::mmap (startaddr, sz, protInfo,
 			      sharedInfo, fd, 0);
     if (ptr == MAP_FAILED) {
       PRWRN("Couldn't do mmap (%s) : startaddr %p, sz %lu, protInfo=%d, sharedInfo=%d\n", strerror(errno), startaddr, sz, protInfo, sharedInfo);

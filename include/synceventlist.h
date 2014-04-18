@@ -67,7 +67,7 @@ public:
 //    PRINF("synceventlist initialization at list %p\n", &list);
     // Initialize the sequence number   
     listInit(&list);
-    Real::pthread_mutex_init()(&lock, NULL);
+    Real::pthread_mutex_init(&lock, NULL);
     syncVariable = variable;
     syncCmd = synccmd;
     curentry = NULL;
@@ -78,6 +78,7 @@ public:
     struct syncEvent * event = allocSyncEvent();
 
     PRINF("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
+//    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event, current, this);
     listInit(&event->list);
 
     // Change the event there.
@@ -85,15 +86,23 @@ public:
     event->eventlist = this;
     event->ret = ret;
 
+  //  PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event, current, this);
     if(synccmd != E_SYNC_MUTEX_LOCK) {   
-      Real::pthread_mutex_lock()(&this->lock);
+      Real::pthread_mutex_lock(&this->lock);
       listInsertTail(&event->list, &this->list);
-      Real::pthread_mutex_unlock()(&this->lock);
+      Real::pthread_mutex_unlock(&this->lock);
     }
     else {
-      // We only record synchronization inside critical section.
+		if((unsigned long)this == 0x100001cffe48) {
+    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__, event, current, this, *((unsigned long *)this));
+   	PRINT("event->list %p this->list %p\n", &event->list, &this->list);
+		}
+	    // We only record synchronization inside critical section.
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);
+		if((unsigned long)this == 0x100001cffe48) {
+    	PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__, event, current, this, *((unsigned long *)this));
+		}
     }
    // PRINF("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
   }

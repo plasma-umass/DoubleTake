@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-//#define fprintf(stderr, ...)
+#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;
@@ -104,10 +104,14 @@ __attribute__((constructor)) void initializer() {
   // before initialized.
   // We can not use stack variable here since different process
   // may use this to share information.
-		fprintf(stderr, "initializer now, funcInitialized %d!!!!\n", funcInitialized);
+	// initialize those library function entries.
+	Real::initializer();
+
   if(!funcInitialized) {
     funcInitialized = true;
 		fprintf(stderr, "initializer now!!!!\n");
+
+
     xrun::getInstance().initialize();
     initialized = true;
   }
@@ -261,7 +265,7 @@ extern "C" {
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
     //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
 		if(current->disablecheck) {
-			return Real::pthread_mutex_lock()(mutex);  
+			return Real::pthread_mutex_lock(mutex);  
 		}
 		else if (initialized) { 
       return xthread::getInstance().mutex_lock (mutex);
@@ -273,7 +277,7 @@ extern "C" {
   int pthread_mutex_trylock(pthread_mutex_t * mutex) {
     //PRINT("inside pthread_mutex_lock, line %d!\n", __LINE__);
 		if(current->disablecheck) {
-			return Real::pthread_mutex_trylock()(mutex);  
+			return Real::pthread_mutex_trylock(mutex);  
 		}
     else if (initialized) {
       return xthread::getInstance().mutex_trylock (mutex);
@@ -284,7 +288,7 @@ extern "C" {
   int pthread_mutex_unlock (pthread_mutex_t * mutex) {    
     //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
 		if(current->disablecheck) {
-			return Real::pthread_mutex_unlock()(mutex);  
+			return Real::pthread_mutex_unlock(mutex);  
 		}
     else if (initialized) {
       xthread::getInstance().mutex_unlock (mutex);
@@ -466,7 +470,7 @@ extern "C" {
   ssize_t read (int fd, void * buf, size_t count) {
     fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
     if (!initialized) {
-      return Real::read()(fd, buf, count);
+      return Real::read(fd, buf, count);
     }
 
     return syscalls::getInstance().read(fd, buf, count);
@@ -474,7 +478,7 @@ extern "C" {
   
   ssize_t write (int fd, const void * buf, size_t count) {
     if (!initialized || fd == 1 || fd == 2) {
-      return Real::write()(fd, buf, count);
+      return Real::write(fd, buf, count);
     }
     else {
       fprintf(stderr, " write in doubletake at %d\n", __LINE__);
@@ -503,20 +507,21 @@ extern "C" {
   {
     //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %x\n", __LINE__, start, fd, length);
     if (!initialized || current->disablecheck) {
-      return Real::mmap()(start, length, prot, flags, fd, offset);
+      return Real::mmap(start, length, prot, flags, fd, offset);
     }
 
     return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
-    //return Real::mmap()(start, length, prot, flags, fd, offset);
+    //return Real::mmap(start, length, prot, flags, fd, offset);
   }
 
 	int puts(const char * s) {
 		if(!global_isRollback()) {
-    	Real::puts()(s);
+    	Real::puts(s);
 		}
 		return 0;
 	}
 
+#if 0	
  	int printf(const char *format, ...) {
 //		PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
 		if(!global_isRollback()) {
@@ -528,7 +533,6 @@ extern "C" {
 		return 0;
 	}
  
-#if 0	
 	int fprintf(FILE *stream, const char *format, ...) {
 		if(!global_isRollback()) {
     	va_list ap;
@@ -556,7 +560,7 @@ extern "C" {
     }
     fprintf(stderr, "**********open in doubletake at %d mod %d\n", __LINE__, mode);
     if (!initialized) {
-      return Real::open()(pathname, flags, mode);
+      return Real::open(pathname, flags, mode);
     }
     return syscalls::getInstance().open(pathname, flags, mode);
   }
@@ -569,7 +573,7 @@ extern "C" {
   int close(int fd) {
     fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
     if (!initialized) {
-      return Real::close()(fd);
+      return Real::close(fd);
     }
     return syscalls::getInstance().close(fd);
   }
@@ -585,22 +589,15 @@ extern "C" {
   FILE *fopen (const char * filename, const char * modes) {
     fprintf(stderr, "fopen in libdoubletake\n");
     if (!initialized) {
-#ifndef X86_32BIT
-  //  Real::fopen64() = (typeof(Real::fopen64()))0x3ce3e62cf0;
-#endif
-      return Real::fopen()(filename, modes);
+      return Real::fopen(filename, modes);
     }
-    //return Real::fopen()(filename, modes);
     return syscalls::getInstance().fopen(filename, modes);
   }
   
   // ostream.open actually calls this function
  FILE * fopen64(const char * filename, const char * modes) {
     if (!initialized) {
-#ifndef X86_32BIT
-//      Real::fopen64() = (typeof(Real::fopen64()))0x39812630e0;
-#endif
-      return Real::fopen64()(filename, modes);
+      return Real::fopen64(filename, modes);
     }
     fprintf(stderr, "fopen64 in libdoubletake\n");
     return syscalls::getInstance().fopen64(filename, modes);
@@ -617,7 +614,7 @@ extern "C" {
 
     if(fd == 1 || fd == 2) {
       //fprintf(stderr, " in doubletake at %d\n", __LINE__);
-      return Real::fwrite()(ptr, size, nmemb, stream);
+      return Real::fwrite(ptr, size, nmemb, stream);
     }
     else {
       //printf("fwrite in doubletake at %d is captured, stream %p\n", __LINE__, stream);
@@ -628,7 +625,7 @@ extern "C" {
 
   int fclose(FILE *fp) {
     if (!initialized) {
-      return Real::fclose()(fp);
+      return Real::fclose(fp);
     }
     fprintf(stderr, "********fclose is intercepted\n");
     return syscalls::getInstance().fclose(fp);
@@ -665,7 +662,7 @@ extern "C" {
   off_t lseek(int filedes, off_t offset, int whence) {
     fprintf(stderr, "lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
     if (!initialized) {
-      return Real::lseek()(filedes, offset, whence);
+      return Real::lseek(filedes, offset, whence);
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
   }
@@ -674,18 +671,17 @@ extern "C" {
     //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
 //    PRINT("mprotect in doubletake at %d with current %p disablecheck %d\n", __LINE__, current, current->disablecheck);
     if (!initialized || current->disablecheck) {
-      return Real::mprotect()(addr, len, prot);
+      return Real::mprotect(addr, len, prot);
     }
     return syscalls::getInstance().mprotect(addr, len, prot);
   }
 
   int munmap(void *start, size_t length) {
     if (!initialized) {
-      return Real::munmap()(start, length);
+      return Real::munmap(start, length);
     }
     fprintf(stderr, "munmap in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().munmap(start, length);
-    //return Real::munmap()(start, length);
   }
   
   /* 
@@ -718,7 +714,7 @@ extern "C" {
 
   int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
     if(current->disablecheck) {
-      return Real::sigaction()(signum, act, oldact);
+      return Real::sigaction(signum, act, oldact);
     }
     else {
       //fprintf(stderr, "%d: sigaction in doubletake at %d. Disablecheck %d\n", __LINE__, getpid(), current->disablecheck);
@@ -728,7 +724,7 @@ extern "C" {
 
   int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
     if(current->disablecheck) {
-      return Real::sigprocmask()(how, set, oldset);
+      return Real::sigprocmask(how, set, oldset);
     }
     else {
       //fprintf(stderr, "sigprocmask in doubletake at %d\n", __LINE__);
@@ -907,9 +903,6 @@ extern "C" {
 
   int socket(int domain, int type, int protocol){
     fprintf(stderr, "%d: in doubletake at %d\n", getpid(), __LINE__);
-		while(1) {
-			;
-		}
     return syscalls::getInstance().socket(domain, type, protocol);
   }
 
@@ -1013,7 +1006,7 @@ extern "C" {
 
     fprintf(stderr, " in doubletake at %d. filename %s\n", __LINE__, filename);
     if(current->disablecheck) {
-      return Real::execve()(filename, argv, envp);
+      return Real::execve(filename, argv, envp);
     }
     else {
       return syscalls::getInstance().execve(filename, argv, envp);

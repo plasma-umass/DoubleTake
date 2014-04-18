@@ -84,12 +84,14 @@ public:
 
   bool findFaultyObject(faultyObject ** object) {
 		int trigPoints = 0;
-
+		
+//		PRINT("findFaultyObject: _numWatchpoints %d\n", _numWatchpoints);
     for(int i = 0; i < _numWatchpoints; i++) {
       unsigned long value = *((unsigned long *)_wp[i].faultyaddr);
 
       // Check whether now overflow actually happens
       if(value != _wp[i].currentvalue) {
+			//	PRINT("WARNING: we %d points, currentvalue %lx value %lx\n", trigPoints, _wp[i].currentvalue, value);
 				_wp[i].currentvalue = value;
         *object = &_wp[i];
 				trigPoints++;
@@ -97,8 +99,8 @@ public:
       }
     }
 
-		if(trigPoints != 1) {
-			PRINT("Error, we have %d watchpoints triggered at one time, only one watchpoint allowed.\n", trigPoints);
+		if(trigPoints > 1) {
+			PRINT("WARNING: we have %d watchpoints triggered, only one watchpoint allowed.\n", trigPoints);
 		}
 
     return (trigPoints != 0);
@@ -133,15 +135,15 @@ public:
   //  sigprocmask(SIG_BLOCK, &siga.sa_mask, NULL);
 
     // Now we are setting a trap handler.
-//    Real::sigaction()(SIGTRAP, NULL, &trap_action);
+//    Real::sigaction(SIGTRAP, NULL, &trap_action);
     trap_action.sa_sigaction = watchpoint::trapHandler;
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
-    Real::sigaction()(SIGTRAP, &trap_action, NULL);
+    Real::sigaction(SIGTRAP, &trap_action, NULL);
 //    sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
-    PRINF("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork());    
+    PRINF("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork);    
 
     // Creating a child to setup the watchpoints for the parent.
-    child = Real::fork()();
+    child = Real::fork();
     if (child == 0) {
       sleep(2); // This is not necessarily enough but let's try it.
 

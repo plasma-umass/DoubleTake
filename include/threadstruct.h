@@ -71,8 +71,8 @@ typedef struct thread {
   list_t   list;
 
   // We have to allocate the space for all record initially.
-  // Sorry, we can't use the class record here since it is "C" not "C++"
-  void *   record;    
+  void *   record;
+    
   // mutex when a thread is trying to change its state.
   // In fact, this mutex is only protect joiner.
   // Only in the beginning of a thread (register),

@@ -74,6 +74,9 @@ inline list_t * tailList(list_t * head) {
 
 // Insert one entry to two consequtive entries
 inline void __insert_between(list_t * node, list_t * prev, list_t * next) {
+	//fprintf(stderr, "line %d: prev %p next %p\n", __LINE__, prev, next);
+	//fprintf(stderr, "line %d: prev now %lx next %p\n", __LINE__, *((unsigned long *)prev), next);
+	//fprintf(stderr, "line %d: prev->next %lx next %p\n", __LINE__, *((unsigned long *)((unsigned long)prev + 0x8)), next);
   node->next = next;
   node->prev = prev;
   prev->next = node;
@@ -88,6 +91,7 @@ inline void listInsertNode(list_t * node, list_t * prev) {
 // Insert one entry to the tail of specified list.
 // Insert between tail and head
 inline void listInsertTail(list_t * node, list_t * head) {
+	//fprintf(stderr, "node %p head %p head->prev %p\n", node, head, head->prev); 
   __insert_between(node, head->prev, head);
 }
 
@@ -100,7 +104,7 @@ inline void listInsertHead(list_t * node, list_t * head) {
 // Internal usage to link p with n
 // Never use directly outside.
 inline void __list_link(list_t *p, list_t *n)
-{   
+{  
     p->next = n;
     n->prev = p;
 }

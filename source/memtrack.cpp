@@ -28,12 +28,13 @@ void memtrack::check(void * start, size_t size, memTrackType type) {
   // For a lot of case, maybe we only update corresponding data structure here. 
   trackObject *object;
       
-  //PRINT("_initialized %d\n", _initialized);
+  PRINT("_initialized %d\n", _initialized);
 
   if(!_initialized) {
     return;
   }
 
+  PRINT("memtrack:check line %d\n", __LINE__);
   if(_trackMap.find(start, sizeof(start), &object)) {
    // PRINT("objectsize %d, current size %d\n", object->objectSize, size);
     // Now we should verify the size information for buffer overflow and memory leakage.
@@ -43,7 +44,6 @@ void memtrack::check(void * start, size_t size, memTrackType type) {
       // Now we check the type of this object.
       void * callsites[xdefines::CALLSITE_MAXIMUM_LENGTH]; 
       int depth = selfmap::getCallStack((void **)&callsites);
-
       object->saveCallsite(size, type, depth, (void **)&callsites[0]);
       // Insert or print.
       if(object->hasLeak()) {

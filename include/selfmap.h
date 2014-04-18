@@ -120,7 +120,7 @@ public:
     string curentry;
 
     // Get application file name.
-    int count = Real::readlink()("/proc/self/exe", _filename, PATH_MAX);
+    int count = Real::readlink("/proc/self/exe", _filename, PATH_MAX);
     if (count <= 0 || count >= PATH_MAX)
     {
 	    PRWRN("Failed to get current executable file name\n" );

@@ -76,7 +76,7 @@ public:
     while(true) {
       /* Create the semaphore with external key KEY if it doesn't already 
        exists. Give permissions to the world. */
-      id = Real::semget()(_semaKey, 1, 0666);
+      id = Real::semget(_semaKey, 1, 0666);
       /* Always check system returns. */
       if(id < 0)
       {
@@ -90,14 +90,14 @@ public:
  
     // Initialize semaphore to the desired number.
     arg.val = initValue;
-    _semaId = Real::semget()(_semaKey, nsemas, 0666 | IPC_CREAT);
+    _semaId = Real::semget(_semaKey, nsemas, 0666 | IPC_CREAT);
     //PRINF("Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
     if(_semaId == -1) {
       PRWRN("semaphore creates failure %s\n", strerror(errno));
       abort();
     }
     else {
-      Real::semctl()(_semaId, 0, SETVAL, arg);
+      Real::semctl(_semaId, 0, SETVAL, arg);
     }
   }
   
@@ -125,7 +125,7 @@ public:
     }
  
     //PRWRN("Semaphore %p _semaId %d semaphore destory\n", &_semaKey, _semaId);
-    if(Real::semctl()(_semaId, 0, IPC_RMID, argument) < 0)
+    if(Real::semctl(_semaId, 0, IPC_RMID, argument) < 0)
     {
       PRWRN("Cannot detroy semaphore.\n");
       abort();  
@@ -140,7 +140,7 @@ private:
     sops.sem_num = 0;
     sops.sem_op = val;
     sops.sem_flg = 0;
-    int retval = Real::semop()(_semaId, &sops, 1);
+    int retval = Real::semop(_semaId, &sops, 1);
   }
   
   int _semaKey;

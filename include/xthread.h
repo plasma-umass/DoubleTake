@@ -64,7 +64,6 @@ public:
 
   void initialize() {
     _thread.initialize();
-//    PRINF("%p: THREADD initialize nnnnnnnnnnnnnnnnnnnn\n", current);
 
     // Initialize the syncmap and threadmap.
     _sync.initialize();
@@ -137,45 +136,33 @@ public:
     int tindex;
     int result;
 
-   PRINT("****in the beginning of thread_create, *tid is %lx\n", *tid);
+   PRINF("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
-      PRINT("PTHREAD_CREATE it is not rollback phase!!!!!!\n");
       // Lock and record
       global_lock();
 
-			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
 
-			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // This can be caused by two reasons:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
       // Second, we haven't meet commit point for a long time.
       if(tindex == -1) {
-				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         REQUIRE(hasReapableThreads(), "No reapable threads");
-				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         global_unlock();
-				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         
-				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
         invokeCommit();
 			
-				PRINT("PTHREAD_CREATE line %d\n", __LINE__);
- 
         global_lock();
         tindex = allocThreadIndex();
         REQUIRE(tindex != -1, "System can support %d threads", xdefines::MAX_ALIVE_THREADS);
         PRINF("AFTER commit now******* tindex %d\n", tindex);     
       }
 
-
-			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       // WRAP up the actual thread function.
       // Get corresponding thread_t structure.
       thread_t * children = getThreadInfo(tindex);
      
-			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
       children->isDetached = false; 
       if(attr) { 
         int detachState;
@@ -187,7 +174,7 @@ public:
         }
       }
 
-			PRINT("PTHREAD_CREATE line %d\n", __LINE__);
+			//PRINT("create children %p\n", children);
       children->parent = current;
       children->index = tindex;
       children->startRoutine = fn;
@@ -203,14 +190,12 @@ public:
       
 
       // Now we are going to record this spawning event.
-			PRINT("Before pthread_create, current %p %d\n", current, current->disablecheck);
       disableCheck();
-			PRINT("After disablecheck pthread_create, current %p %d\n", current, current->disablecheck);
-      result =  Real::pthread_create()(tid, attr, xthread::startThread, (void *)children);
+      result =  Real::pthread_create(tid, attr, xthread::startThread, (void *)children);
       enableCheck();
       if(result != 0) {
         PRWRN("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
-        Real::exit()(-1);
+        Real::exit(-1);
       }
     
      // PRINT("thread creation with index %d result %p\n", tindex, result);
@@ -338,7 +323,7 @@ public:
   inline int thread_cancel(pthread_t thread) {
     int retval;
     invokeCommit();
-    retval= Real::pthread_cancel()(thread);
+    retval= Real::pthread_cancel(thread);
     if(retval == 0) {
       threadinfo::getInstance().cancelAliveThread(thread);
     }
@@ -346,7 +331,7 @@ public:
   }
 
   inline int thread_kill(pthread_t thread, int sig) {
-    return Real::pthread_kill()(thread, sig);
+    return Real::pthread_kill(thread, sig);
   }
 
   /// Save those actual mutex address in original mutex.
@@ -360,8 +345,8 @@ public:
 
 //      PRINF("mutex_init with realMutex %p\n", realMutex);
       // Actually initialize this mutex
-      result = Real::pthread_mutex_init()(realMutex, attr);
-
+      result = Real::pthread_mutex_init(realMutex, attr);
+        
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
     }
@@ -382,18 +367,18 @@ public:
       if(realMutex == NULL) {
         mutex_init((pthread_mutex_t *)mutex, NULL);
         realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
-     //   PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
       }
       
+      //PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
       assert(realMutex != NULL);
 
       switch(synccmd) {
         case E_SYNC_MUTEX_LOCK:
-          ret = Real::pthread_mutex_lock()(realMutex);
+          ret = Real::pthread_mutex_lock(realMutex);
           break;
 
         case E_SYNC_MUTEX_TRY_LOCK:
-          ret = Real::pthread_mutex_trylock() (realMutex);
+          ret = Real::pthread_mutex_trylock (realMutex);
           break;
 
         default:
@@ -402,8 +387,15 @@ public:
 
       // Record this event
     //  PRINF("do_mutex_lock before recording\n"); 
+      //PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+			if((unsigned long)realMutex == 0x100001cffe20) {
+      PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
+			}
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+			if((unsigned long)realMutex == 0x100001cffe20) {
+      PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex);
+			} 
     }
     else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
@@ -434,7 +426,7 @@ public:
 
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
-      ret = Real::pthread_mutex_unlock()(realMutex);
+      ret = Real::pthread_mutex_unlock(realMutex);
     }
     else {
       SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
@@ -455,7 +447,7 @@ public:
   
   ///// conditional variable functions.
   void cond_init(pthread_cond_t * cond, const pthread_condattr_t * attr) {
-    Real::pthread_cond_init()(cond, attr);
+    Real::pthread_cond_init(cond, attr);
   }
 
   // Add this into destoyed list.
@@ -476,7 +468,7 @@ public:
 
       PRINF("cond_wait for thread %d\n", current->index);
       // Add the event into eventlist
-      ret = Real::pthread_cond_wait() (cond, realMutex);
+      ret = Real::pthread_cond_wait (cond, realMutex);
       
       // Record the waking up of conditional variable
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
@@ -503,11 +495,11 @@ public:
   }
   
   int cond_broadcast(pthread_cond_t * cond) {
-    return Real::pthread_cond_broadcast()(cond);
+    return Real::pthread_cond_broadcast(cond);
   }
 
   int cond_signal(pthread_cond_t * cond) {
-    return Real::pthread_cond_signal()(cond);
+    return Real::pthread_cond_signal(cond);
   }
   
   // Barrier support
@@ -515,7 +507,7 @@ public:
     int result = 0;
 #ifndef BARRIER_SUPPORT
     // Look for this barrier in the map of initialized barrieres.
-    result = Real::pthread_barrier_init()(barrier, attr, count);
+    result = Real::pthread_barrier_init(barrier, attr, count);
 #else
     pthread_barrier_t * realBarrier = NULL;
 
@@ -524,7 +516,7 @@ public:
       realBarrier=(pthread_barrier_t *)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
 
       // Actually initialize this mutex
-      result = Real::pthread_barrier_init()(realBarrier, attr);
+      result = Real::pthread_barrier_init(realBarrier, attr);
 
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(barrier, realBarrier, sizeof(pthread_barrier_t));
@@ -544,7 +536,7 @@ public:
   int barrier_wait(pthread_barrier_t *barrier) {
     int ret;
 #ifndef BARRIER_SUPPORT
-    ret = Real::pthread_barrier_wait()(barrier);
+    ret = Real::pthread_barrier_wait(barrier);
 #else
     pthread_barrier_t * realBarrier = NULL;
     SyncEventList * list = NULL;
@@ -557,7 +549,7 @@ public:
       // Since we do not have a lock here, which can not guarantee that
       // the first threads cross this will be the first ones pass
       // actual barrier. So we only record the order to pass the barrier here.
-      ret = Real::pthread_barrier_wait()(realBarrier);
+      ret = Real::pthread_barrier_wait(realBarrier);
       list->recordSyncEvent(E_SYNC_BARRIER, ret);
     }
     else {
@@ -569,7 +561,7 @@ public:
       updateSyncEvent(list);
 
       if(ret == 0) {
-        ret = Real::pthread_barrier_wait()(realBarrier);
+        ret = Real::pthread_barrier_wait(realBarrier);
       }
     }
 #endif
@@ -608,7 +600,7 @@ public:
       PRINF("Wrong. Current stack size (%lx = %p - %p) need to backup is larger than" \
               "total size (%lx). Either the application called setrlimit or the implementation" \
               "is wrong.\n", size, current->privateTop, current->privateStart, current->totalPrivateSize);
-      Real::exit()(-1);
+      Real::exit(-1);
     }
  
    // PRINF("privateStart %p size %lx backup %p\n", current->privateStart, size, current->backup);
@@ -643,7 +635,7 @@ public:
   }
 
   inline static pthread_t thread_self() {
-    return Real::pthread_self()();
+    return Real::pthread_self();
   }
 
   inline static void saveContext() {
@@ -773,10 +765,9 @@ private:
     void * privateTop;
     size_t stackSize = __max_stack_size;
 
-    current->self = Real::pthread_self()();
+    current->self = Real::pthread_self();
 
     // Initialize event pool for this thread.
-    current->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
     listInit(&current->pendingSyncevents);
 
     // Lock the mutex for this thread.
@@ -905,9 +896,10 @@ private:
 
   // @Global entry of all entry function.
   static void * startThread(void * arg) {
-    void * result;
+    void * result = NULL;
     current = (thread_t *)arg;
 
+   // PRINT("STARTTHREAD: current %p\n", current);
     PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
@@ -920,7 +912,7 @@ private:
     // We actually get those parameter about new created thread
     // from the TLS storage.
     result = current->startRoutine(current->startArg);
-
+	//	PRINT("result of calling startRoutine %p\n", result); 
     // Insert dead list now so that the corresponding entry can be cleaned up if
     // there is no need to rollback.
 
@@ -979,7 +971,6 @@ private:
     }
     else {
       assert(current->status == E_THREAD_EXITING);
-      current->syncevents.finalize();
       PRINF("THREAD%d (at %p) is exiting now\n", current->index, current);
       unlock_thread(current);
     }
