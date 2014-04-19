@@ -30,27 +30,12 @@ int main(int argc, char **argv)
 {
   int                   rc=0;
   int                   i;
-  pthread_t             threadid[2];
 
-  fprintf(stderr, "IN the beginning of MAIN, x %d(at %p) y %d(at %p)\n", x, &x, y, &y); 
-  write(2, "create thread1**\n", 17);
-  pthread_create(&threadid[0], NULL, threadfunc1, (void *)1);
+	int * ptr;
 
-  write(2, "create thread2**\n", 17);
-  pthread_create(&threadid[1], NULL, threadfunc2, (void *)2);
+	ptr = (int *)malloc(10);
 
-  write(2, "Before pthread_join\n", 20);
-  fprintf(stderr, "MAIN before join x %d y %d\n", x, y);
-  //sleep(2); 
-  rc = pthread_join(threadid[0], NULL);
-  rc = pthread_join(threadid[1], NULL);
-
-  fprintf(stderr, "After pthread_join\n"); 
-  //sleep(5); 
-  if(x == 1 && y == 1) {
-    printf("pthread_join() finshed. x = %d, y = %d\n", x, y);
-  }
-  fprintf(stderr, "pthread_join() finshed. x = %d, y = %d\n", x, y);
+	free(ptr);
   return 0;
 }
 

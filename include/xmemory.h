@@ -146,7 +146,6 @@ public:
     int mysize = sz;
 #if 0
     if(sz == 0) {
-//      PRINF("allocation size %d zzzzzzzzzzzzero\n", sz);
       return NULL;
     }
 #endif
@@ -214,19 +213,18 @@ public:
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
-			PRINT("malloc line %d tracking malloc\n", __LINE__);
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
       
     // We donot need to do anything if size is equal to sz
-   // PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
+ //   PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
     return ptr;
   }
 
   // We are trying to find the aligned address starting from ptr
   // to ptr+boundary.
   inline void * getAlignedAddress(void * ptr, size_t boundary) {
-    return (void *)(((intptr_t)ptr + boundary) & (~(boundary - 1)));
+    return ((intptr_t)ptr % boundary == 0) ? ptr : ((void *)(((intptr_t)ptr + boundary) & (~(boundary - 1))));
   }
 
   inline void * memalign(size_t boundary, size_t sz) {
@@ -245,15 +243,16 @@ public:
 
     // Check whether the offset is valid?
     assert(offset >= 2 * sizeof(size_t));
-
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE)
     // Put a sentinel before the this memory block. We should do this
     sentinelmap::getInstance().setMemalignSentinelAt((void *)((intptr_t)newptr - sizeof(size_t)));
+#endif
 
     // Put the offset before the sentinel too
     void ** origptr = (void **)((intptr_t)newptr - 2 * sizeof(size_t)); 
     *origptr = ptr;
 
-//    PRINF("offset is %x ptr %p and newptr %p\n", offset, ptr, newptr);
+    PRINF("memalign: ptr %p newptr %p\n", ptr, newptr);
     return newptr;
   }
 
@@ -373,21 +372,18 @@ public:
    void free (void * ptr) {
     void * origptr;
    
-    //PRINT("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     if(!inRange((intptr_t)ptr)) {
       return;
     }
 
-   // if((unsigned long)ptr < 0x100003000) {
-   //   PRINF("DoubleTake: free ptr %p\n", ptr);
-   // }
     // Check whether this is an memaligned object.
     origptr = getObjectPtrAtFree(ptr);
     objectHeader * o = getObject (origptr);
 
     // Check for double free
-    if(o->isObjectFree() || !o->isGoodObject()) {
-      PRWRN("DoubleTake: Caught double free or invalid free error\n");
+    //if(o->isObjectFree() || !o->isGoodObject()) {
+    if(!o->isGoodObject()) {
+      PRWRN("DoubleTake: Caught double free or invalid free error. ptr %p\n", ptr);
       printCallsite();
       abort();
     }
@@ -407,7 +403,6 @@ public:
       memtrack::getInstance().check(ptr, o->getObjectSize(), MEM_TRACK_FREE);
     }
 
-    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     _pheap.free(origptr);
 
     // We remove the actual size of this object to set free on an object. 

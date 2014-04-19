@@ -207,10 +207,10 @@ public:
     sentinelmapStart = _heapStart;
     sentinelmapSize = xdefines::USER_HEAP_SIZE;
     //PRINF("INITIAT: sentinelmapStart %p _heapStart %p original size %lx\n", sentinelmapStart, _heapStart, xdefines::USER_HEAP_SIZE);
-
     // Initialize bitmap
     sentinelmap::getInstance().initialize(sentinelmapStart, sentinelmapSize);
 #endif
+ 
     return (void *)_heapStart;
    // base = (char *)malloc(0, 4); 
   }

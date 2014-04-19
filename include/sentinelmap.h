@@ -82,7 +82,7 @@ public:
     _totalBytes = getBytes(_elements);
     _heapStart = (intptr_t)addr;
  
-    //PRINF("Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
+    //PRINT("**************Sentinelmap INITIALIZATION: elements %lx size %lx. Totalbytes %lx\n", _elements, size, _totalBytes);
     // Now we allocate specific size of shared memory 
     void * buf = MM::mmapAllocatePrivate(_totalBytes);
     _bitmap.initialize(buf, _elements, _elements/sizeof(unsigned long));
@@ -150,7 +150,6 @@ public:
   /// If we are given the address, we have to calculate the "index" at first.
   inline bool tryToSet (void * addr) {
     unsigned long item = getIndex(addr);
-   // PRINF("SETSETNTINEL at addr %p item %ld value %lx\n", addr, item, *((unsigned long *)addr));
     return _bitmap.checkSetBit(item);
   }
 
@@ -198,7 +197,6 @@ public:
   void setMemalignSentinelAt(void * ptr) {
     size_t * sentinel = (size_t *)ptr;
    
-    //PRINF("****************Setup sentinels ptr %p************\n", ptr); 
     // Calculate the address of two sentinels
     // The organization should be:
     //      objectHeader + sentinelFirst + object (objectsize) + sentinelLast

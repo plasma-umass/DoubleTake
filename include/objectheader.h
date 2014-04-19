@@ -52,8 +52,12 @@ public:
 
   size_t setObjectSize(size_t sz) {  _objectSize = sz; return sz; }
 
-  bool isGoodObject() { 
+  bool isGoodObject() {
+#if defined (DETECT_OVERFLOW) || defined (DETECT_MEMORY_LEAKAGE) 
     return (_sentinel == xdefines::SENTINEL_WORD ? true : false );
+#else
+		return true;
+#endif
   }
 
   void * getStartPtr() { 
