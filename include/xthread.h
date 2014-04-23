@@ -344,32 +344,37 @@ public:
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
 //      PRINF("mutex_init with realMutex %p\n", realMutex);
+     	PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
       // Actually initialize this mutex
       result = Real::pthread_mutex_init(realMutex, attr);
         
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
     }
+		else {
+     	PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
+		}
     return result;
   }
 
+	inline bool isInvalidMutex(void * realMutex) {
+		return (((intptr_t)realMutex < xdefines::INTERNAL_HEAP_BASE) || ((intptr_t)realMutex >= xdefines::INTERNAL_HEAP_END) ? true : false);
+	}
 
   int do_mutex_lock(void * mutex, thrSyncCmd synccmd) {
     int ret;
-    pthread_mutex_t * realMutex = NULL;
+   	pthread_mutex_t * realMutex = NULL;
     SyncEventList * list = NULL;
 
-    //PRINF("do_mutex_lock\n"); 
     if(!global_isRollback()) {
-      //PRINF("do_mutex_lock before getSyncEntry %d\n", __LINE__); 
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
      // PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex); 
-      if(realMutex == NULL) {
+      if(isInvalidMutex(realMutex)) {
         mutex_init((pthread_mutex_t *)mutex, NULL);
         realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
       }
       
-      //PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
+    //  PRINT("pthread_self %lx: do_mutex_lock at line %d: mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
       assert(realMutex != NULL);
 
       switch(synccmd) {
@@ -387,15 +392,9 @@ public:
 
       // Record this event
     //  PRINF("do_mutex_lock before recording\n"); 
-      //PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
+     // PRINT("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-			if((unsigned long)realMutex == 0x100001cffe20) {
-      PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex); 
-			}
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-			if((unsigned long)realMutex == 0x100001cffe20) {
-      PRINT("do_mutex_lock line %d: mutex %p realMutex %p\n", __LINE__, mutex, realMutex);
-			} 
     }
     else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
@@ -709,7 +708,8 @@ private:
   }
 
   inline void setSyncEntry(void * syncvar, void * realvar, size_t size) {
-    if(!atomic_compare_and_swap((unsigned long *)syncvar, 0, (unsigned long)realvar)) {
+		unsigned long value = *((unsigned long *)syncvar);
+    if(!atomic_compare_and_swap((unsigned long *)syncvar, value, (unsigned long)realvar)) {
       deallocSyncEntry(realvar);
     }
     else {
@@ -900,7 +900,7 @@ private:
     current = (thread_t *)arg;
 
    // PRINT("STARTTHREAD: current %p\n", current);
-    PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
+    PRINT("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
     

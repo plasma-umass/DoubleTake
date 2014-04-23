@@ -71,6 +71,8 @@ void xrun::rollback() {
 
   PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
 
+	// Rollback all memory before rolling back the context.
+  _memory.rollback();
   
   PRINF("_memory rollback!!!\n");
   // We must prepare the rollback, for example, if multiple
@@ -79,9 +81,6 @@ void xrun::rollback() {
   _thread.prepareRollback();
   PRINF("_thread rollback and actual rollback\n");
   
-	// Rollback all memory before rolling back the context.
-  _memory.rollback();
-
   //while(1);
   PRINF("\n\nset rollback\n\n\n");
 
@@ -151,7 +150,7 @@ void xrun::epochEnd (bool endOfProgram) {
   //PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
 
 #ifdef DEBUG_ROLLBACK
-  //rollback();
+  rollback();
   //assert(0);
 #endif
 

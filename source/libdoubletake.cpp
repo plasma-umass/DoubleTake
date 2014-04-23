@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-#define fprintf(stderr, ...)
+//#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;
@@ -1997,11 +1997,13 @@ extern "C" {
     return syscalls::getInstance().epoll_ctl(epfd, op, fd, event);
   }
 
+#if 1
   int epoll_wait(int epfd, struct epoll_event * events,
                  int maxevents, int timeout){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().epoll_wait(epfd, events, maxevents, timeout);
   }
+#endif
 
   int remap_file_pages(void *start, size_t size, int prot, size_t pgoff, int flags){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -2069,10 +2071,12 @@ extern "C" {
     return syscalls::getInstance().clock_settime(which_clock, tp);
   }
 
+#if 1
   int clock_gettime (clockid_t which_clock, struct timespec *tp){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().clock_gettime(which_clock, tp);
   }
+#endif
 
   int clock_getres (clockid_t which_clock, struct timespec *tp){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);

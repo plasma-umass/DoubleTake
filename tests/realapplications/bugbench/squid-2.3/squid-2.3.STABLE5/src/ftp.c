@@ -1009,26 +1009,26 @@ ftpBuildTitleUrl(FtpStateData * ftpState)
     t = ftpState->title_url = xcalloc(len, 1);
     strcat(t, "ftp://");
     if (strcmp(ftpState->user, "anonymous")) {
-	strcat(t, ftpState->user);
-	strcat(t, "@");
+			strcat(t, ftpState->user);
+			strcat(t, "@");
     }
     strcat(t, request->host);
     if (request->port != urlDefaultPort(PROTO_FTP))
-	snprintf(&t[strlen(t)], len - strlen(t), ":%d", request->port);
+			snprintf(&t[strlen(t)], len - strlen(t), ":%d", request->port);
     strcat(t, strBuf(request->urlpath));
     t = ftpState->base_href = xcalloc(len, 1);
     strcat(t, "ftp://");
     if (strcmp(ftpState->user, "anonymous")) {
-	strcat(t, rfc1738_escape_part(ftpState->user));
-	if (ftpState->password_url) {
-	    strcat(t, ":");
-	    strcat(t, rfc1738_escape_part(ftpState->password));
-	}
-	strcat(t, "@");
+			strcat(t, rfc1738_escape_part(ftpState->user));
+			if (ftpState->password_url) {
+	    	strcat(t, ":");
+	    	strcat(t, rfc1738_escape_part(ftpState->password));
+			}
+			strcat(t, "@");
     }
     strcat(t, request->host);
     if (request->port != urlDefaultPort(PROTO_FTP))
-	snprintf(&t[strlen(t)], len - strlen(t), ":%d", request->port);
+			snprintf(&t[strlen(t)], len - strlen(t), ":%d", request->port);
     strcat(t, strBuf(request->urlpath));
     strcat(t, "/");
 }
