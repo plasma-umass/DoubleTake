@@ -70,6 +70,11 @@ void xrun::rollback() {
   }
 
   PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
+	// We should prepare those system calls before memory rollback.
+	// For example, if we don't want to reproduce fds, then we should 
+	// close those newly added files by calling fclose.
+	// However, memory rollback can destroy filestream in the user space.
+	syscalls::getInstance().prepareRollback();
 
 	// Rollback all memory before rolling back the context.
   _memory.rollback();

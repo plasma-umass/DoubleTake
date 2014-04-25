@@ -356,7 +356,6 @@ public:
       thisFile = (fileInfo *)i.getData();
 #ifndef REPRODUCIBLE_FDS
       if(thisFile->isNew) {
-		//		PRINT("close fd %d filestream %p\n", thisFile->fd, thisFile->origStream); 
         closeFile(thisFile->fd, thisFile->origStream); //EBD
       }
 #else
@@ -512,14 +511,12 @@ public:
       }
      
 		//	InternalHeap::getInstance().free(thisFile);
-    //  PRINT("fd is %d fp %p. \n", fd, fp); 
-		//  PRINT("close at %p fclose at %p\n", Real::close, Real::fclose);
       // Remove this 
       if(fp == NULL) {
-        return Real::close(fd);
+        ret =  Real::close(fd);
       }
       else {
-        return Real::fclose(fp);
+        ret =  Real::fclose(fp);
       }
     }
     return ret; 

@@ -67,7 +67,8 @@ void xthread::epochBegin() {
  
 void xthread::prepareRollback() {
 	PRINF("calling syscalls::prepareRollback\n");
-  syscalls::getInstance().prepareRollback();
+	// System call should be rolled back before memory rollback. 
+ //syscalls::getInstance().prepareRollback();
 
 	PRINF("calling threadmap::prepareRollback\n");
   // Initialize the semaphores for threads at first since preparing synchronization may

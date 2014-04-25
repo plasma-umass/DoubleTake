@@ -240,18 +240,11 @@ public:
   }
 
   // Get the first time results
-  bool getMunmapOps(void ** addr, size_t * length) {
-    bool isFound = false;
+ 	void getMunmapOps(void) {
+		// We actually only update the list.
     struct recordMunmap * record = (struct recordMunmap *)getEntry(E_OP_MUNMAP);
     
-    if(record) {
-      *addr = record->addr;
-      *length = record->length;
-
-      isFound = true;
-    }
-    
-    return isFound;
+    return;
   }
 
   // record time results
@@ -389,6 +382,9 @@ private:
 
     void * ptr = NULL; 
     if(entry) {
+			if(entry->operation != op) {
+				PRINT("entry->operation %d (while E_OP_MMAP %d) current op %d\n", entry->operation, E_OP_MMAP, op);
+			}
       assert(entry->operation == op);
       ptr = entry->data;
     }

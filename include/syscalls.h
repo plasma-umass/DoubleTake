@@ -372,7 +372,7 @@ public:
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
-      selfmap::getInstance().printCallStack(NULL, NULL, true);
+      	selfmap::getInstance().printCallStack();
         PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
       //PRINF("OPEN fd %d\n", ret->_fileno);    
       }
@@ -470,6 +470,9 @@ public:
     if(!global_isRollback()) {
       getRecord()->recordMunmapOps(start, length); 
     }
+		else {
+      getRecord()->getMunmapOps();
+		}
     return ret;
   }
   

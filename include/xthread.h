@@ -344,16 +344,13 @@ public:
       realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
 //      PRINF("mutex_init with realMutex %p\n", realMutex);
-     	PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
+     	//PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
       // Actually initialize this mutex
       result = Real::pthread_mutex_init(realMutex, attr);
         
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
     }
-		else {
-     	PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
-		}
     return result;
   }
 
@@ -900,7 +897,7 @@ private:
     current = (thread_t *)arg;
 
    // PRINT("STARTTHREAD: current %p\n", current);
-    PRINT("thread %p self %p is starting now.\n", current, (void*)current->self);
+   // PRINT("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
     
