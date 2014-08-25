@@ -391,10 +391,12 @@ public:
     //  PRINF("do_mutex_lock before recording\n"); 
      // PRINT("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+			PRINT("mutex_lock at mutex %p realMutex %p list %p\n", mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     }
     else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+			PRINT("mutex_lock at mutex %p list %p\n", mutex, list);
      // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
       assert(list != NULL);
       ret = _sync.peekSyncEvent();
@@ -423,9 +425,11 @@ public:
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t *)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
+			PRINT("mutex_unlock at mutex %p\n", mutex);
     }
     else {
       SyncEventList * list = getSyncEventList(mutex, sizeof(pthread_mutex_t)); 
+			PRINT("mutex_unlock at mutex %p list %p\n", mutex, list);
       struct syncEvent * nextEvent = list->advanceSyncEvent();
       if(nextEvent) {
         _sync.signalNextThread(nextEvent);
@@ -700,7 +704,7 @@ private:
 
   inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
     void ** entry = (void **)ptr;
-    //PRINF("ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
+    PRINT("ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
     return (SyncEventList *)((intptr_t)(*entry) + size);
   }
 

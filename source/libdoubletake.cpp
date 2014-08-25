@@ -86,7 +86,7 @@ size_t __max_stack_size;
 bool funcInitialized = false;
 bool initialized = false;
 
-//#define fprintf(stderr, ...)
+#define fprintf(stderr, ...)
 // Some global information. 
 bool g_isRollback;
 bool g_hasRollbacked;
@@ -98,7 +98,46 @@ pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;  
 int g_waitersTotal;  
+/// The type of a main function
+typedef int (*main_fn_t)(int, char**, char**);
 
+/// The program's real main function
+main_fn_t real_main;
+
+typedef int (*my_libc_start_main)(main_fn_t main_fn, int argc, char** argv,
+    void (*init)(), void (*fini)(), void (*rtld_fini)(), void* stack_end);
+
+/**
+ * Pass the real __libc_start_main this main function, then run the real main
+ * function. This allows Causal to shut down when the real main function returns.
+ */
+int wrapped_main(int argc, char** argv, char** env) {
+  // Remove causal from LD_PRELOAD. Just clearing LD_PRELOAD for now FIXME!
+  unsetenv("LD_PRELOAD");
+  
+  // Run the real main function
+  int result = real_main(argc, argv, env);
+ 
+	fprintf(stderr, "Now the main function is done!\n"); 
+  return result;
+}
+
+/**
+ * Interpose on the call to __libc_start_main to run before libc constructors.
+ */
+/*
+extern "C" int __libc_start_main(main_fn_t main_fn, int argc, char** argv,
+    void (*init)(), void (*fini)(), void (*rtld_fini)(), void* stack_end) {
+  // Find the real __libc_start_main
+  my_libc_start_main real_libc_start_main = (my_libc_start_main)dlsym(RTLD_NEXT, "__libc_start_main");
+  // Save the program's real main function
+  real_main = main_fn;
+  // Run the real __libc_start_main, but pass in the wrapped main function
+  int result = real_libc_start_main(wrapped_main, argc, argv, init, fini, rtld_fini, stack_end);
+  
+  return result;
+}
+*/
 __attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
   // before initialized.
@@ -263,7 +302,7 @@ extern "C" {
   }
  
   int pthread_mutex_lock (pthread_mutex_t * mutex) {   
-    //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
+  //  PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
 		if(current->disablecheck) {
 			return Real::pthread_mutex_lock(mutex);  
 		}
@@ -286,7 +325,7 @@ extern "C" {
   }
   
   int pthread_mutex_unlock (pthread_mutex_t * mutex) {    
-    //PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
+ //   PRINT("inside pthread_mutex_unlock, line %d at %p. disablecheck %d!\n", __LINE__, mutex, current->disablecheck);
 		if(current->disablecheck) {
 			return Real::pthread_mutex_unlock(mutex);  
 		}

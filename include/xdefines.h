@@ -135,7 +135,10 @@ public:
   enum { MAX_WATCHPOINTS  = 4 };
   enum { PageSize = 4096UL };
   enum { PAGE_SIZE_MASK = (PageSize-1) };
-  enum { MAX_ALIVE_THREADS = 128 }; 
+
+	// This is a experimental results. When we are using a larger number, rollback may fail. 
+	// Don't know why, although maximum number of semaphore is close to 128.
+  enum { MAX_ALIVE_THREADS = 112 }; 
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 }; 
   enum { THREAD_MAP_SIZE = 1024 }; 

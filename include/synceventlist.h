@@ -119,7 +119,8 @@ public:
   // Move forward for current thread event list 
   inline struct syncEvent * advanceSyncEvent() {
     list_t * curentry = this->curentry;
-
+		
+		PRINT("currenty is %p this->list %p with address %p\n", curentry, this->list, &this->list);
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
     }

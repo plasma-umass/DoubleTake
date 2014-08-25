@@ -195,6 +195,7 @@ public:
       if(syncvariable != entry) {
         // Setting the address
         setSyncVariable((void **)syncvariable, entry->realEntry);
+				PRINT("syncvariable %p realentry %p\n", syncvariable, entry->realEntry);
       }
       
       eventlist = entry->list;

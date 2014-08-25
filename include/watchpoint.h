@@ -135,30 +135,30 @@ public:
   //  sigprocmask(SIG_BLOCK, &siga.sa_mask, NULL);
 
     // Now we are setting a trap handler.
-//    Real::sigaction(SIGTRAP, NULL, &trap_action);
     trap_action.sa_sigaction = watchpoint::trapHandler;
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     Real::sigaction(SIGTRAP, &trap_action, NULL);
 //    sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
-    PRINF("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork);    
+    PRINT("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork);    
 
     // Creating a child to setup the watchpoints for the parent.
     child = Real::fork();
     if (child == 0) {
-      sleep(2); // This is not necessarily enough but let's try it.
+      PRINT("child install watchpoints now, before sleep\n");
+      sleep(10); // This is not necessarily enough but let's try it.
 
       // Now the child will setup the debug register for its parent.
       if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
       {
-        PRWRN("Child cannot trace the parent %d\n", parent);
+        PRWRN("Child cannot trace the parent %d. Error %s\n", parent, strerror(errno));
         exit(-1);
       }
-      //PRINF("child install watchpoints now, before sleep\n");
 
+      PRINT("child install watchpoints now, before sleep\n");
       // Child will wait the parent to stop.
-      sleep(2);
+      sleep(1);
 
-     // PRINF("child install watchpoints now\n");
+      PRINT("child install watchpoints now\n");
 
       // Install all watchpoints now.
       for(int i = 0; i < _numWatchpoints; i++) {
