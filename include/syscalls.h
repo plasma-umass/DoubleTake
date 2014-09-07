@@ -2063,7 +2063,7 @@ public:
   void sync(){
     //FIXME
     epochEnd();
-    Real::sync;
+    Real::sync();
     epochBegin();
   }
 

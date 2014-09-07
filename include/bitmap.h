@@ -150,7 +150,7 @@ public:
   }
 
   // It is easy to do this if we are using 
-  inline bool hasBitSet(unsigned long item, unsigned long totalbits) {
+  bool hasBitSet(unsigned long item, unsigned long totalbits) {
     unsigned long firstWordIndex, firstBitIndex;
     unsigned long lastWordIndex, lastBitIndex;
     getIndexes(item, &firstWordIndex, &firstBitIndex);
@@ -164,13 +164,16 @@ public:
       // If they are in the same word. Then we use slower checking.
       // Check bit by bit to find whether there is a bit has been set
       unsigned long bitIndex = firstBitIndex;
+			
 
       while(bitIndex < lastBitIndex) {
         if(hasSetBit(bitword, bitIndex)) {
           hasBit = true;
           break;
         }
+				bitIndex++;
       }
+
     } else {
       // If not, then it is easy.
       // we should verify whether the first word's lsb index is bitIndex

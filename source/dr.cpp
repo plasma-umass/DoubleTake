@@ -97,7 +97,7 @@ static void dr_set (pid_t pid, int regnum, unsigned long value)
 //  PRWRN("set debug register %d on pid %d, value %lx\n", regnum, pid, value); 
   ptrace (PTRACE_POKEUSER, pid, offsetof (struct user, u_debugreg[regnum]), value);
   if (errno != 0) {
-    PRWRN("Couldn't set debug register %d error %s\n", regnum, strerror(errno));
+    PRWRN("Couldn't set debug register %d value %lx error %s\n", regnum, value, strerror(errno));
   //  abort();
   }
   

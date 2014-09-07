@@ -67,8 +67,7 @@ public:
   /// @brief Initialize the system.
   void initialize()
   {
-    //current = NULL;
-    pid_t pid = syscall(SYS_getpid);
+		PRINT("xrun: initialization at line %d\n", __LINE__);
     struct rlimit rl;
 
     // Get the stack size.
@@ -79,7 +78,6 @@ public:
     
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
-    //PRINF("starting max_stacksize %lx!!!!!\n", __max_stack_size);
 #if 0 
     rl.rlim_cur = 524288;
     rl.rlim_max = 1048576;
@@ -94,37 +92,26 @@ public:
 
     installSignalHandler();
     
-  	//fprintf(stderr, "xrun::initialize line %d\n", __LINE__);
-    InternalHeap::getInstance().initialize();
-
     // Initialize the internal heap at first.
-    //InternalHeap::getInstance().malloc(8);
-    _thread.initialize();
-      
-    // Initialize the memory (install the memory handler)
+    InternalHeap::getInstance().initialize();
+		
+		_thread.initialize();
+    
+		// Initialize the memory (install the memory handler)
     _memory.initialize();
 
     _watchpoint.initialize();
+    
+		syscallsInitialize();
 
-    syscallsInitialize();
-
-    // Set the current _tid to our process id.
-    _pid = pid;
-    _main_id = pid;
 //    PRINF("starting!!!!!\n");
 
 //    PRINF("starting!!!!!\n");
-    epochBegin();
-    PRDBG("Starting in xrun noww\n");
   }
-  
+
   void finalize()
   {
-    if(mainId() != getpid()) {
-      return;
-    }
-
-//    PRDBG("In the end of finalize function\n");
+    PRINT("In the end of finalize function\n");
     //PRINF("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
@@ -138,18 +125,14 @@ public:
     PRINF("%d: finalize now !!!!!\n", getpid());
     // Now we have to cleanup all semaphores.
     _thread.finalize();
-    
   }
+
 #ifdef DETECT_USAGE_AFTER_FREE
   void finalUAFCheck();
 #endif
   // Simply commit specified memory block
   void atomicCommit(void * addr, size_t size) {
     _memory.atomicCommit(addr, size);
-  }
-
-  int mainId() {
-    return _main_id;
   }
 
   /* Transaction-related functions. */
@@ -162,15 +145,6 @@ public:
    
   /// Rollback to previous 
   void rollbackandstop();
-
-  inline void setpid(int pid) {
-    _pid = pid;
-  }
- 
-  /// @ Return current pid.
-  inline int getpid() {
-    return _pid;
-  }
 
   void epochBegin();
   void epochEnd (bool endOfProgram);

@@ -102,12 +102,13 @@ public:
   /* Heap-related functions. */
   inline void * malloc (size_t sz) {
     void * ptr;
-		//PRINT("malloc, current %p internalheap %d\n", current, current->internalheap);
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     }
     else {
+			PRINT("malloc, current %p internalheap %d\n", current, current->internalheap);
       ptr = realmalloc(sz);
+			PRINT("malloc, current %p internalheap %d ptr %p\n", current, current->internalheap, ptr);
     }
     return ptr;
   }
@@ -153,29 +154,39 @@ public:
     if(sz < 16) {
       mysize = 16;
     }
-   	
+   
+		PRINT("realmalloc at line %d\n", __LINE__);	
     ptr = (unsigned char *)_pheap.malloc(mysize);
+		PRINT("realmalloc at line %d\n", __LINE__);	
     objectHeader * o = getObject (ptr);
 
     // Get the block size
     size_t size = o->getSize();
     
+		PRINT("realmalloc at line %d\n", __LINE__);	
     // Set actual size there.
     o->setObjectSize(sz);
+		PRINT("realmalloc at line %d\n", __LINE__);	
+    // Set actual size there.
 #ifdef DETECT_OVERFLOW
     assert(size >= sz);
     // Add another guard zone if block size is larger than actual size
     // in order to capture the 1 byte overflow.
+		PRINT("realmalloc at line %d\n", __LINE__);	
+    // Set actual size there.
     if(size > sz) {
       size_t offset = size - sz;
 
       // We are using the ptr to varify the size
       unsigned char * p = (unsigned char *)((intptr_t)ptr + sz);
+		PRINT("realmalloc at line %d\n", __LINE__);	
 
       // If everything is aligned, add the guardzone.
       size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
       if(nonAlignedBytes == 0) {
+		PRINT("realmalloc at line %d\n", __LINE__);	
         sentinelmap::getInstance().setSentinelAt(p);
+		PRINT("realmalloc at line %d\n", __LINE__);	
       } 
       else {
         // For those less than one word access, maybe we do not care since memory block is 
@@ -189,32 +200,40 @@ public:
         // Totally, we should put 3 bytes there.
         // We are using the first byte to mark the size of magic bytes.
         // It will end up with (02eeee).
+		PRINT("realmalloc at line %d p %p setBytes %ld\n", __LINE__, p, setBytes);	
         if(setBytes >= 2) {
           //PRINF("******setBytes %d\n", setBytes); 
           p[0] = setBytes - 1;
+					PRINT("realmalloc at line %d p setting memory bytes\n", __LINE__);	
           for(int i = 1; i < setBytes; i++) {
             p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
           }
+					PRINT("realmalloc at line %d p setting memory bytes done!!!\n", __LINE__);	
         }
         else if(setBytes == 1){
           //PRINF("******setBytes %d\n", setBytes); 
           p[0] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
         }
+		PRINT("realmalloc at line %d\n", __LINE__);
 
         sentinelmap::getInstance().markSentinelAt(startp);
+		PRINT("realmalloc at line %d\n", __LINE__);	
         // We actually setup a next word to capture the next word
         if(offset > xdefines::WORD_SIZE) {
           void * nextp = (void *)((intptr_t)p + setBytes);
           sentinelmap::getInstance().setSentinelAt(nextp);
+		PRINT("realmalloc at line %d\n", __LINE__);	
         }
       }
     }
 #endif
+		PRINT("realmalloc at line %d\n", __LINE__);	
 
     // Check the malloc if it is in rollback phase.
     if(global_isRollback()) {
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
+		PRINT("realmalloc at line %d\n", __LINE__);	
       
     // We donot need to do anything if size is equal to sz
  //   PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz, sz);
@@ -407,7 +426,7 @@ public:
 
     // We remove the actual size of this object to set free on an object. 
     o->setObjectFree();
-    PRINF("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+    PRINT("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     // Cleanup this object with sentinel except the first word. 
   }
 
@@ -432,18 +451,18 @@ public:
   inline void rollback() {
 
     // Release all private pages.
-    PRINF("Recoverring the global memory\n");
+    PRINT("Recoverring the global memory\n");
     _globals.recoverMemory();
     _pheap.recoverMemory();
     
     _pheap.recoverHeapMetadata(); 
  
-    PRINF("INSTALL watching points!!!\n");
+    PRINT("INSTALL watching points!!!\n");
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
   //  WARN("Recoverring the global memory, after install watchpoints\n");
-    PRINF("After INSTALL watching points nowwwwww!!!\n"); 
+    PRINT("After INSTALL watching points nowwwwww!!!\n"); 
   }
 
   /// Rollback only without install watchpoints.

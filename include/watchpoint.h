@@ -91,7 +91,7 @@ public:
 
       // Check whether now overflow actually happens
       if(value != _wp[i].currentvalue) {
-			//	PRINT("WARNING: we %d points, currentvalue %lx value %lx\n", trigPoints, _wp[i].currentvalue, value);
+//				PRINT("WARNING: we %d points, currentvalue %lx value %lx\n", trigPoints, _wp[i].currentvalue, value);
 				_wp[i].currentvalue = value;
         *object = &_wp[i];
 				trigPoints++;
@@ -113,86 +113,53 @@ public:
   // Set all watch points before rollback. 
   void installWatchpoints()
   {
-    pid_t child;
     struct sigaction trap_action;
-    int status = 0;
-    pid_t parent = getpid();
 
     //PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+		// We don't need to setup watchpoints if it is 0.
 		if(_numWatchpoints == 0) {
 			return;
 		}
-    //PRINF("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+
     // Initialize those debug registers. 
     init_debug_registers();
 
-    // Now set up a signal handler for SIGSEGV events.
-   // struct sigaction siga;
-   // sigemptyset(&siga.sa_mask);
-
-    // Set the following signals to a set
-  //  sigaddset(&siga.sa_mask, SIGTRAP);
-  //  sigprocmask(SIG_BLOCK, &siga.sa_mask, NULL);
-
-    // Now we are setting a trap handler.
+    // Now we are setting a trap handler for myself.
     trap_action.sa_sigaction = watchpoint::trapHandler;
     trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     Real::sigaction(SIGTRAP, &trap_action, NULL);
-//    sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
-    PRINT("before fork %d Real::fork at %p!!!!!!!!!\n", __LINE__, Real::fork);    
 
-    // Creating a child to setup the watchpoints for the parent.
-    child = Real::fork();
-    if (child == 0) {
-      PRINT("child install watchpoints now, before sleep\n");
-      sleep(10); // This is not necessarily enough but let's try it.
+		// Setup the watchpoints information and notify the daemon (my parent)
+		struct watchpointsInfo wpinfo;
+		wpinfo.count = _numWatchpoints;
+		for(int i = 0; i < _numWatchpoints; i++) {
+			PRINT("Watchpoint %d: addr %p. _numWatchpoints %d\n", i, _wp[i].faultyaddr, _numWatchpoints);
+			wpinfo.wp[i] = (unsigned long)_wp[i].faultyaddr;
+			PRINT("Watchpoint %d: addr %p after setup\n", i, _wp[i].faultyaddr);
+			// Update the values of those faulty address so that 
+			// we can compare those values to find out which watchpoint 
+			// are accessed since we don't want to check the debug status register
+			_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
+		}	 
 
-      // Now the child will setup the debug register for its parent.
-      if(ptrace(PTRACE_ATTACH, parent, NULL, NULL))
-      {
-        PRWRN("Child cannot trace the parent %d. Error %s\n", parent, strerror(errno));
-        exit(-1);
-      }
+		// Notify the parent about those watchpoints information. 
+		Real::write(writePipe(), &wpinfo, sizeof(struct watchpointsInfo));
 
-      PRINT("child install watchpoints now, before sleep\n");
-      // Child will wait the parent to stop.
-      sleep(1);
+		sleep(3);
+/*
+		// Now we are waiting on the readPipe in order to proceed.
+		int ret;
+		int readSize;
+		if(Real::read(readPipe(), &ret, sizeof(ret)) == 0) {
+			// Something must be wrong.
+			PRERR("Reading from the pipe failed, with error %s\n", strerror(errno));
+			assert(0);
+		}
+		PRINT("Watchpoint setup done! Totalsize %d. count %ld\n", sizeof(wpinfo), wpinfo.count);
 
-      PRINT("child install watchpoints now\n");
-
-      // Install all watchpoints now.
-      for(int i = 0; i < _numWatchpoints; i++) {
-        insert_watchpoint ((unsigned long)_wp[i].faultyaddr, sizeof(void *), hw_write, parent);
-      } 
-      
-      // Now we will deteach the parent.      
-      if(ptrace(PTRACE_DETACH, parent, NULL, NULL))
-      {
-        PRWRN("Child can not detach the parent %d\n", parent);
-        exit(-1);
-      }
-      exit(0);
-    }
-    else if(child > 0) {
-      PRINF("PARENT installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
-      // Wait for the children to setup
-      waitpid(child, &status, 0);
-      if(WEXITSTATUS(status))
-      {
-        PRWRN("child exit now!0\n");
-        exit(-1);
-      }
-
-			// Update all values of watchpoints before re-execution. 
-      for(int i = 0; i < _numWatchpoints; i++) {
-				// Updatr the current value for this faulty address so that we can compare its value later.
-				_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
-      } 
-    }
-    else {
-      PRINT("Can't fork when installing watch points, with error: %s\n", strerror(errno));
-      while(1);
-    }
+		PRINT("Now we are going to rollback\n");
+*/
+		// We actually don't care about what content.
   }
 
   // How many watchpoints that we should care about.

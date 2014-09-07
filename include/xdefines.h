@@ -55,6 +55,7 @@ extern runtime_data_t *global_data;
 #define GCC_VERSION (__GNUC__ * 10000 \
     + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 
+/*
 #if GCC_VERSION >= 40300
 #include <tr1/unordered_map>
 #define hash_map std::tr1::unordered_map
@@ -62,6 +63,7 @@ extern runtime_data_t *global_data;
 #include <ext/hash_map>
 #define hash_map __gnu_cxx::hash_map
 #endif
+*/
 
 extern size_t __max_stack_size; 
 typedef void * threadFunction (void *);
@@ -69,6 +71,7 @@ extern int getThreadIndex();
 extern char * getThreadBuffer();
 extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void * ptr, size_t size);
+extern int g_rwpipe[2];
 
 // A project can have multiple problems. 
 // So we make them to use different bits.
@@ -86,6 +89,22 @@ inline size_t alignup(size_t size, size_t alignto) {
 inline size_t aligndown(size_t addr, size_t alignto) {
   return (addr & ~(alignto -1));
 }
+
+inline int readPipe(void) {
+	return g_rwpipe[0];
+}
+
+inline int writePipe(void) {
+	return g_rwpipe[1];
+}
+
+struct watchpointsInfo {
+	unsigned long count;
+	// Current hardware only support 4 watchpoints in total.
+	unsigned long wp[4];
+};
+
+#define WP_START_OFFSET sizeof(unsigned long)
 
 struct syncEvent {
   list_t     list;

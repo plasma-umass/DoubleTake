@@ -107,6 +107,7 @@ public:
   // this type of system call can not be rolled back safely.
   bool hasSentinels(void * addr, size_t size) {
     bool hasSentinelInside = false;
+
     // Totally how many words are involved in this.
     unsigned long bits = getBitSize(size);
     unsigned long item = getIndex(addr);

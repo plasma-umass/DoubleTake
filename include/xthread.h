@@ -704,7 +704,7 @@ private:
 
   inline SyncEventList * getSyncEventList(void * ptr, size_t size) {
     void ** entry = (void **)ptr;
-    PRINT("ptr %p *entry is %p, size %d\n", ptr, *entry, size); 
+    PRINT("ptr %p *entry is %p, size %ld\n", ptr, *entry, size); 
     return (SyncEventList *)((intptr_t)(*entry) + size);
   }
 

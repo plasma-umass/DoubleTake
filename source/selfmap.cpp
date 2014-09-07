@@ -73,6 +73,7 @@ void selfmap::printCallStack(int depth, void ** array) {
       PRINT("\tcallstack frame %d: %p\t", index, addr);
       // Print out the corresponding source code information
       sprintf(buf, "addr2line -e %s %p", _filename, addr);
+    //  PRINT("%s\n", buf);
       system(buf);
     }
 #if 0

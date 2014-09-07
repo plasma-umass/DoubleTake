@@ -33,7 +33,8 @@ OBJS32 ?= $(addprefix obj32/, $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS
 OBJS64 ?= $(addprefix obj64/, $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS))))
 
 # Compatibility include dirs
-INCLUDE_DIRS += /usr/include/$(gcc -print-multiarch)
+INCLUDE_DIRS += /usr/include/$(gcc -print-multiarch) 
+INCLUDE_DIRS += /usr/include/x86_64-linux-gnu/c++/4.8/
 
 INCLUDES ?= $(wildcard *.h) $(wildcard $(addsuffix /*.h, $(INCLUDE_DIRS)))
 

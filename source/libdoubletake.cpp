@@ -97,7 +97,9 @@ pthread_cond_t g_condWaiters;
 pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;  
-int g_waitersTotal;  
+int g_waitersTotal; 
+int g_rwpipe[2];
+ 
 /// The type of a main function
 typedef int (*main_fn_t)(int, char**, char**);
 
@@ -109,23 +111,90 @@ typedef int (*my_libc_start_main)(main_fn_t main_fn, int argc, char** argv,
 
 /**
  * Pass the real __libc_start_main this main function, then run the real main
- * function. This allows Causal to shut down when the real main function returns.
+ * function. We do this in order to install the watchpoints when some errors are detected.
+ * In the new version, a child process cannot trace the parent process any more (for safety reason?)
+ * Thus, we can't fork a process to setup those watchpoints for its parent (original process). 
+ * We have to create a daemon process initially, which is waiting for the 
+ * instruction from the actual process (child here) by reading on the global pipe. If we don't need to 
+ * setup the watchpoints because the child process do not find any memory problem,
+ * the read on the global pipe can exit smoothly (with the return value of 0). 
+ * If the child find memory errors, it notify the parent about the number of watchpoints and specific 
+ * addresses that we should watch on. 
  */
 int wrapped_main(int argc, char** argv, char** env) {
+	int ret = 0;
   // Remove causal from LD_PRELOAD. Just clearing LD_PRELOAD for now FIXME!
   unsetenv("LD_PRELOAD");
-  
-  // Run the real main function
-  int result = real_main(argc, argv, env);
+			
+	PRINT("During wrapped_main, read pipe %d, write pipe %d\n", readPipe(), writePipe());
+
+ 	// Create a child process to run the real main function
+	int child = fork(); 
+	if(child == 0) {
+		PRINT("Calling xrun initialization\n");
+		// Saving the context 
+    xrun::getInstance().epochBegin();
  
-	fprintf(stderr, "Now the main function is done!\n"); 
-  return result;
+  	// Run the real main function
+  	real_main(argc, argv, env);
+		
+  	xrun::getInstance().finalize();
+
+		// If nothing wrong, then we notify the parent. 
+		Real::write(writePipe(), &ret, sizeof(int));
+	}
+	else {
+		// Waiting on the global pipe.
+		struct watchpointsInfo watchpoint;
+		int readSize = sizeof(struct watchpointsInfo);
+		
+		int size = Real::read(readPipe(), &watchpoint, readSize);
+
+//		PRINT("Parent after read, size %d\n", size); 
+		if(size >= sizeof(unsigned long)) {
+			// Now the child has some memory errors
+			// Now we can begin to trace the child. It is required if the parent want to setup the debug 
+			// registers for its child.
+      if(ptrace(PTRACE_ATTACH, child, NULL, NULL))
+      {
+        printf("Pareent cannot trace the child %d. Error %s\n", child, strerror(errno));
+        exit(-1);
+      }
+
+			// Using the sleep to wait until the child is fully stopped.
+      sleep(1);
+
+			//PRINT("PARENT: watchpoint count is %d\n", watchpoint.count);
+
+			// Install those watchpoints for the child process.
+			for(int i = 0; i < watchpoint.count; i++) {
+				insert_watchpoint ((unsigned long)watchpoint.wp[i], sizeof(void *), hw_write, child);	
+			}
+
+			if(ptrace(PTRACE_DETACH, child, NULL, NULL))
+      {
+        printf("Pareent cannot trace the child %d. Error %s\n", child, strerror(errno));
+        exit(-1);
+      }
+
+/*			
+			// Now we are done to setup the debug registers. 
+			// Notify the child to move on since child is waiting for the setup.
+			Real::write(writePipe(), &ret, sizeof(int));
+*/
+			int status;
+			waitpid(child, &status, 0);
+		}		
+
+		PRINT("Parent is exiting now.\n"); 
+	}
+	 
+  return 0;
 }
 
 /**
  * Interpose on the call to __libc_start_main to run before libc constructors.
  */
-/*
 extern "C" int __libc_start_main(main_fn_t main_fn, int argc, char** argv,
     void (*init)(), void (*fini)(), void (*rtld_fini)(), void* stack_end) {
   // Find the real __libc_start_main
@@ -137,7 +206,7 @@ extern "C" int __libc_start_main(main_fn_t main_fn, int argc, char** argv,
   
   return result;
 }
-*/
+
 __attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
   // before initialized.
@@ -146,20 +215,23 @@ __attribute__((constructor)) void initializer() {
 	// initialize those library function entries.
 	Real::initializer();
 
+	// Initialize the rw pipe, which is used to communicate 
+	// between the parent process (daemon created in __libc_main)
+	// and the child process (the actual execution process)
+  Real::pipe(g_rwpipe);
   if(!funcInitialized) {
-    funcInitialized = true;
-		fprintf(stderr, "initializer now!!!!\n");
-
-
+  	funcInitialized = true;
     xrun::getInstance().initialize();
-    initialized = true;
+  	initialized = true;
   }
 }
 
+/*
 __attribute__((destructor)) void finalizer() {
   xrun::getInstance().finalize();
   funcInitialized = false;
 }
+*/
 
 // Temporary bump-pointer allocator for malloc() calls before DoubleTake is initialized
 static void * tempmalloc(int size) {

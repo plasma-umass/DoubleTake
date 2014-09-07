@@ -120,7 +120,7 @@ public:
   inline struct syncEvent * advanceSyncEvent() {
     list_t * curentry = this->curentry;
 		
-		PRINT("currenty is %p this->list %p with address %p\n", curentry, this->list, &this->list);
+		PRINT("currenty is %p this->list address %p\n", curentry, &this->list);
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
     }

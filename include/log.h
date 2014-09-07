@@ -87,7 +87,7 @@
 
 // Can't be turned off. But we don't want to output those line number information.
 #define PRINT(fmt, ...) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, BRIGHT_MAGENTA fmt ESC_END, ##__VA_ARGS__ );  \
+      ::snprintf(getThreadBuffer(), LOG_SIZE, BRIGHT_MAGENTA fmt ESC_END "\n", ##__VA_ARGS__ );  \
       OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } 
       
 
