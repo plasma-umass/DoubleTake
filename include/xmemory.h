@@ -145,28 +145,23 @@ public:
   inline void * realmalloc (size_t sz) {
   	unsigned char * ptr = NULL;
     int mysize = sz;
-#if 0
+
     if(sz == 0) {
       return NULL;
     }
-#endif
 
     if(sz < 16) {
       mysize = 16;
     }
    
-		PRINT("realmalloc at line %d\n", __LINE__);	
     ptr = (unsigned char *)_pheap.malloc(mysize);
-		PRINT("realmalloc at line %d\n", __LINE__);	
     objectHeader * o = getObject (ptr);
 
     // Get the block size
     size_t size = o->getSize();
     
-		PRINT("realmalloc at line %d\n", __LINE__);	
     // Set actual size there.
     o->setObjectSize(sz);
-		PRINT("realmalloc at line %d\n", __LINE__);	
     // Set actual size there.
 #ifdef DETECT_OVERFLOW
     assert(size >= sz);
@@ -416,6 +411,7 @@ public:
       }
     }
 #endif
+
     // Check the free if it is in rollback phase.
     if(global_isRollback()) {
       //PRERR("Check free on ptr %p size %d\n", ptr, o->getObjectSize());

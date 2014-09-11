@@ -248,6 +248,7 @@ public:
   #ifndef DETECT_USAGE_AFTER_FREE
     _heap->free(tid, ptr);
   #else
+		PRINT("free ptr %p adding to list\n", ptr);
     size_t size = getSize(ptr); 
     // Adding this to the quarantine list
     if(addThreadQuarantineList(ptr, size) == false) {

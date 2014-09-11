@@ -74,23 +74,23 @@ public:
     _nonStartAddrs = 0;
     _totalLeakageSize = 0;
 
-    PRINF("doSlowLeakCheck begin %p end %p\n", begin, end);
+    PRINT("doSlowLeakCheck now begin %p end %lx\n", begin, _heapEnd);
     // Search all existing registers to find possible heap pointers
     ucontext_t context;
 
     getcontext(&context);
-    //PRINF("doSlowLeakCheck line %d\n", __LINE__);
+    PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     searchHeapPointers(&context);
-    //PRINF("doSlowLeakCheck line %d\n", __LINE__);
+    PRINT("doSlowLeakCheck line %d\n", __LINE__);
     
     // Search all stacks to find possible heap pointers
     searchHeapPointersInsideStack(&context);
-    //PRINF("doSlowLeakCheck line %d\n", __LINE__);
+    PRINT("doSlowLeakCheck line %d\n", __LINE__);
  
     // Search the globals to find possible heap pointers
     searchHeapPointersInsideGlobals();    
-    //PRINF("doSlowLeakCheck line %d\n", __LINE__);
+    PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     // Traverse all possible heap pointers inside unexplored sets.
     traverseUnexploredList();
@@ -125,16 +125,16 @@ private:
     objectHeader * object = getObject((void *)addr);
     unsigned long objectStart = 0;
       
-//    PRINF("exploreHeapObject line %d on heap address %lx\n", __LINE__, addr);
+//    PRINT("exploreHeapObject line %d on heap address %lx\n", __LINE__, addr);
 
     if(!object->isGoodObject()) {
       // Current address is not the starting address of a heap object.
       // To get the starting addresses of this object, we may rely on the 
       // help of sentinel map.
       // Maybe we should check whether this object is an memaligned object? 
-      //PRINF("exploreHeapObject line %d\n", __LINE__);
+      //PRINT("exploreHeapObject line %d\n", __LINE__);
       if(sentinelmap::getInstance().findObjectStartAddr((void *)addr, &objectStart)) { 
-      //  PRINF("exploreHeapObject line %d objectStart %lx\n", __LINE__, objectStart);
+      //  PRINT("exploreHeapObject line %d objectStart %lx\n", __LINE__, objectStart);
         object = getObject((void *)objectStart);
        
         // If the return address is not the starting address of
@@ -144,14 +144,14 @@ private:
         }
       }
       else {
-        //PRINF("findObjectStartAddr failed on addr %lx at line %d\n", addr, __LINE__);
+        //PRINT("findObjectStartAddr failed on addr %lx at line %d\n", addr, __LINE__);
         object = NULL;
       }
     }
     else {
-//      PRINF("exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
+//      PRINT("exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
       if(object->isValidAddr(addr)) {
-//      PRINF("exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
+//      PRINT("exploreHeapObject line %d Good object!!!!!!!\n", __LINE__);
         objectStart = addr;
       }
       else {
@@ -159,7 +159,7 @@ private:
       }
     }
       
-    //PRINF("exploreHeapObject line %d\n", __LINE__);
+    //PRINT("exploreHeapObject line %d\n", __LINE__);
       
     // If current object is free or this object has been checked, we don't care
     if(!object) {
@@ -173,7 +173,7 @@ private:
     if(object->doCheckObject()) {
       unsigned long end = objectStart + object->getObjectSize();
       searchHeapPointers(objectStart, end);
-//      PRINF("exploreHeapObject line %d addr %lx end %lx******\n", __LINE__, addr, end);
+//      PRINT("exploreHeapObject line %d addr %lx end %lx******\n", __LINE__, addr, end);
 
       // Mark that this object are reachable from roots.
       object->markObjectChecked();
@@ -184,11 +184,11 @@ private:
     objectListType  i;
     unsigned long addr;
 
-//    PRINF("traverseUnexploredList now empty %d\n", _unexploredObjects.empty());
+//    PRINT("traverseUnexploredList now empty %d\n", _unexploredObjects.empty());
     while(_unexploredObjects.empty() != true) {
       addr = _unexploredObjects.front();
       _unexploredObjects.pop_front();
-    //  PRINF("EEEEEEEEEEExplored list with addr %lx\n", addr); 
+      PRINT("EEEEEEEEEEExplored list with addr %lx\n", addr); 
       exploreHeapObject(addr);
     }
   }
@@ -211,7 +211,7 @@ private:
     ptr = (unsigned long *)_heapBegin;
     stop = (unsigned long *)_heapEnd;
  
-//    PRINF("************CHECK LEAK at line %ld****************\n", __LINE__); 
+//    PRINT("************CHECK LEAK at line %ld****************\n", __LINE__); 
     // For the last object, we may use the bitmap to help us.
     // For example, we may only allocate some of a chunk,
     // Then how can we know whether we should move forward or not. 
@@ -220,14 +220,14 @@ private:
     while(ptr < stop) {
       // We find a object header
       if(*ptr == xdefines::SENTINEL_WORD && sentinelmap::getInstance().isSet(ptr)) {
- //       PRINF("Find object at %p\n", ptr);
+ //       PRINT("Find object at %p\n", ptr);
         object = getObject((void *)++ptr);
 //        if(object->isObjectFree()) {
-//          PRINF("object at %p is free\n", ptr);
+//          PRINT("object at %p is free\n", ptr);
 //        }
 
         if(object->checkLeakageAndClean()) {
- //         PRINF("Leakage at %p\n", object->getStartPtr());
+ //         PRINT("Leakage at %p\n", object->getStartPtr());
           hasLeakage = true;
           // Adding this object to the global leakage map, which should be tracked in re-execution
           insertLeakageMap(object->getStartPtr(), object->getObjectSize(), object->getSize());
@@ -239,7 +239,7 @@ private:
       }
     }
     
-//    PRINF("Totally leakage memory is around %lx bytes\n", _totalLeakageSize);  
+//    PRINT("Totally leakage memory is around %lx bytes\n", _totalLeakageSize);  
 
     return hasLeakage;
   }
@@ -251,7 +251,7 @@ private:
   // Insert an address into unexplored set.
   void checkInsertUnexploredList(unsigned long addr) {
     if(isPossibleHeapPointer(addr)) {
-  //    PRINF("IIIIIIIIIIIIIunexplored list with addr %lx\n", addr); 
+  //    PRINT("IIIIIIIIIIIIIunexplored list with addr %lx\n", addr); 
       //lock();
       _unexploredObjects.push_back(addr);
       //unlock();
@@ -267,7 +267,7 @@ private:
     // address since they can only possibly hold heap addresses.
     unsigned long * stop = (unsigned long *)aligndown(end, sizeof(void *));
     unsigned long * ptr = (unsigned long *)start;
-    //PRINF("searchHeapPointers at ptr %p stop %p\n", ptr, stop);
+    //PRINT("searchHeapPointers at ptr %p stop %p\n", ptr, stop);
     while(ptr < stop) {
       checkInsertUnexploredList(*ptr);
       ptr++;
@@ -296,7 +296,7 @@ private:
   void searchHeapPointersInsideStack(void * start) {
     void * stop = current->stackTop;
 
-    //PRINF("search heap pointers inside stack now. start %p stop %p\n", start, stop);
+    //PRINT("search heap pointers inside stack now. start %p stop %p\n", start, stop);
     searchHeapPointers((intptr_t)start, (intptr_t)stop);
   }
 
