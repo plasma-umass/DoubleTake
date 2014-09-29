@@ -69,27 +69,27 @@ void xrun::rollback() {
     abort();
   }
 
-  PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
+//  PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
 	// We should prepare those system calls before memory rollback.
 	// For example, if we don't want to reproduce fds, then we should 
 	// close those newly added files by calling fclose.
 	// However, memory rollback can destroy filestream in the user space.
 	syscalls::getInstance().prepareRollback();
-  PRINT("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
+//  PRINT("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
 
 	// Rollback all memory before rolling back the context.
   _memory.rollback();
   
-  PRINF("_memory rollback!!!\n");
-  PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
+//  PRINF("_memory rollback!!!\n");
+//  PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list 
   _thread.prepareRollback();
-  PRINF("_thread rollback and actual rollback\n");
+  //PRINF("_thread rollback and actual rollback\n");
   
   //while(1);
-  PRINF("\n\nset rollback\n\n\n");
+ // PRINF("\n\nset rollback\n\n\n");
 
   // Now we are going to rollback
   PRINT("\n\nSTARTING ROLLBACK!!!\n\n\n");
@@ -102,7 +102,6 @@ void xrun::rollback() {
 
 /// @brief Start a new epoch.
 void xrun::epochBegin() {
-  PRINF("getpid %d: xrun::epochBegin. \n", getpid());
 
   threadmap::aliveThreadIterator i;
   for(i = threadmap::getInstance().begin(); 

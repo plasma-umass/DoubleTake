@@ -30,6 +30,15 @@
 #include "watchpoint.h"
 #include "memtrack.h"
 
+long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
+  return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+}
+#if 0
+pid_t gettid() {
+  return syscall(__NR_gettid);
+}
+#endif
+
 bool watchpoint::addWatchpoint(void * addr, size_t value, faultyObjectType objtype, void * objectstart, size_t objectsize) {
   bool hasWatchpoint = true;
     
@@ -71,14 +80,13 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
   // Find faulty object. 
   faultyObject * object;
 
-	PRINT("inside the trap handler\n");
+//	PRINT("inside the trap handler\n");
 	// If it is a read, we only care about this if it is use-after-free error
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
     PRERR("Can't find faulty object!!!!\n");
 		return;
   }
 
-	PRINT("inside the trap handler, addr %p line %d\n", addr, __LINE__);
 
 //	while(1) ;
   // Check whether this trap is caused by libdoubletake library. 
@@ -87,13 +95,11 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
     return;
   }
 
-	PRINT("inside the trap handler, line %d\n", __LINE__);
   //  PRINF("CAPTURING write at %p: ip %lx. signal pointer %p, code %d. \n", addr, trapcontext->uc_mcontext.gregs[REG_RIP], siginfo->si_ptr, siginfo->si_code);
 	faultyObjectType faultType; 
 
 	faultType = memtrack::getInstance().getFaultType(object->objectstart, object->faultyaddr);
 	if(faultType == OBJECT_TYPE_NO_ERROR) {
-	PRINT("inside the trap handler, line %d\n", __LINE__);
 		return;
 	}	
 	
@@ -113,7 +119,6 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
   else if(faultType == OBJECT_TYPE_USEAFTERFREE) {
     PRINT("\nCaught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
   }
-	PRINT("inside the trap handler, line %d\n", __LINE__);
   selfmap::getInstance().printCallStack(depth, (void **)&callsites);
 
   // Check its allocation or deallocation inf 
@@ -121,6 +126,5 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context)
     // Now we should check memtrack status.
     memtrack::getInstance().print(object->objectstart, faultType);
   }
-	PRINT("inside the trap handler, line %d\n", __LINE__);
 }
  

@@ -41,13 +41,24 @@
 #include <sys/wait.h>
 #include <sys/user.h>
 #include <execinfo.h>
+#include <stdint.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
 #include <ucontext.h>
+#include <asm/unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/hw_breakpoint.h>
+#include <linux/perf_event.h>
 
 #include "xdefines.h"
 #include "real.h"
-#include "dr.h"
 #include "selfmap.h"
 #include "callsite.h"
+
+extern "C" {
+extern long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags);
+};
 
 class watchpoint {
   watchpoint() {
@@ -76,7 +87,7 @@ public:
   }
 
   void initialize() {
-    init_debug_registers();
+		// Currently, we do nothing.
   }
 
   // Add a watch point with its value to watchpoint list.
@@ -115,14 +126,11 @@ public:
   {
     struct sigaction trap_action;
 
-    //PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
+    PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);    
 		// We don't need to setup watchpoints if it is 0.
 		if(_numWatchpoints == 0) {
 			return;
 		}
-
-    // Initialize those debug registers. 
-    init_debug_registers();
 
     // Now we are setting a trap handler for myself.
     trap_action.sa_sigaction = watchpoint::trapHandler;
@@ -132,34 +140,100 @@ public:
 		// Setup the watchpoints information and notify the daemon (my parent)
 		struct watchpointsInfo wpinfo;
 		wpinfo.count = _numWatchpoints;
+		int perffd;
+
+		PRINT("Install watchpoints: _numWatchpoints %d\n", _numWatchpoints);
+		// Get the initial value of different watchpoints.
 		for(int i = 0; i < _numWatchpoints; i++) {
-			PRINT("Watchpoint %d: addr %p. _numWatchpoints %d\n", i, _wp[i].faultyaddr, _numWatchpoints);
+			//PRINT("Watchpoint %d: addr %p. _numWatchpoints %d\n", i, _wp[i].faultyaddr, _numWatchpoints);
 			wpinfo.wp[i] = (unsigned long)_wp[i].faultyaddr;
-			PRINT("Watchpoint %d: addr %p after setup\n", i, _wp[i].faultyaddr);
+			PRINT("Watchpoint %d: addr %p\n", i, _wp[i].faultyaddr);
 			// Update the values of those faulty address so that 
 			// we can compare those values to find out which watchpoint 
 			// are accessed since we don't want to check the debug status register
 			_wp[i].currentvalue = *((unsigned long *)_wp[i].faultyaddr);
+
+			// install this watch point. 
+			if(i == 0) {
+				perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, -1);
+			}
+			else {
+				install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, perffd);
+			}
+			PRINT("Watchpoint %d: addr %p done\n", i, _wp[i].faultyaddr);
 		}	 
 
-		// Notify the parent about those watchpoints information. 
-		Real::write(writePipe(), &wpinfo, sizeof(struct watchpointsInfo));
-
-		sleep(3);
-/*
-		// Now we are waiting on the readPipe in order to proceed.
-		int ret;
-		int readSize;
-		if(Real::read(readPipe(), &ret, sizeof(ret)) == 0) {
-			// Something must be wrong.
-			PRERR("Reading from the pipe failed, with error %s\n", strerror(errno));
-			assert(0);
-		}
-		PRINT("Watchpoint setup done! Totalsize %d. count %ld\n", sizeof(wpinfo), wpinfo.count);
-
-		PRINT("Now we are going to rollback\n");
-*/
+		// Now we can start those watchpoints.
+  	enable_watchpoints(perffd);
 		// We actually don't care about what content.
+  }
+
+	// Use perf_event_open to install a particular watch points.
+  int install_watchpoint(uintptr_t address, int sig, int group) {
+    // Perf event settings
+    struct perf_event_attr pe = {
+      .type = PERF_TYPE_BREAKPOINT,
+      .size = sizeof(struct perf_event_attr),
+      .bp_type = HW_BREAKPOINT_W,
+      .bp_len = HW_BREAKPOINT_LEN_4,
+      .bp_addr = (uintptr_t)address,
+      .disabled = 1,
+      .sample_period = 1,
+    };
+  
+//		PRINT("Install watchpoing at line %d\n", __LINE__); 
+    /*
+    int perf_event_open(struct perf_event_attr *attr,
+                             pid_t pid, int cpu, int group_fd,
+                             unsigned long flags);
+     */ 
+    // Create the perf_event for this thread on all CPUs with no event group
+    int perf_fd = perf_event_open(&pe, 0, -1, group, 0);
+    if(perf_fd == -1) {
+      PRINT("Failed to open perf event file: %s\n", strerror(errno));
+      abort();
+    }
+		PRINT("Install watchpoint. perf_fd %d group %d\n", perf_fd, group); 
+    
+    // Set the perf_event file to async mode
+    if(Real::fcntl(perf_fd, F_SETFL, Real::fcntl(perf_fd, F_GETFL, 0) | O_ASYNC) == -1) {
+      PRINT("Failed to set perf event file to ASYNC mode: %s\n", strerror(errno));
+      abort();
+    }
+    
+    // Tell the file to send a SIGUSR1 when an event occurs
+    if(Real::fcntl(perf_fd, F_SETSIG, sig) == -1) {
+      PRINT("Failed to set perf event file's async signal: %s\n", strerror(errno));
+      abort();
+    }
+ 
+    // Deliver the signal to this thread
+ //   if(Real::fcntl(perf_fd, F_SETOWN, syscall(__NR_gettid)) == -1) {
+    if(Real::fcntl(perf_fd, F_SETOWN, getpid()) == -1) {
+      fprintf(stderr, "Failed to set the owner of the perf event file: %s\n", strerror(errno));
+      abort();
+    }
+
+		//PRINT("In the end of install_watchpoint\n");   
+ 
+    return perf_fd;
+  }
+  
+  // Enable a setof watch points now
+  void enable_watchpoints(int fd) {
+    // Start the event
+    if(ioctl(fd, PERF_EVENT_IOC_ENABLE, 0) == -1) {
+      fprintf(stderr, "Failed to enable perf event: %s\n", strerror(errno));
+      abort();
+    }
+  }
+  
+  void disable_watchpoint(int fd) {
+    // Start the event
+    if(ioctl(fd, PERF_EVENT_IOC_DISABLE, 0) == -1) {
+      fprintf(stderr, "Failed to disable perf event: %s\n", strerror(errno));
+      abort();
+    }
   }
 
   // How many watchpoints that we should care about.

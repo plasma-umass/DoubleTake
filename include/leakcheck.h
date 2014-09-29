@@ -74,23 +74,23 @@ public:
     _nonStartAddrs = 0;
     _totalLeakageSize = 0;
 
-    PRINT("doSlowLeakCheck now begin %p end %lx\n", begin, _heapEnd);
+//    PRINT("doSlowLeakCheck now begin %p end %lx\n", begin, _heapEnd);
     // Search all existing registers to find possible heap pointers
     ucontext_t context;
 
     getcontext(&context);
-    PRINT("doSlowLeakCheck line %d\n", __LINE__);
+  //  PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     searchHeapPointers(&context);
-    PRINT("doSlowLeakCheck line %d\n", __LINE__);
+  //  PRINT("doSlowLeakCheck line %d\n", __LINE__);
     
     // Search all stacks to find possible heap pointers
     searchHeapPointersInsideStack(&context);
-    PRINT("doSlowLeakCheck line %d\n", __LINE__);
+  //  PRINT("doSlowLeakCheck line %d\n", __LINE__);
  
     // Search the globals to find possible heap pointers
     searchHeapPointersInsideGlobals();    
-    PRINT("doSlowLeakCheck line %d\n", __LINE__);
+   // PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     // Traverse all possible heap pointers inside unexplored sets.
     traverseUnexploredList();
@@ -188,7 +188,6 @@ private:
     while(_unexploredObjects.empty() != true) {
       addr = _unexploredObjects.front();
       _unexploredObjects.pop_front();
-      PRINT("EEEEEEEEEEExplored list with addr %lx\n", addr); 
       exploreHeapObject(addr);
     }
   }
@@ -196,7 +195,6 @@ private:
   void insertLeakageMap(void * ptr, size_t size, size_t blocksize) {
     _totalLeakageSize += blocksize;
     // Update the total size.
-    PRINT("DoubleTake: Leakage at ptr %p with size %ld. block size %ld. Now total leak size %ld\n", ptr, size, blocksize, _totalLeakageSize);
     // We only start to rollback when leakage is too large?
     memtrack::getInstance().insert(ptr, size, OBJECT_TYPE_LEAK);
   }

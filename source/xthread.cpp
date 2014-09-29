@@ -93,7 +93,6 @@ void xthread::setThreadSafe() {
 }
 
 bool xthread::addQuarantineList(void * ptr, size_t sz) {
-	PRINT("ADDING ptr %p to the quarantine list\n", ptr);
   return current->qlist.addFreeObject(ptr, sz);
 }
 

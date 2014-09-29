@@ -67,7 +67,7 @@ public:
   /// @brief Initialize the system.
   void initialize()
   {
-		PRINT("xrun: initialization at line %d\n", __LINE__);
+//		PRINT("xrun: initialization at line %d\n", __LINE__);
     struct rlimit rl;
 
     // Get the stack size.
@@ -104,19 +104,18 @@ public:
     
 		syscallsInitialize();
 
-//    PRINF("starting!!!!!\n");
+		epochBegin();
+    PRINT("starting!!!!!\n");
 
 //    PRINF("starting!!!!!\n");
   }
 
   void finalize()
   {
-    PRINT("In the end of finalize function\n");
-    //PRINF("%d: finalize now !!!!!\n", getpid());
+    PRINT("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
 #ifdef DETECT_USAGE_AFTER_FREE
-    	PRINT("Check usage after free\n");
       finalUAFCheck();
 #endif
 

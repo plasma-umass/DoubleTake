@@ -71,7 +71,6 @@ extern int getThreadIndex();
 extern char * getThreadBuffer();
 extern void jumpToFunction(ucontext_t * cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void * ptr, size_t size);
-extern int g_rwpipe[2];
 
 // A project can have multiple problems. 
 // So we make them to use different bits.
@@ -88,14 +87,6 @@ inline size_t alignup(size_t size, size_t alignto) {
 
 inline size_t aligndown(size_t addr, size_t alignto) {
   return (addr & ~(alignto -1));
-}
-
-inline int readPipe(void) {
-	return g_rwpipe[0];
-}
-
-inline int writePipe(void) {
-	return g_rwpipe[1];
 }
 
 struct watchpointsInfo {
