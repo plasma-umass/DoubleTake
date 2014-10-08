@@ -26,14 +26,15 @@
 #ifndef _SYS_FOPS_H_
 #define _SYS_FOPS_H_
 
-#include <map>
-#include <errno.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <list>
 
-#include "xdefines.h"
+#include "hashfuncs.h"
+#include "hashmap.h"
+#include "log.h"
 #include "record.h"
-#include "internalheap.h"
 
 using namespace std;
 class fops {

@@ -28,10 +28,7 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-#include<stdio.h>
-#include<stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 typedef struct list {
   struct list * prev;

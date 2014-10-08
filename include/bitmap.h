@@ -28,19 +28,8 @@
 #ifndef _BITMAP_H_
 #define _BITMAP_H_
 
-#include <errno.h>
-
-#if !defined(_WIN32)
-#include <sys/wait.h>
-#include <sys/types.h>
-#endif
-
+#include <assert.h>
 #include <stdlib.h>
-
-#include "xdefines.h"
-#include "mm.h"
-#include "objectheader.h"
-#include "watchpoint.h"
 
 class bitmap {
 private:

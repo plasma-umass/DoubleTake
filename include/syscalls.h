@@ -28,11 +28,13 @@
 #ifndef _SYSCALLS_H_
 #define _SYSCALLS_H_
 
-#include "xdefines.h"
-//#include "xrun.h"
-#include "selfmap.h"
-#include "record.h"
+#include <assert.h>
+#include <fcntl.h>
+#include <stddef.h>
+
 #include "fops.h"
+#include "log.h"
+#include "xrun.h"
 
 class syscalls {
 private:

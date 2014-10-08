@@ -28,10 +28,11 @@
 #ifndef _SYSINFO_H_
 #define _SYSINFO_H_
 
-#include <errno.h>
-
+#include <assert.h>
+#include <pthread.h>
 #include <stdlib.h>
-#include "threadmap.h"
+
+#include "log.h"
 #include "threadstruct.h"
 #include "xdefines.h"
 

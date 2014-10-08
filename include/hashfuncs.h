@@ -28,7 +28,7 @@
 #ifndef __HASHFUNCS_H__
 #define __HASHFUNCS_H__
 
-#include "list.h"
+#include <string.h>
 
 class HashFuncs {
 public:

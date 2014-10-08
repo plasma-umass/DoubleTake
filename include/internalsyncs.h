@@ -25,7 +25,7 @@
  */
 #ifndef _INTERNALSYNCS_H_
 #define _INTERNALSYNCS_H_
-#include<pthread.h>
+
 #include "threadstruct.h"
 
 void lock_thread(thread_t* thread);

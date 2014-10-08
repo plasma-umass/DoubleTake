@@ -40,11 +40,9 @@
 
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
-#include <set>
-#include <ucontext.h>
-#include <internalheap.h>
+
 #include "leakcheck.h"
-#include "threadmap.h"
+
 #include "xmemory.h"
 
 void leakcheck::searchHeapPointersInsideGlobals() {

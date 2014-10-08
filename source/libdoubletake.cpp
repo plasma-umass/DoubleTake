@@ -24,55 +24,25 @@
  * @brief Interface with outside library.
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
- *
+ * @author Charlie Curtsinger <http://www.cs.umass.edu/~charlie>
  */
 
 #include <dlfcn.h>
-
-#include <sys/types.h>
-//#include <fcntl.h>
-#include <grp.h>
-#include <sched.h>
-#include <signal.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <utime.h>
-#include <unistd.h>
-//#include <attr/xattr.h>
-//#include <mqueue.h>
-//#include <keyutils.h>
-//#include <linux/aio.h>
-//#include <linux/futex.h>
-//#include <linux/unistd.h>
-#include <linux/sysctl.h>
-#include <linux/reboot.h>
-#include <sys/epoll.h>
-#include <sys/ipc.h>
-#include <sys/mman.h>
-#include <sys/mount.h>
-#include <sys/msg.h>
-#include <sys/poll.h>
-#include <sys/resource.h>
-#include <sys/select.h>
-#include <sys/sendfile.h>
-#include <sys/shm.h>
-#include <sys/socket.h>
-//#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <sys/utsname.h>
-#include <sys/vfs.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <dlfcn.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <cstddef>
 
-#include <stdarg.h>
-
-#include "xrun.h"
+#include "globalinfo.h"
+#include "real.h"    
+#include "syscalls.h"  
 #include "xmemory.h"
-#include "syscalls.h"
+#include "xrun.h"
+#include "xthread.h"
+
+// CC: Why is this being undefined!?
 #ifdef _SYS_STAT_H
 #undef _SYS_STAT_H
 #endif

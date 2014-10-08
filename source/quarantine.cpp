@@ -24,9 +24,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
          Whichever comes first, we will evict one object. 
 * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
 */
-#include "xdefines.h"
-#include "xmemory.h"
+
 #include "quarantine.h"
+
+#include "xmemory.h"
 
 void quarantine::realfree(void * ptr) {
   // Calling actual heap object to free this object.

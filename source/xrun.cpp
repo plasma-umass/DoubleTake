@@ -26,10 +26,15 @@
  */
 
 #include "xrun.h"
-#include "syscalls.h"
+
+#include <assert.h>
+#include <ucontext.h>
+
 #include "globalinfo.h"
+#include "internalsyncs.h"
+#include "syscalls.h"
 #include "threadmap.h"
-#include "leakcheck.h"
+#include "threadstruct.h"
 
 void xrun::startRollback() {
   // Now we are going to rollback. Wakup all threads

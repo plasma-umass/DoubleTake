@@ -24,9 +24,16 @@
  * @brief  Memory management for all.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */ 
-#include "xrun.h"
+
 #include "xmemory.h"
+
+#include <cstddef>
+
+#include "internalheap.h"
 #include "mm.h"
+#include "xoneheap.h"
+#include "xpheap.h"
+#include "xrun.h"
 
 xpheap<xoneheap<xheap > > xmemory::_pheap;
  

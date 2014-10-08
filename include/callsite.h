@@ -28,11 +28,6 @@
 #ifndef _CALLSITE_H
 #define _CALLSITE_H
 
-#include <link.h>
-#include <stdio.h>
-
-#include "xdefines.h"
-
 class CallSite {
 public:
   CallSite()

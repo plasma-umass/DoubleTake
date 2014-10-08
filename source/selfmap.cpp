@@ -25,19 +25,17 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include <sys/resource.h>
-#include <iostream>
-#include <fstream>
-#include <execinfo.h>
+#include "selfmap.h"
 
-//#include <libunwind-ptrace.h>
-//#include <sys/ptrace.h>
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "log.h"
+#include "xdefines.h"
+#include "xthread.h"
 
 #define MAX_BUF_SIZE 4096
-#include "xdefines.h"
-#include "threadstruct.h"
-#include "xthread.h"
-#include "selfmap.h"
 
 // Normally, callstack only saves next instruction address. 
 // To get current callstack, we should substract 1 here. 

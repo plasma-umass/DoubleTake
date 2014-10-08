@@ -28,9 +28,6 @@
 #error "This file requires the GNU compiler."
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <malloc.h>
 
 
@@ -103,14 +100,5 @@ extern "C" {
   static void * my_memalign_hook (size_t size, size_t alignment, const void *) {
     return CUSTOM_MEMALIGN(size, alignment);
   }
-
-#if 0
-  void finalizer() __attribute__((destructor));
-
-  void finalizer() {
-    printf ("counter = %d\n", counter);
-  }
-#endif
-
 }
 
