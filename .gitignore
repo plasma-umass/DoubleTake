@@ -4,9 +4,9 @@ libdoubletake.so
 libdoubletake32.so
 libdoubletake64.so
 heaplayers
-tests/simple_leak/obj64/main.o
+tests/simple_leak/obj64
 tests/simple_leak/simple_leak
-tests/simple_overflow/obj64/main.o
+tests/simple_overflow/obj64
 tests/simple_overflow/simple_overflow
-tests/simple_uaf/obj64/main.o
+tests/simple_uaf/obj64
 tests/simple_uaf/simple_uaf
