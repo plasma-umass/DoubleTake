@@ -1,20 +1,12 @@
-ROOT = ..
-TARGETS = $(ROOT)/libdoubletake.so
-LIBS = dl pthread
-INCLUDE_DIRS = $(ROOT)/include $(ROOT)/heaplayers
-
-# -DEVALUATING_PERF
-# -DDEBUG_LEVEL=0
-CFLAGS_OVERFLOW     = -DDETECT_OVERFLOW
-CFLAGS_USEAFTERFREE = -DDETECT_USAGE_AFTER_FREE 
-CFLAGS_LEAKS        = -DDETECT_MEMORY_LEAKAGE
-CFLAGS_ALL          = $(CFLAGS_OVERFLOW) $(CFLAGS_USEAFTERFREE) $(CFLAGS_LEAKS)
-
-CFLAGS = -fPIC -fno-omit-frame-pointer -Wno-deprecated -D'CUSTOM_PREFIX(x)=doubletake_\#\#x' -Werror \
-	-DDEBUG_LEVEL=1 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL -DMULTI_THREAD \
-	$(CFLAGS_ALL) 
-	
-#-DDEBUG_LEVEL=1 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL -DMULTI_THREAD\
-#-DDEBUG_LEVEL=1 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL -DMULTI_THREAD\
+ROOT 		 := ..
+TARGETS  := $(ROOT)/libdoubletake.so
+LIBS     := dl pthread
+CXXFLAGS := -g -O2 -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror \
+						-DDEBUG_LEVEL=1 -DDEBUG_ROLLBACK -DSSE_SUPPORT -DHANDLE_SYSCALL -DMULTI_THREAD \
+						-DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDETECT_MEMORY_LEAKAGE
+PREREQS  := $(ROOT)/heaplayers
 
 include $(ROOT)/common.mk
+
+$(ROOT)/heaplayers:
+	git clone git://github.com/emeryberger/Heap-Layers $(ROOT)/heaplayers

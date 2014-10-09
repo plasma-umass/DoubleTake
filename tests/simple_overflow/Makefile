@@ -1,8 +1,7 @@
-ROOT = ../..
-TARGETS = simple_overflow
-LIB_DIRS = $(ROOT)
-LIBS = doubletake
-CFLAGS += -g
+ROOT    := ../..
+TARGETS := simple_overflow
+CFLAGS  := -g
+LDFLAGS := -L$(ROOT) -ldoubletake
 
 include $(ROOT)/common.mk
 

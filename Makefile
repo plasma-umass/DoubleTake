@@ -1,4 +1,4 @@
-ROOT = .
-DIRS = source tests
+ROOT := .
+DIRS := source tests
 
 include $(ROOT)/common.mk

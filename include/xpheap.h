@@ -33,7 +33,7 @@
 using std::cout;
 using std::endl;
 
-#include "xdefines.h"
+// Heaplayers includes
 #include "utility/ilog2.h"
 #include "utility/sassert.h"
 #include "wrappers/ansiwrapper.h"
@@ -42,13 +42,14 @@ using std::endl;
 #include "utility/sllist.h"
 #include "utility/dllist.h"
 #include "heaps/special/zoneheap.h"
-#include "objectheader.h"
 #include "heaps/debug/sanitycheckheap.h"
-#include "spinlock.h"
 
 // Implemented for stopgap to check buffer overflow
+#include "objectheader.h"
 #include "sentinelmap.h"
+#include "spinlock.h"
 #include "quarantine.h"
+#include "xdefines.h"
 
 template <class SourceHeap>
 class AdaptAppHeap : public SourceHeap {

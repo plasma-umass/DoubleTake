@@ -42,10 +42,8 @@
 #include "xrun.h"
 #include "xthread.h"
 
-// CC: Why is this being undefined!?
-#ifdef _SYS_STAT_H
-#undef _SYS_STAT_H
-#endif
+// Install xxmalloc, xxfree, etc. as custom allocator
+#include "wrappers/gnuwrapper.cpp"
 
 enum {
   InitialMallocSize = 512 * 1024 * 1024
@@ -131,7 +129,7 @@ void* call_dlsym(void * handle, const char* funcname) {
 
 extern "C" {
   /// Functions related to memory management.
-  void * doubletake_malloc (size_t sz) {
+  void * xxmalloc (size_t sz) {
     void * ptr;
     if (!initialized) {
     //  fprintf(stderr, "tempmalloc sz %ld\n", sz);
@@ -147,76 +145,21 @@ extern "C" {
     }
     return ptr;
   }
-  
-  void * doubletake_calloc (size_t nmemb, size_t sz) {
-    void * ptr = NULL;
-  //  printf("doubletake_calloc line %d ptr %p\n", __LINE__, ptr);
-    ptr = doubletake_malloc(nmemb *sz);
-    //printf("doubletake_calloc line %d ptr %p\n", __LINE__, ptr);
-	  memset(ptr, 0, sz*nmemb);
-    return ptr;
-  }
 
-  void doubletake_free (void * ptr) {
+  void xxfree (void * ptr) {
     if (initialized && ptr) {
       xmemory::getInstance().free (ptr);
     }
   }
 
-  size_t doubletake_malloc_usable_size(void * ptr) {
+  size_t xxmalloc_usable_size(void * ptr) {
     //assert(initialized);
     if(initialized) {
       return xmemory::getInstance().getSize(ptr);
     }
     return 0;
   }
-
-  void * doubletake_memalign (size_t boundary, size_t size) {
-	 // fprintf(stderr, "%d : doubletake don't support memalign. boundary %d size %d\n", getpid(), boundary, size);
-    void * newptr;
-    if (!initialized) {
-      newptr = tempmalloc(boundary+size);
-      
-      return newptr;
-    }
-    else { 
-      return xmemory::getInstance().memalign(boundary, size);
-    }
-    return NULL;
-  }
-
-  void * doubletake_realloc (void * ptr, size_t sz) {
-    void * newptr;
-    if (!initialized) {
-      newptr = tempmalloc(sz);
-      return newptr;
-    }
-    else { 
-      return xmemory::getInstance().realloc (ptr, sz);
-    }
-  }
- 
-  void * malloc (size_t sz) throw() {
-    return doubletake_malloc(sz);
-  }
-
-  void * calloc (size_t nmemb, size_t sz) throw() {
-   // printf("calloc %d: nmemb %lx each size %lx\n", __LINE__, nmemb, sz);
-    return doubletake_calloc(nmemb, sz);
-  }
-
-  void free(void *ptr) throw () {
-    doubletake_free(ptr);
-  }
   
-  void* realloc(void * ptr, size_t sz) {
-    return doubletake_realloc(ptr, sz);
-  }
-
-  void * memalign(size_t boundary, size_t sz) { 
-    return doubletake_memalign(boundary, sz);
-  }
-
 #ifdef MULTI_THREAD
   /// Threads's synchronization functions.
   // Mutex related functions 

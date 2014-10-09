@@ -1,8 +1,7 @@
-ROOT = ../..
-TARGETS = simple_leak
-LIB_DIRS = $(ROOT)
-LIBS = doubletake
-CFLAGS += -g
+ROOT    := ../..
+TARGETS := simple_leak
+CFLAGS  := -g
+LDFLAGS := -L$(ROOT) -ldoubletake
 
 include $(ROOT)/common.mk
 

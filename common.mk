@@ -1,145 +1,74 @@
-# Set compilers to clang
-CC = clang
-CXX = clang++
-#CC = gcc
-#CXX = g++
-CXXLIB ?= $(CXX) -shared -fPIC
+# Build with clang
+CC  := clang
+CXX := clang++
 
-# Is this platform 32 or 64 bit?
-ifeq ($(shell uname -m),x86_64)
-BITS = 64
-else
-BITS = 32
-endif
-
-# Just in case we port to OSX
-SHLIB_SUFFIX ?= so
-
-# Which dirs should be recur into?
-DIRS ?=
-# What libs does the target depend on?
-LIBS ?=
-# What directories hold required include files?
-INCLUDE_DIRS ?=
-# What directories hold require libraries?
-LIB_DIRS ?=
-
-# Which make targets should recur into DIRS?
-RECURSIVE_TARGETS ?= clean build test
-
-# Match source files, targets, and include files
-SRCS ?= $(wildcard *.c) $(wildcard *.cpp)
-OBJS32 ?= $(addprefix obj32/, $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS))))
-OBJS64 ?= $(addprefix obj64/, $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(SRCS))))
-
-# Compatibility include dirs
-INCLUDE_DIRS += /usr/include/$(gcc -print-multiarch) 
-INCLUDE_DIRS += /usr/include/x86_64-linux-gnu/c++/4.8/
-
-INCLUDES ?= $(wildcard *.h) $(wildcard $(addsuffix /*.h, $(INCLUDE_DIRS)))
-
-INDENT +=" "
-export INDENT
-
-LIBFLAGS = $(addprefix -L, $(LIB_DIRS)) $(addprefix -l, $(LIBS))
-INCFLAGS = $(addprefix -I, $(INCLUDE_DIRS))
-
-# Set up CFLAGS, if not overridden in Makefile
-CFLAGS += -fPIC -g -O0
-CFLAGS32 ?= -m32 $(CFLAGS)
-CFLAGS64 ?= -m64 $(CXXFLAGS)
-
-# Set up CXXFLAGS, if not overridden in Makefile
+# Default flags
+CFLAGS   ?= -g -O2
 CXXFLAGS ?= $(CFLAGS)
-CXXFLAGS32 ?= -m32 $(CXXFLAGS)
-CXXFLAGS64 ?= -m64 $(CXXFLAGS)
+LDFLAGS  += $(addprefix -l,$(LIBS))
 
-ifeq ($(BITS),32)
-OBJS_NATIVE = $(OBJS32)
-CFLAGS_NATIVE = $(CFLAGS32)
-CXXFLAGS_NATIVE = $(CXXFLAGS32)
-else
-OBJS_NATIVE = $(OBJS64)
-CFLAGS_NATIVE = $(CFLAGS64)
-CXXFLAGS_NATIVE = $(CXXFLAGS64)
-endif
+# Default source and object files
+SRCS    ?= $(wildcard *.cpp) $(wildcard *.c)
+OBJS    ?= $(addprefix obj/,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRCS))))
 
-# Find all 32-bit, 64-bit, and native shared library targets
-LIB_TARGETS32 = $(filter %32.$(SHLIB_SUFFIX), $(TARGETS))
-LIB_TARGETS64 = $(filter %64.$(SHLIB_SUFFIX), $(TARGETS))
-LIB_TARGETS_NATIVE = $(filter %.$(SHLIB_SUFFIX), $(filter-out %32.$(SHLIB_SUFFIX), $(filter-out %64.$(SHLIB_SUFFIX), $(TARGETS))))
+# Targets to build recirsively into $(DIRS)
+RECURSIVE_TARGETS  ?= all clean bench test
 
-# Any native library targets depend on the explicit-suffix version. Add it to the targets list
-ifeq ($(BITS),32)
-EXTRA_TARGETS = $(patsubst %.$(SHLIB_SUFFIX), %32.$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
-LIB_TARGETS32 += $(patsubst %.$(SHLIB_SUFFIX), %32.$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
-else
-EXTRA_TARGETS = $(patsubst %.$(SHLIB_SUFFIX), %64.$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
-LIB_TARGETS64 += $(patsubst %.$(SHLIB_SUFFIX), %64.$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
-endif
+# Build in parallel
+MAKEFLAGS := -j
 
-# Find all other targets
-OTHER_TARGETS = $(filter-out %.$(SHLIB_SUFFIX), $(TARGETS))
+# Targets separated by type
+SHARED_LIB_TARGETS := $(filter %.so, $(TARGETS))
+STATIC_LIB_TARGETS := $(filter %.a, $(TARGETS))
+OTHER_TARGETS      := $(filter-out %.so, $(filter-out %.a, $(TARGETS)))
 
-# Build in debug mode by default
-all: debug
+# If not set, the build path is just the current directory name
+MAKEPATH ?= `basename $(PWD)`
 
-clean:: 
-ifneq ($(TARGETS),)
-	@echo $(INDENT)[make] Cleaning build targets
-	@rm -f $(TARGETS) $(OBJS64) $(OBJS32) $(EXTRA_TARGETS)
-endif
+# Log the build path in gray, following by a log message in bold green
+LOG_PREFIX := "\033[37;0m[$(MAKEPATH)]\033[0m\033[32;1m"
+LOG_SUFFIX := "\033[0m"
 
-release: DEBUG=
-release: build
+# Build all targets by default
+all:: $(TARGETS)
 
-debug: DEBUG=1
-debug: build
+# Clean up after a bild
+clean::
+	@for t in $(TARGETS); do \
+	echo $(LOG_PREFIX) Cleaning $$t $(LOG_SUFFIX); \
+	done
+	@rm -rf $(TARGETS) obj
 
-test:: build
+# Prevent errors if files named all, clean, bench, or test exist
+.PHONY: all clean bench test
 
-build:: $(TARGETS) $(INCLUDE_DIRS)
+# Compile a C++ source file (and generate its dependency rules)
+obj/%.o: %.cpp $(PREREQS)
+	@echo $(LOG_PREFIX) Compiling $< $(LOG_SUFFIX)
+	@mkdir -p obj
+	@$(CXX) $(CXXFLAGS) -MMD -MP -o $@ -c $<
 
-obj32/%.o:: %.c Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
-	@mkdir -p obj32
-	@echo $(INDENT)[$(notdir $(firstword $(CC)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CC) $(CFLAGS32) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+# Compile a C source file (and generate its dependency rules)
+obj/%.o: %.c $(PREREQS)
+	@echo $(LOG_PREFIX) Compiling $< $(LOG_SUFFIX)
+	@mkdir -p obj
+	@$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
 
-obj32/%.o:: %.cpp Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
-	@mkdir -p obj32
-	@echo $(INDENT)[$(notdir $(firstword $(CXX)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CXX) $(CXXFLAGS32) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+# Link a shared library 
+$(SHARED_LIB_TARGETS): $(OBJS)
+	@echo $(LOG_PREFIX) Linking $@ $(LOG_SUFFIX)
+	@$(CXX) -shared $(LDFLAGS) -o $@ $^
 
-obj64/%.o:: %.c Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
-	@mkdir -p obj64
-	@echo $(INDENT)[$(notdir $(firstword $(CC)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CC) $(CFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+# Link binary targets
+$(OTHER_TARGETS): $(OBJS)
+	@echo $(LOG_PREFIX) Linking $@ $(LOG_SUFFIX)
+	@$(CXX) $(LDFLAGS) -o $@ $^
 
-obj64/%.o:: %.cpp Makefile $(ROOT)/common.mk $(INCLUDE_DIRS) $(INCLUDES)
-	@mkdir -p obj64
-	@echo $(INDENT)[$(notdir $(firstword $(CXX)))] Compiling $< for $(if $(DEBUG),Debug,Release) build
-	@$(CXX) $(CXXFLAGS64) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) -c $< -o $@
+# Include dependency rules for all objects
+-include $(OBJS:.o=.d)
 
-$(LIB_TARGETS32):: $(OBJS32) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common.mk
-	@echo $(INDENT)[$(notdir $(firstword $(CXXLIB)))] Linking $@ for $(if $(DEBUG),Debug,Release) build
-	@$(CXXLIB) $(CXXFLAGS32) $(INCFLAGS) $(OBJS32) -o $@ $(LIBFLAGS)
-
-$(LIB_TARGETS64):: $(OBJS64) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common.mk
-	@echo $(INDENT)[$(notdir $(firstword $(CXXLIB)))] Linking $@ for $(if $(DEBUG),Debug,Release) build
-	@$(CXXLIB) $(CXXFLAGS64) $(INCFLAGS) $(OBJS64) -o $@ $(LIBFLAGS) 
-
-$(LIB_TARGETS_NATIVE):: $(patsubst %.$(SHLIB_SUFFIX), %$(BITS).$(SHLIB_SUFFIX), $(LIB_TARGETS_NATIVE))
-	@cp $(patsubst %.$(SHLIB_SUFFIX), %$(BITS).$(SHLIB_SUFFIX), $@) $@
-
-$(OTHER_TARGETS):: $(OBJS_NATIVE) $(INCLUDE_DIRS) $(INCLUDES) Makefile $(ROOT)/common.mk
-	@echo $(INDENT)[$(notdir $(firstword $(CXX)))] Linking $@ for $(if $(DEBUG),Debug,Release) build
-	@$(CXX) $(CXXFLAGS_NATIVE) $(if $(DEBUG),-g,-DNDEBUG) $(INCFLAGS) $(OBJS_NATIVE) -o $@ $(LIBFLAGS)
-
-$(ROOT)/heaplayers:
-	git clone ssh://git@github.com/emeryberger/Heap-Layers $(ROOT)/heaplayers
-
+# Build any recursive targets in subdirectories
 $(RECURSIVE_TARGETS)::
 	@for dir in $(DIRS); do \
-	  echo "$(INDENT)[$@] Entering $$dir"; \
-	  $(MAKE) --no-print-directory -C $$dir $@ DEBUG=$(DEBUG); \
+	$(MAKE) -C $$dir --no-print-directory $@ MAKEPATH="$(MAKEPATH)/$$dir"; \
 	done
