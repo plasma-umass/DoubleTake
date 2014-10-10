@@ -4,21 +4,19 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "xthread.h"
+#include "xthread.hh"
 
-#include <cstddef>
-
-#include "globalinfo.h"
-#include "internalsyncs.h"
-#include "list.h"
-#include "log.h"
-#include "quarantine.h"
-#include "recordentries.h"
-#include "threadinfo.h"
-#include "threadmap.h"
-#include "threadstruct.h"
-#include "xrun.h"
-#include "xsync.h"
+#include "globalinfo.hh"
+#include "internalsyncs.hh"
+#include "list.hh"
+#include "log.hh"
+#include "quarantine.hh"
+#include "recordentries.hh"
+#include "threadinfo.hh"
+#include "threadmap.hh"
+#include "threadstruct.hh"
+#include "xrun.hh"
+#include "xsync.hh"
 
 // Global lock used when joining and exiting a thread.
 //threadmap::threadHashMap threadmap::_xmap;

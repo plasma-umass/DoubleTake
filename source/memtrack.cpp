@@ -1,7 +1,7 @@
-#include "memtrack.h"
+#include "memtrack.hh"
 
-#include "selfmap.h"
-#include "sentinelmap.h"
+#include "selfmap.hh"
+#include "sentinelmap.hh"
 
 // Check whether an object should be reported or not. Type is to identify whether it is 
 // a malloc or free operation. 

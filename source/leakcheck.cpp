@@ -21,9 +21,9 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "leakcheck.h"
+#include "leakcheck.hh"
 
-#include "xmemory.h"
+#include "xmemory.hh"
 
 void leakcheck::searchHeapPointersInsideGlobals() {
   int totalRegions;

@@ -6,20 +6,26 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "watchpoint.h"
+#include "watchpoint.hh"
 
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/perf_event.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <syscall.h>
 #include <ucontext.h>
+#include <unistd.h>
 
-#include "memtrack.h"
-#include "selfmap.h"
-#include "xdefines.h"
+#include "log.hh"
+#include "memtrack.hh"
+#include "real.hh"
+#include "selfmap.hh"
+#include "xdefines.hh"
 
 long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
   return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);

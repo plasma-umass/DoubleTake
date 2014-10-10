@@ -10,16 +10,14 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <cstddef>
 
-#include "globalinfo.h"
-#include "real.h"    
-#include "syscalls.h"  
-#include "xmemory.h"
-#include "xrun.h"
-#include "xthread.h"
+#include "globalinfo.hh"
+#include "real.hh"    
+#include "syscalls.hh"  
+#include "xmemory.hh"
+#include "xrun.hh"
+#include "xthread.hh"
 
 // Install xxmalloc, xxfree, etc. as custom allocator
 #include "wrappers/gnuwrapper.cpp"
@@ -105,40 +103,41 @@ void* call_dlsym(void * handle, const char* funcname) {
   return p;
 }
 
+// Memory management functions
 extern "C" {
-  /// Functions related to memory management.
-  void * xxmalloc (size_t sz) {
-    void * ptr;
-    if (!initialized) {
-    //  fprintf(stderr, "tempmalloc sz %ld\n", sz);
+  void* xxmalloc(size_t sz) {
+    void* ptr;
+    if(!initialized) {
       ptr = tempmalloc(sz);
     } else {
-//      printf("doubletakemalloc sz %d\n", sz);
       ptr = xmemory::getInstance().malloc(sz);
-//      printf("doubletakemalloc sz %d ptr %p\n", sz, ptr);
     }
-    if (ptr == NULL) {
-      fprintf (stderr, "Out of memory!\n");
+    if(ptr == NULL) {
+      fprintf(stderr, "Out of memory!\n");
       ::abort();
     }
     return ptr;
   }
 
-  void xxfree (void * ptr) {
-    if (initialized && ptr) {
-      xmemory::getInstance().free (ptr);
+  void xxfree(void* ptr) {
+    if(initialized && ptr) {
+      xmemory::getInstance().free(ptr);
     }
   }
 
-  size_t xxmalloc_usable_size(void * ptr) {
-    //assert(initialized);
+  size_t xxmalloc_usable_size(void* ptr) {
     if(initialized) {
       return xmemory::getInstance().getSize(ptr);
     }
     return 0;
   }
+}
+
+// Thread functions
+extern "C" {
   
-#ifdef MULTI_THREAD
+#if !defined(DISABLE_THREADS)
+  
   /// Threads's synchronization functions.
   // Mutex related functions 
   int pthread_mutex_init (pthread_mutex_t * mutex, const pthread_mutexattr_t* attr) {   
@@ -241,24 +240,22 @@ extern "C" {
     return xthread::getInstance().thread_cancel(thread);
   }
   
-  int sched_yield () 
-  {
+  int sched_yield() {
     return 0;
   }
 
   // FIXME
-  void pthread_exit (void * value_ptr) {
+  void pthread_exit(void * value_ptr) {
     // This should probably throw a special exception to be caught in spawn.
 		abort();
     //xthread::getInstance().thread_exit(value_ptr);
   }
  
-  int pthread_setconcurrency (int) {
+  int pthread_setconcurrency(int) {
     return 0;
   }
 
-  pthread_t pthread_self() 
-  {
+  pthread_t pthread_self() {
     return xthread::thread_self();
   }
 
@@ -271,45 +268,34 @@ extern "C" {
     return xthread::getInstance().thread_detach(thread);
   }
 
-#if 0
-  int pthread_rwlock_destroy (pthread_rwlock_t * rwlock) NOTHROW
-  {
-    return 0;
-  }
+  // int pthread_rwlock_destroy (pthread_rwlock_t * rwlock) NOTHROW {
+  //   return 0;
+  // }
 
-  int pthread_rwlock_init (pthread_rwlock_t * rwlock,
-			   const pthread_rwlockattr_t * attr) NOTHROW
-  {
-    return 0;
-  }
+  // int pthread_rwlock_init (pthread_rwlock_t * rwlock, const pthread_rwlockattr_t * attr) NOTHROW {
+  //   return 0;
+  // }
 
+  // int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock) NOTHROW {
+  //   return 0;
+  // }
 
-  int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock) NOTHROW
-  {
-    return 0;
-  }
+  // int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock) NOTHROW {
+  //   return 0;
+  // }
 
-  int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock) NOTHROW
-  {
-    return 0;
-  }
+  // int pthread_rwlock_unlock(pthread_rwlock_t *rwlock) NOTHROW {
+  //   return 0;
+  // }
 
-  int pthread_rwlock_unlock(pthread_rwlock_t *rwlock) NOTHROW
-  {
-    return 0;
-  }
+  // int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock) NOTHROW {
+  //   return 0;
+  // }
 
-  int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock) NOTHROW
-  {
-    return 0;
-  }
-
-  int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock) NOTHROW
-  {
-    return 0;
-  }
-
-#endif
+  // int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock) NOTHROW{
+  //   return 0;
+  // }
+  
   int pthread_attr_getstacksize (const pthread_attr_t *, size_t * s) {
     *s = 1048576UL; // really? FIX ME
     return 0;
@@ -323,11 +309,7 @@ extern "C" {
   int pthread_attr_setstacksize (pthread_attr_t *, size_t) { return 0; }
 */
 
-  int pthread_create (pthread_t * tid,
-		      const pthread_attr_t * attr,
-		      void *(*start_routine) (void *),
-		      void * arg) 
-  {
+  int pthread_create (pthread_t * tid, const pthread_attr_t * attr, void *(*start_routine) (void *), void * arg) {
     fprintf(stderr, "Calling spawning now!!!\n");
     return xthread::getInstance().thread_create(tid, attr, start_routine, arg);
   }
@@ -335,26 +317,27 @@ extern "C" {
   int pthread_join (pthread_t tid, void ** val) {
     xthread::getInstance().thread_join (tid, val);
     return 0;
-  }
- 
-#endif 
-#if 0
-  void* mmap(void *start, size_t length, int prot, int flags,
-                  int fd, off_t offset) 
-  {
-    fprintf(stderr, "mmap in doubletake at %d start %p fd %d length %x\n", __LINE__, start, fd, length);
-    CallSite::getCallsite(2);
-    //return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
-    return Real::mmap()(start, length, prot, flags, fd, offset);
-  }
+  } 
+  
 #endif
+}
 
-#if 0
-  pid_t getpid() {
-    return xrun::getInstance().getpid();
-  }
-#endif
-#ifdef HANDLE_SYSCALL
+// System calls
+extern "C" {
+
+#if !defined(DISABLE_SYSCALLS)
+  
+  // void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
+  //   fprintf(stderr, "mmap in doubletake at %d start %p fd %d length %x\n", __LINE__, start, fd, length);
+  //   CallSite::getCallsite(2);
+  //   //return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
+  //   return Real::mmap()(start, length, prot, flags, fd, offset);
+  // }
+
+  // pid_t getpid() {
+  //   return xrun::getInstance().getpid();
+  // }
+  
   ssize_t read (int fd, void * buf, size_t count) {
     fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
     if (!initialized) {
@@ -409,28 +392,26 @@ extern "C" {
 		return 0;
 	}
 
-#if 0	
- 	int printf(const char *format, ...) {
-//		PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
-		if(!global_isRollback()) {
-    	va_list ap;
-    	va_start(ap, format);
-    	vprintf(format, ap);
-		}
-			
-		return 0;
-	}
- 
-	int fprintf(FILE *stream, const char *format, ...) {
-		if(!global_isRollback()) {
-    	va_list ap;
-    	va_start(ap, format);
-    	vfprintf(stream, format, ap);
-		}
-			
-		return 0;
-	}
-#endif
+//    int printf(const char *format, ...) {
+//    PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
+//     if(!global_isRollback()) {
+//       va_list ap;
+//       va_start(ap, format);
+//       vprintf(format, ap);
+//     }
+//
+//     return 0;
+//   }
+//
+//   int fprintf(FILE *stream, const char *format, ...) {
+//     if(!global_isRollback()) {
+//       va_list ap;
+//       va_start(ap, format);
+//       vfprintf(stream, format, ap);
+//     }
+//
+//     return 0;
+//   }
  
   //int open(const char *pathname, int flags, mode_t mode) {
   int open(const char *pathname, int flags, ...) {
@@ -620,26 +601,22 @@ extern "C" {
     }
   }
 
-//  int sigreturn(unsigned long __unused) {
-//    return syscalls::getInstance().sigreturn(__unused);
-//  }
+  //  int sigreturn(unsigned long __unused) {
+  //    return syscalls::getInstance().sigreturn(__unused);
+  //  }
 
-#if 0
   // FIXME
-  int ioctl(int d, int request, ...) {
-    va_list ap;
-    va_start(ap, request);
-    void * argp = va_arg(ap, void *);
-    return syscalls::getInstance().ioctl(d, request, argp);
-  }
-#endif
+  // int ioctl(int d, int request, ...) {
+  //   va_list ap;
+  //   va_start(ap, request);
+  //   void * argp = va_arg(ap, void *);
+  //   return syscalls::getInstance().ioctl(d, request, argp);
+  // }
 
-#if 0
   // Since the offset will not changed at all, it is safe to omit this.
-  ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
-    return syscalls::getInstance().pread(fd, buf, count, offset);
-  }
-#endif
+  // ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
+  //   return syscalls::getInstance().pread(fd, buf, count, offset);
+  // }
 
   ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset) {
     fprintf(stderr, "pwrite in doubletake at %d\n", __LINE__);
@@ -656,26 +633,21 @@ extern "C" {
     return syscalls::getInstance().writev(fd, vector, count);  
   }
 
-#if 0
   // Check permission, no need to intercept
-  int access(const char *pathname, int mode){
-    return syscalls::getInstance().access(pathname, mode);
-  }
-#endif
+  // int access(const char *pathname, int mode){
+  //   return syscalls::getInstance().access(pathname, mode);
+  // }
 
   int pipe(int filedes[2]){
     fprintf(stderr, "pipe in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().pipe(filedes);
   }
 
-#if 0
   // No need to handle this
-  int select(int nfds, fd_set *readfds, fd_set *writefds,
-             fd_set *exceptfds, struct timeval *timeout){
-    return syscalls::getInstance().select(nfds, readfds, writefds, exceptfds, timeout);
-  }
-#endif
-
+  // int select(int nfds, fd_set *readfds, fd_set *writefds,
+  //            fd_set *exceptfds, struct timeval *timeout){
+  //   return syscalls::getInstance().select(nfds, readfds, writefds, exceptfds, timeout);
+  // }
 
   // Tonngping: Record this
   void * mremap(void *old_address, size_t old_size , size_t new_size, int flags, ...){
@@ -683,12 +655,10 @@ extern "C" {
     return syscalls::getInstance().mremap(old_address, old_size, new_size, flags);
   }
 
-#if 0
   // No need to do anything
-  int msync(void *start, size_t length, int flags){
-    return syscalls::getInstance().msync(start, length, flags);
-  }
-#endif
+  // int msync(void *start, size_t length, int flags){
+  //   return syscalls::getInstance().msync(start, length, flags);
+  // }
 
   int mincore(void *start, size_t length, unsigned char *vec){
     // FIXME later
@@ -697,15 +667,12 @@ extern "C" {
 //    return syscalls::getInstance().mincore(start, length, vec);
   }
 
-/*
-  int madvise(void *start, size_t length, int advice){
-    fprintf(stderr, "madvise in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().madvise(start, length, advice);
-  }
-*/
+  // int madvise(void *start, size_t length, int advice){
+  //   fprintf(stderr, "madvise in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().madvise(start, length, advice);
+  // }
 
   int shmget(key_t key, size_t size, int shmflg){
-
     fprintf(stderr, "shmget in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().shmget(key, size, shmflg);
   }
@@ -755,22 +722,19 @@ extern "C" {
     return syscalls::getInstance().dup2(oldfd, newfd);
   }
 
-#if 0
-  int pause(){
-    return syscalls::getInstance().pause();
-  }
+  // int pause(){
+  //   return syscalls::getInstance().pause();
+  // }
 
-  int nanosleep(const struct timespec *req, struct timespec *rem){
-    return syscalls::getInstance().nanosleep(req, rem);
-  }
+  // int nanosleep(const struct timespec *req, struct timespec *rem){
+  //   return syscalls::getInstance().nanosleep(req, rem);
+  // }
 
-  int getitimer(int which, struct itimerval *value){
-    return syscalls::getInstance().getitimer(which, value);
-  }
-#endif
+  // int getitimer(int which, struct itimerval *value){
+  //   return syscalls::getInstance().getitimer(which, value);
+  // }
 
   unsigned int alarm(unsigned int seconds){
-
     fprintf(stderr, "alarm in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().alarm(seconds);
   }
@@ -780,9 +744,9 @@ extern "C" {
     return syscalls::getInstance().setitimer(which, value, ovalue);
   }
 
-//  pid_t getpid(){
-//    return syscalls::getInstance().getpid();
-//  }
+  // pid_t getpid(){
+  //  return syscalls::getInstance().getpid();
+  // }
 
   ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -850,16 +814,14 @@ extern "C" {
     return syscalls::getInstance().listen(sockfd, backlog);
   }
 
-/*
-  No need to handle this.
-  int getsockname(int s, struct sockaddr *name, socklen_t *namelen){
-    return syscalls::getInstance().getsockname(s, name, namelen);
-  }
+  // No need to handle this.
+  // int getsockname(int s, struct sockaddr *name, socklen_t *namelen){
+  //   return syscalls::getInstance().getsockname(s, name, namelen);
+  // }
 
-  int getpeername(int s, struct sockaddr *name, socklen_t *namelen){
-    return syscalls::getInstance().getpeername(s, name, namelen);
-  }
-*/
+  // int getpeername(int s, struct sockaddr *name, socklen_t *namelen){
+  //   return syscalls::getInstance().getpeername(s, name, namelen);
+  // }
 
   int socketpair(int d, int type, int protocol, int sv[2]){
 
@@ -873,17 +835,15 @@ extern "C" {
     return syscalls::getInstance().setsockopt(s, level, optname, optval, optlen);
   }
 
-#if 0
-  int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen){
-    return syscalls::getInstance().getsockopt(s, level, optname, optval, optlen);
-  }
+  // int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen){
+  //   return syscalls::getInstance().getsockopt(s, level, optname, optval, optlen);
+  // }
 
-  int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc *tls, pid_t *ctid) {
-    printf("inside clone\n");
-    return syscalls::getInstance().__clone(fn, child_stack, flags, arg, pid, tls, ctid); 
-  
-  }
-#endif
+  // int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc *tls, pid_t *ctid) {
+  //   printf("inside clone\n");
+  //   return syscalls::getInstance().__clone(fn, child_stack, flags, arg, pid, tls, ctid);
+  //
+  // }
 
 //  pid_t fork(){
 
@@ -900,26 +860,26 @@ extern "C" {
       return syscalls::getInstance().execve(filename, argv, envp);
     }
   }
-#if 0
-  void exit(int status){
-    //FIXME
-    syscalls::getInstance().exit(status);
-  }
 
-  pid_t wait4(pid_t pid, void *status, int options,
-        struct rusage *rusage){
+  // void exit(int status){
+  //   //FIXME
+  //   syscalls::getInstance().exit(status);
+  // }
 
-    return syscalls::getInstance().wait4(pid, status, options, rusage);
-  }
+  // pid_t wait4(pid_t pid, void *status, int options,
+  //       struct rusage *rusage){
+  //
+  //   return syscalls::getInstance().wait4(pid, status, options, rusage);
+  // }
 
-  int kill(pid_t pid, int sig){
-    // FIXME
-    return syscalls::getInstance().kill(pid, sig);
-  }
-  int uname(struct utsname *buf){
-    return syscalls::getInstance().uname(buf);
-  }
-#endif
+  // int kill(pid_t pid, int sig){
+  //   // FIXME
+  //   return syscalls::getInstance().kill(pid, sig);
+  // }
+  
+  // int uname(struct utsname *buf){
+  //   return syscalls::getInstance().uname(buf);
+  // }
   
   /* 
   
@@ -999,17 +959,14 @@ extern "C" {
     return syscalls::getInstance().ftruncate(fd, length);
   }
 
-#if 0
-  int getdents(unsigned int fd, struct dirent *dirp, unsigned int count){
+  // int getdents(unsigned int fd, struct dirent *dirp, unsigned int count){
+  //
+  //   return syscalls::getInstance().getdents(fd, dirp, count);
+  // }
 
-    return syscalls::getInstance().getdents(fd, dirp, count);
-  }
-
-  char * getcwd(char *buf, size_t size){
-    return syscalls::getInstance().getcwd(buf, size);
-  }
-#endif
-
+  // char * getcwd(char *buf, size_t size){
+  //   return syscalls::getInstance().getcwd(buf, size);
+  // }
 
   int chdir(const char *path){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1135,23 +1092,19 @@ extern "C" {
     return syscalls::getInstance().gettimeofday(tv, tz);
   }
 
-#if 0
   // Initialization code should call this function, this cannot be intercepted.
-  int getrlimit(int resource, struct rlimit *rlim){
+  // int getrlimit(int resource, struct rlimit *rlim){
+  //
+  //   return syscalls::getInstance().getrlimit(resource, rlim);
+  // }
 
-    return syscalls::getInstance().getrlimit(resource, rlim);
-  }
+  // int getrusage(int who, struct rusage *usage){
+  //   return syscalls::getInstance().getrusage(who, usage);
+  // }
 
-  int getrusage(int who, struct rusage *usage){
-
-    return syscalls::getInstance().getrusage(who, usage);
-  }
-
-
-  int sysinfo(struct sysinfo *info){
-    return syscalls::getInstance().sysinfo(info);
-  }
-#endif
+  // int sysinfo(struct sysinfo *info){
+  //   return syscalls::getInstance().sysinfo(info);
+  // }
 
   clock_t times(struct tms *buf){
     fprintf(stderr, "calling times now\n");
@@ -1159,18 +1112,16 @@ extern "C" {
     return syscalls::getInstance().times(buf);
   }
 
-//  long ptrace(enum __ptrace_request request, pid_t pid,
-//              void *addr, void *data){
-    // FIXME
-//    return 0;
-//  }
+  // long ptrace(enum __ptrace_request request, pid_t pid,
+  //            void *addr, void *data){
+  //  return 0;
+  // }
 
-#if 0
-  uid_t getuid(){
+  // uid_t getuid(){
+  //
+  //   return syscalls::getInstance().getuid();
+  // }
 
-    return syscalls::getInstance().getuid();
-  }
-#endif
   void syslog(int pri, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -1209,15 +1160,11 @@ extern "C" {
   #define _SYS_rt_sigpending                     127
   */
   
-#if 0
-  gid_t getgid(){
-
-    return syscalls::getInstance().getgid();
-  }
-#endif
+  // gid_t getgid(){
+  //   return syscalls::getInstance().getgid();
+  // }
 
   int setuid(uid_t uid){
-
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().setuid(uid);
   }
@@ -1226,34 +1173,29 @@ extern "C" {
 
     return syscalls::getInstance().setgid(gid);
   }
-#if 0
-  uid_t geteuid(){
 
-    return syscalls::getInstance().geteuid();
-  }
+  // uid_t geteuid(){
+  //   return syscalls::getInstance().geteuid();
+  // }
 
-  gid_t getegid(){
+  // gid_t getegid(){
+  //   return syscalls::getInstance().getegid();
+  // }
 
-    return syscalls::getInstance().getegid();
-  }
-#endif
   int setpgid(pid_t pid, pid_t pgid){
 
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().setpgid(pid, pgid);
   }
 
-#if 0
-  pid_t getppid(){
+  // pid_t getppid(){
+  //   return syscalls::getInstance().getppid();
+  // }
 
-    return syscalls::getInstance().getppid();
-  }
+  // pid_t getpgrp(){
+  //   return syscalls::getInstance().getpgrp();
+  // }
 
-  pid_t getpgrp(){
-
-    return syscalls::getInstance().getpgrp();
-  }
-#endif
   pid_t setsid(){
 
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1272,12 +1214,9 @@ extern "C" {
     return syscalls::getInstance().setregid(rgid, egid);
   }
 
-#if 0
-  int getgroups(int size, gid_t list[]){
-
-    return syscalls::getInstance().setgroups(size, list);
-  }
-#endif
+  // int getgroups(int size, gid_t list[]){
+  //   return syscalls::getInstance().setgroups(size, list);
+  // }
 
   int setgroups(size_t size, const gid_t *list){
 
@@ -1291,29 +1230,24 @@ extern "C" {
     return syscalls::getInstance().setresuid(ruid, euid, suid);
   }
 
-/*
-  int getresuid(uid_t *ruid, uid_t *euid, uid_t *suid){
-
-    return syscalls::getInstance().getresuid(ruid, euid, suid);
-  }
-*/
+  // int getresuid(uid_t *ruid, uid_t *euid, uid_t *suid){
+  //   return syscalls::getInstance().getresuid(ruid, euid, suid);
+  // }
 
   int setresgid(gid_t rgid, gid_t egid, gid_t sgid){
 
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().setresgid(rgid, egid, sgid);
   }
-/*
-  int getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid){
+  
+  // int getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid){
+  //   return syscalls::getInstance().getresgid(rgid, egid, sgid);
+  // }
 
-    return syscalls::getInstance().getresgid(rgid, egid, sgid);
-  }
+  // pid_t getpgid(pid_t pid){
+  //   return syscalls::getInstance().getpgid(pid);
+  // }
 
-  pid_t getpgid(pid_t pid){
-
-    return syscalls::getInstance().getpgid(pid);
-  }
-*/
   int setfsuid(uid_t fsuid){
 
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1345,17 +1279,14 @@ extern "C" {
   #define _SYS_sysfs                             139
   */
   
-/*
-  pid_t getsid(pid_t pid){
-    return syscalls::getInstance().getsid(pid);
+  // pid_t getsid(pid_t pid){
+  //   return syscalls::getInstance().getsid(pid);
+  // }
 
-  }
+  // int sigpending(sigset_t *set){
+  //   return syscalls::getInstance().sigpending(set);
+  // }
 
-  int sigpending(sigset_t *set){
-
-    return syscalls::getInstance().sigpending(set);
-  }
-*/
   int sigtimedwait(const sigset_t *set, siginfo_t *info,
                    const struct timespec *timeout){
 
@@ -1381,17 +1312,15 @@ extern "C" {
     return syscalls::getInstance().utime(filename, buf);
   }
 
-#if 0
-  int mknod(const char *pathname, __mode_t mode, __dev_t dev){
-    return syscalls::getInstance().mknod(pathname, mode, dev);
-  }
-#endif
+  // int mknod(const char *pathname, __mode_t mode, __dev_t dev){
+  //   return syscalls::getInstance().mknod(pathname, mode, dev);
+  // }
 
   // No libc wrapper
-  /*int uselib(const char *library){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().uselib(library);
-  }*/
+  // int uselib(const char *library){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().uselib(library);
+  // }
 
   int personality(unsigned long persona){
 
@@ -1399,27 +1328,22 @@ extern "C" {
     return syscalls::getInstance().personality(persona);
   }
 
-/*
-  int ustat(dev_t dev, struct ustat *ubuf){
+  // int ustat(dev_t dev, struct ustat *ubuf){
+  //   return syscalls::getInstance().ustat(dev, ubuf);
+  // }
 
-    return syscalls::getInstance().ustat(dev, ubuf);
-  }
+  // int statfs(const char *path, struct statfs *buf){
+  //   return syscalls::getInstance().statfs(path, buf);
+  // }
 
-  int statfs(const char *path, struct statfs *buf){
+  // int fstatfs(int fd, struct statfs *buf){
+  //   return syscalls::getInstance().fstatfs(fd, buf);
+  // }
 
-    return syscalls::getInstance().statfs(path, buf);
-  }
+  // int sysfs(int option, unsigned int fs_index, char *buf){
+  //   return syscalls::getInstance().sysfs(option, fs_index, buf);
+  // }
 
-  int fstatfs(int fd, struct statfs *buf){
-
-    return syscalls::getInstance().fstatfs(fd, buf);
-  }
-
-  int sysfs(int option, unsigned int fs_index, char *buf){
-
-    return syscalls::getInstance().sysfs(option, fs_index, buf);
-  }
-*/
   /*
   #define _SYS_getpriority                       140
   #define _SYS_setpriority                       141
@@ -1447,11 +1371,9 @@ extern "C" {
   #define _SYS_acct                              163
   */
 
-/*
-  int getpriority(int which, id_t who){
-    return syscalls::getInstance().getpriority(which, who);
-  }
-*/
+  // int getpriority(int which, id_t who){
+  //   return syscalls::getInstance().getpriority(which, who);
+  // }
 
   int setpriority(__priority_which_t which, id_t who, int prio){
 
@@ -1465,12 +1387,9 @@ extern "C" {
     return syscalls::getInstance().sched_setparam(pid, param);
   }
 
-/*
-  int sched_getparam(pid_t pid, struct sched_param *param){
-
-    return syscalls::getInstance().sched_getparam(pid, param);
-  }
-*/
+  // int sched_getparam(pid_t pid, struct sched_param *param){
+  //   return syscalls::getInstance().sched_getparam(pid, param);
+  // }
 
   int sched_setscheduler(pid_t pid, int policy,
                          const struct sched_param *param){
@@ -1478,23 +1397,21 @@ extern "C" {
     return syscalls::getInstance().sched_setscheduler(pid, policy, param);
   }
 
-/*
-  int sched_getscheduler(pid_t pid){
-    return syscalls::getInstance().sched_getscheduler(pid);
-  }
+  // int sched_getscheduler(pid_t pid){
+  //   return syscalls::getInstance().sched_getscheduler(pid);
+  // }
 
-  int sched_get_priority_max(int policy){
-    return syscalls::getInstance().sched_get_priority_max(policy);
-  }
+  // int sched_get_priority_max(int policy){
+  //   return syscalls::getInstance().sched_get_priority_max(policy);
+  // }
 
-  int sched_get_priority_min(int policy){
-    return syscalls::getInstance().sched_get_priority_min(policy);
-  }
+  // int sched_get_priority_min(int policy){
+  //   return syscalls::getInstance().sched_get_priority_min(policy);
+  // }
 
-  int sched_rr_get_interval(pid_t pid, struct timespec *tp){
-    return syscalls::getInstance().sched_rr_get_interval(pid, tp);
-  }
-*/
+  // int sched_rr_get_interval(pid_t pid, struct timespec *tp){
+  //   return syscalls::getInstance().sched_rr_get_interval(pid, tp);
+  // }
 
   int mlock(const void *addr, size_t len){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1528,10 +1445,10 @@ extern "C" {
   }
 
   // No libc wrapper
-  /*int pivot_root(const char *new_root, const char *put_old){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().pivot_root(new_root, put_old);
-  }*/
+  // int pivot_root(const char *new_root, const char *put_old){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().pivot_root(new_root, put_old);
+  // }
 
   int prctl(int option, ...) {
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1541,10 +1458,10 @@ extern "C" {
   }
 
   // no libc wrapper
-  /*int arch_prctl(int code, unsigned long addr) {
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().arch_prctl(code, addr);
-  }*/
+  // int arch_prctl(int code, unsigned long addr) {
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().arch_prctl(code, addr);
+  // }
 
   int adjtimex(struct timex *buf){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1658,12 +1575,9 @@ extern "C" {
     return syscalls::getInstance().ioperm(from, num, turn_on);
   }
 
-#if 0
-  pid_t gettid(){
-
-    return syscalls::getInstance().gettid();
-  }
-#endif
+  // pid_t gettid(){
+  //   return syscalls::getInstance().gettid();
+  // }
 
   
   /* 
@@ -1718,45 +1632,30 @@ extern "C" {
     return syscalls::getInstance().fsetxattr(filedes, name, value, size, flags);
   }
 
- /* 
+  // ssize_t getxattr (const char *path, const char *name, void *value, size_t size){
+  //   return syscalls::getInstance().getxattr(path, name, value, size);
+  // }
 
-  ssize_t getxattr (const char *path, const char *name,
-                       void *value, size_t size){
+  // ssize_t lgetxattr (const char *path, const char *name, void *value, size_t size){
+  //   return syscalls::getInstance().lgetxattr(path, name, value, size);
+  // }
 
-    return syscalls::getInstance().getxattr(path, name, value, size);
-  }
+  // ssize_t fgetxattr (int filedes, const char *name, void *value, size_t size){
+  //   return syscalls::getInstance().fgetxattr(filedes, name, value, size);
+  // }
 
-  ssize_t lgetxattr (const char *path, const char *name,
-                       void *value, size_t size){
+  // ssize_t listxattr (const char *path, char *list, size_t size){
+  //   return syscalls::getInstance().listxattr(path, list, size);
+  // }
 
-    return syscalls::getInstance().lgetxattr(path, name, value, size);
-  }
+  // ssize_t llistxattr (const char *path, char *list, size_t size){
+  //   return syscalls::getInstance().llistxattr(path, list, size);
+  // }
 
-  ssize_t fgetxattr (int filedes, const char *name,
-                       void *value, size_t size){
-    return syscalls::getInstance().fgetxattr(filedes, name, value, size);
+  // ssize_t flistxattr (int filedes, char *list, size_t size){
+  //   return syscalls::getInstance().flistxattr(filedes, list, size);
+  // }
 
-  }
-
-  ssize_t listxattr (const char *path,
-                       char *list, size_t size){
-
-    return syscalls::getInstance().listxattr(path, list, size);
-  }
-
-  ssize_t llistxattr (const char *path,
-                       char *list, size_t size){
-
-    return syscalls::getInstance().llistxattr(path, list, size);
-  }
-
-  ssize_t flistxattr (int filedes,
-                       char *list, size_t size){
-
-    return syscalls::getInstance().flistxattr(filedes, list, size);
-  }
-
-*/
   int removexattr (const char *path, const char *name){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().removexattr(path, name);
@@ -1773,13 +1672,11 @@ extern "C" {
     return syscalls::getInstance().fremovexattr(filedes, name);
   }
 
-#if 0
-  int tkill(int tid, int sig){
-    // FIXME
-    return 0;
-    //return syscalls::getInstance().tkill(tid, sig);
-  }
-#endif
+  // int tkill(int tid, int sig){
+  //   // FIXME
+  //   return 0;
+  //   //return syscalls::getInstance().tkill(tid, sig);
+  // }
 
   time_t time(time_t *t){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1800,11 +1697,9 @@ extern "C" {
 
   }
  
-/* 
-  int sched_getaffinity(__pid_t pid, size_t cpusetsize, cpu_set_t *mask){
-    return syscalls::getInstance().sched_getaffinity(pid, cpusetsize, mask);
-  }
-*/
+  // int sched_getaffinity(__pid_t pid, size_t cpusetsize, cpu_set_t *mask){
+  //   return syscalls::getInstance().sched_getaffinity(pid, cpusetsize, mask);
+  // }
   
   // set_thread_area doesn't have a libc wrapper
   /*int set_thread_area (struct user_desc *u_info){
@@ -1813,31 +1708,27 @@ extern "C" {
     return syscalls::getInstance().set_thread_area(u_info);
   }*/
 
-#if 0
-  int io_setup (int maxevents, io_context_t *ctxp){
+  // int io_setup (int maxevents, io_context_t *ctxp){
+  //   return syscalls::getInstance().io_setup(maxevents, ctxp);
+  // }
 
-    return syscalls::getInstance().io_setup(maxevents, ctxp);
-  }
+  // int io_destroy (io_context_t ctx){
+  //   return syscalls::getInstance().io_destroy(ctx);
+  // }
 
-  int io_destroy (io_context_t ctx){
-    return syscalls::getInstance().io_destroy(ctx);
-  }
+  // long io_getevents (aio_context_t ctx_id, long min_nr, long nr,
+  //                    struct io_event *events, struct timespec *timeout){
+  //   return syscalls::getInstance().io_getevents(ctx_id, min_nr, nr, events, timeout);
+  // }
 
-  long io_getevents (aio_context_t ctx_id, long min_nr, long nr,
-                     struct io_event *events, struct timespec *timeout){
-    return syscalls::getInstance().io_getevents(ctx_id, min_nr, nr, events, timeout);
-  }
+  // long io_submit (aio_context_t ctx_id, long nr, struct iocb **iocbpp){
+  //   return syscalls::getInstance().io_submit(ctx_id, nr, iocbpp);
+  // }
 
-  long io_submit (aio_context_t ctx_id, long nr, struct iocb **iocbpp){
-    return syscalls::getInstance().io_submit(ctx_id, nr, iocbpp);
-  }
-
-  long io_cancel (aio_context_t ctx_id, struct iocb *iocb, struct io_event *result){
-    return syscalls::getInstance().io_cancel(ctx_id, nr, iocbpp);
-
-  }
+  // long io_cancel (aio_context_t ctx_id, struct iocb *iocb, struct io_event *result){
+  //   return syscalls::getInstance().io_cancel(ctx_id, nr, iocbpp);
+  // }
   
-#endif
   /*
   #define _SYS_get_thread_area  211
   #define _SYS_lookup_dcookie 212
@@ -1864,34 +1755,31 @@ extern "C" {
   #define _SYS_epoll_ctl    233
   #define _SYS_tgkill   234
   */
-/*
-  int get_thread_area(struct user_desc *u_info){
-    return syscalls::getInstance().get_thread_area(u_info);
 
-  }
-*/
-//  int lookup_dcookie(u64 cookie, char * buffer, size_t len){
-//    return syscalls::getInstance().lookup_dcookie(cookie, buffer, len);
-//  }
+  // int get_thread_area(struct user_desc *u_info){
+  //   return syscalls::getInstance().get_thread_area(u_info);
+  //
+  // }
+
+  // int lookup_dcookie(u64 cookie, char * buffer, size_t len){
+  //  return syscalls::getInstance().lookup_dcookie(cookie, buffer, len);
+  // }
+  
   int epoll_create(int size) {
-
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().epoll_create(size);
   }
 
   int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event) {
-
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().epoll_ctl(epfd, op, fd, event);
   }
 
-#if 1
   int epoll_wait(int epfd, struct epoll_event * events,
                  int maxevents, int timeout){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().epoll_wait(epfd, events, maxevents, timeout);
   }
-#endif
 
   int remap_file_pages(void *start, size_t size, int prot, size_t pgoff, int flags){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1899,18 +1787,18 @@ extern "C" {
   }
 
   // No libc wrapper
-  /*long set_tid_address (int *tidptr){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().set_tid_address(tidptr);
-  }*/
+  // long set_tid_address (int *tidptr){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().set_tid_address(tidptr);
+  // }
 
 
   // No libc wrapper
-  /*long restart_syscall(){
-    fprintf(stderr, "sys_restart_syscall is not supported by doubletake yet\n");
-    return 0;
-//    return syscalls::getInstance().sys_restart_syscall();
-  }*/
+  // long restart_syscall(){
+  //   fprintf(stderr, "sys_restart_syscall is not supported by doubletake yet\n");
+  //   return 0;
+  // //    return syscalls::getInstance().sys_restart_syscall();
+  // }
 
   int semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -1959,24 +1847,20 @@ extern "C" {
     return syscalls::getInstance().clock_settime(which_clock, tp);
   }
 
-#if 1
   int clock_gettime (clockid_t which_clock, struct timespec *tp){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().clock_gettime(which_clock, tp);
   }
-#endif
 
   int clock_getres (clockid_t which_clock, struct timespec *tp){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().clock_getres(which_clock, tp);
   }
 
-#if 0
-  long clock_nanosleep (clockid_t which_clock, int flags,
-                            const struct timespec *rqtp, struct timespec *rmtp){
-    return syscalls::getInstance().clock_nanosleep(which_clock, flags, rqtp, rmtp);
-  }
-#endif
+  // long clock_nanosleep (clockid_t which_clock, int flags,
+  //                         const struct timespec *rqtp, struct timespec *rmtp){
+  //   return syscalls::getInstance().clock_nanosleep(which_clock, flags, rqtp, rmtp);
+  // }
 
   // No libc wrapper
   /*void exit_group(int status){
@@ -1984,11 +1868,9 @@ extern "C" {
     return syscalls::getInstance().exit_group(status);
   }*/
 
-#if 0
-  long tgkill (int tgid, int pid, int sig){
-    return syscalls::getInstance().tgkill(tgid, pid, sig);
-  }
-#endif
+  // long tgkill (int tgid, int pid, int sig){
+  //   return syscalls::getInstance().tgkill(tgid, pid, sig);
+  // }
   
   /*
   #define _SYS_utimes   235
@@ -2021,85 +1903,68 @@ extern "C" {
     return syscalls::getInstance().utimes(filename, times);
   }
 
-#if 0
-  mqd_t mq_open(const char *name, int oflag, mode_t mode,
-                struct mq_attr *attr){
-    return syscalls::getInstance().mq_open(name, oflag, mode, attr);
-
-  }
+  // mqd_t mq_open(const char *name, int oflag, mode_t mode, struct mq_attr *attr){
+  //   return syscalls::getInstance().mq_open(name, oflag, mode, attr);
+  // }
   
-  mqd_t mq_unlink(const char *name){
-    return syscalls::getInstance().mq_unlink(name);
-  }
+  // mqd_t mq_unlink(const char *name){
+  //   return syscalls::getInstance().mq_unlink(name);
+  // }
 
-  mqd_t mq_timedsend(mqd_t mqdes, const char *msg_ptr,
-                 size_t msg_len, unsigned msg_prio,
-                 const struct timespec *abs_timeout){
-    return syscalls::getInstance().mq_timedsend(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
-
-  }
+  // mqd_t mq_timedsend(mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned msg_prio, const struct timespec *abs_timeout){
+  //   return syscalls::getInstance().mq_timedsend(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+  // }
   
-  mqd_t mq_timedreceive(mqd_t mqdes, char *msg_ptr,
-                 size_t msg_len, unsigned *msg_prio,
-                 const struct timespec *abs_timeout){
-    return syscalls::getInstance().mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
-
-  }
+  // mqd_t mq_timedreceive(mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned *msg_prio, const struct timespec *abs_timeout){
+  //   return syscalls::getInstance().mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+  // }
   
-  mqd_t mq_notify(mqd_t mqdes, const struct sigevent *notification){
-    return syscalls::getInstance().mq_notify(mqdes, notification);
-
-  }
+  // mqd_t mq_notify(mqd_t mqdes, const struct sigevent *notification){
+  //   return syscalls::getInstance().mq_notify(mqdes, notification);
+  // }
   
-  mqd_t mq_getsetattr(mqd_t mqdes, struct mq_attr *newattr,
-                   struct mq_attr *oldattr){
-    return syscalls::getInstance().mq_getsetattr(mqdes, newattr, oldattr);
-  }
+  // mqd_t mq_getsetattr(mqd_t mqdes, struct mq_attr *newattr, struct mq_attr *oldattr){
+  //   return syscalls::getInstance().mq_getsetattr(mqdes, newattr, oldattr);
+  // }
 
-  int kexec_load(void* entry, size_t nr_segments, struct kexec_segment* segments, unsigned long int flags) {
-    return syscalls::getInstance().kexec_load(entry, nr_segments, segments, flags);
-  }
-#endif
+  // int kexec_load(void* entry, size_t nr_segments, struct kexec_segment* segments, unsigned long int flags) {
+  //   return syscalls::getInstance().kexec_load(entry, nr_segments, segments, flags);
+  // }
 
   int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().waitid(idtype, id, infop, options);
   }
 
-#if 0
-  key_serial_t add_key(const char *type, const char *description,
-                       const void *payload, size_t plen, key_serial_t keyring) {
-    return syscalls::getInstance().add_key(type, description, payload, plen, keyring);
-  }
+  // key_serial_t add_key(const char *type, const char *description,
+  //                      const void *payload, size_t plen, key_serial_t keyring) {
+  //   return syscalls::getInstance().add_key(type, description, payload, plen, keyring);
+  // }
 
-  key_serial_t request_key(const char *type, const char *description,
-                           const char *callout_info, key_serial_t keyring){
-    return syscalls::getInstance().request_key(type, description, callout_info, keyring);
-  }
+  // key_serial_t request_key(const char *type, const char *description,
+  //                          const char *callout_info, key_serial_t keyring){
+  //   return syscalls::getInstance().request_key(type, description, callout_info, keyring);
+  // }
 
-  long keyctl(int cmd, ...){
-    // FIXME
-    fprintf(stderr, "keyctl is not supported now\n");
-    return 0;
-  }
-#endif
+  // long keyctl(int cmd, ...){
+  //   // FIXME
+  //   fprintf(stderr, "keyctl is not supported now\n");
+  //   return 0;
+  // }
 
   // No libc wrappers
-  /*
-  int ioprio_get(int which, int who){
-    return syscalls::getInstance().ioprio_get(which, who);
-  }
+  // int ioprio_get(int which, int who){
+  //   return syscalls::getInstance().ioprio_get(which, who);
+  // }
 
-  int ioprio_set(int which, int who, int ioprio){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().ioprio_set(which, who, ioprio);
-  }*/
+  // int ioprio_set(int which, int who, int ioprio){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().ioprio_set(which, who, ioprio);
+  // }
 
-/*
-  int inotify_init(){
-    return syscalls::getInstance().inotify_init();
-  }
-*/
+  // int inotify_init(){
+  //   return syscalls::getInstance().inotify_init();
+  // }
 
   int inotify_add_watch(int fd, const char *pathname, uint32_t mask){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
@@ -2139,33 +2004,26 @@ extern "C" {
   #define _SYS_utimensat    280
   */
  
-#if 0 
-  int openat(int dirfd, const char *pathname, int flags, ...){
-    va_list ap;
-    va_start(ap, flags);
-    mode_t mode  = va_arg(ap, mode_t);
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().openat(dirfd, pathname, flags, mode);
-  }
-#endif
+  // int openat(int dirfd, const char *pathname, int flags, ...){
+  //   va_list ap;
+  //   va_start(ap, flags);
+  //   mode_t mode  = va_arg(ap, mode_t);
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().openat(dirfd, pathname, flags, mode);
+  // }
 
-#if 0
-  int openat(int dirfd, const char *pathname, int flags, mode_t mode){
-
-    return syscalls::getInstance().openat(dirfd, pathname, flags, mode);
-  }
-#endif
+  // int openat(int dirfd, const char *pathname, int flags, mode_t mode){
+  //   return syscalls::getInstance().openat(dirfd, pathname, flags, mode);
+  // }
 
   int mkdirat(int dirfd, const char *pathname, mode_t mode){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().mkdirat(dirfd, pathname, mode);
   }
 
-#if 0
-  int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev){
-    return syscalls::getInstance().mknodat(dirfd, pathname, mode, dev);
-  }
-#endif
+  // int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev){
+  //   return syscalls::getInstance().mknodat(dirfd, pathname, mode, dev);
+  // }
 
   int fchownat(int dirfd, const char *path,
                uid_t owner, gid_t group, int flags){
@@ -2238,20 +2096,17 @@ extern "C" {
   }
 
   // No libc wrapper
-  /*long get_robust_list(int pid, struct robust_list_head **head_ptr,
-                   size_t *len_ptr){
-    return syscalls::getInstance().get_robust_list(pid, head_ptr, len_ptr);
-  }*/
+  // long get_robust_list(int pid, struct robust_list_head **head_ptr, size_t *len_ptr){
+  //   return syscalls::getInstance().get_robust_list(pid, head_ptr, len_ptr);
+  // }
 
   // No libc wrapper
-  /*long set_robust_list(struct robust_list_head *head, size_t len){
+  // long set_robust_list(struct robust_list_head *head, size_t len){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().set_robust_list(head, len);
+  // }
 
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().set_robust_list(head, len);
-  }*/
-
-  ssize_t splice(int fd_in, __off64_t *off_in, int fd_out,
-              __off64_t *off_out, size_t len, unsigned int flags){
+  ssize_t splice(int fd_in, __off64_t *off_in, int fd_out, __off64_t *off_out, size_t len, unsigned int flags){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().splice(fd_in, off_in, fd_out, off_out, len, flags);
   }
@@ -2261,29 +2116,25 @@ extern "C" {
     return syscalls::getInstance().tee(fd_in, fd_out, len, flags);
   }
 
-  int sync_file_range(int fd, __off64_t offset, __off64_t nbytes,
-                       unsigned int flags){
+  int sync_file_range(int fd, __off64_t offset, __off64_t nbytes, unsigned int flags){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().sync_file_range(fd, offset, nbytes, flags);
   }
 
-  ssize_t vmsplice(int fd, const struct iovec *iov,
-                size_t nr_segs, unsigned int flags){
+  ssize_t vmsplice(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags){
     fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().vmsplice(fd, iov, nr_segs, flags);
 
   }
 
   // No libc wrapper
-  /*long move_pages(pid_t pid, unsigned long nr_pages,
-                  const void **address,
-                  const int *nodes, int *status,
-                  int flags){
-    fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().move_pages(pid, nr_pages, address, nodes, status, flags);
-  }*/
+  // long move_pages(pid_t pid, unsigned long nr_pages, const void **address, const int *nodes, int *status, int flags){
+  //   fprintf(stderr, " in doubletake at %d\n", __LINE__);
+  //   return syscalls::getInstance().move_pages(pid, nr_pages, address, nodes, status, flags);
+  // }
   
 #endif
+  
 };
 
 

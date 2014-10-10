@@ -4,16 +4,18 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "xrun.h"
+#include "xrun.hh"
 
 #include <assert.h>
+#include <pthread.h>
 #include <ucontext.h>
 
-#include "globalinfo.h"
-#include "internalsyncs.h"
-#include "syscalls.h"
-#include "threadmap.h"
-#include "threadstruct.h"
+#include "globalinfo.hh"
+#include "internalsyncs.hh"
+#include "leakcheck.hh"
+#include "syscalls.hh"
+#include "threadmap.hh"
+#include "threadstruct.hh"
 
 void xrun::startRollback() {
   // Now we are going to rollback. Wakup all threads
@@ -149,7 +151,7 @@ void xrun::epochEnd (bool endOfProgram) {
   bool hasOverflow = _memory.checkHeapOverflow();
 #endif
 
-#ifdef DETECT_MEMORY_LEAKAGE
+#ifdef DETECT_MEMORY_LEAKS
   bool hasMemoryLeak = false;
   if(endOfProgram) {
   //  PRINF("DETECTING MEMORY LEAKABE in the end of program!!!!\n");
@@ -163,7 +165,7 @@ void xrun::epochEnd (bool endOfProgram) {
 
 #ifndef EVALUATING_PERF
   // First, attempt to commit.
-  #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKAGE)
+  #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
   PRINF("in the endof epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
@@ -175,7 +177,7 @@ void xrun::epochEnd (bool endOfProgram) {
     rollback();
   }
   else {
-  #elif defined(DETECT_MEMORY_LEAKAGE)
+  #elif defined(DETECT_MEMORY_LEAKS)
   if(hasMemoryLeak) {
     _memory.cleanupFreeList();
     rollback();
@@ -188,7 +190,7 @@ void xrun::epochEnd (bool endOfProgram) {
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
 #ifndef EVALUATING_PERF
-  #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKAGE)
+  #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
   }
   #endif
 #endif

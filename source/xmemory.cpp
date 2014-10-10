@@ -4,15 +4,13 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */ 
 
-#include "xmemory.h"
+#include "xmemory.hh"
 
-#include <cstddef>
-
-#include "internalheap.h"
-#include "mm.h"
-#include "xoneheap.h"
-#include "xpheap.h"
-#include "xrun.h"
+#include "internalheap.hh"
+#include "mm.hh"
+#include "xoneheap.hh"
+#include "xpheap.hh"
+#include "xrun.hh"
 
 xpheap<xoneheap<xheap > > xmemory::_pheap;
  

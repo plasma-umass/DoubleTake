@@ -7,9 +7,9 @@
 * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
 */
 
-#include "quarantine.h"
+#include "quarantine.hh"
 
-#include "xmemory.h"
+#include "xmemory.hh"
 
 void quarantine::realfree(void * ptr) {
   // Calling actual heap object to free this object.

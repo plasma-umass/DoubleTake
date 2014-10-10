@@ -4,15 +4,15 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "selfmap.h"
+#include "selfmap.hh"
 
 #include <execinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "log.h"
-#include "xdefines.h"
-#include "xthread.h"
+#include "log.hh"
+#include "xdefines.hh"
+#include "xthread.hh"
 
 #define MAX_BUF_SIZE 4096
 

@@ -3,10 +3,10 @@
  * @brief  Managing internal synchronizations used by StopGap itself.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
-#include "internalsyncs.h"
+#include "internalsyncs.hh"
 
-#include "real.h"
-#include "threadstruct.h"
+#include "real.hh"
+#include "threadstruct.hh"
 
 void lock_thread(thread_t * thread) {
   Real::pthread_mutex_lock(&thread->mutex); 
