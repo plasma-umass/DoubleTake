@@ -1,12 +1,12 @@
+#if !defined(DOUBLETAKE_LOG_H)
+#define DOUBLETAKE_LOG_H
+
 /*
  * @file:   log.h
  * @brief:  Logging and debug printing macros
  *          Color codes from SNAPPLE: http://sourceforge.net/projects/snapple/ 
  * @author: Charlie Curtsinger & Tongping Liu
  */
-
-#ifndef DOUBLETAKE_LOG_H
-#define DOUBLETAKE_LOG_H
 
 #include <stdio.h>
 #include <string.h>

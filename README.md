@@ -1,5 +1,4 @@
-DoubleTake
-==========
+# DoubleTake
 
 A fast checker for memory errors.
 
@@ -18,3 +17,8 @@ DoubleTake rolls execution back and replays with instrumentation in
 place to locate the exact place where the error happened. This
 approach lets DoubleTake achieve high precision (no false positives)
 with the lowest overhead to date of any dynamic analysis approach.
+
+## License
+
+All source code is licensed under the GPLv2 unless otherwise indicated.
+Copyright (C) 2014 University of Massachusetts Amherst

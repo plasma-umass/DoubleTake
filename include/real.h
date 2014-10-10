@@ -1,5 +1,5 @@
-#ifndef _REAL_H
-#define _REAL_H
+#if !defined(DOUBLETAKE_REAL_H)
+#define DOUBLETAKE_REAL_H
 
 #include <dlfcn.h>
 
