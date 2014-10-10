@@ -3,7 +3,7 @@
 
 /*
  * @file   synceventlist.h
- * @brief  Manage the list of synchronization event. 
+ * @brief  Manage the list of synchronization event.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
@@ -18,12 +18,12 @@
 #include "xdefines.hh"
 
 typedef enum e_thrsynccmd {
-  E_SYNC_SPAWN = 0,  // Thread creation
-//  E_SYNC_COND_SIGNAL,// conditional signal
-//  E_SYNC_COND_BROADCAST,// conditional broadcast
-//  E_SYNC_COND_WAIT,// conditional wait
-//  E_SYNC_COND_WAKEUP,// conditional wakeup from waiting
-  E_SYNC_BARRIER, // barrier waiting 
+  E_SYNC_SPAWN = 0, // Thread creation
+                    //  E_SYNC_COND_SIGNAL,// conditional signal
+                    //  E_SYNC_COND_BROADCAST,// conditional broadcast
+                    //  E_SYNC_COND_WAIT,// conditional wait
+                    //  E_SYNC_COND_WAKEUP,// conditional wakeup from waiting
+  E_SYNC_BARRIER,   // barrier waiting
   E_SYNC_MUTEX_LOCK,
   E_SYNC_MUTEX_TRY_LOCK,
   E_SYNC_RWLOCK_RDLOCK,
@@ -33,29 +33,29 @@ typedef enum e_thrsynccmd {
   E_SYNC_RWLOCK_TIMEDWRLOCK,
   E_SYNC_RWLOCK_TRYWRLOCK,
   E_SYNC_THREAD, // Not a actual synchronization event, but for each thread.
-//  E_SYNC_KILL, // Inside the critical section. 
+  //  E_SYNC_KILL, // Inside the critical section.
 } thrSyncCmd;
 
 class SyncEventList {
 
 public:
-  SyncEventList(void * variable, thrSyncCmd synccmd)
-  {
-//    PRINF("synceventlist initialization at list %p\n", &list);
-    // Initialize the sequence number   
+  SyncEventList(void* variable, thrSyncCmd synccmd) {
+    //    PRINF("synceventlist initialization at list %p\n", &list);
+    // Initialize the sequence number
     listInit(&list);
     Real::pthread_mutex_init(&lock, NULL);
     syncVariable = variable;
     syncCmd = synccmd;
     curentry = NULL;
   }
-  
+
   // Record a synchronization event
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
-    struct syncEvent * event = allocSyncEvent();
+    struct syncEvent* event = allocSyncEvent();
 
     PRINF("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
-//    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event, current, this);
+    //    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event,
+    // current, this);
     listInit(&event->list);
 
     // Change the event there.
@@ -63,80 +63,72 @@ public:
     event->eventlist = this;
     event->ret = ret;
 
-  //  PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event, current, this);
-    if(synccmd != E_SYNC_MUTEX_LOCK) {   
+    //  PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event,
+    // current, this);
+    if(synccmd != E_SYNC_MUTEX_LOCK) {
       Real::pthread_mutex_lock(&this->lock);
       listInsertTail(&event->list, &this->list);
       Real::pthread_mutex_unlock(&this->lock);
-    }
-    else {
-		if((unsigned long)this == 0x100001cffe48) {
-    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__, event, current, this, *((unsigned long *)this));
-   	PRINT("event->list %p this->list %p\n", &event->list, &this->list);
-		}
-	    // We only record synchronization inside critical section.
+    } else {
+      if((unsigned long)this == 0x100001cffe48) {
+        PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__,
+              event, current, this, *((unsigned long*)this));
+        PRINT("event->list %p this->list %p\n", &event->list, &this->list);
+      }
+      // We only record synchronization inside critical section.
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);
-		if((unsigned long)this == 0x100001cffe48) {
-    	PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__, event, current, this, *((unsigned long *)this));
-		}
+      if((unsigned long)this == 0x100001cffe48) {
+        PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__,
+              event, current, this, *((unsigned long*)this));
+      }
     }
-   // PRINF("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event, event->thread, current->index);
+    // PRINF("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event,
+    // event->thread, current->index);
   }
 
+  inline void* getSyncVariable() { return syncVariable; }
 
-  inline void * getSyncVariable() {
-    return syncVariable;
-  }
+  inline thrSyncCmd getSyncCmd() { return syncCmd; }
 
-  inline thrSyncCmd getSyncCmd() {
-    return syncCmd; 
-  }
- 
-  // Move forward for current thread event list 
-  inline struct syncEvent * advanceSyncEvent() {
-    list_t * curentry = this->curentry;
-		
-//		PRINT("currenty is %p this->list address %p\n", curentry, &this->list);
+  // Move forward for current thread event list
+  inline struct syncEvent* advanceSyncEvent() {
+    list_t* curentry = this->curentry;
+
+    //		PRINT("currenty is %p this->list address %p\n", curentry, &this->list);
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
-    }
-    else {
+    } else {
       this->curentry = NULL;
     }
 
-    return (struct syncEvent *)this->curentry;
+    return (struct syncEvent*)this->curentry;
   }
 
-  
   // cleanup all events in a list.
-  void cleanup() {
-    listInit(&this->list);
-  }
+  void cleanup() { listInit(&this->list); }
 
-  struct syncEvent * allocSyncEvent() {
-    return current->syncevents.alloc();
-  }
+  struct syncEvent* allocSyncEvent() { return current->syncevents.alloc(); }
 
   // Set the first entry and return it
-  struct syncEvent * prepareRollback() {
-    struct syncEvent * event = NULL;
+  struct syncEvent* prepareRollback() {
+    struct syncEvent* event = NULL;
 
     if(!isListEmpty(&list)) {
       this->curentry = nextEntry(&list);
-      event = (struct syncEvent *)this->curentry;
+      event = (struct syncEvent*)this->curentry;
     }
 
-//    PRINF("synceventlist at %p event %p\n", &list, event);
+    //    PRINF("synceventlist at %p event %p\n", &list, event);
     return event;
   }
 
 private:
   list_t list; // List for all synchronization events.
   pthread_mutex_t lock;
-  void     * syncVariable;
+  void* syncVariable;
   thrSyncCmd syncCmd;
-  list_t   * curentry; 
+  list_t* curentry;
 };
 
 #endif

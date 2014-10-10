@@ -4,7 +4,7 @@
 /*
  * @file:   log.h
  * @brief:  Logging and debug printing macros
- *          Color codes from SNAPPLE: http://sourceforge.net/projects/snapple/ 
+ *          Color codes from SNAPPLE: http://sourceforge.net/projects/snapple/
  * @author: Charlie Curtsinger & Tongping Liu
  */
 
@@ -31,11 +31,11 @@
 #define BRIGHT_GREEN "\033[1m\033[32m"
 #define BRIGHT_RED "\033[1m\033[31m"
 
-#define ESC_INF  NORMAL_CYAN
-#define ESC_DBG  NORMAL_GREEN
-#define ESC_WRN  BRIGHT_YELLOW
-#define ESC_ERR  BRIGHT_RED
-#define ESC_END  "\033[0m"
+#define ESC_INF NORMAL_CYAN
+#define ESC_DBG NORMAL_GREEN
+#define ESC_WRN BRIGHT_YELLOW
+#define ESC_ERR BRIGHT_RED
+#define ESC_END "\033[0m"
 
 #define OUTFD 2
 #define LOG_SIZE 4096
@@ -46,61 +46,84 @@
 /**
  * Print status-information message: level 0
  */
-#define PRINF(fmt, ...) \
-  { if(DEBUG_LEVEL < 1) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_INF "%lx [DOUBLETAKE-INFO]: %20s:%-4d: " fmt ESC_END "\n", \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+#define PRINF(fmt, ...)                                                                            \
+  {                                                                                                \
+    if(DEBUG_LEVEL < 1) {                                                                          \
+      ::snprintf(getThreadBuffer(), LOG_SIZE,                                                      \
+                 ESC_INF "%lx [DOUBLETAKE-INFO]: %20s:%-4d: " fmt ESC_END "\n", pthread_self(),    \
+                 __FILE__, __LINE__, ##__VA_ARGS__);                                               \
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                 \
+    }                                                                                              \
+  }
 
 /**
  * Print status-information message: level 0
  */
-#define PRDBG(fmt, ...) \
-  { if(DEBUG_LEVEL < 2) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_DBG "%lx [DOUBLETAKE-DBG]: %20s:%-4d: " fmt ESC_END "\n", \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  } }
+#define PRDBG(fmt, ...)                                                                            \
+  {                                                                                                \
+    if(DEBUG_LEVEL < 2) {                                                                          \
+      ::snprintf(getThreadBuffer(), LOG_SIZE,                                                      \
+                 ESC_DBG "%lx [DOUBLETAKE-DBG]: %20s:%-4d: " fmt ESC_END "\n", pthread_self(),     \
+                 __FILE__, __LINE__, ##__VA_ARGS__);                                               \
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                 \
+    }                                                                                              \
+  }
 
 /**
  * Print warning message: level 1
  */
-#define PRWRN(fmt, ...) \
-  { if(DEBUG_LEVEL < 3) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_WRN "%lx [DOUBLETAKE-WRN]: %20s:%-4d: " fmt ESC_END "\n", \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } }
+#define PRWRN(fmt, ...)                                                                            \
+  {                                                                                                \
+    if(DEBUG_LEVEL < 3) {                                                                          \
+      ::snprintf(getThreadBuffer(), LOG_SIZE,                                                      \
+                 ESC_WRN "%lx [DOUBLETAKE-WRN]: %20s:%-4d: " fmt ESC_END "\n", pthread_self(),     \
+                 __FILE__, __LINE__, ##__VA_ARGS__);                                               \
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                 \
+    }                                                                                              \
+  }
 #else
 #define PRINF(fmt, ...)
 #define PRDBG(fmt, ...)
-#define PRWRN(fmt, ...) 
+#define PRWRN(fmt, ...)
 #endif
 
 /**
  * Print error message: level 2
  */
-#define PRERR(fmt, ...) \
-  { if(DEBUG_LEVEL < 4) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [DOUBLETAKE-ERR]: %20s:%-4d: " fmt ESC_END "\n", \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ );  \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } }
+#define PRERR(fmt, ...)                                                                            \
+  {                                                                                                \
+    if(DEBUG_LEVEL < 4) {                                                                          \
+      ::snprintf(getThreadBuffer(), LOG_SIZE,                                                      \
+                 ESC_ERR "%lx [DOUBLETAKE-ERR]: %20s:%-4d: " fmt ESC_END "\n", pthread_self(),     \
+                 __FILE__, __LINE__, ##__VA_ARGS__);                                               \
+      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                 \
+    }                                                                                              \
+  }
 
 // Can't be turned off. But we don't want to output those line number information.
-#define PRINT(fmt, ...) { \
-      ::snprintf(getThreadBuffer(), LOG_SIZE, BRIGHT_MAGENTA fmt ESC_END "\n", ##__VA_ARGS__ );  \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer())); } 
-      
-
+#define PRINT(fmt, ...)                                                                            \
+  {                                                                                                \
+    ::snprintf(getThreadBuffer(), LOG_SIZE, BRIGHT_MAGENTA fmt ESC_END "\n", ##__VA_ARGS__);       \
+    OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                   \
+  }
 
 /**
  * Print fatal error message, the program is going to exit.
  */
 
-#define FATAL(fmt, ...) \
-  {   ::snprintf(getThreadBuffer(), LOG_SIZE, ESC_ERR "%lx [DOUBLETAKE-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n", \
-                pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__ ); exit(-1); \
-      OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));  }
+#define FATAL(fmt, ...)                                                                            \
+  {                                                                                                \
+    ::snprintf(getThreadBuffer(), LOG_SIZE,                                                        \
+               ESC_ERR "%lx [DOUBLETAKE-FATALERROR]: %20s:%-4d: " fmt ESC_END "\n",                \
+               pthread_self(), __FILE__, __LINE__, ##__VA_ARGS__);                                 \
+    exit(-1);                                                                                      \
+    OUTPUT(OUTFD, getThreadBuffer(), strlen(getThreadBuffer()));                                   \
+  }
 
 // Check a condition. If false, print an error message and abort
-#define REQUIRE(cond, ...) if(!(cond)) { FATAL(__VA_ARGS__) }
+#define REQUIRE(cond, ...)                                                                         \
+  if(!(cond)) {                                                                                    \
+    FATAL(__VA_ARGS__)                                                                             \
+  }
 
 #endif

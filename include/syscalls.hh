@@ -41,16 +41,14 @@ private:
   syscalls() {}
 
 public:
-  static syscalls& getInstance () {
+  static syscalls& getInstance() {
     static char buf[sizeof(syscalls)];
-    static syscalls * theOneTrueObject = new (buf) syscalls();
+    static syscalls* theOneTrueObject = new (buf) syscalls();
     return *theOneTrueObject;
   }
 
   /// @brief Initialize the system.
-  void initialize() {
-    _fops.initialize();
-  }
+  void initialize() { _fops.initialize(); }
 #if 0
   void setRollback() {
     _fops.rollback();
@@ -58,11 +56,9 @@ public:
 #endif
 
   // Currently, epochBegin() will call xrun::epochBegin().
-  void epochBegin() {
-    xrun::getInstance().epochBegin(); 
-  }
+  void epochBegin() { xrun::getInstance().epochBegin(); }
 
-  // Called by xrun::epochBegin() 
+  // Called by xrun::epochBegin()
   void handleEpochBegin() {
 #ifdef REPRODUCIBLE_FDS
     // Handle those closed files
@@ -72,14 +68,14 @@ public:
   }
 
   void epochEnd() {
-//    PRINF("$$$$$$epochEnd at line %d\n", __LINE__);
-//    PRINF("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
- //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
-    xrun::getInstance().epochEnd(false); 
+    //    PRINF("$$$$$$epochEnd at line %d\n", __LINE__);
+    //    PRINF("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+    //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
+    xrun::getInstance().epochEnd(false);
   }
 
   // Called by xrun::epochEnd when there is no overflow.
-  // in the end of checking when an epoch ends. 
+  // in the end of checking when an epoch ends.
   // Now, only one thread is active.
   void epochEndWell() {
     // Now we are trying to handling all opened files.
@@ -95,77 +91,73 @@ public:
   // Prepare rollback for system calls
   void prepareRollback() {
     getRecord()->prepareRollback();
-  
+
     // Handle those closed files
     _fops.prepareRollback();
   }
- 
-  // Simply commit specified memory block
-  void atomicCommit(void * addr, size_t size) {
-    xrun::getInstance().atomicCommit(addr, size);
-  }
 
-  void checkOverflowBeforehand(void * start, size_t size) {
+  // Simply commit specified memory block
+  void atomicCommit(void* addr, size_t size) { xrun::getInstance().atomicCommit(addr, size); }
+
+  void checkOverflowBeforehand(void* start, size_t size) {
     // Make those pages writable, otherwise, read may fail
     makeWritable(start, size);
-/*
-    PRINF("CHECK whether system call can overflow\n");
-    if(_memory.checkOverflowBeforehand(start, size)) {
-      PRINF("System call can overflow, start %p size %x\n", start, size);
-      _memory.printCallsite();
-      assert(0);
-    }
-    PRINF("CHECK whether system call can overflow done!!!!!\n");
-*/
+    /*
+        PRINF("CHECK whether system call can overflow\n");
+        if(_memory.checkOverflowBeforehand(start, size)) {
+          PRINF("System call can overflow, start %p size %x\n", start, size);
+          _memory.printCallsite();
+          assert(0);
+        }
+        PRINF("CHECK whether system call can overflow done!!!!!\n");
+    */
   }
 
-  void makeWritable(void * buf, int count) {
+  void makeWritable(void* buf, int count) {
 #ifdef PROTECT_MEMORY
-    char * start = (char *)buf;
-    long pages = count/xdefines::PageSize;
+    char* start = (char*)buf;
+    long pages = count / xdefines::PageSize;
 
     if(pages >= 1) {
-    //  PRINF("fd %d buf %p count %d\n", fd, buf, count);
-    // Trying to read on those pages, thus there won't be a segmenation fault in 
-    // the system call.
+      //  PRINF("fd %d buf %p count %d\n", fd, buf, count);
+      // Trying to read on those pages, thus there won't be a segmenation fault in
+      // the system call.
       for(long i = 0; i < pages; i++) {
         start[i * xdefines::PageSize] = '\0';
       }
     }
-    start[count-1] = '\0';
+    start[count - 1] = '\0';
 #endif
     return;
   }
 
-  ssize_t read (int fd, void * buf, size_t count) {
+  ssize_t read(int fd, void* buf, size_t count) {
     ssize_t ret;
 
     // Make those pages writable, otherwise, read may fail
     makeWritable(buf, count);
 
-    //PRINF("read on fd %d\n", fd);
+    // PRINF("read on fd %d\n", fd);
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
       ret = Real::read(fd, buf, count);
-    }
-    else {
-//      PRINF("Reading special file\n");
+    } else {
+      //      PRINF("Reading special file\n");
       epochEnd();
       ret = Real::read(fd, buf, count);
       epochBegin();
     }
 
     return ret;
-  } 
- 
-  ssize_t write (int fd, const void * buf, size_t count) {
+  }
+
+  ssize_t write(int fd, const void* buf, size_t count) {
     ssize_t ret;
-    
-        // Check whether this fd is not a socketid.
+
+    // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
       ret = Real::write(fd, buf, count);
-    }
-    else {
+    } else {
       epochEnd();
       ret = Real::write(fd, buf, count);
       epochBegin();
@@ -192,20 +184,17 @@ public:
   */
   // We may record the address in order to replay
   // Tongping
-  void* mmap(void *start, size_t length, int prot, int flags,
-                  int fd, off_t offset) 
-  {
-    void * ret = NULL;
+  void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
+    void* ret = NULL;
 
     if(!global_isRollback()) {
       // We only record these mmap requests.
       ret = Real::mmap(start, length, prot, flags, fd, offset);
-//      WARN("in execution, ret %p length %lx\n", ret, length);
-      getRecord()->recordMmapOps(ret); 
-    }
-    else {
+      //      WARN("in execution, ret %p length %lx\n", ret, length);
+      getRecord()->recordMmapOps(ret);
+    } else {
       getRecord()->getMmapOps(&ret);
-  //    WARN("in rollback, ret %p length %lx\n", ret, length);
+      //    WARN("in rollback, ret %p length %lx\n", ret, length);
     }
 #if 0 // Used to test epochBegin
     epochEnd();
@@ -215,45 +204,42 @@ public:
 #endif
     return ret;
   }
-  
+
 #if 0
   int open(const char *pathname, int flags);
   int open(const char *pathname, int flags, mode_t mode);
-  int creat(const char *pathname, mode_t mode); 
+  int creat(const char *pathname, mode_t mode);
 #endif
 
   // We may record fd in order replay that.
-  int open(const char *pathname, int flags) {
-    return open(pathname, flags, 0); 
-  }
+  int open(const char* pathname, int flags) { return open(pathname, flags, 0); }
 
   // Tongping
-  int open(const char *pathname, int flags, mode_t mode) {
+  int open(const char* pathname, int flags, mode_t mode) {
     int ret;
- 
-#ifndef MYDEBUG 
-  #ifdef REPRODUCIBLE_FDS 
-    // In the rollback phase, we only call 
+
+#ifndef MYDEBUG
+#ifdef REPRODUCIBLE_FDS
+    // In the rollback phase, we only call
     if(global_isRollback()) {
       ret = _fops.getFdAtOpen();
-    }
-    else {
+    } else {
       ret = Real::open(pathname, flags, mode);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
     }
-  #else
+#else
     ret = Real::open(pathname, flags, mode);
-    
+
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveFd(ret, NULL);
-  #endif
+#endif
 #else
     epochEnd();
     ret = Real::open(pathname, flags, mode);
     epochBegin();
 #endif
-    //PRINF("OPEN fd %d\n", ret);    
+    // PRINF("OPEN fd %d\n", ret);
     return ret;
   }
 
@@ -261,13 +247,12 @@ public:
     int ret;
 
 //     PRINF("close fd %d at line %d\n", fd, __LINE__);
-#ifdef REPRODUCIBLE_FDS 
+#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(fd)) {
-      // In the rollback phase, we only call 
+      // In the rollback phase, we only call
       if(global_isRollback()) {
         ret = 0;
-      }
-      else {
+      } else {
         ret = _fops.closeFile(fd, NULL);
       }
     }
@@ -277,27 +262,26 @@ public:
     }
 #endif
     else {
-//      PRINF("close fd %d at line %d problem\n", fd, __LINE__);
-      //selfmap::getInstance().printCallStack(NULL, NULL, true);
-      //epochEnd();
+      //      PRINF("close fd %d at line %d problem\n", fd, __LINE__);
+      // selfmap::getInstance().printCallStack(NULL, NULL, true);
+      // epochEnd();
       ret = Real::close(fd);
-    //  epochBegin();
+      //  epochBegin();
     }
 
     return ret;
   }
 
-  DIR * opendir(const char *name) {
-    DIR * ret;
-    
-#ifdef REPRODUCIBLE_FDS 
-    // In the rollback phase, we only call 
+  DIR* opendir(const char* name) {
+    DIR* ret;
+
+#ifdef REPRODUCIBLE_FDS
+    // In the rollback phase, we only call
     if(!global_isRollback()) {
       ret = Real::opendir(name);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveDir(ret);
-    }
-    else {
+    } else {
       ret = _fops.getDirAtOpen();
     }
 #else
@@ -305,19 +289,18 @@ public:
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveDir(ret);
 #endif
-    PRINF("(((((((((((((((OPEN dir %s)))))))))\n", name);    
+    PRINF("(((((((((((((((OPEN dir %s)))))))))\n", name);
 
     return ret;
   }
 
-  int closedir(DIR *dir) {
+  int closedir(DIR* dir) {
     int ret;
 
-#ifdef REPRODUCIBLE_FDS 
+#ifdef REPRODUCIBLE_FDS
     if(global_isRollback()) {
       ret = 0;
-    }
-    else {
+    } else {
       ret = _fops.closeDir(dir);
     }
 #else
@@ -327,34 +310,32 @@ public:
     return ret;
   }
 
-  FILE *fopen (const char * filename, const char * modes) {
-    FILE * ret;
-   
-#ifdef REPRODUCIBLE_FDS 
-    if(!global_isRollback()) { 
+  FILE* fopen(const char* filename, const char* modes) {
+    FILE* ret;
+
+#ifdef REPRODUCIBLE_FDS
+    if(!global_isRollback()) {
       ret = Real::fopen(filename, modes);
       if(ret != NULL) {
         // Commit those local changes now.
-        //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
+        // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
         // Save current fd
         _fops.saveFopen(ret);
         PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
-     // PRINF("OPEN fd %d\n", ret->_fileno);    
-      }
-      else {
+        // PRINF("OPEN fd %d\n", ret->_fileno);
+      } else {
         _fops.saveFd(-1, NULL);
       }
-    }
-    else {
+    } else {
       // rollback phase
       ret = _fops.getFopen();
-//      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
+      //      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
     }
 #else
     ret = Real::fopen(filename, modes);
     if(ret != NULL) {
       // Commit those local changes now.
-      //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
+      // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
       // Save current fd
       PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
       _fops.saveFopen(ret);
@@ -363,26 +344,24 @@ public:
 
     return ret;
   }
-  
-  FILE *fopen64 (const char * filename, const char * modes) {
-    FILE * ret;
-    
-#ifdef REPRODUCIBLE_FDS 
-    if(!global_isRollback()) { 
-      //PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
+
+  FILE* fopen64(const char* filename, const char* modes) {
+    FILE* ret;
+
+#ifdef REPRODUCIBLE_FDS
+    if(!global_isRollback()) {
+      // PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = Real::fopen64(filename, modes);
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
-      	selfmap::getInstance().printCallStack();
+        selfmap::getInstance().printCallStack();
         PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
-      //PRINF("OPEN fd %d\n", ret->_fileno);    
-      }
-      else {
+        // PRINF("OPEN fd %d\n", ret->_fileno);
+      } else {
         _fops.saveFd(-1, NULL);
       }
-    }
-    else {
+    } else {
       // rollback phase
       ret = _fops.getFopen();
     }
@@ -391,31 +370,30 @@ public:
     PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
     if(ret != NULL) {
       // Commit those local changes now.
-      //atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE); 
+      // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
       // Save current fd
       _fops.saveFopen(ret);
     }
 #endif
-    
- 
+
     return ret;
   }
 
   // Delay actual fclose instead.
-  int fclose(FILE *fp) {
+  int fclose(FILE* fp) {
     int ret;
-    
+
     assert(fp != NULL);
     // flush the result, required by the posix standard
     fflush(fp);
 
-    // fclose is actually delayed 
-    ret =_fops.closeFile(fp->_fileno, fp);
+    // fclose is actually delayed
+    ret = _fops.closeFile(fp->_fileno, fp);
 
     return ret;
   }
 
-  int stat(const char *path, struct stat *buf) {
+  int stat(const char* path, struct stat* buf) {
     int ret;
     epochEnd();
     ret = Real::stat(path, buf);
@@ -423,7 +401,7 @@ public:
     return ret;
   }
 
-  int fstat(int filedes, struct stat *buf) {
+  int fstat(int filedes, struct stat* buf) {
     int ret;
     epochEnd();
     ret = Real::fstat(filedes, buf);
@@ -431,7 +409,7 @@ public:
     return ret;
   }
 
-  int lstat(const char *path, struct stat *buf) {
+  int lstat(const char* path, struct stat* buf) {
     int ret;
     epochEnd();
     ret = Real::lstat(path, buf);
@@ -439,7 +417,7 @@ public:
     return ret;
   }
 
-  int poll(struct pollfd *fds, nfds_t nfds, int timeout) {
+  int poll(struct pollfd* fds, nfds_t nfds, int timeout) {
     int ret;
     epochEnd();
     ret = Real::poll(fds, nfds, timeout);
@@ -455,10 +433,10 @@ public:
     return ret;
   }
 
-  int mprotect(void *addr, size_t len, int prot) {
+  int mprotect(void* addr, size_t len, int prot) {
     int ret;
 
-    // FIXME: since pthread_create will call mprotect, we don't 
+    // FIXME: since pthread_create will call mprotect, we don't
     // want to introduce some unnecessary checking here.
     epochEnd();
     ret = Real::mprotect(addr, len, prot);
@@ -466,19 +444,18 @@ public:
     return ret;
   }
 
-  int munmap(void *start, size_t length) {
+  int munmap(void* start, size_t length) {
     int ret = 0;
-   
+
     if(!global_isRollback()) {
-      getRecord()->recordMunmapOps(start, length); 
-    }
-		else {
+      getRecord()->recordMunmapOps(start, length);
+    } else {
       getRecord()->getMunmapOps();
-		}
+    }
     return ret;
   }
-  
-  /* 
+
+  /*
   #define _SYS_brk                                12
   #define _SYS_rt_sigaction                       13
   #define _SYS_rt_sigprocmask                     14
@@ -499,9 +476,9 @@ public:
   #define _SYS_shmget                             29
   #define _SYS_shmat                              30
   #define _SYS_shmctl                             31
-  
+
   */
-  int brk(void *end_data_segment) {
+  int brk(void* end_data_segment) {
     int ret;
     epochEnd();
     ret = Real::brk(end_data_segment);
@@ -509,15 +486,15 @@ public:
     return ret;
   }
 
-  int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+  int sigaction(int signum, const struct sigaction* act, struct sigaction* oldact) {
     int ret;
     epochEnd();
-    ret = Real::sigaction(signum, act, oldact); 
+    ret = Real::sigaction(signum, act, oldact);
     epochBegin();
     return ret;
   }
 
-  int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
+  int sigprocmask(int how, const sigset_t* set, sigset_t* oldset) {
     int ret;
     epochEnd();
     ret = Real::sigprocmask(how, set, oldset);
@@ -534,23 +511,22 @@ public:
   }
 
   // ioctl
-  size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+  size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
     int fd;
     size_t ret;
 
-    //assert(stream != NULL);
+    // assert(stream != NULL);
     if(stream == NULL) {
       return 0;
     }
 
-    fd =stream->_fileno;
+    fd = stream->_fileno;
 
-    checkOverflowBeforehand(ptr, size*nmemb);
+    checkOverflowBeforehand(ptr, size * nmemb);
     if(_fops.checkPermission(fd)) {
       ret = Real::fread(ptr, size, nmemb, stream);
-    }
-    else {
-      //PRINF("fd %d has no permisson for read\n", fd);
+    } else {
+      // PRINF("fd %d has no permisson for read\n", fd);
       epochEnd();
       ret = Real::fread(ptr, size, nmemb, stream);
       epochBegin();
@@ -559,36 +535,34 @@ public:
     return ret;
   }
 
-  size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+  size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
     size_t ret;
     int fd = stream->_fileno;
-    //assert(stream == NULL);
-    // For stdout, stream is NULL. So we just pass this to 
+    // assert(stream == NULL);
+    // For stdout, stream is NULL. So we just pass this to
     // fwrite.
     if(stream == NULL) {
-      ret = Real::fwrite(ptr, size, nmemb, stream);;
-    }
-    else if(_fops.checkPermission(fd)) {
       ret = Real::fwrite(ptr, size, nmemb, stream);
-    }
-    else {
+      ;
+    } else if(_fops.checkPermission(fd)) {
+      ret = Real::fwrite(ptr, size, nmemb, stream);
+    } else {
       epochEnd();
       ret = Real::fwrite(ptr, size, nmemb, stream);
       epochBegin();
     }
 
-    //PRINF(" in stopgap at %d\n", __LINE__);
+    // PRINF(" in stopgap at %d\n", __LINE__);
     return ret;
   }
 
-  ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
+  ssize_t pread(int fd, void* buf, size_t count, off_t offset) {
     ssize_t ret;
-    
+
     checkOverflowBeforehand(buf, count);
     if(_fops.checkPermission(fd)) {
       ret = Real::pread(fd, buf, count, offset);
-    }
-    else {
+    } else {
       epochEnd();
       ret = Real::pread(fd, buf, count, offset);
       epochBegin();
@@ -596,13 +570,12 @@ public:
     return ret;
   }
 
-  ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset) {
+  ssize_t pwrite(int fd, const void* buf, size_t count, off_t offset) {
     ssize_t ret;
 
     if(_fops.checkPermission(fd)) {
       ret = Real::pwrite(fd, buf, count, offset);
-    }
-    else {
+    } else {
       epochEnd();
       ret = Real::pwrite(fd, buf, count, offset);
       epochBegin();
@@ -610,23 +583,22 @@ public:
     return ret;
   }
 
-  ssize_t readv(int fd, const struct iovec *vector, int count) {
+  ssize_t readv(int fd, const struct iovec* vector, int count) {
     ssize_t ret;
 
-    struct iovec ** vec = (struct iovec **)vector; 
+    struct iovec** vec = (struct iovec**)vector;
     for(int i = 0; i < count; i++) {
       checkOverflowBeforehand(vec[i]->iov_base, vec[i]->iov_len);
     }
-   
+
     if(_fops.checkPermission(fd)) {
       ret = Real::readv(fd, vector, count);
-    }
-    else {
+    } else {
       epochEnd();
       // No need to call aotmicBegin() since this system call
       // won't cause overflow.
       ret = Real::readv(fd, vector, count);
-    
+
       for(int i = 0; i < count; i++) {
         atomicCommit(vec[i]->iov_base, vec[i]->iov_len);
       }
@@ -635,32 +607,31 @@ public:
     return ret;
   }
 
-  ssize_t writev(int fd, const struct iovec *vector, int count){  
+  ssize_t writev(int fd, const struct iovec* vector, int count) {
     ssize_t ret;
 
     // Check whether this fd is not a socketid.
     if(_fops.checkPermission(fd)) {
       ret = Real::writev(fd, vector, count);
-    }
-    else {
+    } else {
       epochEnd();
-      ret = Real::writev(fd, vector, count);  
+      ret = Real::writev(fd, vector, count);
       epochBegin();
     }
     return ret;
   }
 
-/*
-  int access(const char *pathname, int mode){
-    int ret;
-    epochEnd();
-    ret = Real::access(pathname, mode);
-    epochBegin();
-    return ret;
-  }
-*/
+  /*
+    int access(const char *pathname, int mode){
+      int ret;
+      epochEnd();
+      ret = Real::access(pathname, mode);
+      epochBegin();
+      return ret;
+    }
+  */
 
-  int pipe(int filedes[2]){
+  int pipe(int filedes[2]) {
     int ret;
     epochEnd();
     ret = Real::pipe(filedes);
@@ -668,8 +639,8 @@ public:
     return ret;
   }
 
-  int select(int nfds, fd_set *readfds, fd_set *writefds,
-             fd_set *exceptfds, struct timeval *timeout){
+  int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+             struct timeval* timeout) {
     int ret;
     epochEnd();
     ret = Real::select(nfds, readfds, writefds, exceptfds, timeout);
@@ -677,15 +648,15 @@ public:
     return ret;
   }
 
-  void * mremap(void *old_address, size_t old_size , size_t new_size, int flags){
-    void * ret;
+  void* mremap(void* old_address, size_t old_size, size_t new_size, int flags) {
+    void* ret;
     epochEnd();
     ret = Real::mremap(old_address, old_size, new_size, flags);
     epochBegin();
     return ret;
   }
 
-  int msync(void *start, size_t length, int flags){
+  int msync(void* start, size_t length, int flags) {
     int ret;
     epochEnd();
     ret = Real::msync(start, length, flags);
@@ -693,7 +664,7 @@ public:
     return ret;
   }
 
-  int mincore(void *start, size_t length, unsigned char *vec){
+  int mincore(void* start, size_t length, unsigned char* vec) {
     int ret;
     epochEnd();
     ret = Real::mincore(start, length, vec);
@@ -701,7 +672,7 @@ public:
     return ret;
   }
 
-  int madvise(void *start, size_t length, int advice){
+  int madvise(void* start, size_t length, int advice) {
     int ret;
     epochEnd();
     ret = Real::madvise(start, length, advice);
@@ -710,7 +681,7 @@ public:
   }
 
   // Tongping, FIXME, we should record this.
-  int shmget(key_t key, size_t size, int shmflg){
+  int shmget(key_t key, size_t size, int shmflg) {
     int ret;
     epochEnd();
 
@@ -720,15 +691,15 @@ public:
   }
 
   // Tongping, FIXME, we should record this.
-  void *shmat(int shmid, const void *shmaddr, int shmflg){
-    void * ret;
+  void* shmat(int shmid, const void* shmaddr, int shmflg) {
+    void* ret;
     epochEnd();
     ret = Real::shmat(shmid, shmaddr, shmflg);
     epochBegin();
     return ret;
   }
 
-  int shmctl(int shmid, int cmd, struct shmid_ds *buf){
+  int shmctl(int shmid, int cmd, struct shmid_ds* buf) {
     int ret;
     epochEnd();
 
@@ -736,7 +707,7 @@ public:
     epochBegin();
     return ret;
   }
-  
+
   /*
   #define _SYS_dup                                32
   #define _SYS_dup2                               33
@@ -762,17 +733,16 @@ public:
   */
 
   // RECORD this, Tongping
-  int dup(int oldfd){
+  int dup(int oldfd) {
     int ret = 0;
 
-#ifdef REPRODUCIBLE_FDS 
+#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(oldfd)) {
-      // In the rollback phase, we only call 
+      // In the rollback phase, we only call
       if(global_isRollback()) {
         ret = _fops.getFdAtOpen();
-      }
-      else {
-      //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
+      } else {
+        //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
         ret = Real::dup(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -796,15 +766,14 @@ public:
   }
 
   // RECORD this, Tongping
-  int dup2(int oldfd, int newfd){
+  int dup2(int oldfd, int newfd) {
     int ret;
-  
-#ifdef REPRODUCIBLE_FDS 
+
+#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(newfd)) {
       if(global_isRollback()) {
         ret = _fops.getFdAtOpen();
-      }
-      else {
+      } else {
         ret = Real::dup2(oldfd, newfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -812,11 +781,11 @@ public:
     }
 #else
     if(_fops.isNormalFile(newfd)) {
-        ret = Real::dup2(oldfd, newfd);
-        if(ret != -1) {
-          // Save current fd, pass NULL since it is not a file stream
-          _fops.saveFd(ret, NULL);
-        }
+      ret = Real::dup2(oldfd, newfd);
+      if(ret != -1) {
+        // Save current fd, pass NULL since it is not a file stream
+        _fops.saveFd(ret, NULL);
+      }
     }
 #endif
     else {
@@ -830,7 +799,7 @@ public:
     return ret;
   }
 
-  int pause(){
+  int pause() {
     int ret;
     epochEnd();
     ret = Real::pause();
@@ -838,7 +807,7 @@ public:
     return ret;
   }
 
-  int nanosleep(const struct timespec *req, struct timespec *rem){
+  int nanosleep(const struct timespec* req, struct timespec* rem) {
     int ret;
     epochEnd();
     ret = Real::nanosleep(req, rem);
@@ -846,7 +815,7 @@ public:
     return ret;
   }
 
-  int getitimer(int which, struct itimerval *value){
+  int getitimer(int which, struct itimerval* value) {
     int ret;
     epochEnd();
 
@@ -855,7 +824,7 @@ public:
     return ret;
   }
 
-  unsigned int alarm(unsigned int seconds){
+  unsigned int alarm(unsigned int seconds) {
     int ret;
     epochEnd();
 
@@ -864,21 +833,21 @@ public:
     return ret;
   }
 
-  int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue){
+  int setitimer(int which, const struct itimerval* value, struct itimerval* ovalue) {
     int ret;
     epochEnd();
 
     ret = Real::setitimer(which, value, ovalue);
-    if(ovalue != NULL) {  
+    if(ovalue != NULL) {
       atomicCommit(ovalue, sizeof(struct itimerval));
     }
     epochBegin();
     return ret;
   }
 
- // pid_t getpid()
+  // pid_t getpid()
 
-  ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count){
+  ssize_t sendfile(int out_fd, int in_fd, off_t* offset, size_t count) {
     ssize_t ret;
     epochEnd();
 
@@ -887,7 +856,7 @@ public:
     return ret;
   }
 
-  int socket(int domain, int type, int protocol){
+  int socket(int domain, int type, int protocol) {
     int ret;
     epochEnd();
     ret = Real::socket(domain, type, protocol);
@@ -895,7 +864,7 @@ public:
     return ret;
   }
 
-  int connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen){
+  int connect(int sockfd, const struct sockaddr* serv_addr, socklen_t addrlen) {
     int ret;
     epochEnd();
     ret = Real::connect(sockfd, serv_addr, addrlen);
@@ -903,7 +872,7 @@ public:
     return ret;
   }
 
-  int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen){
+  int accept(int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
     int ret;
     epochEnd();
 
@@ -911,15 +880,14 @@ public:
     // Check whether this buffer is overflow something.
     if(ret > 0) {
       checkOverflowBeforehand(addr, ret);
-      atomicCommit(addr, ret); 
+      atomicCommit(addr, ret);
     }
     epochBegin();
     return ret;
   }
 
-  ssize_t  sendto(int  s,  const void *buf, size_t len, int flags, const struct sockaddr
-                  *to, socklen_t tolen)
-  {
+  ssize_t sendto(int s, const void* buf, size_t len, int flags, const struct sockaddr* to,
+                 socklen_t tolen) {
     ssize_t ret;
     epochEnd();
     ret = Real::sendto(s, buf, len, flags, to, tolen);
@@ -927,21 +895,21 @@ public:
     return ret;
   }
 
-  ssize_t recvfrom(int s, void *buf, size_t len, int flags,
-                   struct sockaddr *from, socklen_t *fromlen){
+  ssize_t recvfrom(int s, void* buf, size_t len, int flags, struct sockaddr* from,
+                   socklen_t* fromlen) {
     ssize_t ret;
     epochEnd();
 
     checkOverflowBeforehand(from, len);
     ret = Real::recvfrom(s, buf, len, flags, from, fromlen);
     if(ret > 0) {
-      atomicCommit(from, ret); 
+      atomicCommit(from, ret);
     }
     epochBegin();
     return ret;
   }
 
-  ssize_t sendmsg(int s, const struct msghdr *msg, int flags){
+  ssize_t sendmsg(int s, const struct msghdr* msg, int flags) {
     ssize_t ret;
     epochEnd();
 
@@ -950,7 +918,7 @@ public:
     return ret;
   }
 
-  ssize_t recvmsg(int s, struct msghdr *msg, int flags){
+  ssize_t recvmsg(int s, struct msghdr* msg, int flags) {
     ssize_t ret;
     epochEnd();
 
@@ -959,8 +927,8 @@ public:
     return ret;
   }
 
-//  int shutdown(int s, int how){
-  int bind(int sockfd, const struct sockaddr *my_addr, socklen_t addrlen){
+  //  int shutdown(int s, int how){
+  int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen) {
     int ret;
     epochEnd();
 
@@ -969,7 +937,7 @@ public:
     return ret;
   }
 
-  int listen(int sockfd, int backlog){
+  int listen(int sockfd, int backlog) {
     int ret;
     epochEnd();
 
@@ -978,33 +946,33 @@ public:
     return ret;
   }
 
-  int getsockname(int s, struct sockaddr *name, socklen_t *namelen){
+  int getsockname(int s, struct sockaddr* name, socklen_t* namelen) {
     int ret;
     epochEnd();
 
     ret = Real::getsockname(s, name, namelen);
     if(ret > 0) {
       checkOverflowBeforehand(name, ret);
-      atomicCommit(name, ret); 
+      atomicCommit(name, ret);
     }
     epochBegin();
     return ret;
   }
 
-  int getpeername(int s, struct sockaddr *name, socklen_t *namelen){
+  int getpeername(int s, struct sockaddr* name, socklen_t* namelen) {
     int ret;
     epochEnd();
 
     ret = Real::getpeername(s, name, namelen);
     if(ret > 0) {
       checkOverflowBeforehand(name, ret);
-      atomicCommit(name, ret); 
+      atomicCommit(name, ret);
     }
     epochBegin();
     return ret;
   }
 
-  int socketpair(int d, int type, int protocol, int sv[2]){
+  int socketpair(int d, int type, int protocol, int sv[2]) {
 
     int ret;
     epochEnd();
@@ -1017,7 +985,7 @@ public:
     return ret;
   }
 
-  int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen){
+  int setsockopt(int s, int level, int optname, const void* optval, socklen_t optlen) {
 
     int ret;
     epochEnd();
@@ -1026,7 +994,7 @@ public:
     return ret;
   }
 
-  int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen){
+  int getsockopt(int s, int level, int optname, void* optval, socklen_t* optlen) {
 
     int ret;
     epochEnd();
@@ -1039,15 +1007,14 @@ public:
     return ret;
   }
 
-//  int clone(int (*fn)(void *), void *child_stack,
+  //  int clone(int (*fn)(void *), void *child_stack,
 
-//  pid_t fork(){
+  //  pid_t fork(){
 
-//  pid_t vfork(){
-    //FIXME
+  //  pid_t vfork(){
+  // FIXME
 
-  int execve(const char *filename, char *const argv[],
-             char *const envp[]){
+  int execve(const char* filename, char* const argv[], char* const envp[]) {
 
     int ret;
     epochEnd();
@@ -1056,10 +1023,9 @@ public:
     return ret;
   }
 
-//  void exit(int status){
+  //  void exit(int status){
 
-  pid_t wait4(pid_t pid, void *status, int options,
-        struct rusage *rusage){
+  pid_t wait4(pid_t pid, void* status, int options, struct rusage* rusage) {
 
     pid_t ret;
     epochEnd();
@@ -1068,7 +1034,7 @@ public:
     return ret;
   }
 
-  int kill(pid_t pid, int sig){
+  int kill(pid_t pid, int sig) {
     // FIXME
     int ret;
     epochEnd();
@@ -1077,7 +1043,7 @@ public:
     return ret;
   }
 
-  int uname(struct utsname *buf){
+  int uname(struct utsname* buf) {
 
     int ret;
     epochEnd();
@@ -1085,9 +1051,9 @@ public:
     epochBegin();
     return ret;
   }
-  
-  /* 
-  
+
+  /*
+
   #define _SYS_semget                             64
   #define _SYS_semop                              65
   #define _SYS_semctl                             66
@@ -1105,10 +1071,10 @@ public:
   #define _SYS_getdents                           78
   #define _SYS_getcwd                             79
   #define _SYS_chdir                              80
-  
+
   */
 
-  int semget(key_t key, int nsems, int semflg){
+  int semget(key_t key, int nsems, int semflg) {
     int ret;
     epochEnd();
 
@@ -1117,7 +1083,7 @@ public:
     return ret;
   }
 
-  int semop(int semid, struct sembuf *sops, size_t nsops){
+  int semop(int semid, struct sembuf* sops, size_t nsops) {
 
     int ret;
     epochEnd();
@@ -1126,7 +1092,7 @@ public:
     return ret;
   }
 
-  int semctl(int semid, int semnum, int cmd, ...){
+  int semctl(int semid, int semnum, int cmd, ...) {
     // FIXME
     int ret;
     epochEnd();
@@ -1135,57 +1101,54 @@ public:
     return ret;
   }
 
-  int fcntl(int fd, int cmd, long arg){
+  int fcntl(int fd, int cmd, long arg) {
     int ret;
 
     switch(cmd) {
-      case F_DUPFD:
-      {
+    case F_DUPFD: {
 #ifdef REPRODUCIBLE_FDS
-        // In the rollback phase, we only call 
-        if(global_isRollback()) {
-          ret = _fops.getFdAtOpen();
-        }
-        else {
-          ret = Real::fcntl(fd, cmd, arg);
-          // Save current fd, pass NULL since it is not a file stream
-          _fops.saveFd(ret, NULL);
-        }
-#else
+      // In the rollback phase, we only call
+      if(global_isRollback()) {
+        ret = _fops.getFdAtOpen();
+      } else {
         ret = Real::fcntl(fd, cmd, arg);
-        if(ret != -1) {
-          // Save current fd, pass NULL since it is not a file stream
-          _fops.saveFd(ret, NULL);
-        }
-#endif
-        break;
+        // Save current fd, pass NULL since it is not a file stream
+        _fops.saveFd(ret, NULL);
       }
-
-      case F_SETFD:
-      /* FD_CLOEXEC is not important to us 
-         Fall through */
-      case F_GETFD:
-      /* Fall through */
-      case F_GETFL:
-      /* Fall through */
-      case F_GETLK:
-      /* Fall through */
-        ret = Real::fcntl(fd, cmd, arg);
-        break;
-
-      default:
-      {
-        epochEnd();
-        ret = Real::fcntl(fd, cmd, arg);
-        epochBegin();
-        break;
-      } 
+#else
+      ret = Real::fcntl(fd, cmd, arg);
+      if(ret != -1) {
+        // Save current fd, pass NULL since it is not a file stream
+        _fops.saveFd(ret, NULL);
+      }
+#endif
+      break;
     }
-    //PRINF("cmd is 
+
+    case F_SETFD:
+    /* FD_CLOEXEC is not important to us
+       Fall through */
+    case F_GETFD:
+    /* Fall through */
+    case F_GETFL:
+    /* Fall through */
+    case F_GETLK:
+      /* Fall through */
+      ret = Real::fcntl(fd, cmd, arg);
+      break;
+
+    default: {
+      epochEnd();
+      ret = Real::fcntl(fd, cmd, arg);
+      epochBegin();
+      break;
+    }
+    }
+    // PRINF("cmd is
     return ret;
   }
 
-  int flock(int fd, int operation){
+  int flock(int fd, int operation) {
 
     int ret;
     epochEnd();
@@ -1194,7 +1157,7 @@ public:
     return ret;
   }
 
-  int fsync(int fd){
+  int fsync(int fd) {
 
     int ret;
     epochEnd();
@@ -1203,7 +1166,7 @@ public:
     return ret;
   }
 
-  int fdatasync(int fd){
+  int fdatasync(int fd) {
 
     int ret;
     epochEnd();
@@ -1212,7 +1175,7 @@ public:
     return ret;
   }
 
-  int truncate(const char *path, off_t length){
+  int truncate(const char* path, off_t length) {
 
     int ret;
     epochEnd();
@@ -1221,7 +1184,7 @@ public:
     return ret;
   }
 
-  int ftruncate(int fd, off_t length){
+  int ftruncate(int fd, off_t length) {
     int ret;
     epochEnd();
 
@@ -1242,8 +1205,8 @@ public:
   }
   */
 
-  char * getcwd(char *buf, size_t size){
-    char * ret;
+  char* getcwd(char* buf, size_t size) {
+    char* ret;
     epochEnd();
     checkOverflowBeforehand(buf, size);
     ret = Real::getcwd(buf, size);
@@ -1252,7 +1215,7 @@ public:
     return ret;
   }
 
-  int chdir(const char *path){
+  int chdir(const char* path) {
     int ret;
     epochEnd();
 
@@ -1261,7 +1224,7 @@ public:
     return ret;
   }
 
-  int fchdir(int fd){
+  int fchdir(int fd) {
     int ret;
     epochEnd();
 
@@ -1269,7 +1232,7 @@ public:
     epochBegin();
     return ret;
   }
-  
+
   /*
   #define _SYS_rename                             82
   #define _SYS_mkdir                              83
@@ -1296,25 +1259,23 @@ public:
   #define _SYS_getgid                            104
   */
 
-  int rename(const char *oldpath, const char *newpath){
+  int rename(const char* oldpath, const char* newpath) {
     int ret;
     epochEnd();
     ret = Real::rename(oldpath, newpath);
     epochBegin();
     return ret;
-
   }
 
-  int mkdir(const char *pathname, mode_t mode){
+  int mkdir(const char* pathname, mode_t mode) {
     int ret;
     epochEnd();
     ret = Real::mkdir(pathname, mode);
     epochBegin();
     return ret;
-
   }
 
-  int rmdir(const char *pathname){
+  int rmdir(const char* pathname) {
 
     int ret;
     epochEnd();
@@ -1323,7 +1284,7 @@ public:
     return ret;
   }
 
-  int creat(const char *pathname, mode_t mode){
+  int creat(const char* pathname, mode_t mode) {
     int ret;
     epochEnd();
 
@@ -1332,7 +1293,7 @@ public:
     return ret;
   }
 
-  int link(const char *oldpath, const char *newpath){
+  int link(const char* oldpath, const char* newpath) {
 
     int ret;
     epochEnd();
@@ -1341,7 +1302,7 @@ public:
     return ret;
   }
 
-  int unlink(const char *pathname){
+  int unlink(const char* pathname) {
 
     int ret;
     epochEnd();
@@ -1350,7 +1311,7 @@ public:
     return ret;
   }
 
-  int symlink(const char *oldpath, const char *newpath){
+  int symlink(const char* oldpath, const char* newpath) {
 
     int ret;
     epochEnd();
@@ -1359,19 +1320,19 @@ public:
     return ret;
   }
 
-  ssize_t readlink(const char *path, char *buf, size_t bufsize){
+  ssize_t readlink(const char* path, char* buf, size_t bufsize) {
 
     ssize_t ret;
     epochEnd();
     ret = Real::readlink(path, buf, bufsize);
-    if(bufsize) {  
+    if(bufsize) {
       atomicCommit(buf, bufsize);
     }
     epochBegin();
     return ret;
   }
 
-  int chmod(const char *path, mode_t mode){
+  int chmod(const char* path, mode_t mode) {
     int ret;
     epochEnd();
 
@@ -1380,7 +1341,7 @@ public:
     return ret;
   }
 
-  int fchmod(int fildes, mode_t mode){
+  int fchmod(int fildes, mode_t mode) {
 
     int ret;
     epochEnd();
@@ -1389,7 +1350,7 @@ public:
     return ret;
   }
 
-  int chown(const char *path, uid_t owner, gid_t group){
+  int chown(const char* path, uid_t owner, gid_t group) {
 
     int ret;
     epochEnd();
@@ -1398,7 +1359,7 @@ public:
     return ret;
   }
 
-  int fchown(int fd, uid_t owner, gid_t group){
+  int fchown(int fd, uid_t owner, gid_t group) {
     int ret;
     epochEnd();
     ret = Real::fchown(fd, owner, group);
@@ -1406,7 +1367,7 @@ public:
     return ret;
   }
 
-  int lchown(const char *path, uid_t owner, gid_t group){
+  int lchown(const char* path, uid_t owner, gid_t group) {
 
     int ret;
     epochEnd();
@@ -1415,7 +1376,7 @@ public:
     return ret;
   }
 
-  mode_t umask(mode_t mask){
+  mode_t umask(mode_t mask) {
 
     mode_t ret;
     epochEnd();
@@ -1425,15 +1386,14 @@ public:
   }
 
   // We can record this also. Tongping
-  int gettimeofday(struct timeval *tv, struct timezone *tz){
+  int gettimeofday(struct timeval* tv, struct timezone* tz) {
     int ret;
 
     if(!global_isRollback()) {
       ret = Real::gettimeofday(tv, tz);
       // Add this to the record list.
-      getRecord()->recordGettimeofdayOps(ret, tv, tz); 
-    }
-    else {
+      getRecord()->recordGettimeofdayOps(ret, tv, tz);
+    } else {
       if(!getRecord()->getGettimeofdayOps(&ret, tv, tz)) {
         assert(0);
       }
@@ -1441,7 +1401,7 @@ public:
     return ret;
   }
 
-  int getrlimit(int resource, struct rlimit *rlim){
+  int getrlimit(int resource, struct rlimit* rlim) {
     int ret;
     epochEnd();
 
@@ -1450,7 +1410,7 @@ public:
     return ret;
   }
 
-  int getrusage(int who, struct rusage *usage){
+  int getrusage(int who, struct rusage* usage) {
     int ret;
     epochEnd();
 
@@ -1459,8 +1419,7 @@ public:
     return ret;
   }
 
-
-  int sysinfo(struct sysinfo *info){
+  int sysinfo(struct sysinfo* info) {
     int ret;
     epochEnd();
     ret = Real::sysinfo(info);
@@ -1468,15 +1427,14 @@ public:
     return ret;
   }
 
-  clock_t times(struct tms *buf){
+  clock_t times(struct tms* buf) {
     clock_t ret;
-    
+
     if(!global_isRollback()) {
       ret = Real::times(buf);
       // Add this to the record list.
-      getRecord()->recordTimesOps(ret, buf); 
-    }
-    else {
+      getRecord()->recordTimesOps(ret, buf);
+    } else {
       if(!getRecord()->getTimesOps(&ret, buf)) {
         assert(0);
       }
@@ -1484,11 +1442,11 @@ public:
     return ret;
   }
 
-//  long ptrace(enum __ptrace_request request, pid_t pid,
-//              void *addr, void *data){
-    // FIXME
+  //  long ptrace(enum __ptrace_request request, pid_t pid,
+  //              void *addr, void *data){
+  // FIXME
 
-  uid_t getuid(){
+  uid_t getuid() {
     uid_t ret;
     epochEnd();
     ret = Real::getuid();
@@ -1496,13 +1454,12 @@ public:
     return ret;
   }
 
-  void vsyslog(int pri, const char* fmt, va_list args){
+  void vsyslog(int pri, const char* fmt, va_list args) {
     epochEnd();
     Real::vsyslog(pri, fmt, args);
     epochBegin();
   }
 
-  
   /*
   #define _SYS_setuid                            105
   #define _SYS_setgid                            106
@@ -1528,9 +1485,8 @@ public:
   #define _SYS_capset                            126
   #define _SYS_rt_sigpending                     127
   */
-  
 
-  gid_t getgid(){
+  gid_t getgid() {
 
     gid_t ret;
     epochEnd();
@@ -1539,8 +1495,7 @@ public:
     return ret;
   }
 
-
-  int setuid(uid_t uid){
+  int setuid(uid_t uid) {
     int ret;
     epochEnd();
 
@@ -1549,7 +1504,7 @@ public:
     return ret;
   }
 
-  int setgid(gid_t gid){
+  int setgid(gid_t gid) {
     int ret;
     epochEnd();
 
@@ -1558,7 +1513,7 @@ public:
     return ret;
   }
 
-  uid_t geteuid(){
+  uid_t geteuid() {
     uid_t ret;
     epochEnd();
 
@@ -1567,7 +1522,7 @@ public:
     return ret;
   }
 
-  gid_t getegid(){
+  gid_t getegid() {
     gid_t ret;
     epochEnd();
 
@@ -1576,7 +1531,7 @@ public:
     return ret;
   }
 
-  int setpgid(pid_t pid, pid_t pgid){
+  int setpgid(pid_t pid, pid_t pgid) {
     int ret;
     epochEnd();
 
@@ -1585,7 +1540,7 @@ public:
     return ret;
   }
 
-  pid_t getppid(){
+  pid_t getppid() {
     pid_t ret;
     epochEnd();
 
@@ -1594,7 +1549,7 @@ public:
     return ret;
   }
 
-  pid_t getpgrp(){
+  pid_t getpgrp() {
     pid_t ret;
     epochEnd();
 
@@ -1603,7 +1558,7 @@ public:
     return ret;
   }
 
-  pid_t setsid(){
+  pid_t setsid() {
     pid_t ret;
     epochEnd();
 
@@ -1612,7 +1567,7 @@ public:
     return ret;
   }
 
-  int setreuid(uid_t ruid, uid_t euid){
+  int setreuid(uid_t ruid, uid_t euid) {
     int ret;
     epochEnd();
 
@@ -1621,7 +1576,7 @@ public:
     return ret;
   }
 
-  int setregid(gid_t rgid, gid_t egid){
+  int setregid(gid_t rgid, gid_t egid) {
     int ret;
     epochEnd();
 
@@ -1630,7 +1585,7 @@ public:
     return ret;
   }
 
-  int getgroups(int size, gid_t list[]){
+  int getgroups(int size, gid_t list[]) {
     int ret;
     epochEnd();
 
@@ -1639,7 +1594,7 @@ public:
     return ret;
   }
 
-  int setgroups(size_t size, const gid_t *list){
+  int setgroups(size_t size, const gid_t* list) {
     int ret;
     epochEnd();
 
@@ -1648,7 +1603,7 @@ public:
     return ret;
   }
 
-  int setresuid(uid_t ruid, uid_t euid, uid_t suid){
+  int setresuid(uid_t ruid, uid_t euid, uid_t suid) {
     int ret;
     epochEnd();
 
@@ -1657,7 +1612,7 @@ public:
     return ret;
   }
 
-  int getresuid(uid_t *ruid, uid_t *euid, uid_t *suid){
+  int getresuid(uid_t* ruid, uid_t* euid, uid_t* suid) {
     int ret;
     epochEnd();
 
@@ -1666,7 +1621,7 @@ public:
     return ret;
   }
 
-  int setresgid(gid_t rgid, gid_t egid, gid_t sgid){
+  int setresgid(gid_t rgid, gid_t egid, gid_t sgid) {
     int ret;
     epochEnd();
 
@@ -1675,7 +1630,7 @@ public:
     return ret;
   }
 
-  int getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid){
+  int getresgid(gid_t* rgid, gid_t* egid, gid_t* sgid) {
     int ret;
     epochEnd();
 
@@ -1684,7 +1639,7 @@ public:
     return ret;
   }
 
-  pid_t getpgid(pid_t pid){
+  pid_t getpgid(pid_t pid) {
     pid_t ret;
     epochEnd();
 
@@ -1693,7 +1648,7 @@ public:
     return ret;
   }
 
-  int setfsuid(uid_t fsuid){
+  int setfsuid(uid_t fsuid) {
     int ret;
     epochEnd();
 
@@ -1702,7 +1657,7 @@ public:
     return ret;
   }
 
-  int setfsgid(uid_t fsgid){
+  int setfsgid(uid_t fsgid) {
     int ret;
     epochEnd();
 
@@ -1710,7 +1665,7 @@ public:
     epochBegin();
     return ret;
   }
-  
+
   /*
   #define _SYS_getsid                            124
   #define _SYS_capget                            125
@@ -1729,18 +1684,16 @@ public:
   #define _SYS_fstatfs                           138
   #define _SYS_sysfs                             139
   */
-  
 
-  pid_t getsid(pid_t pid){
+  pid_t getsid(pid_t pid) {
     pid_t ret;
     epochEnd();
     ret = Real::getsid(pid);
     epochBegin();
     return ret;
-
   }
 
-  int sigpending(sigset_t *set){
+  int sigpending(sigset_t* set) {
     int ret;
     epochEnd();
 
@@ -1749,8 +1702,7 @@ public:
     return ret;
   }
 
-  int sigtimedwait(const sigset_t *set, siginfo_t *info,
-                   const struct timespec *timeout){
+  int sigtimedwait(const sigset_t* set, siginfo_t* info, const struct timespec* timeout) {
     int ret;
     epochEnd();
 
@@ -1759,7 +1711,7 @@ public:
     return ret;
   }
 
-  int sigsuspend(const sigset_t *mask){
+  int sigsuspend(const sigset_t* mask) {
     int ret;
     epochEnd();
 
@@ -1768,7 +1720,7 @@ public:
     return ret;
   }
 
-  int sigaltstack(const stack_t *ss, stack_t *oss){
+  int sigaltstack(const stack_t* ss, stack_t* oss) {
     int ret;
     epochEnd();
 
@@ -1777,7 +1729,7 @@ public:
     return ret;
   }
 
-  int utime(const char *filename, const struct utimbuf *buf){
+  int utime(const char* filename, const struct utimbuf* buf) {
     int ret;
     epochEnd();
 
@@ -1786,7 +1738,7 @@ public:
     return ret;
   }
 
-  int mknod(const char *pathname, mode_t mode, dev_t dev){
+  int mknod(const char* pathname, mode_t mode, dev_t dev) {
     int ret;
     epochEnd();
 
@@ -1806,7 +1758,7 @@ public:
   }
   */
 
-  int personality(unsigned long persona){
+  int personality(unsigned long persona) {
 
     int ret;
     epochEnd();
@@ -1815,7 +1767,7 @@ public:
     return ret;
   }
 
-  int ustat(dev_t dev, struct ustat *ubuf){
+  int ustat(dev_t dev, struct ustat* ubuf) {
 
     int ret;
     epochEnd();
@@ -1824,7 +1776,7 @@ public:
     return ret;
   }
 
-  int statfs(const char *path, struct statfs *buf){
+  int statfs(const char* path, struct statfs* buf) {
 
     int ret;
     epochEnd();
@@ -1833,7 +1785,7 @@ public:
     return ret;
   }
 
-  int fstatfs(int fd, struct statfs *buf){
+  int fstatfs(int fd, struct statfs* buf) {
 
     int ret;
     epochEnd();
@@ -1851,14 +1803,14 @@ public:
     epochBegin();
     return ret;
   }*/
-  
+
   /*
   #define _SYS_getpriority                       140
   #define _SYS_setpriority                       141
   #define _SYS_sched_setparam                    142
   #define _SYS_sched_getparam                    143
-  #define _SYS_sched_setscheduler                144 
-  #define _SYS_sched_getscheduler                145 
+  #define _SYS_sched_setscheduler                144
+  #define _SYS_sched_getscheduler                145
   #define _SYS_sched_get_priority_max            146
   #define _SYS_sched_get_priority_min            147
   #define _SYS_sched_rr_get_interval             148
@@ -1879,7 +1831,7 @@ public:
   #define _SYS_acct                              163
   */
 
-  int getpriority(int which, int who){
+  int getpriority(int which, int who) {
     int ret;
     epochEnd();
 
@@ -1888,8 +1840,7 @@ public:
     return ret;
   }
 
-
-  int setpriority(__priority_which_t which, id_t who, int prio){
+  int setpriority(__priority_which_t which, id_t who, int prio) {
     int ret;
     epochEnd();
 
@@ -1898,7 +1849,7 @@ public:
     return ret;
   }
 
-  int sched_setparam(pid_t pid, const struct sched_param *param){
+  int sched_setparam(pid_t pid, const struct sched_param* param) {
 
     int ret;
     epochEnd();
@@ -1907,7 +1858,7 @@ public:
     return ret;
   }
 
-  int sched_getparam(pid_t pid, struct sched_param *param){
+  int sched_getparam(pid_t pid, struct sched_param* param) {
 
     int ret;
     epochEnd();
@@ -1916,8 +1867,7 @@ public:
     return ret;
   }
 
-  int sched_setscheduler(pid_t pid, int policy,
-                         const struct sched_param *param){
+  int sched_setscheduler(pid_t pid, int policy, const struct sched_param* param) {
     int ret;
     epochEnd();
     ret = Real::sched_setscheduler(pid, policy, param);
@@ -1925,7 +1875,7 @@ public:
     return ret;
   }
 
-  int sched_getscheduler(pid_t pid){
+  int sched_getscheduler(pid_t pid) {
     int ret;
     epochEnd();
     ret = Real::sched_getscheduler(pid);
@@ -1933,7 +1883,7 @@ public:
     return ret;
   }
 
-  int sched_get_priority_max(int policy){
+  int sched_get_priority_max(int policy) {
     int ret;
     epochEnd();
     ret = Real::sched_get_priority_max(policy);
@@ -1941,7 +1891,7 @@ public:
     return ret;
   }
 
-  int sched_get_priority_min(int policy){
+  int sched_get_priority_min(int policy) {
     int ret;
     epochEnd();
     ret = Real::sched_get_priority_min(policy);
@@ -1949,7 +1899,7 @@ public:
     return ret;
   }
 
-  int sched_rr_get_interval(pid_t pid, struct timespec *tp){
+  int sched_rr_get_interval(pid_t pid, struct timespec* tp) {
     int ret;
     epochEnd();
     ret = Real::sched_rr_get_interval(pid, tp);
@@ -1957,7 +1907,7 @@ public:
     return ret;
   }
 
-  int mlock(const void *addr, size_t len){
+  int mlock(const void* addr, size_t len) {
     int ret;
     epochEnd();
     ret = Real::mlock(addr, len);
@@ -1965,7 +1915,7 @@ public:
     return ret;
   }
 
-  int munlock(const void *addr, size_t len){
+  int munlock(const void* addr, size_t len) {
     int ret;
     epochEnd();
 
@@ -1974,7 +1924,7 @@ public:
     return ret;
   }
 
-  int mlockall(int flags){
+  int mlockall(int flags) {
     int ret;
     epochEnd();
     ret = Real::mlockall(flags);
@@ -1982,7 +1932,7 @@ public:
     return ret;
   }
 
-  int munlockall(){
+  int munlockall() {
     int ret;
     epochEnd();
     ret = Real::munlockall();
@@ -1990,7 +1940,7 @@ public:
     return ret;
   }
 
-  int vhangup(){
+  int vhangup() {
     int ret;
     epochEnd();
     ret = Real::vhangup();
@@ -1998,8 +1948,8 @@ public:
     return ret;
   }
 
-//  int modify_ldt(int func, void *ptr, unsigned long bytecount){
-    //FIXME
+  //  int modify_ldt(int func, void *ptr, unsigned long bytecount){
+  // FIXME
 
   // pivot_root is not a libc function
   /*
@@ -2020,7 +1970,8 @@ public:
     return ret;
   }
 
-  int prctl(int option, unsigned long arg2, unsigned long arg3 , unsigned long arg4, unsigned long arg5){
+  int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4,
+            unsigned long arg5) {
     int ret;
     epochEnd();
     ret = Real::prctl(option, arg2, arg3, arg4, arg5);
@@ -2037,7 +1988,7 @@ public:
     return ret;
   }*/
 
-  int adjtimex(struct timex *buf){
+  int adjtimex(struct timex* buf) {
     int ret;
     epochEnd();
     epochBegin();
@@ -2045,7 +1996,7 @@ public:
     return ret;
   }
 
-  int setrlimit(int resource, const struct rlimit *rlim){
+  int setrlimit(int resource, const struct rlimit* rlim) {
     int ret;
     epochEnd();
     ret = Real::setrlimit(resource, rlim);
@@ -2053,8 +2004,8 @@ public:
     return ret;
   }
 
-  //FIXME
-  int chroot(const char *path){
+  // FIXME
+  int chroot(const char* path) {
     int ret;
     epochEnd();
     ret = Real::chroot(path);
@@ -2062,22 +2013,21 @@ public:
     return ret;
   }
 
-  void sync(){
-    //FIXME
+  void sync() {
+    // FIXME
     epochEnd();
     Real::sync();
     epochBegin();
   }
 
-  int acct(const char *filename){
+  int acct(const char* filename) {
     int ret;
     epochEnd();
     ret = Real::acct(filename);
     epochBegin();
     return ret;
   }
-  
-  
+
   /*
   #define _SYS_settimeofday                      164
   #define _SYS_mount                             165
@@ -2096,16 +2046,16 @@ public:
   #define _SYS_query_module                      178
   #define _SYS_quotactl                          179
   #define _SYS_nfsservctl                        180
-  #define _SYS_getpmsg                           181  // reserved for LiS/STREAMS 
-  #define _SYS_putpmsg                           182  // reserved for LiS/STREAMS 
-  #define _SYS_afs_syscall                       183  // reserved for AFS  
-  #define _SYS_tuxcall          184 // reserved for tux 
+  #define _SYS_getpmsg                           181  // reserved for LiS/STREAMS
+  #define _SYS_putpmsg                           182  // reserved for LiS/STREAMS
+  #define _SYS_afs_syscall                       183  // reserved for AFS
+  #define _SYS_tuxcall          184 // reserved for tux
   #define _SYS_security     185
   #define _SYS_gettid   186
   #define _SYS_readahead    187
   */
 
-  int settimeofday(const struct timeval *tv , const struct timezone *tz){
+  int settimeofday(const struct timeval* tv, const struct timezone* tz) {
 
     int ret;
     epochEnd();
@@ -2114,10 +2064,9 @@ public:
     return ret;
   }
 
-  int mount(const char *source, const char *target,
-            const char *filesystemtype, unsigned long mountflags,
-            const void *data){
-    //FIXME
+  int mount(const char* source, const char* target, const char* filesystemtype,
+            unsigned long mountflags, const void* data) {
+    // FIXME
     int ret;
     epochEnd();
     ret = Real::mount(source, target, filesystemtype, mountflags, data);
@@ -2125,7 +2074,7 @@ public:
     return ret;
   }
 
-  int umount2(const char *target, int flags){
+  int umount2(const char* target, int flags) {
     // FIXME
     int ret;
     epochEnd();
@@ -2134,7 +2083,7 @@ public:
     return ret;
   }
 
-  int swapon(const char *path, int swapflags){
+  int swapon(const char* path, int swapflags) {
 
     int ret;
     epochEnd();
@@ -2143,17 +2092,16 @@ public:
     return ret;
   }
 
-  int swapoff(const char *path){
+  int swapoff(const char* path) {
 
     int ret;
     epochEnd();
     ret = Real::swapoff(path);
     epochBegin();
     return ret;
-
   }
 
-  int reboot(int cmd){
+  int reboot(int cmd) {
     int ret;
     epochEnd();
     ret = Real::reboot(cmd);
@@ -2161,7 +2109,7 @@ public:
     return ret;
   }
 
-  int sethostname(const char *name, size_t len){
+  int sethostname(const char* name, size_t len) {
     int ret;
     epochEnd();
 
@@ -2170,7 +2118,7 @@ public:
     return ret;
   }
 
-  int setdomainname(const char *name, size_t len){
+  int setdomainname(const char* name, size_t len) {
 
     int ret;
     epochEnd();
@@ -2179,7 +2127,7 @@ public:
     return ret;
   }
 
-  int iopl(int level){
+  int iopl(int level) {
 
     int ret;
     epochEnd();
@@ -2188,7 +2136,7 @@ public:
     return ret;
   }
 
-  int ioperm(unsigned long from, unsigned long num, int turn_on){
+  int ioperm(unsigned long from, unsigned long num, int turn_on) {
 
     int ret;
     epochEnd();
@@ -2206,8 +2154,7 @@ public:
     return ret;
   }*/
 
-  
-  /* 
+  /*
   #define _SYS_readahead    187
   #define _SYS_setxattr   188
   #define _SYS_lsetxattr    189
@@ -2233,16 +2180,15 @@ public:
   #define _SYS_io_submit  209
   #define _SYS_io_cancel  210
   */
-  ssize_t readahead(int fd, __off64_t offset, size_t count){
+  ssize_t readahead(int fd, __off64_t offset, size_t count) {
     ssize_t ret;
-    //epochEnd();
+    // epochEnd();
     ret = Real::readahead(fd, offset, count);
-    //epochBegin();
+    // epochBegin();
     return ret;
-
   }
 
-  int setxattr (const char *path, const char *name, const void *value, size_t size, int flags){
+  int setxattr(const char* path, const char* name, const void* value, size_t size, int flags) {
     int ret;
     epochEnd();
     ret = Real::setxattr(path, name, value, size, flags);
@@ -2250,7 +2196,7 @@ public:
     return ret;
   }
 
-  int lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags){
+  int lsetxattr(const char* path, const char* name, const void* value, size_t size, int flags) {
     int ret;
     epochEnd();
     ret = Real::lsetxattr(path, name, value, size, flags);
@@ -2258,7 +2204,7 @@ public:
     return ret;
   }
 
-  int fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags){
+  int fsetxattr(int filedes, const char* name, const void* value, size_t size, int flags) {
     int ret;
     epochEnd();
     ret = Real::fsetxattr(filedes, name, value, size, flags);
@@ -2266,8 +2212,7 @@ public:
     return ret;
   }
 
-  
-  ssize_t getxattr (const char *path, const char *name, void *value, size_t size){
+  ssize_t getxattr(const char* path, const char* name, void* value, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::getxattr(path, name, value, size);
@@ -2275,7 +2220,7 @@ public:
     return ret;
   }
 
-  ssize_t lgetxattr (const char *path, const char *name, void *value, size_t size){
+  ssize_t lgetxattr(const char* path, const char* name, void* value, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::lgetxattr(path, name, value, size);
@@ -2283,7 +2228,7 @@ public:
     return ret;
   }
 
-  ssize_t fgetxattr (int filedes, const char *name, void *value, size_t size){
+  ssize_t fgetxattr(int filedes, const char* name, void* value, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::fgetxattr(filedes, name, value, size);
@@ -2291,7 +2236,7 @@ public:
     return ret;
   }
 
-  ssize_t listxattr (const char *path, char *list, size_t size){
+  ssize_t listxattr(const char* path, char* list, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::listxattr(path, list, size);
@@ -2299,7 +2244,7 @@ public:
     return ret;
   }
 
-  ssize_t llistxattr (const char *path, char *list, size_t size){
+  ssize_t llistxattr(const char* path, char* list, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::llistxattr(path, list, size);
@@ -2307,7 +2252,7 @@ public:
     return ret;
   }
 
-  ssize_t flistxattr (int filedes, char *list, size_t size){
+  ssize_t flistxattr(int filedes, char* list, size_t size) {
     ssize_t ret;
     epochEnd();
     ret = Real::flistxattr(filedes, list, size);
@@ -2315,7 +2260,7 @@ public:
     return ret;
   }
 
-  int removexattr (const char *path, const char *name){
+  int removexattr(const char* path, const char* name) {
     int ret;
     epochEnd();
     ret = Real::removexattr(path, name);
@@ -2323,7 +2268,7 @@ public:
     return ret;
   }
 
-  int lremovexattr (const char *path, const char *name){
+  int lremovexattr(const char* path, const char* name) {
     int ret;
     epochEnd();
     ret = Real::lremovexattr(path, name);
@@ -2331,7 +2276,7 @@ public:
     return ret;
   }
 
-  int fremovexattr (int filedes, const char *name){
+  int fremovexattr(int filedes, const char* name) {
     int ret;
     epochEnd();
     ret = Real::fremovexattr(filedes, name);
@@ -2339,20 +2284,17 @@ public:
     return ret;
   }
 
-  int tkill(int tid, int sig){
-    return 0;
-  }
+  int tkill(int tid, int sig) { return 0; }
 
   // Record this later.
-  time_t time(time_t *t){
+  time_t time(time_t* t) {
     time_t ret;
 
     if(!global_isRollback()) {
       ret = Real::time(t);
       // Add this to the record list.
-      getRecord()->recordTimeOps(ret); 
-    }
-    else {
+      getRecord()->recordTimeOps(ret);
+    } else {
       if(!getRecord()->getTimeOps(&ret)) {
         assert(0);
       }
@@ -2369,23 +2311,22 @@ public:
     return ret;
   }*/
 
-  int sched_setaffinity(__pid_t pid, size_t cpusetsize, const cpu_set_t *mask){
+  int sched_setaffinity(__pid_t pid, size_t cpusetsize, const cpu_set_t* mask) {
     int ret;
     epochEnd();
     ret = Real::sched_setaffinity(pid, cpusetsize, mask);
     epochBegin();
     return ret;
-
   }
-  
-  ssize_t sched_getaffinity(__pid_t pid, size_t cpusetsize, cpu_set_t *mask){
+
+  ssize_t sched_getaffinity(__pid_t pid, size_t cpusetsize, cpu_set_t* mask) {
     ssize_t ret;
     epochEnd();
     ret = Real::sched_getaffinity(pid, cpusetsize, mask);
     epochBegin();
     return ret;
   }
-  
+
   // set_thread_area isn't a libc function
   /*int set_thread_area (struct user_desc *u_info){
     int ret;
@@ -2403,7 +2344,8 @@ public:
     ret = Real::io_destroy(ctx);
   }
 
-  long io_getevents (aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout){
+  long io_getevents (aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct
+  timespec *timeout){
     ret = Real::io_getevents(ctx_id, min_nr, nr, events, timeout);
   }
 
@@ -2414,7 +2356,7 @@ public:
   long io_cancel (aio_context_t ctx_id, struct iocb *iocb, struct io_event *result){
     ret = Real::io_cancel(ctx_id, nr, iocbpp);
   }*/
-  
+
   /*
   #define _SYS_get_thread_area  211
   #define _SYS_lookup_dcookie 212
@@ -2451,9 +2393,9 @@ public:
     return ret;
   }*/
 
-//  int lookup_dcookie(u64 cookie, char * buffer, size_t len){
-//    ret = WRAP(lookup_dcookie(cookie, buffer, len);
-//  }
+  //  int lookup_dcookie(u64 cookie, char * buffer, size_t len){
+  //    ret = WRAP(lookup_dcookie(cookie, buffer, len);
+  //  }
 
   int epoll_create(int size) {
 
@@ -2464,7 +2406,7 @@ public:
     return ret;
   }
 
-  int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event) {
+  int epoll_ctl(int epfd, int op, int fd, struct epoll_event* event) {
 
     int ret;
     epochEnd();
@@ -2473,8 +2415,7 @@ public:
     return ret;
   }
 
-  int epoll_wait(int epfd, struct epoll_event * events,
-                 int maxevents, int timeout){
+  int epoll_wait(int epfd, struct epoll_event* events, int maxevents, int timeout) {
     int ret;
     epochEnd();
     ret = Real::epoll_wait(epfd, events, maxevents, timeout);
@@ -2483,7 +2424,7 @@ public:
   }
 
   // Record it in the future.
-  int remap_file_pages(void *start, size_t size, int prot, size_t pgoff, int flags){
+  int remap_file_pages(void* start, size_t size, int prot, size_t pgoff, int flags) {
     int ret;
     epochEnd();
     ret = Real::remap_file_pages(start, size, prot, pgoff, flags);
@@ -2509,7 +2450,7 @@ public:
     return ret;
   }*/
 
-  int semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout){
+  int semtimedop(int semid, struct sembuf* sops, size_t nsops, const struct timespec* timeout) {
     int ret;
     epochEnd();
 
@@ -2526,8 +2467,8 @@ public:
     return ret;
   }
 
-  long timer_create (clockid_t which_clock, struct sigevent *timer_event_spec,
-                         timer_t *created_timer_id){
+  long timer_create(clockid_t which_clock, struct sigevent* timer_event_spec,
+                    timer_t* created_timer_id) {
     long ret;
     epochEnd();
 
@@ -2536,8 +2477,8 @@ public:
     return ret;
   }
 
-  long timer_settime (timer_t timer_id, int flags, const struct itimerspec
-                          *new_setting, struct itimerspec *old_setting){
+  long timer_settime(timer_t timer_id, int flags, const struct itimerspec* new_setting,
+                     struct itimerspec* old_setting) {
 
     long ret;
     epochEnd();
@@ -2546,7 +2487,7 @@ public:
     return ret;
   }
 
-  long timer_gettime (timer_t timer_id, struct itimerspec *setting){
+  long timer_gettime(timer_t timer_id, struct itimerspec* setting) {
     long ret;
     epochEnd();
 
@@ -2554,8 +2495,8 @@ public:
     epochBegin();
     return ret;
   }
-  
-  long timer_getoverrun (timer_t timer_id){
+
+  long timer_getoverrun(timer_t timer_id) {
     long ret;
     epochEnd();
     ret = Real::timer_getoverrun(timer_id);
@@ -2563,7 +2504,7 @@ public:
     return ret;
   }
 
-  long timer_delete (timer_t timer_id){
+  long timer_delete(timer_t timer_id) {
 
     long ret;
     epochEnd();
@@ -2572,7 +2513,7 @@ public:
     return ret;
   }
 
-  long clock_settime (clockid_t which_clock, const struct timespec *tp){
+  long clock_settime(clockid_t which_clock, const struct timespec* tp) {
     long ret;
     epochEnd();
     ret = Real::clock_settime(which_clock, tp);
@@ -2580,7 +2521,7 @@ public:
     return ret;
   }
 
-  long clock_gettime (clockid_t which_clock, struct timespec *tp){
+  long clock_gettime(clockid_t which_clock, struct timespec* tp) {
     long ret;
     epochEnd();
     ret = Real::clock_gettime(which_clock, tp);
@@ -2588,7 +2529,7 @@ public:
     return ret;
   }
 
-  long clock_getres (clockid_t which_clock, struct timespec *tp){
+  long clock_getres(clockid_t which_clock, struct timespec* tp) {
     long ret;
     epochEnd();
     ret = Real::clock_getres(which_clock, tp);
@@ -2596,8 +2537,8 @@ public:
     return ret;
   }
 
-  long clock_nanosleep (clockid_t which_clock, int flags,
-                            const struct timespec *rqtp, struct timespec *rmtp){
+  long clock_nanosleep(clockid_t which_clock, int flags, const struct timespec* rqtp,
+                       struct timespec* rmtp) {
     long ret;
     epochEnd();
     ret = Real::clock_nanosleep(which_clock, flags, rqtp, rmtp);
@@ -2620,7 +2561,7 @@ public:
     epochBegin();
     return ret;
   }*/
-  
+
   /*
   #define _SYS_utimes   235
   #define _SYS_vserver    236
@@ -2647,7 +2588,7 @@ public:
   #define _SYS_openat   257
   #define _SYS_mkdirat    258
   */
-  int utimes(const char *filename, const struct timeval times[2]){
+  int utimes(const char* filename, const struct timeval times[2]) {
     int ret;
     epochEnd();
     ret = Real::utimes(filename, times);
@@ -2655,17 +2596,15 @@ public:
     return ret;
   }
 
-  mqd_t mq_open(const char *name, int oflag, mode_t mode,
-                struct mq_attr *attr){
+  mqd_t mq_open(const char* name, int oflag, mode_t mode, struct mq_attr* attr) {
     mqd_t ret;
     epochEnd();
     ret = Real::mq_open(name, oflag, mode, attr);
     epochBegin();
     return ret;
-
   }
-  
-  mqd_t mq_unlink(const char *name){
+
+  mqd_t mq_unlink(const char* name) {
     mqd_t ret;
     epochEnd();
     ret = Real::mq_unlink(name);
@@ -2673,37 +2612,32 @@ public:
     return ret;
   }
 
-  mqd_t mq_timedsend(mqd_t mqdes, const char *msg_ptr,
-                 size_t msg_len, unsigned msg_prio,
-                 const struct timespec *abs_timeout){
+  mqd_t mq_timedsend(mqd_t mqdes, const char* msg_ptr, size_t msg_len, unsigned msg_prio,
+                     const struct timespec* abs_timeout) {
     mqd_t ret;
     epochEnd();
     ret = Real::mq_timedsend(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
     epochBegin();
     return ret;
-
   }
-  
-  mqd_t mq_timedreceive(mqd_t mqdes, char *msg_ptr,
-                 size_t msg_len, unsigned *msg_prio,
-                 const struct timespec *abs_timeout){
+
+  mqd_t mq_timedreceive(mqd_t mqdes, char* msg_ptr, size_t msg_len, unsigned* msg_prio,
+                        const struct timespec* abs_timeout) {
     mqd_t ret;
     epochEnd();
     ret = Real::mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
     epochBegin();
     return ret;
-
   }
-  
-  mqd_t mq_notify(mqd_t mqdes, const struct sigevent *notification){
+
+  mqd_t mq_notify(mqd_t mqdes, const struct sigevent* notification) {
     mqd_t ret;
     epochEnd();
     ret = Real::mq_notify(mqdes, notification);
     epochBegin();
     return ret;
-
   }
-  
+
   // mq_getsetattr is not a libc function
   /*mqd_t mq_getsetattr(mqd_t mqdes, struct mq_attr *newattr,
                    struct mq_attr *oldattr){
@@ -2724,7 +2658,7 @@ public:
   }
 */
 
-  int waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options){
+  int waitid(idtype_t idtype, id_t id, siginfo_t* infop, int options) {
     int ret;
     epochEnd();
     ret = Real::waitid(idtype, id, infop, options);
@@ -2754,7 +2688,7 @@ public:
     PRINF("keyctl is not supported now\n");
     return 0;
   }*/
-  
+
   // ioprio_* functions are not in libc
   /*int ioprio_get(int which, int who){
     int ret;
@@ -2772,7 +2706,7 @@ public:
     return ret;
   }*/
 
-  int inotify_init(){
+  int inotify_init() {
     int ret;
     epochEnd();
     ret = Real::inotify_init();
@@ -2780,7 +2714,7 @@ public:
     return ret;
   }
 
-  int inotify_add_watch(int fd, const char *pathname, uint32_t mask){
+  int inotify_add_watch(int fd, const char* pathname, uint32_t mask) {
     int ret;
     epochEnd();
     ret = Real::inotify_add_watch(fd, pathname, mask);
@@ -2788,14 +2722,14 @@ public:
     return ret;
   }
 
-  int inotify_rm_watch(int fd, uint32_t wd){
+  int inotify_rm_watch(int fd, uint32_t wd) {
     int ret;
     epochEnd();
     ret = Real::inotify_rm_watch(fd, wd);
     epochBegin();
     return ret;
   }
-  
+
   /*
   #define _SYS_openat   257
   #define _SYS_mkdirat    258
@@ -2822,12 +2756,10 @@ public:
   #define _SYS_move_pages   279
   #define _SYS_utimensat    280
   */
-  
-  
-  
- // int openat(int dirfd, const char *pathname, int flags){
 
-  int openat(int dirfd, const char *pathname, int flags, mode_t mode){
+  // int openat(int dirfd, const char *pathname, int flags){
+
+  int openat(int dirfd, const char* pathname, int flags, mode_t mode) {
     int ret;
     epochEnd();
     ret = Real::openat(dirfd, pathname, flags, mode);
@@ -2835,7 +2767,7 @@ public:
     return ret;
   }
 
-  int mkdirat(int dirfd, const char *pathname, mode_t mode){
+  int mkdirat(int dirfd, const char* pathname, mode_t mode) {
     int ret;
     epochEnd();
     ret = Real::mkdirat(dirfd, pathname, mode);
@@ -2843,7 +2775,7 @@ public:
     return ret;
   }
 
-  int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev){
+  int mknodat(int dirfd, const char* pathname, mode_t mode, dev_t dev) {
     int ret;
     epochEnd();
     ret = Real::mknodat(dirfd, pathname, mode, dev);
@@ -2851,7 +2783,7 @@ public:
     return ret;
   }
 
-  int fchownat(int dirfd, const char *path, uid_t owner, gid_t group, int flags){
+  int fchownat(int dirfd, const char* path, uid_t owner, gid_t group, int flags) {
     int ret;
     epochEnd();
     ret = Real::fchownat(dirfd, path, owner, group, flags);
@@ -2859,7 +2791,7 @@ public:
     return ret;
   }
 
-  int futimesat(int dirfd, const char *path, const struct timeval times[2]){
+  int futimesat(int dirfd, const char* path, const struct timeval times[2]) {
     int ret;
     epochEnd();
     ret = Real::futimesat(dirfd, path, times);
@@ -2867,7 +2799,7 @@ public:
     return ret;
   }
 
-  int unlinkat(int dirfd, const char *pathname, int flags){
+  int unlinkat(int dirfd, const char* pathname, int flags) {
     int ret;
     epochEnd();
     ret = Real::unlinkat(dirfd, pathname, flags);
@@ -2875,7 +2807,7 @@ public:
     return ret;
   }
 
-  int renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath){
+  int renameat(int olddirfd, const char* oldpath, int newdirfd, const char* newpath) {
     int ret;
     epochEnd();
     ret = Real::renameat(olddirfd, oldpath, newdirfd, newpath);
@@ -2883,7 +2815,7 @@ public:
     return ret;
   }
 
-  int linkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags){
+  int linkat(int olddirfd, const char* oldpath, int newdirfd, const char* newpath, int flags) {
     int ret;
     epochEnd();
     ret = Real::linkat(olddirfd, oldpath, newdirfd, newpath, flags);
@@ -2891,7 +2823,7 @@ public:
     return ret;
   }
 
-  int symlinkat(const char *oldpath, int newdirfd, const char *newpath){
+  int symlinkat(const char* oldpath, int newdirfd, const char* newpath) {
     int ret;
     epochEnd();
     ret = Real::symlinkat(oldpath, newdirfd, newpath);
@@ -2899,7 +2831,7 @@ public:
     return ret;
   }
 
-  int readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz){
+  int readlinkat(int dirfd, const char* path, char* buf, size_t bufsiz) {
     int ret;
     epochEnd();
     ret = Real::readlinkat(dirfd, path, buf, bufsiz);
@@ -2907,7 +2839,7 @@ public:
     return ret;
   }
 
-  int fchmodat(int dirfd, const char *path, mode_t mode, int flags){
+  int fchmodat(int dirfd, const char* path, mode_t mode, int flags) {
     int ret;
     epochEnd();
     ret = Real::fchmodat(dirfd, path, mode, flags);
@@ -2915,7 +2847,7 @@ public:
     return ret;
   }
 
-  int faccessat(int dirfd, const char *path, int mode, int flags){
+  int faccessat(int dirfd, const char* path, int mode, int flags) {
     int ret;
     epochEnd();
     ret = Real::faccessat(dirfd, path, mode, flags);
@@ -2923,9 +2855,8 @@ public:
     return ret;
   }
 
-  int pselect(int nfds, fd_set *readfds, fd_set *writefds,
-              fd_set *exceptfds, const struct timespec *timeout,
-              const sigset_t *sigmask){
+  int pselect(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+              const struct timespec* timeout, const sigset_t* sigmask) {
     int ret;
     epochEnd();
     ret = Real::pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
@@ -2933,8 +2864,8 @@ public:
     return ret;
   }
 
-  int ppoll(struct pollfd *fds, nfds_t nfds,
-          const struct timespec *timeout, const sigset_t *sigmask){
+  int ppoll(struct pollfd* fds, nfds_t nfds, const struct timespec* timeout,
+            const sigset_t* sigmask) {
     int ret;
     epochEnd();
     ret = Real::ppoll(fds, nfds, timeout, sigmask);
@@ -2942,7 +2873,7 @@ public:
     return ret;
   }
 
-  int unshare(int flags){
+  int unshare(int flags) {
     int ret;
     epochEnd();
     ret = Real::unshare(flags);
@@ -2967,17 +2898,16 @@ public:
     return ret;
   }*/
 
-  int splice(int fd_in, __off64_t *off_in, int fd_out,
-              __off64_t *off_out, size_t len, unsigned int flags){
+  int splice(int fd_in, __off64_t* off_in, int fd_out, __off64_t* off_out, size_t len,
+             unsigned int flags) {
     int ret;
     epochEnd();
     ret = Real::splice(fd_in, off_in, fd_out, off_out, len, flags);
     epochBegin();
     return ret;
-
   }
 
-  int tee(int fd_in, int fd_out, size_t len, unsigned int flags){
+  int tee(int fd_in, int fd_out, size_t len, unsigned int flags) {
     int ret;
     epochEnd();
     ret = Real::tee(fd_in, fd_out, len, flags);
@@ -2985,8 +2915,7 @@ public:
     return ret;
   }
 
-  int sync_file_range(int fd, __off64_t offset, __off64_t nbytes,
-                       unsigned int flags){
+  int sync_file_range(int fd, __off64_t offset, __off64_t nbytes, unsigned int flags) {
     int ret;
     epochEnd();
     ret = Real::sync_file_range(fd, offset, nbytes, flags);
@@ -2994,14 +2923,12 @@ public:
     return ret;
   }
 
-  int vmsplice(int fd, const struct iovec *iov,
-                size_t nr_segs, unsigned int flags){
+  int vmsplice(int fd, const struct iovec* iov, size_t nr_segs, unsigned int flags) {
     int ret;
     epochEnd();
     ret = Real::vmsplice(fd, iov, nr_segs, flags);
     epochBegin();
     return ret;
-
   }
 
   // move_pages isn't defined in any headers
@@ -3017,27 +2944,25 @@ public:
   }*/
 
   // __clone isn't defined in any headers
-  /*int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct user_desc * tls, pid_t *ctid) {
+  /*int __clone(int (*fn)(void *), void *child_stack, int flags, void *arg, pid_t *pid, struct
+  user_desc * tls, pid_t *ctid) {
     int ret;
 
     if(!global_isRollback()) {
       ret = Real::__clone(fn, child_stack, flags, arg, pid, tls, ctid);
-      getRecord()->recordCloneOps(ret); 
+      getRecord()->recordCloneOps(ret);
     }
     else {
       ret = getRecord()->getCloneOps();
     }
-    
+
     return ret;
   }*/
 
 private:
-  inline Record * getRecord() {
-    return (Record *)current->record;
-  }
- 
+  inline Record* getRecord() { return (Record*)current->record; }
+
   fops _fops;
 };
-
 
 #endif

@@ -5,7 +5,7 @@
  * @file   callsite.h
  * @brief  Management about callsite for heap objects.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
- */ 
+ */
 
 #include <stdio.h>
 
@@ -15,9 +15,7 @@ class CallSite {
 public:
   CallSite() : _depth(0) {}
 
-  unsigned long depth() {
-    return _depth;
-  }
+  unsigned long depth() { return _depth; }
 
   void print() {
     for(int i = 0; i < _depth; i++) {
@@ -26,12 +24,10 @@ public:
     printf("\n");
   }
 
-  unsigned long get(int index) {
-    return (unsigned long)_callsite[index];
-  }
+  unsigned long get(int index) { return (unsigned long)_callsite[index]; }
 
   // Save callsite
-  void save(int depth, void ** addr) {
+  void save(int depth, void** addr) {
     _depth = depth;
 
     for(int i = 0; i < depth; i++) {
@@ -39,29 +35,27 @@ public:
     }
   }
 
-	bool saveAndCheck(int depth, void ** addr) {
-		bool isSame = true;
+  bool saveAndCheck(int depth, void** addr) {
+    bool isSame = true;
 
-   	_depth = depth;
+    _depth = depth;
 
     for(int i = 0; i < depth; i++) {
-			if(_callsite[i] != addr[i]) {
-				isSame = false;
-      	_callsite[i] = addr[i];
-			}
+      if(_callsite[i] != addr[i]) {
+        isSame = false;
+        _callsite[i] = addr[i];
+      }
     }
 
-		return isSame;
-	}
+    return isSame;
+  }
 
   // Return the callsite
-  void** getCallsite() {
-    return &_callsite[0];
-  }
+  void** getCallsite() { return &_callsite[0]; }
 
 private:
   unsigned long _depth; // Actual callsite depth
-  void * _callsite[xdefines::CALLSITE_MAXIMUM_LENGTH];
+  void* _callsite[xdefines::CALLSITE_MAXIMUM_LENGTH];
 };
 
 #endif

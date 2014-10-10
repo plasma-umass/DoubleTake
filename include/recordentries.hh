@@ -5,15 +5,15 @@
  * @file   recordentires.h
  * @brief  Managing record entry for each thread. Since each thread will have different entries,
  There is no need to use lock here at all.
- The basic idea of having pool is 
- to reduce unnecessary memory allocation and deallocation operations, similar 
+ The basic idea of having pool is
+ to reduce unnecessary memory allocation and deallocation operations, similar
  to slab manager of Linux system. However, it is different here.
- There is no memory deallocation for each pool. 
- In the same epoch, we keep allocating from 
+ There is no memory deallocation for each pool.
+ In the same epoch, we keep allocating from
  this pool and udpate correponding counter, updating to next one.
- When epoch ends, we reset the counter to 0 so that we can reuse all 
- memory and there is no need to release the memory of recording entries. 
-            
+ When epoch ends, we reset the counter to 0 so that we can reuse all
+ memory and there is no need to release the memory of recording entries.
+
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
@@ -27,41 +27,39 @@
 #include "mm.hh"
 #include "xdefines.hh"
 
-template <class Entry>
-class RecordEntries {
+template <class Entry> class RecordEntries {
 public:
-  RecordEntries() 
-  {
-  }
+  RecordEntries() {}
 
   void initialize(int entries) {
-    void * ptr;
+    void* ptr;
     int i = 0;
 
     _size = alignup(entries * sizeof(Entry), xdefines::PageSize);
     ptr = MM::mmapAllocatePrivate(_size);
-    if(ptr == NULL)  {
+    if(ptr == NULL) {
       PRWRN("%d fail to allocate sync event pool entries : %s\n", getpid(), strerror(errno));
       ::abort();
     }
 
-  //  PRINT("recordentries.h::initialize at _cur at %p. memory from %p to 0x%lx\n", &_cur, ptr, (((unsigned long)ptr) + _size));	
+    //  PRINT("recordentries.h::initialize at _cur at %p. memory from %p to 0x%lx\n", &_cur, ptr,
+    // (((unsigned long)ptr) + _size));
     // start to initialize it.
-    _start = (Entry *)ptr;
+    _start = (Entry*)ptr;
     _cur = 0;
     _total = entries;
     _iter = 0;
     return;
   }
 
-  Entry * alloc() {
-    Entry * entry = NULL;
-    if (_cur < _total) {
-      entry = (Entry *)&_start[_cur];
+  Entry* alloc() {
+    Entry* entry = NULL;
+    if(_cur < _total) {
+      entry = (Entry*)&_start[_cur];
       _cur++;
     } else {
       // There are no enough entries now; re-allocate new entries now.
-      PRWRN ("Not enough entries, now _cur %lu, _total %lu at %p!!!\n", _cur, _total, &_cur);
+      PRWRN("Not enough entries, now _cur %lu, _total %lu at %p!!!\n", _cur, _total, &_cur);
       ::abort();
     }
     return entry;
@@ -72,30 +70,23 @@ public:
     _cur = 0;
   }
 
-  void prepareRollback() {
-    _iter = 0;
-  }
+  void prepareRollback() { _iter = 0; }
 
-  void prepareIteration() {
-    _iter = 0;
-  }
+  void prepareIteration() { _iter = 0; }
 
-  inline Entry * getEntry(size_t index) {
-    return &_start[index];
-  }
+  inline Entry* getEntry(size_t index) { return &_start[index]; }
 
-  Entry * nextIterEntry() {
+  Entry* nextIterEntry() {
     _iter++;
     if(_iter < _cur) {
       return getEntry(_iter);
-    }
-    else {
+    } else {
       return NULL;
     }
   }
-  
-  Entry * retrieveIterEntry() {
-    Entry * entry = NULL;
+
+  Entry* retrieveIterEntry() {
+    Entry* entry = NULL;
     if(_iter < _cur) {
       entry = getEntry(_iter);
       _iter++;
@@ -104,8 +95,8 @@ public:
   }
 
   // No change on iteration entry.
-  Entry * getEntry() {
-    Entry * entry = NULL;
+  Entry* getEntry() {
+    Entry* entry = NULL;
     if(_iter < _cur) {
       entry = getEntry(_iter);
     }
@@ -113,20 +104,16 @@ public:
   }
 
   // Only called in the replay
-  Entry * firstIterEntry() {
-    return &_start[_iter];
-  }
+  Entry* firstIterEntry() { return &_start[_iter]; }
 
-  size_t getEntriesNumb() {
-    return _cur;
-  }
+  size_t getEntriesNumb() { return _cur; }
 
 private:
-  Entry * _start; 
-  size_t _total; 
+  Entry* _start;
+  size_t _total;
   size_t _cur;
-  size_t _size; 
-  size_t _iter; 
+  size_t _size;
+  size_t _iter;
 };
 
 #endif

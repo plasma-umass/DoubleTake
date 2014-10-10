@@ -18,92 +18,69 @@
 #include "log.hh"
 #include "xdefines.hh"
 
-template <
-    class KeyType, // What is the key? A long or string
-    class ValueType, // What is the value there?
-    class LockType,
-    class SourceHeap > // Where to call malloc  
+template <class KeyType,                    // What is the key? A long or string
+          class ValueType,                  // What is the value there?
+          class LockType, class SourceHeap> // Where to call malloc
 class HashMap {
 
   // Each entry has a lock.
   struct HashEntry {
-  	list_t      list;
-    // Each entry has a separate lock 
-    LockType    lock;  
-    size_t      count; // How many _entries in this list
+    list_t list;
+    // Each entry has a separate lock
+    LockType lock;
+    size_t count; // How many _entries in this list
 
     void initialize() {
       count = 0;
       listInit(&list);
-      LockInit();  
-    } 
-   
-    void Lock() {
-      lock.lock();
-    }
-    void Unlock() {
-      lock.unlock();
-    }
-    void LockInit() {
-      lock.init();
+      LockInit();
     }
 
-    void * getFirstEntry() {
-      return (void *)list.next;
-    }
+    void Lock() { lock.lock(); }
+    void Unlock() { lock.unlock(); }
+    void LockInit() { lock.init(); }
 
+    void* getFirstEntry() { return (void*)list.next; }
   };
 
   struct Entry {
-  	list_t      list;
-    KeyType     key;
-    size_t      keylen;
-    ValueType   value;
+    list_t list;
+    KeyType key;
+    size_t keylen;
+    ValueType value;
 
-    void initialize(KeyType ikey = 0, int ikeylen = 0, ValueType ivalue = 0 ) {
+    void initialize(KeyType ikey = 0, int ikeylen = 0, ValueType ivalue = 0) {
       listInit(&list);
       key = ikey;
       keylen = ikeylen;
       value = ivalue;
     }
 
-    void erase() {
-      listRemoveNode(&list);
-    }
-    
-    struct Entry * nextEntry() {
-      return (struct Entry *)list.next;
-    }
+    void erase() { listRemoveNode(&list); }
 
-    ValueType getValue() {
-      return value;
-    }
+    struct Entry* nextEntry() { return (struct Entry*)list.next; }
 
-    KeyType getKey() {
-      return key;
-    }
+    ValueType getValue() { return value; }
+
+    KeyType getKey() { return key; }
   };
 
   bool _initialized;
-	struct HashEntry *_entries;
-	size_t _buckets; // How many buckets in total
-	size_t _bucketsUsed; // How many buckets in total
+  struct HashEntry* _entries;
+  size_t _buckets;     // How many buckets in total
+  size_t _bucketsUsed; // How many buckets in total
 
-typedef bool (*keycmpFuncPtr) (const KeyType, const KeyType, size_t);
-typedef size_t (*hashFuncPtr) (const KeyType, size_t);
-	keycmpFuncPtr _keycmp;
-  hashFuncPtr   _hashfunc;
+  typedef bool (*keycmpFuncPtr)(const KeyType, const KeyType, size_t);
+  typedef size_t (*hashFuncPtr)(const KeyType, size_t);
+  keycmpFuncPtr _keycmp;
+  hashFuncPtr _hashfunc;
 
 public:
-
-  HashMap() 
-  : _initialized(false)
-  {
-//    printf("RESET hashmap at %p\n", &_initialized);
+  HashMap() : _initialized(false) {
+    //    printf("RESET hashmap at %p\n", &_initialized);
   }
 
-  void initialize(hashFuncPtr hfunc, keycmpFuncPtr kcmp, const size_t size = 4096) 
-  {
+  void initialize(hashFuncPtr hfunc, keycmpFuncPtr kcmp, const size_t size = 4096) {
     _entries = NULL;
     _bucketsUsed = 0;
     _buckets = size;
@@ -116,14 +93,15 @@ public:
     // Initialize those functions.
     _hashfunc = hfunc;
     _keycmp = kcmp;
- 
-    // Allocated predefined size.
-    _entries = (struct HashEntry *)SourceHeap::allocate(size * sizeof(struct HashEntry));
-//    PRINF("hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(), getThreadIndex());
-//    PRINF("hashmap initialization _entries %p\n", _entries);
 
-    // Initialize all of these _entries. 
-    struct HashEntry * entry;
+    // Allocated predefined size.
+    _entries = (struct HashEntry*)SourceHeap::allocate(size * sizeof(struct HashEntry));
+    //    PRINF("hashmap initialization at %p pid %d index %d\n", &_initialized,getpid(),
+    // getThreadIndex());
+    //    PRINF("hashmap initialization _entries %p\n", _entries);
+
+    // Initialize all of these _entries.
+    struct HashEntry* entry;
     for(size_t i = 0; i < size; i++) {
       entry = getHashEntry(i);
       entry->initialize();
@@ -131,61 +109,61 @@ public:
     _initialized = true;
   }
 
-  inline struct HashEntry * getHashEntry(size_t index) {
+  inline struct HashEntry* getHashEntry(size_t index) {
     if(index < _buckets) {
       return &_entries[index];
-    }
-    else {
+    } else {
       return NULL;
     }
   }
 
-  inline size_t hashIndex(const KeyType & key, size_t keylen) {
+  inline size_t hashIndex(const KeyType& key, size_t keylen) {
     size_t hkey = _hashfunc(key, keylen);
-    return hkey % _buckets; 
+    return hkey % _buckets;
   }
 
   // Look up whether an entry is existing or not.
   // If existing, return true. *value should be carried specific value for this key.
   // Otherwise, return false.
-  bool find(const KeyType & key, size_t keylen, ValueType *value) {
+  bool find(const KeyType& key, size_t keylen, ValueType* value) {
     assert(_initialized == true);
     size_t hindex = hashIndex(key, keylen);
-    struct HashEntry * first = getHashEntry(hindex);
-    struct Entry * entry = getEntry(first, key, keylen);
+    struct HashEntry* first = getHashEntry(hindex);
+    struct Entry* entry = getEntry(first, key, keylen);
     bool isFound = false;
 
-    if(entry) {    
+    if(entry) {
       *value = entry->value;
       isFound = true;
     }
 
-    return isFound; 
-  } 
+    return isFound;
+  }
 
-  void insert(const KeyType & key, size_t keylen, ValueType value) {
+  void insert(const KeyType& key, size_t keylen, ValueType value) {
     if(_initialized != true) {
-      PRINT("process %d index %d: initialized at  %p hashmap is not true\n", getpid(), getThreadIndex(), &_initialized);
+      PRINT("process %d index %d: initialized at  %p hashmap is not true\n", getpid(),
+            getThreadIndex(), &_initialized);
     }
 
     assert(_initialized == true);
     size_t hindex = hashIndex(key, keylen);
-    //PRINF("Insert entry:  before inserting\n"); 
-    struct HashEntry * first = getHashEntry(hindex);
-  
-    //PRINF("Insert entry: key %p\n", key); 
-    first->Lock(); 
-    insertEntry(first, key, keylen, value); 
-    first->Unlock(); 
+    // PRINF("Insert entry:  before inserting\n");
+    struct HashEntry* first = getHashEntry(hindex);
+
+    // PRINF("Insert entry: key %p\n", key);
+    first->Lock();
+    insertEntry(first, key, keylen, value);
+    first->Unlock();
   }
 
   // Insert a hash table entry if it is not existing.
   // If the entry is already existing, return true
-  bool insertIfAbsent(const KeyType & key, size_t keylen, ValueType value) {
+  bool insertIfAbsent(const KeyType& key, size_t keylen, ValueType value) {
     assert(_initialized == true);
     size_t hindex = hashIndex(key, keylen);
-    struct HashEntry * first = getHashEntry(hindex);
-    struct Entry * entry;
+    struct HashEntry* first = getHashEntry(hindex);
+    struct Entry* entry;
     bool isFound = true;
 
     first->Lock();
@@ -199,22 +177,22 @@ public:
 
     first->Unlock();
 
-    return isFound; 
-  } 
- 
-  // Free an entry with specified 
-  bool erase(const KeyType & key, size_t keylen) {
+    return isFound;
+  }
+
+  // Free an entry with specified
+  bool erase(const KeyType& key, size_t keylen) {
     assert(_initialized == true);
     size_t hindex = hashIndex(key, keylen);
-    struct HashEntry * first = getHashEntry(hindex);
-    struct Entry * entry;
+    struct HashEntry* first = getHashEntry(hindex);
+    struct Entry* entry;
     bool isFound = false;
- 
+
     first->Lock();
-   
+
     entry = getEntry(first, key, keylen);
 
-//    PRINF("Erapse the entry key %p entry %p\n", key, entry);
+    //    PRINF("Erapse the entry key %p entry %p\n", key, entry);
     if(entry) {
       isFound = true;
 
@@ -232,40 +210,38 @@ public:
     return isFound;
   }
 
-  // Clear all _entries 
-  void clear() {
+  // Clear all _entries
+  void clear() {}
 
-
-  }
-
-private:  
+private:
   // Create a new Entry with specified key and value.
-  struct Entry * createNewEntry(const KeyType & key, size_t keylen, ValueType value) {
-    struct Entry * entry  = (struct Entry *)SourceHeap::allocate(sizeof(struct Entry));
+  struct Entry* createNewEntry(const KeyType& key, size_t keylen, ValueType value) {
+    struct Entry* entry = (struct Entry*)SourceHeap::allocate(sizeof(struct Entry));
 
-    // Initialize this new entry. 
+    // Initialize this new entry.
     entry->initialize(key, keylen, value);
     return entry;
   }
 
-  void insertEntry(struct HashEntry * head, const KeyType & key, size_t keylen, ValueType value) {
+  void insertEntry(struct HashEntry* head, const KeyType& key, size_t keylen, ValueType value) {
     // Check whether the first entry is empty or not.
     // Create an entry
-    struct Entry * entry = createNewEntry(key, keylen, value);
+    struct Entry* entry = createNewEntry(key, keylen, value);
     listInsertTail(&entry->list, &head->list);
     head->count++;
-		PRINF("insertEntry entry %p at head %p, headcount %ld\n", entry, head, head->count);
-		PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", entry, entry->list.next, head, &head->list, head->list.next);
+    PRINF("insertEntry entry %p at head %p, headcount %ld\n", entry, head, head->count);
+    PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", entry,
+          entry->list.next, head, &head->list, head->list.next);
   }
- 
-  // Search the entry in the corresponding list. 
-  struct Entry * getEntry(struct HashEntry * first, const KeyType & key, size_t keylen) {
-    struct Entry * entry = (struct Entry *)first->getFirstEntry();
-    struct Entry * result = NULL;
+
+  // Search the entry in the corresponding list.
+  struct Entry* getEntry(struct HashEntry* first, const KeyType& key, size_t keylen) {
+    struct Entry* entry = (struct Entry*)first->getFirstEntry();
+    struct Entry* result = NULL;
 
     // Check all _entries with the same hindex.
     int count = first->count;
-    //PRINF("getEntry count is %d\n", count);
+    // PRINF("getEntry count is %d\n", count);
     while(count > 0) {
       if(entry->keylen == keylen && _keycmp(entry->key, key, keylen)) {
         result = entry;
@@ -280,111 +256,102 @@ private:
   }
 
 public:
-
-  class iterator
-  {
+  class iterator {
     friend class HashMap<KeyType, ValueType, LockType, SourceHeap>;
-    struct Entry * _entry;         // Which entry in the current hash entry?
-    size_t _pos;                   // which bucket at the moment? [0, nbucket-1]
-    HashMap * _hashmap;
+    struct Entry* _entry; // Which entry in the current hash entry?
+    size_t _pos;          // which bucket at the moment? [0, nbucket-1]
+    HashMap* _hashmap;
 
-    public:
-    iterator(struct Entry * ientry = NULL, int ipos = 0, HashMap * imap = NULL) 
-    {
-//      cout << "In default constructor of iterator\n";
+  public:
+    iterator(struct Entry* ientry = NULL, int ipos = 0, HashMap* imap = NULL) {
+      //      cout << "In default constructor of iterator\n";
       _pos = ipos;
       _entry = ientry;
       _hashmap = imap;
     }
 
-    ~iterator()
-    {
-    }
-    
-    iterator& operator++(int unused)// in postfix ++
-    {
-  //    cout << "In postfix ++\n";
-      struct HashEntry * hashentry = _hashmap->getHashEntry(_pos);
+    ~iterator() {}
 
-			PRINF("firstentry %p its next %p hashentry first entry %p\n", _entry, _entry->list.next, hashentry);
-//			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry, _hashmap);
-			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry, _hashmap);
+    iterator& operator++(int unused) // in postfix ++
+    {
+      //    cout << "In postfix ++\n";
+      struct HashEntry* hashentry = _hashmap->getHashEntry(_pos);
+
+      PRINF("firstentry %p its next %p hashentry first entry %p\n", _entry, _entry->list.next,
+            hashentry);
+      //			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos,
+      //_entry, _hashmap);
+      PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry,
+            _hashmap);
       // Check whether this entry is the last entry in current hash entry.
       if(!isListTail(&_entry->list, &hashentry->list)) {
-//				PRINF("****enty->list->next %p, hashentry->list %p hashentry %p hashlist next %p\n", _entry->list.next, &hashentry->list, hashentry, hashentry->list.next);
-//				PRINF("opertor__, hashentry %p _pos %ld _entry %p _entry->list %p, _hashmap %p\n", hashentry, _pos, _entry, &_entry->list, _hashmap);
+        //				PRINF("****enty->list->next %p, hashentry->list %p hashentry %p hashlist next
+        //%p\n", _entry->list.next, &hashentry->list, hashentry, hashentry->list.next);
+        //				PRINF("opertor__, hashentry %p _pos %ld _entry %p _entry->list %p, _hashmap %p\n",
+        //hashentry, _pos, _entry, &_entry->list, _hashmap);
         // If not, then we simply get next entry. No need to change pos.
         _entry = _entry->nextEntry();
-      }
-      else {
+      } else {
         // Since current list is empty, we must search next hash entry.
         _pos++;
         while((hashentry = _hashmap->getHashEntry(_pos)) != NULL) {
           if(hashentry->count != 0) {
             // Now we can return it.
-            _entry = (struct Entry *)hashentry->getFirstEntry(); 
-            return *this; 
+            _entry = (struct Entry*)hashentry->getFirstEntry();
+            return *this;
           }
-          _pos++; 
-        } 
-        
+          _pos++;
+        }
+
         _entry = NULL;
       }
-        
+
       return *this;
     }
 
-    //iterator& operator -- ();
+    // iterator& operator -- ();
     // Iterpreted as a = b is treated as a.operator=(b)
-    iterator& operator=(const iterator & that) {
+    iterator& operator=(const iterator& that) {
       _entry = that._entry;
       _pos = that._pos;
       _hashmap = that._hashmap;
       return *this;
-    } 
-
-    bool operator==(const iterator& that) const
-    { return _entry == that._entry; }
-
-    bool operator != (const iterator& that) const
-    { return _entry != that._entry; }
-
-    ValueType getData() {
-      return _entry->getValue(); 
     }
 
-    KeyType getkey() {
-      return _entry->getKey();
-    } 
+    bool operator==(const iterator& that) const { return _entry == that._entry; }
+
+    bool operator!=(const iterator& that) const { return _entry != that._entry; }
+
+    ValueType getData() { return _entry->getValue(); }
+
+    KeyType getkey() { return _entry->getKey(); }
   };
 
   // Acquire the first entry of the hash table
   iterator begin() {
     size_t pos = 0;
-    struct HashEntry * head = NULL;
-    struct Entry * entry;
+    struct HashEntry* head = NULL;
+    struct Entry* entry;
 
-		//PRINF("in the beginiing of begin\n");
+    // PRINF("in the beginiing of begin\n");
     // Get the first non-null entry
     while(pos < _buckets) {
       head = getHashEntry(pos);
-			//PRINF("begin, head %p pos %ld head->count %ld\n", head, pos, head->count);
+      // PRINF("begin, head %p pos %ld head->count %ld\n", head, pos, head->count);
       if(head->count != 0) {
         // Now we can return it.
-        entry = (struct Entry *)head->getFirstEntry(); 
-			//	PRINF("In begin() function, head %p, firstentry %p, firstentry next %p\n", head, entry, entry->list.next);
-        return iterator(entry, pos, this); 
-      } 
+        entry = (struct Entry*)head->getFirstEntry();
+        //	PRINF("In begin() function, head %p, firstentry %p, firstentry next %p\n", head, entry,
+        //entry->list.next);
+        return iterator(entry, pos, this);
+      }
       pos++;
     }
 
     return end();
   }
 
-  iterator end() {
-    return iterator(NULL, 0, this); 
-  }
-
+  iterator end() { return iterator(NULL, 0, this); }
 };
 
 #endif

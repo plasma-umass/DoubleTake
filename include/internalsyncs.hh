@@ -3,7 +3,7 @@
 
 /*
  * @file   internalsyncs.h
- * @brief  Managing internal synchronizations 
+ * @brief  Managing internal synchronizations
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 

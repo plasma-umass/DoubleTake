@@ -41,40 +41,27 @@ struct regioninfo {
 class mapping {
 public:
   mapping() : _valid(false) {}
-  
-  mapping(uintptr_t base, uintptr_t limit, char* perms, size_t offset, std::string file) :
-      _valid(true), _base(base), _limit(limit),
-      _readable(perms[0] == 'r'), _writable(perms[1] == 'w'),
-      _executable(perms[2] == 'x'), _copy_on_write(perms[3] == 'p'),
-      _offset(offset), _file(file) {}
 
-  bool valid() const {
-    return _valid;
-  }
+  mapping(uintptr_t base, uintptr_t limit, char* perms, size_t offset, std::string file)
+      : _valid(true), _base(base), _limit(limit), _readable(perms[0] == 'r'),
+        _writable(perms[1] == 'w'), _executable(perms[2] == 'x'), _copy_on_write(perms[3] == 'p'),
+        _offset(offset), _file(file) {}
 
-  bool isText() const {
-    return _readable && !_writable && !_executable;
-  }
-  
-  bool isStack() const {
-    return _file == "[stack]";
-  }
-  
+  bool valid() const { return _valid; }
+
+  bool isText() const { return _readable && !_writable && !_executable; }
+
+  bool isStack() const { return _file == "[stack]"; }
+
   bool isGlobals() const {
     return _file.find("/") == 0 && _readable && _writable && !_executable && _copy_on_write;
   }
-  
-  uintptr_t getBase() const {
-    return _base;
-  }
-  
-  uintptr_t getLimit() const {
-    return _limit;
-  }
-  
-  const std::string& getFile() const {
-    return _file;
-  }
+
+  uintptr_t getBase() const { return _base; }
+
+  uintptr_t getLimit() const { return _limit; }
+
+  const std::string& getFile() const { return _file; }
 
 private:
   bool _valid;
@@ -103,27 +90,32 @@ static std::ifstream& operator>>(std::ifstream& f, mapping& m) {
 
     // Read in "<base>-<limit> <perms> <offset> <dev_major>:<dev_minor> <inode>"
     f >> std::hex >> base;
-    if(f.get() != '-') return f;
+    if(f.get() != '-')
+      return f;
     f >> std::hex >> limit;
 
-    if(f.get() != ' ') return f;
+    if(f.get() != ' ')
+      return f;
     f.get(perms, 5);
 
     f >> std::hex >> offset;
     f >> std::hex >> dev_major;
-    if(f.get() != ':') return f;
+    if(f.get() != ':')
+      return f;
     f >> std::hex >> dev_minor;
     f >> std::dec >> inode;
 
     // Skip over spaces and tabs
-    while(f.peek() == ' ' || f.peek() == '\t') { f.ignore(1); }
+    while(f.peek() == ' ' || f.peek() == '\t') {
+      f.ignore(1);
+    }
 
     // Read out the mapped file's path
     getline(f, path);
 
     m = mapping(base, limit, perms, offset, path);
   }
-  
+
   return f;
 }
 
@@ -131,27 +123,27 @@ class selfmap {
 public:
   static selfmap& getInstance() {
     static char buf[sizeof(selfmap)];
-    static selfmap * theOneTrueObject = new (buf) selfmap();
+    static selfmap* theOneTrueObject = new (buf) selfmap();
     return *theOneTrueObject;
   }
-  
+
   /// Check whether an address is inside the DoubleTake library itself.
-  bool isDoubleTakeLibrary(void * pcaddr) {
+  bool isDoubleTakeLibrary(void* pcaddr) {
     return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
   }
 
   /// Check whether an address is inside the main application.
-  bool isApplication(void * pcaddr) {
+  bool isApplication(void* pcaddr) {
     return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
   }
 
   // Print out the code information about an eip address.
   // Also try to print out the stack trace of given pcaddr.
   void printCallStack();
-  void printCallStack(int depth, void ** array);
-  static int getCallStack(void ** array);
-  
-  void getStackInformation(void** stackBottom, void ** stackTop) {
+  void printCallStack(int depth, void** array);
+  static int getCallStack(void** array);
+
+  void getStackInformation(void** stackBottom, void** stackTop) {
     for(const auto& entry : _mappings) {
       const mapping& m = entry.second;
       if(m.isStack()) {
@@ -163,8 +155,8 @@ public:
     fprintf(stderr, "Couldn't find stack mapping. Giving up.\n");
     abort();
   }
-  
-  /// Get information about global regions. 
+
+  /// Get information about global regions.
   void getTextRegions() {
     for(const auto& entry : _mappings) {
       const mapping& m = entry.second;
@@ -172,7 +164,7 @@ public:
         if(m.getFile().find("libdoubletake") != std::string::npos) {
           _doubletakeStart = (void*)m.getBase();
           _doubletakeEnd = (void*)m.getLimit();
-          
+
         } else if(m.getFile() == _main_exe) {
           _appTextStart = (void*)m.getBase();
           _appTextEnd = (void*)m.getLimit();
@@ -180,26 +172,25 @@ public:
       }
     }
   }
-  
+
   /// Collect all global regions.
-  void getGlobalRegions(regioninfo * regions, int * regionNumb) {
+  void getGlobalRegions(regioninfo* regions, int* regionNumb) {
     size_t index = 0;
-    
+
     for(const auto& entry : _mappings) {
       const mapping& m = entry.second;
-      
+
       if(m.isGlobals()) {
-        if(m.getFile() == _main_exe
-            || m.getFile().find("libc-") != std::string::npos
-            || m.getFile().find("libstdc++") != std::string::npos
-            || m.getFile().find("libpthread") != std::string::npos) {
-          
+        if(m.getFile() == _main_exe || m.getFile().find("libc-") != std::string::npos ||
+           m.getFile().find("libstdc++") != std::string::npos ||
+           m.getFile().find("libpthread") != std::string::npos) {
+
           regions[index].start = (void*)m.getBase();
           regions[index].end = (void*)m.getLimit();
           index++;
         }
       }
-      
+
       *regionNumb = index;
     }
   }
@@ -210,10 +201,10 @@ private:
     char buffer[PATH_MAX];
     Real::readlink("/prof/self/exe", buffer, PATH_MAX);
     _main_exe = std::string(buffer);
-    
+
     // Build the mappings data structure
     ifstream maps_file("/proc/self/maps");
-    
+
     while(maps_file.good() && !maps_file.eof()) {
       mapping m;
       maps_file >> m;
@@ -223,15 +214,14 @@ private:
     }
   }
 
-  std::map<interval, mapping,
-           std::less<interval>, 
-           HL::STLAllocator<std::pair<interval, mapping>, InternalHeapAllocator> > _mappings;
+  std::map<interval, mapping, std::less<interval>,
+           HL::STLAllocator<std::pair<interval, mapping>, InternalHeapAllocator>> _mappings;
 
   std::string _main_exe;
   void* _appTextStart;
   void* _appTextEnd;
   void* _doubletakeStart;
-  void* _doubletakeEnd; 
+  void* _doubletakeEnd;
 };
 
 #endif
