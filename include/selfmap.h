@@ -199,66 +199,31 @@ public:
       abort();
     } 
 
-    // Now we analyze each line of this maps file, looking for globals.
-    // We only take the second entry for libc and libstdc++,
-    // and only the first for the file.
-    int globalCount = 0;
-    int prevRegionNumb = 0;
- 
-    while (getline(iMapfile, curentry)) {
-      pmap p (curentry.c_str());
+    int index = 0;
+    uintptr_t prev_base = 0;
+    uintptr_t prev_limit = 0;
 
-      // Globals are read-write and copy-on-write = rw-p.
+    // Walk through lines in the /proc/self/maps file
+    while(getline(iMapfile, curentry)) {
+      pmap p(curentry.c_str());
+      
+      // Check if this page is readable, writeable, and copy-on-write
       if (strstr(p.prot, "rw-p") != NULL) {
-        //PRINT("p.file %p\n", p.file); 
-	      // Are we in the application, the C library, or the C++ library?
-	      // If so, add that region to the array.
-	      if((strstr(p.file, _filename) != NULL) ||
-           (strstr(p.file, "libc-") != NULL) ||
-	         (strstr(p.file, "libstdc++") != NULL) ||
-	         (strstr(p.file, "libpthread") != NULL))
-        {
-          globalCount++;
-      //    fprintf(stderr, "p.file %s regionNumb %d\n", p.file, *regionNumb);
-
-          if(globalCount == 1) {
-	          regions[*regionNumb].start = (void *) p.startaddr;
-	          regions[*regionNumb].end   = (void *) p.endaddr;
-            (*regionNumb)++;
-          //  PRINT("region number %d\n", *regionNumb);
-            assert(*regionNumb <= xdefines::NUM_GLOBALS);
-          }
-          else {
-            prevRegionNumb = *regionNumb - 1;
-            // We only update the end address when there are more than one entry.
-            if(regions[prevRegionNumb].end != (void *)p.startaddr) {
-              // We assume that two map entries are continuous!! Fixme if not.
-//              PRINT("previous end %p current startaddr %lx\n", regions[prevRegionNumb].end, p.startaddr);
-              regions[*regionNumb].start = (void *) p.startaddr;
-              regions[*regionNumb].end   = (void *) p.endaddr;
-              (*regionNumb)++;
-            }
-            else {
-              // Combine the new entry to the previous entry
-              assert(regions[prevRegionNumb].end == (void *)p.startaddr);
-	            regions[prevRegionNumb].end   = (void *) p.endaddr;
-            }
-          } 
-	      }
-        else if(globalCount > 0) {
-          prevRegionNumb = *regionNumb - 1;
+        // Include the main executable, libc, libstdc++, and libpthread
+	      if(strstr(p.file, _filename) != NULL ||
+           strstr(p.file, "libc-") != NULL ||
+	         strstr(p.file, "libstdc++") != NULL ||
+	         strstr(p.file, "libpthread") != NULL) {
           
-          // Those marked as "[heap]" should be added to the same map if existing.
-          if(regions[prevRegionNumb].end == (void *)p.startaddr) {
-	          regions[prevRegionNumb].end   = (void *) p.endaddr;
-          }
+          regions[index].start = (void*)p.startaddr;
+          regions[index].end = (void*)p.endaddr;
+          index++;
         }
       }
-      else {
-        globalCount = 0;
-      }
     }
-    iMapfile.close();
+    
+    // Save the entry count
+    *regionNumb = index;
   }
   
 private:
