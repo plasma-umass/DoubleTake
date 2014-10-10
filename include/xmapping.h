@@ -9,46 +9,30 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include <set>
-#include <list>
-#include <vector>
-
 #if !defined(_WIN32)
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
 
-#include <algorithm> //sort
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xmmintrin.h>
-
-#include "xdefines.h"
 
 #include "mm.h"
 #include "sentinelmap.h"
+#include "xdefines.h"
 
 using namespace std;
 
 class xmapping {
 public:
 
-  xmapping() 
-    : _startaddr (NULL),
-      _startsize (0)
-  {
-
-  }
-  
-  virtual ~xmapping() {
-  }
+  xmapping() : _startaddr(NULL), _startsize(0) {}
 
   // Initialize the map and corresponding part.
-  void initialize(void * startaddr = 0, size_t size = 0, void * heapstart = NULL)
-  {
+  void initialize(void * startaddr = 0, size_t size = 0, void * heapstart = NULL) {
     REQUIRE(size % xdefines::PageSize == 0, "Wrong size %lx, should be page aligned", size);
     PRINF("xmapping starts at %p, size %lx", startaddr, size);
     
