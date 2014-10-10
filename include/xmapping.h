@@ -68,17 +68,6 @@ public:
     _startsize = size;
     _startaddr = (void *)_userMemory;
     _endaddr = (void *)((intptr_t)_userMemory + _startsize);
-
-    // bitmap bits
-#ifndef NDEBUG
-   //fprintf (stderr, "transient = %p, size = %lx, _startaddr %p, _endaddr %p\n", _userMemory, _startsize, _startaddr, _endaddr);
-#endif
-
-#ifdef SSE_SUPPORT	
-    // A string of one bits.
-    allones = _mm_setzero_si128();
-    allones = _mm_cmpeq_epi32(allones, allones); 
-#endif
   }
 
   // Do nothing 
@@ -122,7 +111,7 @@ public:
     }
 
     // Copy everything to _backupMemory From _userMemory
-    customMemcpy(_backupMemory, _userMemory, sz);
+    memcpy(_backupMemory, _userMemory, sz);
   }
 
   // How to commit some memory
@@ -130,7 +119,7 @@ public:
     size_t offset = (intptr_t)start - (intptr_t)base();
  
     void * dest = (void *)((intptr_t)_backupMemory + offset);
-    customMemcpy(dest, start, size);
+    memcpy(dest, start, size);
   }
 
   // Release all temporary pages.
@@ -146,58 +135,10 @@ public:
     }
 
     //PRINF("Recover memory %p end %p size %lx\n", _userMemory, end, sz);
-    customMemcpy(_userMemory, _backupMemory, sz);
-  }
-
-  void customMemcpy(void * dest, void * src, size_t len) {
-#ifdef SSE_SUPPORT
-#define PREFETCH "prefetchnta"
-    char * from = (char *)src;
-    char * to = (char *)dest;
-
-     void *retval;
-     size_t i;
-     retval = to;
-     i = len >> 6; /* len/64 */
-//     i = 64; /* len/64 */
-  __asm__ __volatile__ (
-             PREFETCH" (%0)\n"
-             PREFETCH" 64(%0)\n"
-             PREFETCH" 128(%0)\n"
-             PREFETCH" 192(%0)\n"
-             PREFETCH" 256(%0)\n"
-              : : "r" (from) );
-     /*
-        Only if SRC is aligned on 16-byte boundary.
-        It allows to use movaps instead of movups, which required data
-        to be aligned or a general-protection exception (#GP) is generated.
-     */
-    for(; i>0; i--)
-    {
-         __asm__ __volatile__ (
-         PREFETCH" 320(%0)\n"
-         "movaps (%0), %%xmm0\n"
-         "movaps 16(%0), %%xmm1\n"
-         "movaps 32(%0), %%xmm2\n"
-         "movaps 48(%0), %%xmm3\n"
-         "movntps %%xmm0, (%1)\n"
-         "movntps %%xmm1, 16(%1)\n"
-         "movntps %%xmm2, 32(%1)\n"
-         "movntps %%xmm3, 48(%1)\n"
-         :: "r" (from), "r" (to) : "memory");
-         from+=64;
-         to+=64;
-    }
-    __asm__ __volatile__ ("sfence":::"memory");
-
-//    #error "need support for memcpy"
-#else
-    memcpy(dest, src, len);
-#endif
+    memcpy(_userMemory, _backupMemory, sz);
   }
 
 private:
-
   /// The starting address of the region.
   void * _startaddr;
 
@@ -214,13 +155,6 @@ private:
 
   /// The persistent (backed to disk) memory.
   char * _backupMemory;
-
-  /// Should we use the same framework as bitmap 
-#ifdef SSE_SUPPORT
-  // A string of one bits, only useful when we are having SSE_SUPPORT.
-  __m128i allones;
-#endif
-
 };
 
 #endif
