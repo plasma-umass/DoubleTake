@@ -8,21 +8,20 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include <sys/types.h>
 #include <syscall.h>
+#include <sys/types.h>
 #include <sys/syscall.h>
-#include "xdefines.h"
-//#include "atomic.h"
-//#include "xmemory.h"
-#include "real.h"
-#include "threadinfo.h"
+
 #include "globalinfo.h"
-//#include "syscalls.h"
-#include "threadmap.h"
-#include "record.h"
-#include "synceventlist.h"
 #include "internalsyncs.h"
 #include "list.h"
+#include "real.h"
+#include "record.h"
+#include "selfmap.h"
+#include "synceventlist.h"
+#include "threadinfo.h"
+#include "threadmap.h"
+#include "xdefines.h"
 
 class xthread {
 

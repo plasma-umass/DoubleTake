@@ -33,7 +33,7 @@ public:
     selfmap::getInstance().getTextRegions();
 
     // Trying to get the information of global regions
-    selfmap::getInstance().getGlobalRegions(&_gRegions[0], &_numbRegions);
+    selfmap::getInstance().getGlobalRegions(_gRegions, &_numbRegions);
 
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {

@@ -52,13 +52,13 @@
 #include <utime.h>
 
 #define DECLARE_WRAPPER(name, handle) \
-  typeof(::name) * Real::name;
+  decltype(::name) * Real::name;
 
 #define DEFINE_WRAPPER(name, handle) \
-  static typeof(::name) * name;
+  static decltype(::name) * name;
 
 #define INIT_WRAPPER(name, handle) \
-  name = (typeof(::name)*)dlsym(handle, #name); 
+  name = (decltype(::name)*)dlsym(handle, #name); 
 
 class Real {
 private:

@@ -19,222 +19,215 @@
 #include <string.h>
 #include <ucontext.h>
 
+#include "internalheap.h"
+#include "interval.h"
 #include "real.h"
 #include "xdefines.h"
 
 using namespace std;
 
 struct regioninfo {
-  void * start;
-  void * end; 
+  void* start;
+  void* end;
 };
 
-class selfmap {
+/**
+ * A single mapping parsed from the /proc/self/maps file
+ */
+class mapping {
 public:
+  mapping() : _valid(false) {}
+  
+  mapping(uintptr_t base, uintptr_t limit, char* perms, size_t offset, std::string file) :
+      _valid(true), _base(base), _limit(limit),
+      _readable(perms[0] == 'r'), _writable(perms[1] == 'w'),
+      _executable(perms[2] == 'x'), _copy_on_write(perms[3] == 'p'),
+      _offset(offset), _file(file) {}
 
-  /// @brief Check whether an address is inside the DoubleTake library itself.
-  bool isDoubleTakeLibrary (void * pcaddr) {
-    return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
+  bool valid() const {
+    return _valid;
   }
 
-  /// @brief Check whether an address is inside the main application.
-  bool isApplication(void * pcaddr) {
-    //fprintf(stderr, "Application information: start %p end %p pcaddr %p\n", _appTextStart, _appTextEnd, pcaddr);
-    return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
+  bool isText() const {
+    return _readable && !_writable && !_executable;
+  }
+  
+  bool isStack() const {
+    return _file == "[stack]";
+  }
+  
+  bool isGlobals() const {
+    return _file.find("/") == 0 && _readable && _writable && !_executable && _copy_on_write;
+  }
+  
+  uintptr_t getBase() const {
+    return _base;
+  }
+  
+  uintptr_t getLimit() const {
+    return _limit;
+  }
+  
+  const std::string& getFile() const {
+    return _file;
   }
 
 private:
+  bool _valid;
+  uintptr_t _base;
+  uintptr_t _limit;
+  size_t _offset;
+  std::string _file;
+  bool _readable;
+  bool _writable;
+  bool _executable;
+  bool _copy_on_write;
+};
 
-  // A class that represents process information, extracted from the maps file.
-  class pmap {
-  public:
+/// Read a mapping from a file input stream
+static std::ifstream& operator>>(std::ifstream& f, mapping& m) {
+  if(f.good() && !f.eof()) {
+    uintptr_t base, limit;
+    char perms[5];
+    size_t offset;
+    size_t dev_major, dev_minor;
+    int inode;
+    string path;
 
-    /// @brief Extract information from one line of a /proc/<pid>/maps file.
-    pmap (const char * str)
-    {
-      // Cleanup old data
-      file[0] = '\0';
-      sscanf (str, "%lx-%lx %4s %lx %x:%x %lu %s",
-	      &startaddr, &endaddr, prot, &offset, &dev1, &dev2, &inode, file);
-     // fprintf(stderr, "startaddr %lx endaddr %lx prot %s\n", startaddr, endaddr, prot); 
-    }
+    // Skip over whitespace
+    f >> std::skipws;
+
+    // Read in "<base>-<limit> <perms> <offset> <dev_major>:<dev_minor> <inode>"
+    f >> std::hex >> base;
+    if(f.get() != '-') return f;
+    f >> std::hex >> limit;
+
+    if(f.get() != ' ') return f;
+    f.get(perms, 5);
+
+    f >> std::hex >> offset;
+    f >> std::hex >> dev_major;
+    if(f.get() != ':') return f;
+    f >> std::hex >> dev_minor;
+    f >> std::dec >> inode;
+
+    // Skip over spaces and tabs
+    while(f.peek() == ' ' || f.peek() == '\t') { f.ignore(1); }
+
+    // Read out the mapped file's path
+    getline(f, path);
+
+    m = mapping(base, limit, perms, offset, path);
+  }
   
-    uintptr_t startaddr, endaddr;
-    size_t offset, inode;
-    char file[PATH_MAX];
-    char prot[4];
-    unsigned int dev1, dev2;
-  };
+  return f;
+}
 
+class selfmap {
 public:
-
   static selfmap& getInstance() {
     static char buf[sizeof(selfmap)];
     static selfmap * theOneTrueObject = new (buf) selfmap();
     return *theOneTrueObject;
   }
+  
+  /// Check whether an address is inside the DoubleTake library itself.
+  bool isDoubleTakeLibrary(void * pcaddr) {
+    return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
+  }
+
+  /// Check whether an address is inside the main application.
+  bool isApplication(void * pcaddr) {
+    return ((pcaddr >= _appTextStart) && (pcaddr <= _appTextEnd));
+  }
 
   // Print out the code information about an eip address.
   // Also try to print out the stack trace of given pcaddr.
-  void printCallStack ();
-  void printCallStack (int depth, void ** array);
-  static int getCallStack (void ** array);
-
-  /// @brief Get information about global regions. 
-  void getTextRegions() 
-  {
-    //    printf ("getting text regions.\n");
-
-    ifstream iMapfile;
-    string curentry;
-
-    // Get application file name.
-    int count = Real::readlink("/proc/self/exe", _filename, PATH_MAX);
-    if (count <= 0 || count >= PATH_MAX)
-    {
-	    PRWRN("Failed to get current executable file name\n" );
-	    exit(1);
-    }
-    _filename[count] = '\0';
-
-    // Read the maps to compute ranges for text regions (code).
-    try {
-      iMapfile.open("/proc/self/maps");
-    } catch(...) {
-      PRWRN("can't open /proc/self/maps, exit now\n");
-      abort();
-    } 
-
-    // Now we analyze each line of the map file.
-    _appTextStart    = (void *) (-1ULL);  // largest possible address
-    _appTextEnd      = (void *) 0ULL;     // smallest possible address
-    _libraryStart    = _appTextStart;
-    _libraryEnd      = _appTextEnd;
-
-    while (getline(iMapfile, curentry)) {
-
-      pmap p (curentry.c_str());
-      // Check whether this entry is the text segment of application.
-      if (strncmp(p.prot, "r-xp", 4) == 0) {
-	      // We're in a text segment.
-	    //  PRWRN ("file = %s\n", p.file);
-
-        // Check whether we are in DoubleTake, another library, or in
-        // the application itself.
-        if (strstr(p.file, "libdoubletake") != NULL) {
-          _doubletakeStart = (void *) p.startaddr;
-          _doubletakeEnd   = (void *) p.endaddr;
-        } else if (strcmp(p.file, _filename) == 0) {
-	        if (p.startaddr < (size_t) _appTextStart) {
-	          _appTextStart = (void *) p.startaddr;
-	        }
-	        if (p.endaddr > (size_t) _appTextEnd) {
-	          _appTextEnd = (void *) p.endaddr;
-	        }
-        } else if (strcmp(p.file, "lib")) {
-	        // Must be in a library.
-	        if (p.startaddr < (size_t) _libraryStart) {
-	          _libraryStart = (void *) p.startaddr;
-	        }
-	        if (p.endaddr > (size_t) _libraryEnd) {
-	          _libraryEnd = (void *) p.endaddr;
-	        }
-	      }
+  void printCallStack();
+  void printCallStack(int depth, void ** array);
+  static int getCallStack(void ** array);
+  
+  void getStackInformation(void** stackBottom, void ** stackTop) {
+    for(const auto& entry : _mappings) {
+      const mapping& m = entry.second;
+      if(m.isStack()) {
+        *stackBottom = (void*)m.getBase();
+        *stackTop = (void*)m.getLimit();
+        return;
       }
     }
-
-    iMapfile.close();
-
-    PRINF("INITIALIZATION: textStart %p textEnd %p doubletakeStart %p doubletakeEnd %p libStart %p libEnd %p\n", _appTextStart, _appTextEnd, _doubletakeStart, _doubletakeEnd, _libraryStart, _libraryEnd);
-    
+    fprintf(stderr, "Couldn't find stack mapping. Giving up.\n");
+    abort();
   }
-
-  /// @brief Extract stack bottom and top information.
-  void getStackInformation (void** stackBottom, void ** stackTop) {
-    //    printf ("getting stack info.\n");
-
-    using namespace std;
-    ifstream iMapfile;
-    string curentry;
-
-    try {
-      iMapfile.open("/proc/self/maps");
-    } catch(...) {
-      PRWRN("can't open /proc/self/maps, exiting now.\n");
-      abort();
-    } 
-
-    *stackBottom = NULL;
-    *stackTop    = NULL;
-
-    // Now we analyze each line of this maps file, looking for the stack.
-    while (getline(iMapfile, curentry)) {
-
-      pmap p (curentry.c_str());
-
-      // Find the entry for the stack.
-      if (strstr(p.file, "[stack]") != NULL) {
-	      *stackBottom = (void *) p.startaddr;
-	      *stackTop    = (void *) p.endaddr;
-	      // Got it. We're out.
-	      break;
-      }
-    }
-    iMapfile.close();
-    assert (*stackBottom != NULL);
-    assert (*stackTop != NULL);
-  }
-
-  /// @brief Collect all global regions.
-  void getGlobalRegions(regioninfo * regions, int * regionNumb) {
-    //    printf ("getting global regions.\n");
-    using namespace std;
-    ifstream iMapfile;
-    string curentry;
-
-    try {
-      iMapfile.open("/proc/self/maps");
-    } catch(...) {
-      PRWRN("can't open /proc/self/maps, exiting.\n");
-      abort();
-    } 
-
-    int index = 0;
-    uintptr_t prev_base = 0;
-    uintptr_t prev_limit = 0;
-
-    // Walk through lines in the /proc/self/maps file
-    while(getline(iMapfile, curentry)) {
-      pmap p(curentry.c_str());
-      
-      // Check if this page is readable, writeable, and copy-on-write
-      if (strstr(p.prot, "rw-p") != NULL) {
-        // Include the main executable, libc, libstdc++, and libpthread
-	      if(strstr(p.file, _filename) != NULL ||
-           strstr(p.file, "libc-") != NULL ||
-	         strstr(p.file, "libstdc++") != NULL ||
-	         strstr(p.file, "libpthread") != NULL) {
+  
+  /// Get information about global regions. 
+  void getTextRegions() {
+    for(const auto& entry : _mappings) {
+      const mapping& m = entry.second;
+      if(m.isText()) {
+        if(m.getFile().find("libdoubletake") != std::string::npos) {
+          _doubletakeStart = (void*)m.getBase();
+          _doubletakeEnd = (void*)m.getLimit();
           
-          regions[index].start = (void*)p.startaddr;
-          regions[index].end = (void*)p.endaddr;
-          index++;
+        } else if(m.getFile() == _main_exe) {
+          _appTextStart = (void*)m.getBase();
+          _appTextEnd = (void*)m.getLimit();
         }
       }
     }
-    
-    // Save the entry count
-    *regionNumb = index;
   }
   
+  /// Collect all global regions.
+  void getGlobalRegions(regioninfo * regions, int * regionNumb) {
+    size_t index = 0;
+    
+    for(const auto& entry : _mappings) {
+      const mapping& m = entry.second;
+      
+      if(m.isGlobals()) {
+        if(m.getFile() == _main_exe
+            || m.getFile().find("libc-") != std::string::npos
+            || m.getFile().find("libstdc++") != std::string::npos
+            || m.getFile().find("libpthread") != std::string::npos) {
+          
+          regions[index].start = (void*)m.getBase();
+          regions[index].end = (void*)m.getLimit();
+          index++;
+        }
+      }
+      
+      *regionNumb = index;
+    }
+  }
+
 private:
-  
-  char _filename[PATH_MAX];
-  void * _appTextStart;
-  void * _appTextEnd;
-  void * _libraryStart;
-  void * _libraryEnd; 
-  void * _doubletakeStart;
-  void * _doubletakeEnd; 
+  selfmap() {
+    // Read the name of the main executable
+    char buffer[PATH_MAX];
+    Real::readlink("/prof/self/exe", buffer, PATH_MAX);
+    _main_exe = std::string(buffer);
+    
+    // Build the mappings data structure
+    ifstream maps_file("/proc/self/maps");
+    
+    while(maps_file.good() && !maps_file.eof()) {
+      mapping m;
+      maps_file >> m;
+      if(m.valid()) {
+        _mappings[interval(m.getBase(), m.getLimit())] = m;
+      }
+    }
+  }
+
+  std::map<interval, mapping,
+           std::less<interval>, 
+           HL::STLAllocator<std::pair<interval, mapping>, InternalHeapAllocator> > _mappings;
+
+  std::string _main_exe;
+  void* _appTextStart;
+  void* _appTextEnd;
+  void* _doubletakeStart;
+  void* _doubletakeEnd; 
 };
 
 #endif

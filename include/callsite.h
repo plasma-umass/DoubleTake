@@ -7,21 +7,19 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */ 
 
+#include <stdio.h>
+
+#include "xdefines.h"
+
 class CallSite {
 public:
-  CallSite()
-  : _depth(0)
-  {
+  CallSite() : _depth(0) {}
 
-  }
-
-  unsigned long depth() 
-  {
+  unsigned long depth() {
     return _depth;
   }
 
-  void print()
-  {
+  void print() {
     for(int i = 0; i < _depth; i++) {
       printf("%p\t", _callsite[i]);
     }

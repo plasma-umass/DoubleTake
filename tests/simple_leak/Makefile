@@ -6,4 +6,5 @@ LDFLAGS := -L$(ROOT) -ldoubletake
 include $(ROOT)/common.mk
 
 test::
+	@printenv
 	@LD_LIBRARY_PATH=$(ROOT) ./simple_leak

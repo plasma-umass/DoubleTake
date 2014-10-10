@@ -71,8 +71,6 @@ public:
     
 		// Initialize the memory (install the memory handler)
     _memory.initialize();
-
-    _watchpoint.initialize();
     
 		syscallsInitialize();
 
