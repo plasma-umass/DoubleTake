@@ -22,16 +22,6 @@
 #include "real.h"
 #include "xdefines.h"
 
-//#include <libunwind-ptrace.h>
-//#include <sys/ptrace.h>
-
-
-#ifndef PRINF
-#define PRINF(fmt, ...)
-#define PRDBG(fmt, ...)
-#define PRWRN(fmt, ...) 
-#endif
-
 using namespace std;
 
 struct regioninfo {
