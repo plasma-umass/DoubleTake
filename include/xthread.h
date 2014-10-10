@@ -314,23 +314,24 @@ public:
   }
 
   /// Save those actual mutex address in original mutex.
-  int mutex_init(pthread_mutex_t * mutex, const pthread_mutexattr_t *attr) {
-    pthread_mutex_t * realMutex = NULL;
-    int result = 0;
-
+  int mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* attr) {
+    // TODO: The synchronization here is totally broken: initializer should read state, then check if
+    // init is needed. If so, then allocate and atomic compare exchange.
+    
     if(!global_isRollback()) {
-      // Allocate a real mutex.
-      realMutex=(pthread_mutex_t *)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
-
-//      PRINF("mutex_init with realMutex %p\n", realMutex);
-     	//PRINT("pthread_self %lx: MUTEX_INIT at line %d. Mutex %p realMutex %p\n", pthread_self(), __LINE__, mutex, realMutex); 
-      // Actually initialize this mutex
-      result = Real::pthread_mutex_init(realMutex, attr);
+      // Allocate a mutex
+      pthread_mutex_t* real_mutex = (pthread_mutex_t*)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
+      
+      // Initialize the real mutex
+      int result = Real::pthread_mutex_init(real_mutex, attr);
         
       // If we can't setup this entry, that means that this variable has been initialized.
-      setSyncEntry(mutex, realMutex, sizeof(pthread_mutex_t));
+      setSyncEntry(mutex, real_mutex, sizeof(pthread_mutex_t));
+      
+      return result;
     }
-    return result;
+    
+    return 0;
   }
 
 	inline bool isInvalidMutex(void * realMutex) {
@@ -688,8 +689,12 @@ private:
   }
 
   inline void setSyncEntry(void * syncvar, void * realvar, size_t size) {
-		unsigned long value = *((unsigned long *)syncvar);
-    if(!atomic_compare_and_swap((unsigned long *)syncvar, value, (unsigned long)realvar)) {
+		unsigned long* target = (unsigned long*)syncvar;
+    unsigned long expected = *(unsigned long*)target;
+    
+    
+    //if(!__sync_bool_compare_and_swap(target, expected, (unsigned long)realvar)) {
+    if(!__atomic_compare_exchange_n(target, &expected, (unsigned long)realvar, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
       deallocSyncEntry(realvar);
     }
     else {

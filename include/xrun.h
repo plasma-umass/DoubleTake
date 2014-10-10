@@ -8,17 +8,10 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#include "xdefines.h"
-
-// memory
 #include "internalheap.h"
-#include "xmemory.h"
-
-// Grace utilities
-#include "atomic.h"
-
 #include "real.h"
-
+#include "xdefines.h"
+#include "xmemory.h"
 #include "xthread.h"
 
 class xrun {

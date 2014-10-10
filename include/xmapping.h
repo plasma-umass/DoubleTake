@@ -26,8 +26,6 @@
 #include <string.h>
 #include <xmmintrin.h>
 
-#include "atomic.h"
-
 #include "xdefines.h"
 
 #include "mm.h"
