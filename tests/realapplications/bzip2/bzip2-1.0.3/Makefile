@@ -7,7 +7,7 @@ AR=ar
 RANLIB=ranlib
 LDFLAGS=
 
-DOUBLETAKELIB= -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so
+DOUBLETAKELIB= -rdynamic ../../../../libdoubletake.so
  
 BIGFILES=-D_FILE_OFFSET_BITS=64
 CFLAGS=-Wall -Winline -O -g $(BIGFILES)
