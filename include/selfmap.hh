@@ -199,7 +199,7 @@ private:
   selfmap() {
     // Read the name of the main executable
     char buffer[PATH_MAX];
-    Real::readlink("/prof/self/exe", buffer, PATH_MAX);
+    Real::readlink("/proc/self/exe", buffer, PATH_MAX);
     _main_exe = std::string(buffer);
 
     // Build the mappings data structure

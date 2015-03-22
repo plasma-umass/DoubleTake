@@ -33,7 +33,6 @@ public:
 
   void initialize(int entries) {
     void* ptr;
-    int i = 0;
 
     _size = alignup(entries * sizeof(Entry), xdefines::PageSize);
     ptr = MM::mmapAllocatePrivate(_size);

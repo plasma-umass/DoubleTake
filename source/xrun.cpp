@@ -75,7 +75,7 @@ void xrun::rollback() {
   // PRINF("\n\nset rollback\n\n\n");
 
   // Now we are going to rollback
-  PRINT("\n\nSTARTING ROLLBACK!!!\n\n\n");
+  //  PRINT("\n\nSTARTING ROLLBACK!!!\n\n\n");
   startRollback();
 
   assert(0);
@@ -132,11 +132,10 @@ void xrun::epochEnd(bool endOfProgram) {
 
   // To avoid endless rollback
   if(global_isRollback()) {
-    PRINT("in the endof epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
+    // PRINT("in the end of an epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
     while(1)
       ;
   }
-// PRINT("in the endof epoch, endOfProgram %d. global_isRollback not true\n", endOfProgram);
 
 #ifdef DEBUG_ROLLBACK
   rollback();
@@ -163,12 +162,12 @@ void xrun::epochEnd(bool endOfProgram) {
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
 #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
-  PRINF("in the endof epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
   } else {
 #elif defined(DETECT_OVERFLOW)
-  PRDBG("in the endof epoch, hasOverflow %d\n", hasOverflow);
+  PRDBG("in the end of an epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   } else {

@@ -31,7 +31,7 @@ void selfmap::printCallStack() {
   xthread::disableCheck();
   size = backtrace(array, 10);
   xthread::enableCheck();
-  // backtrace_symbols_fd(&array[0], size, 2);
+  //backtrace_symbols_fd(&array[0], size, 2);
 
   // Print out the source code information if it is a overflow site.
   selfmap::getInstance().printCallStack(size, &array[0]);
@@ -41,16 +41,15 @@ void selfmap::printCallStack() {
 void selfmap::printCallStack(int depth, void** array) {
   char buf[MAX_BUF_SIZE];
   int index = 0;
-  // fprintf(stderr, "printCallStack:_filename %s\n", _filename);
+  //  fprintf(stderr, "printCallStack(%d, %p)\n", depth, array);
   xthread::disableCheck();
   for(int i = 0; i < depth; i++) {
     void* addr = (void*)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
-    if(isApplication(addr)) {
+    if(true) { // EDB: was isApplication(addr)) {
       index++;
-      PRINT("\tcallstack frame %d: %p\t", index, addr);
+      //      PRINT("\tcallstack frame %d: %p\t", index, addr);
       // Print out the corresponding source code information
       sprintf(buf, "addr2line -e %s %p", _main_exe.c_str(), addr);
-      //  PRINT("%s\n", buf);
       system(buf);
     }
 #if 0

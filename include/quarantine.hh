@@ -53,7 +53,7 @@ inline bool hasUsageAfterFree(freeObject* object) {
   for(int i = 0; i < words; i++) {
     if(addr[i] != xdefines::SENTINEL_WORD) {
       hasUAF = true;
-      printf("Usage-after-free problem at address %p!!!!!!\n", &addr[i]);
+      printf("DoubleTake: Use-after-free detected at address %p.\n", &addr[i]);
       // install watchpoints on this point.
       watchpoint::getInstance().addWatchpoint(&addr[i], addr[i], OBJECT_TYPE_USEAFTERFREE,
                                               object->ptr, object->size);

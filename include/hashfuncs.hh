@@ -12,11 +12,11 @@
 
 class HashFuncs {
 public:
-  // The following functions are stole from stl library
+  // The following functions are borrowed from the STL.
   static size_t hashString(const void* start, size_t len) {
     unsigned long __h = 0;
     char* __s = (char*)start;
-    int i;
+    int i = 0;
 
     for(; i <= len; i++, ++__s)
       __h = 5 * __h + *__s;

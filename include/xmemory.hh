@@ -401,7 +401,6 @@ public:
 
   // Commit something without check the heap overflow
   void atomicCommit(void* addr, size_t size) {
-    int index;
 #if 0
     if (inRange (addr)) {
       _pheap.commit (addr, size);
@@ -413,18 +412,14 @@ public:
   inline void rollback() {
 
     // Release all private pages.
-    // PRINT("Recoverring the global memory\n");
     _globals.recoverMemory();
     _pheap.recoverMemory();
 
     _pheap.recoverHeapMetadata();
 
-    PRINT("INSTALL watching points!!!\n");
     // Now those watchpoints should be saved successfully,
     // We might have to install the watchpoints now.
     watchpoint::getInstance().installWatchpoints();
-    //  WARN("Recoverring the global memory, after install watchpoints\n");
-    // PRINT("After INSTALL watching points nowwwwww!!!\n");
   }
 
   /// Rollback only without install watchpoints.
@@ -444,7 +439,7 @@ public:
 
   inline void printCallsite() {
     selfmap::getInstance().printCallStack();
-    PRINF("Program exit becaue of double free or invalid free.\n");
+    PRINF("Program exited because of a double free or an invalid free.\n");
     exit(-1);
   }
 
@@ -476,7 +471,7 @@ public:
         // We simply check whether this area has sentinels or not.
         // If there exists some sentinels there, it is a possible overflow.
         hasProblem = sentinelmap::getInstance().hasSentinels(start, size);
-        PRINF("CAN NOT write to an area with sentinels\n");
+        PRINF("CANNOT write to an area with sentinels.\n");
       } else {
         hasProblem = true;
       }
@@ -500,7 +495,7 @@ public:
 #endif
     // double elapse = stop(&startTime, NULL);
     if(hasOverflow == false) {
-      // Check whether overflows and underflows has been detected
+      // Check whether overflows and underflows have been detected
       // in the normal execution phase, like free()
       if(watchpoint::getInstance().hasToRollback()) {
         hasOverflow = true;
@@ -514,6 +509,7 @@ public:
     return (o - 1);
   }
 
+  // EDB: why is this here? Looks like a copy-paste bug (see above).
   static objectHeader* getObject(void* ptr) {
     objectHeader* o = (objectHeader*)ptr;
     return (o - 1);

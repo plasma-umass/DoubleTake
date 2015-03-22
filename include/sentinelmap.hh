@@ -6,7 +6,7 @@
  * @brief  The management of global bit map.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
- *         Adopted from Diehard project.
+ *         Adapted from the DieHard project.
  */
 
 #include <assert.h>
@@ -86,8 +86,6 @@ public:
   // For example, we call this before irrevocable system calls if
   // this type of system call can not be rolled back safely.
   bool hasSentinels(void* addr, size_t size) {
-    bool hasSentinelInside = false;
-
     // Totally how many words are involved in this.
     unsigned long bits = getBitSize(size);
     unsigned long item = getIndex(addr);
@@ -104,8 +102,6 @@ public:
 
     int bytes = getMapBytes(size);
     unsigned long startIndex = getIndex(begin);
-
-    WORD* mapPos;
 
     int words = bytes / WORDBYTES;
     bool hasCorrupted = false;
@@ -327,7 +323,6 @@ private:
   }
 
   inline bool isCorruptedSentinel(void* addr) {
-    WORD curword = *((WORD*)addr);
     bool isCorrupted = false;
 
     // Calculate how many canary bytes here.
@@ -368,7 +363,6 @@ private:
       if(isBitSet(bits, i)) {
         if(address[i] != xdefines::SENTINEL_WORD &&
            address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
-          unsigned long* ptr = &address[i];
           bool isBadSentinel = false;
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.
@@ -433,7 +427,6 @@ private:
   // start address of bitmap.
   bitmap _bitmap;
 
-  bool _isObjectStart;
   // Word shift bits is used to calculate the word index given an address.
   int _wordShiftBits;
 

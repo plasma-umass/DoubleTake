@@ -124,7 +124,6 @@ public:
    */
   void prepareRollback() {
     struct aliveThread* ath;
-    thread_t* thread;
 
     // Search the whole list for given tid.
     ath = (struct aliveThread*)nextEntry(&_alivethreads);

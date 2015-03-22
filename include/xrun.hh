@@ -81,13 +81,13 @@ public:
     syscallsInitialize();
 
     epochBegin();
-    PRINT("starting!!!!!\n");
+    //    PRINT("starting!!!!!\n");
 
     //    PRINF("starting!!!!!\n");
   }
 
   void finalize() {
-    PRINT("%d: finalize now !!!!!\n", getpid());
+    //    PRINT("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
 #ifdef DETECT_USAGE_AFTER_FREE
@@ -97,7 +97,7 @@ public:
       epochEnd(true);
     }
 
-    PRINF("%d: finalize now !!!!!\n", getpid());
+    //    PRINF("%d: finalize now !!!!!\n", getpid());
     // Now we have to cleanup all semaphores.
     _thread.finalize();
   }

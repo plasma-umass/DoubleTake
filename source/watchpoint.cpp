@@ -47,7 +47,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
     // PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   } else {
     assert(objtype == OBJECT_TYPE_USEAFTERFREE);
-    PRINT("DoubleTake: Use-after-free error at address %p with value 0x%lx. \n", addr, value);
+    //    PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
   }
 
   if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
@@ -99,7 +99,7 @@ bool watchpoint::hasToRollback() { return _numWatchpoints > 0; }
 void watchpoint::installWatchpoints() {
   struct sigaction trap_action;
 
-  PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);
+  //  PRINT("installWatchpoints %d watchpoints %d!!!!!!!!!\n", __LINE__, _numWatchpoints);
   // We don't need to setup watchpoints if it is 0.
   if(_numWatchpoints == 0) {
     return;
@@ -115,12 +115,12 @@ void watchpoint::installWatchpoints() {
   wpinfo.count = _numWatchpoints;
   int perffd;
 
-  PRINT("Install watchpoints: _numWatchpoints %d\n", _numWatchpoints);
+  //  PRINT("Install watchpoints: _numWatchpoints %d\n", _numWatchpoints);
   // Get the initial value of different watchpoints.
   for(int i = 0; i < _numWatchpoints; i++) {
     // PRINT("Watchpoint %d: addr %p. _numWatchpoints %d\n", i, _wp[i].faultyaddr, _numWatchpoints);
     wpinfo.wp[i] = (unsigned long)_wp[i].faultyaddr;
-    PRINT("Watchpoint %d: addr %p\n", i, _wp[i].faultyaddr);
+    // PRINT("Watchpoint %d: addr %p\n", i, _wp[i].faultyaddr);
     // Update the values of those faulty address so that
     // we can compare those values to find out which watchpoint
     // are accessed since we don't want to check the debug status register
@@ -132,7 +132,7 @@ void watchpoint::installWatchpoints() {
     } else {
       install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, perffd);
     }
-    PRINT("Watchpoint %d: addr %p done\n", i, _wp[i].faultyaddr);
+    // PRINT("Watchpoint %d: addr %p done\n", i, _wp[i].faultyaddr);
   }
 
   // Now we can start those watchpoints.
@@ -156,7 +156,7 @@ int watchpoint::install_watchpoint(uintptr_t address, int sig, int group) {
     PRINT("Failed to open perf event file: %s\n", strerror(errno));
     abort();
   }
-  PRINT("Install watchpoint. perf_fd %d group %d\n", perf_fd, group);
+  // PRINT("Install watchpoint. perf_fd %d group %d\n", perf_fd, group);
 
   // Set the perf_event file to async mode
   if(Real::fcntl(perf_fd, F_SETFL, Real::fcntl(perf_fd, F_GETFL, 0) | O_ASYNC) == -1) {
@@ -242,9 +242,9 @@ void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context) {
 
   // Now we should check whether objectstart is existing or not.
   if(faultType == OBJECT_TYPE_OVERFLOW) {
-    PRINT("\nCaught heap overflow at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("\nCaught a heap overflow at %p. Current call stack:\n", object->faultyaddr);
   } else if(faultType == OBJECT_TYPE_USEAFTERFREE) {
-    PRINT("\nCaught use-after-free error at %p. Current call stack:\n", object->faultyaddr);
+    PRINT("\nCaught a use-after-free error at %p. Current call stack:\n", object->faultyaddr);
   }
   selfmap::getInstance().printCallStack(depth, (void**)&callsites);
 

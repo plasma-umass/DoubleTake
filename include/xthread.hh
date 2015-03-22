@@ -353,7 +353,7 @@ public:
   }
 
   int do_mutex_lock(void* mutex, thrSyncCmd synccmd) {
-    int ret;
+    int ret = 0;
     pthread_mutex_t* realMutex = NULL;
     SyncEventList* list = NULL;
 
@@ -727,7 +727,6 @@ private:
 
   // Newly created thread should call this.
   inline static void threadRegister(bool isMainThread) {
-    pid_t pid = syscall(SYS_getpid);
     pid_t tid = gettid();
     void* privateTop;
     size_t stackSize = __max_stack_size;
