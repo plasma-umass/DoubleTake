@@ -3,7 +3,7 @@ https://bugzilla.redhat.com/show_bug.cgi?id=226979
 Originally, it is a static array buffer overflow. We explicitly change it to a heap buffer 
 overflow problem. DoubleTake can detect this buffer overflow.
 
-Steps to reprodue this buffer overflow.
+Steps to reproduce this buffer overflow.
 $ DIR=$(perl -e 'print ((("x" x 200)."/") x 20)')
 $ mkdir -p $DIR
 $ ln -s $(which bzip2recover) $DIR
