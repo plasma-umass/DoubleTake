@@ -105,7 +105,7 @@ private:
     sops.sem_num = 0;
     sops.sem_op = val;
     sops.sem_flg = 0;
-    int retval = Real::semop(_semaId, &sops, 1);
+    /* int retval = */ Real::semop(_semaId, &sops, 1); // FIXME? throwing away return value.
   }
 
   int _semaKey;

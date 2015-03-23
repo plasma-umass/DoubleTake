@@ -119,11 +119,9 @@ public:
   // For the parent, because no one is running when spawnning, so there is no
   // need to call epochBegin().
   int thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFunction* fn, void* arg) {
-    void* ptr = NULL;
     int tindex;
     int result;
 
-    PRINF("****in the beginning of thread_create, *tid is %lx\n", *tid);
     if(!global_isRollback()) {
       // Lock and record
       global_lock();

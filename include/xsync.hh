@@ -173,23 +173,18 @@ public:
     struct SyncEntry* entry;
     SyncEventList* eventlist = NULL;
     void* syncvariable;
-    struct syncEvent* event;
-    thread_t* thread;
 
-    //		PRINT("PPPPPPPPPPPPPPPPREPARERollback now!!!!!!!!!PPPPPPPPPPPPPP\n");
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
       syncvariable = i.getkey();
       entry = (struct SyncEntry*)i.getData();
       if(syncvariable != entry) {
         // Setting the address
         setSyncVariable((void**)syncvariable, entry->realEntry);
-        //				PRINT("syncvariable %p realentry %p\n", syncvariable, entry->realEntry);
       }
 
       eventlist = entry->list;
       prepareEventListRollback(eventlist);
     }
-    //		PRINT("PPPPPPPPPPPPPPPPREPARERollback now!!!!!!!!!PPPPPPPPPPPPPP\n");
   }
 
   /*

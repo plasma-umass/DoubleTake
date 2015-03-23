@@ -234,10 +234,10 @@ public:
   }
 
   int closeDir(DIR* dir) {
-    int ret = 0;
     dirInfo* thisDir;
 
 #ifdef REPRODUCIBLE_FDS
+    int ret = 0;
     if(dir == NULL) {
       return 0;
     }
@@ -507,7 +507,7 @@ public:
   // There is no need to rollback any more.
   void cleanClosedFiles() {
     int fd = -1;
-    struct fileInfo* thisFile = NULL;
+    fileInfo* thisFile = NULL;
 
     while((getRecord()->retrieveFCloseList(&fd))) {
 
@@ -543,7 +543,7 @@ public:
 
     // When there is no need to rollback
     // we can remove the whole list.
-    struct dirInfo* thisDir = NULL;
+    dirInfo* thisDir = NULL;
     DIR* dir;
 
     while((getRecord()->retrieveDIRCloseList(&dir))) {
@@ -580,7 +580,7 @@ public:
     } else if(fd == 1 || fd == 2 || fd == 3) {
       isAllowed = true;
     } else {
-      struct fileInfo* thisFile = NULL;
+      fileInfo* thisFile = NULL;
 
       // Find the entry from the hash map.
       if(_filesMap.find(fd, sizeof(fd), &thisFile)) {

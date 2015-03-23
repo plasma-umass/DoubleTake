@@ -25,9 +25,7 @@ public:
   }
 
   void initialize() {
-    // We check those mappings to find out existing globals.
-    int numb;
-    int i;
+    // We check the mappings to find existing globals.
 
     // Trying to get information about different text segmensts.
     selfmap::getInstance().getTextRegions();

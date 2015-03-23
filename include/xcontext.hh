@@ -218,15 +218,13 @@ public:
     // We can only do this when these two contexts are for the same thread.
     assert(oldContext->getPrivateTop() == newContext->getPrivateTop());
 
-    // Now we can messed up with newContext now.
+    // Now we can mess with newContext.
     unsigned long ebp, esp;
 
     // The offset to the stack bottom.
     unsigned long espoffset, ebpoffset;
     unsigned long stackTop, newStackTop;
     unsigned long newebp, newesp;
-    unsigned long stackStart;
-    unsigned long offset;
 // Get current esp and ebp
 #if defined(X86_32BIT)
     asm volatile("movl %%ebp,%0\n"

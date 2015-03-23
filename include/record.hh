@@ -225,16 +225,15 @@ public:
   }
 
   // Get the first time results
-  void getMunmapOps(void) {
+  void getMunmapOps() {
     // We actually only update the list.
-    struct recordMunmap* record = (struct recordMunmap*)getEntry(E_OP_MUNMAP);
-
+    /* struct recordMunmap* record = (struct recordMunmap*)*/
+    getEntry(E_OP_MUNMAP); // FIXME unused return value.
     return;
   }
 
   // record time results
   void recordGettimeofdayOps(int ret, struct timeval* tv, struct timezone* tz) {
-    eRecordOps op = E_OP_GETTIMEOFDAY;
     struct recordTimeofday* record = (struct recordTimeofday*)allocEntry(E_OP_GETTIMEOFDAY);
 
     // Save those tv and tz

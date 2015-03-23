@@ -68,7 +68,6 @@ void xthread::prepareRollback() {
 }
 
 void xthread::setThreadSafe() {
-  bool toRollback = false;
   lock_thread(current);
   current->isSafe = true;
 

@@ -31,7 +31,7 @@ class xrun {
 
 private:
   xrun()
-      : _hasRollbacked(false), _memory(xmemory::getInstance()), _thread(xthread::getInstance()),
+      : _memory(xmemory::getInstance()), _thread(xthread::getInstance()),
         _watchpoint(watchpoint::getInstance()),
 	_detectOverflow (true),    // FIXME to be set from command-line
 	_detectMemoryLeaks (true),
@@ -174,16 +174,17 @@ private:
   // Notify the system call handler about rollback phase
   void startRollback();
 
-  xthread& _thread;
+  /*  volatile bool _hasRolledBack; */
+
   /// The memory manager (for both heap and globals).
   xmemory& _memory;
+  xthread& _thread;
   watchpoint& _watchpoint;
 
-  volatile bool _hasRollbacked;
 
   //  int   _rollbackStatus;
-  int _pid; // The first process's id.
-  int _main_id;
+  /*  int _pid; // The first process's id. */
+  /* int _main_id; */
 
   const bool _detectOverflow;
   const bool _detectMemoryLeaks;

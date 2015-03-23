@@ -191,23 +191,16 @@ private:
     ptr = (unsigned long*)_heapBegin;
     stop = (unsigned long*)_heapEnd;
 
-    //    PRINT("************CHECK LEAK at line %ld****************\n", __LINE__);
     // For the last object, we may use the bitmap to help us.
     // For example, we may only allocate some of a chunk,
-    // Then how can we know whether we should move forward or not.
-    unsigned long offset;
+    // Then we know whether we should move forward or not.
     objectHeader* object;
     while(ptr < stop) {
       // We find a object header
       if(*ptr == xdefines::SENTINEL_WORD && sentinelmap::getInstance().isSet(ptr)) {
-        //       PRINT("Find object at %p\n", ptr);
         object = getObject((void*)++ptr);
-        //        if(object->isObjectFree()) {
-        //          PRINT("object at %p is free\n", ptr);
-        //        }
 
         if(object->checkLeakageAndClean()) {
-          //         PRINT("Leakage at %p\n", object->getStartPtr());
           hasLeakage = true;
           // Adding this object to the global leakage map, which should be tracked in re-execution
           insertLeakageMap(object->getStartPtr(), object->getObjectSize(), object->getSize());
@@ -293,7 +286,6 @@ private:
 
 #define MAXIMUM_SIZE_POWER 30
   // From 2^4 to 2 ^ 30
-  unsigned long _sizeArray[30];
   objectListType _sizeList[30];
 
   // It is used to count how many non-start addresses in

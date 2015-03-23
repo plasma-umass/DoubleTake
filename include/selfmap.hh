@@ -67,12 +67,12 @@ private:
   bool _valid;
   uintptr_t _base;
   uintptr_t _limit;
-  size_t _offset;
-  std::string _file;
   bool _readable;
   bool _writable;
   bool _executable;
   bool _copy_on_write;
+  size_t _offset;
+  std::string _file;
 };
 
 /// Read a mapping from a file input stream
