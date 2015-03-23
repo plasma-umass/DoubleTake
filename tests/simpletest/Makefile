@@ -14,12 +14,7 @@ TESTS := $(SRCS:.cpp=)
 PTHREAD_LIBS += $(LIBS) -lpthread
 PTHREAD_OBJS := $(addsuffix -pthread, $(TESTS))
 
-#DOUBLETAKE_LIBS = $(LIBS) -rdynamic ../source-no-determsync/libdoubletake.so
-#DOUBLETAKE_LIBS = $(LIBS) -rdynamic ../libstopgap32.so
-#DOUBLETAKE_LIBS = $(LIBS) -L../ -lstopgap64
-DOUBLETAKE_LIBS = $(LIBS) -rdynamic ../../libdoubletake64.so
-#DOUBLETAKE_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/determ/libgrace.so
-#DOUBLETAKE_LIBS = $(LIBS) -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/stopgap/libgrace.so
+DOUBLETAKE_LIBS = $(LIBS) -rdynamic ../../libdoubletake.so
 DOUBLETAKE_OBJS := $(addsuffix -doubletake, $(TESTS))
 
 COMPILE = $(CC) $(CFLAGS) 
