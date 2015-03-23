@@ -272,23 +272,12 @@ public:
 
     ~iterator() {}
 
-    iterator& operator++(int unused) // in postfix ++
+    iterator& operator++(int) // in postfix ++  /* parameter? */
     {
-      //    cout << "In postfix ++\n";
       struct HashEntry* hashentry = _hashmap->getHashEntry(_pos);
 
-      PRINF("firstentry %p its next %p hashentry first entry %p\n", _entry, _entry->list.next,
-            hashentry);
-      //			PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos,
-      //_entry, _hashmap);
-      PRINF("opertor__, hashentry %p _pos %ld _entry %p, _hashmap %p\n", hashentry, _pos, _entry,
-            _hashmap);
       // Check whether this entry is the last entry in current hash entry.
       if(!isListTail(&_entry->list, &hashentry->list)) {
-        //				PRINF("****enty->list->next %p, hashentry->list %p hashentry %p hashlist next
-        //%p\n", _entry->list.next, &hashentry->list, hashentry, hashentry->list.next);
-        //				PRINF("opertor__, hashentry %p _pos %ld _entry %p _entry->list %p, _hashmap %p\n",
-        //hashentry, _pos, _entry, &_entry->list, _hashmap);
         // If not, then we simply get next entry. No need to change pos.
         _entry = _entry->nextEntry();
       } else {

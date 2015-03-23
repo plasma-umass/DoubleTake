@@ -53,7 +53,6 @@ public:
   /// @return the size in bytes of the underlying object.
   inline size_t size() const { return _startsize; }
 
-#ifdef DETECT_OVERFLOW
   inline bool checkHeapOverflow(void* end) {
     assert(_heapStart != NULL);
 
@@ -64,7 +63,6 @@ public:
 
     return hasOverflow;
   }
-#endif
 
   // For the page
   void backup(void* end) {

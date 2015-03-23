@@ -114,20 +114,19 @@ public:
   }
 
   void makeWritable(void* buf, int count) {
-#ifdef PROTECT_MEMORY
+    //#ifdef PROTECT_MEMORY
     char* start = (char*)buf;
     long pages = count / xdefines::PageSize;
 
     if(pages >= 1) {
-      //  PRINF("fd %d buf %p count %d\n", fd, buf, count);
-      // Trying to read on those pages, thus there won't be a segmenation fault in
+      // Trying to read on those pages, thus there won't be a segmentation fault in
       // the system call.
       for(long i = 0; i < pages; i++) {
         start[i * xdefines::PageSize] = '\0';
       }
     }
     start[count - 1] = '\0';
-#endif
+    //#endif
     return;
   }
 
@@ -2284,7 +2283,7 @@ public:
     return ret;
   }
 
-  int tkill(int tid, int sig) { return 0; }
+  int tkill(int /* tid */, int /* sig */) { return 0; }
 
   // Record this later.
   time_t time(time_t* t) {

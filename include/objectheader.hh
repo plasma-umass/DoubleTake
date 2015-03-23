@@ -18,11 +18,7 @@
 class objectHeader {
 public:
   objectHeader(size_t sz)
-#if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
-      : _blockSize(sz)
-#else
       : _blockSize(sz), _sentinel(xdefines::SENTINEL_WORD)
-#endif
   {
   }
 
@@ -49,7 +45,6 @@ public:
 
   bool isObjectFree() { return (_objectSize == 0); }
 
-//#ifdef DETECT_MEMORY_LEAKS
 #define OBJECT_CHECKED_WORD (0x1)
 #define OBJECT_CHECKED_WORD_MASK (0xFFFFFFFE)
 

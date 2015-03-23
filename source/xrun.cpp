@@ -142,22 +142,23 @@ void xrun::epochEnd(bool endOfProgram) {
 // assert(0);
 #endif
 
-#ifdef DETECT_OVERFLOW
-  bool hasOverflow = _memory.checkHeapOverflow();
-#endif
-
-#ifdef DETECT_MEMORY_LEAKS
-  bool hasMemoryLeak = false;
-  if(endOfProgram) {
-    //  PRINF("DETECTING MEMORY LEAKABE in the end of program!!!!\n");
-    hasMemoryLeak =
-        leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
-  } else {
-    // PRINF("DETECTING MEMORY LEAKABE inside a program!!!!\n");
-    hasMemoryLeak =
-        leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+  bool hasOverflow = false;
+  if (detectOverflow()) {
+    hasOverflow = _memory.checkHeapOverflow();
   }
-#endif
+
+  bool hasMemoryLeak = false;
+  if (detectMemoryLeaks()) {
+    if(endOfProgram) {
+      //  PRINF("DETECTING MEMORY LEAKAGE in the end of program!!!!\n");
+      hasMemoryLeak =
+        leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+    } else {
+      // PRINF("DETECTING MEMORY LEAKAGE inside a program!!!!\n");
+      hasMemoryLeak =
+        leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+    }
+  }
 
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
@@ -173,7 +174,8 @@ void xrun::epochEnd(bool endOfProgram) {
   } else {
 #elif defined(DETECT_MEMORY_LEAKS)
   if(hasMemoryLeak) {
-    _memory.cleanupFreeList();
+    // EDB FIX ME DISABLED
+    // _memory.cleanupFreeList();
     rollback();
   } else {
 #endif
@@ -191,7 +193,6 @@ void xrun::epochEnd(bool endOfProgram) {
 
 bool isThreadSafe(thread_t* thread) { return thread->isSafe; }
 
-#ifdef DETECT_USAGE_AFTER_FREE
 void xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
@@ -203,7 +204,6 @@ void xrun::finalUAFCheck() {
     }
   }
 }
-#endif
 
 void xrun::stopAllThreads() {
   threadmap::aliveThreadIterator i;
@@ -285,7 +285,7 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
 /* We are using the SIGUSR2 to notify other threads something.
 
  */
-void xrun::sigusr2Handler(int signum, siginfo_t* siginfo, void* context) {
+ void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* context) {
   // Check what is current status of the system.
   // If we are in the end of an epoch, then we save the context somewhere since
   // current thread is going to stop execution in order to commit or rollback.

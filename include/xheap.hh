@@ -33,7 +33,7 @@ public:
   // sanityCheck any more, but we definitely need a lock to avoid the
   // race on "metadata".
 
-  void* initialize(void* startaddr, size_t startsize, size_t metasize) {
+  void* initialize(void*, size_t startsize, size_t metasize) {
     void* ptr;
 
     // We must initialize the heap now.
@@ -130,9 +130,10 @@ public:
   }
 
   // These should never be used.
-  inline void free(void* ptr) { sanityCheck(); }
-  inline size_t getSize(void* ptr) {
+  inline void free(void*) { sanityCheck(); abort(); }
+  inline size_t getSize(void*) {
     sanityCheck();
+    abort();
     return 0;
   }
 

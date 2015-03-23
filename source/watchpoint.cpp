@@ -201,7 +201,7 @@ bool watchpoint::checkAndSaveCallsite(faultyObject* object, int depth, void** ca
 }
 
 // Handle those traps on watchpoints now.
-void watchpoint::trapHandler(int sig, siginfo_t* siginfo, void* context) {
+void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* context) {
   ucontext_t* trapcontext = (ucontext_t*)context;
   size_t* addr = (size_t*)trapcontext->uc_mcontext.gregs[REG_RIP]; // address of access
 

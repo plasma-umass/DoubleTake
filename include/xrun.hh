@@ -32,11 +32,21 @@ class xrun {
 private:
   xrun()
       : _hasRollbacked(false), _memory(xmemory::getInstance()), _thread(xthread::getInstance()),
-        _watchpoint(watchpoint::getInstance()) {
+        _watchpoint(watchpoint::getInstance()),
+	_detectOverflow (true),    // FIXME to be set from command-line
+	_detectMemoryLeaks (true),
+	_detectUseAfterFree (true)
+  {
     // PRINF("xrun constructor\n");
   }
 
 public:
+
+  bool detectOverflow() const     { return _detectOverflow; }
+  bool detectMemoryLeaks() const  { return _detectMemoryLeaks; }
+  bool detectUseAfterFree() const { return _detectUseAfterFree; }
+
+
   static xrun& getInstance() {
     static char buf[sizeof(xrun)];
     static xrun* theOneTrueObject = new (buf) xrun();
@@ -174,6 +184,10 @@ private:
   //  int   _rollbackStatus;
   int _pid; // The first process's id.
   int _main_id;
+
+  const bool _detectOverflow;
+  const bool _detectMemoryLeaks;
+  const bool _detectUseAfterFree;
 };
 
 #endif

@@ -105,7 +105,7 @@ public:
   }
 
   /// Handling the specific thread event.
-  void thread_exit(void* value) {
+  void thread_exit(void*) {
     // FIXME later.
     //  abort();
   }
@@ -241,39 +241,23 @@ public:
   inline int thread_join(pthread_t joinee, void** result) {
     thread_t* thread = NULL;
 
-    // PRINF("thread_join on joinee %p\n", joinee);
     // Try to check whether thread is empty or not?
     thread = getThread(joinee);
     assert(thread != NULL);
-
-    // WARN("thread_join, joinee is 0x%lx thread %p thread->index %d*****\n", joinee, thread,
-    // thread->index);
-    //    PRINF("thread_join, joinee is 0x%lx thread %p thread->status %d*****\n", joinee, thread,
-    // thread->status);
 
     // Now the thread has finished the register
     lock_thread(thread);
 
     if(thread->status != E_THREAD_WAITFOR_REAPING) {
-      // WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status);
       // Set the joiner to current thread
       thread->joiner = current;
       current->status = E_THREAD_JOINING;
 
-      //      WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status);
       // Now we are waiting the finish of child thread
       while(current->status != E_THREAD_RUNNING) {
-        //  WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status);
-        //  PRINF("thread_join, current %p status %d, waiting on joinee %d (at %p, thread %p).
-        // thread->joiner %p at %p*****\n", current, current->status, thread->index, thread,
-        // thread->self, thread->joiner, &thread->joiner);
         // Wait for the joinee to wake me up
         wait_thread(thread);
-        //  PRINF("thread_join status %d, wakenup by thread %d*****\n", current->status,
-        // thread->index);
       }
-
-      // WARN("thread_join, thread->index %d status %d*****\n", thread->index, thread->status);
     }
 
     // Now mark this thread's status so that the thread can be reaped.
@@ -281,7 +265,6 @@ public:
 
     // FIXME: actually, we should get the result from corresponding thread
     if(result) {
-      // PRINF("thread_join, getresult, result %p actual result*****\n", result);
       *result = thread->result;
     }
 

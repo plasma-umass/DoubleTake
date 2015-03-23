@@ -37,7 +37,7 @@ inline void markFreeObject(void* ptr, size_t size) {
   unsigned long* addr = (unsigned long*)ptr;
   size_t words = getMarkWords(size);
 
-  for(int i = 0; i < words; i++) {
+  for(auto i = 0; i < (int) words; i++) {
     addr[i] = xdefines::SENTINEL_WORD;
   }
 }
@@ -50,7 +50,7 @@ inline bool hasUsageAfterFree(freeObject* object) {
   // We only check specified size
   unsigned long* addr = (unsigned long*)object->ptr;
 
-  for(int i = 0; i < words; i++) {
+  for(auto i = 0; i < (int) words; i++) {
     if(addr[i] != xdefines::SENTINEL_WORD) {
       hasUAF = true;
       printf("DoubleTake: Use-after-free detected at address %p.\n", &addr[i]);

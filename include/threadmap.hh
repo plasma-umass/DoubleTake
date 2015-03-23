@@ -196,7 +196,7 @@ public:
 
     ~aliveThreadIterator() {}
 
-    aliveThreadIterator& operator++(int unused) // in postfix ++
+    aliveThreadIterator& operator++(int) // in postfix ++
     {
       if(!isListTail(&thread->list, &_alivethreads)) {
         thread = (struct aliveThread*)nextEntry(&thread->list);

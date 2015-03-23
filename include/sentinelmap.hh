@@ -112,7 +112,7 @@ public:
     // We know that for a bit, we can use it for a word.
     // For a word with specified bytes, then we can use it for multiple words.
     unsigned long index = startIndex;
-    for(unsigned long i = 0; i < words; i++, index++) {
+    for(auto i = 0; i < (int) words; i++, index++) {
       unsigned long bitword = _bitmap.readWord(index);
       if(bitword != 0) {
         if(checkIntegrityOnBMW(bitword, index)) {
@@ -228,7 +228,7 @@ public:
     return _bitmap.isBitSet(item);
   }
 
-  inline bool isOverflow(void* addr, void* objectStart, size_t objectSize) {
+  inline bool isOverflow(void* addr, void* /* objectStart */, size_t /* objectSize */) { // FIXME
     bool isOverflow = false;
 
     // Check whether corresponding bit is set.
@@ -236,7 +236,7 @@ public:
     if(hasSentinels(addr, WORDBYTES)) {
       WORD curword = *((WORD*)addr);
 
-      // If this bit is set, then we check whether it is a integrate or not.
+      // If this bit is set, then we check whether it is a integral or not.
       if(curword != xdefines::SENTINEL_WORD && curword != xdefines::MEMALIGN_SENTINEL_WORD) {
         isOverflow = isCorruptedSentinel(addr);
       }

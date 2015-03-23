@@ -173,7 +173,7 @@ public:
         if(setBytes >= 2) {
           // PRINF("******setBytes %d\n", setBytes);
           p[0] = setBytes - 1;
-          for(int i = 1; i < setBytes; i++) {
+          for(size_t i = 1; i < setBytes; i++) {
             p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
           }
         } else if(setBytes == 1) {
@@ -286,8 +286,8 @@ public:
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
         // PRINF("xmemory line %d: nonAlignedBytes %d startp %p setBytes %d\n", __LINE__,
         // nonAlignedBytes, startp, setBytes);
-        if(setBytes > 1 && (int)p[0] == (setBytes - 1)) {
-          for(int i = 1; i < setBytes; i++) {
+        if((setBytes > 1) && ((int)p[0] == (int) (setBytes - 1))) {
+          for(auto i = 1; i < (int) setBytes; i++) {
             if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
               isOverflow = true;
               break;
@@ -399,8 +399,9 @@ public:
     return _pheap.getSize(ptr);
   }
 
-  // Commit something without check the heap overflow
-  void atomicCommit(void* addr, size_t size) {
+  // Commit something without checking for heap overflow.
+  void atomicCommit(void* /* addr */, size_t /* size */) {
+    //EDB FIXME why is this disabled?
 #if 0
     if (inRange (addr)) {
       _pheap.commit (addr, size);
@@ -456,7 +457,6 @@ public:
 
   inline void* getHeapBegin() { return (void*)_heapBegin; }
 
-#ifdef DETECT_OVERFLOW
   // This function is called before the system call is issued.
   inline bool checkOverflowBeforehand(void* start, size_t size) {
     bool hasProblem = false;
@@ -479,7 +479,6 @@ public:
 
     return hasProblem;
   }
-#endif
 
   // Check and commit in the end of transaction.
   inline bool checkHeapOverflow() {
@@ -521,10 +520,9 @@ public:
   /* Signal-related functions for tracking page accesses. */
 
   /// @brief Signal handler to trap SEGVs.
-  static void segvHandle(int signum, siginfo_t* siginfo, void* context) {
+  static void segvHandle(int /* signum */, siginfo_t* siginfo, void* context) {
     void* addr = siginfo->si_addr; // address of access
 
-    //    while(1) ;
     PRWRN("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code,
           addr);

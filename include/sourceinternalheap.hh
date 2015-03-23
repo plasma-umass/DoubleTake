@@ -85,9 +85,10 @@ public:
   inline void* getHeapPosition() { return (void*)_position; }
 
   // These should never be used.
-  inline void free(void* ptr) { sanityCheck(); }
-  inline size_t getSize(void* ptr) {
+  inline void free(void*) { sanityCheck(); abort(); }
+  inline size_t getSize(void*) {
     sanityCheck();
+    abort();
     return 0;
   } // FIXME
 

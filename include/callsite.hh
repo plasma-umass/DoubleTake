@@ -18,7 +18,7 @@ public:
   unsigned long depth() { return _depth; }
 
   void print() {
-    for(int i = 0; i < _depth; i++) {
+    for(auto i = 0; i < (int) _depth; i++) {
       printf("%p\t", _callsite[i]);
     }
     printf("\n");
