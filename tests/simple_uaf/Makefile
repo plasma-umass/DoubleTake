@@ -1,6 +1,6 @@
 ROOT    := ../..
 TARGETS := simple_uaf
-CFLAGS  := -g -fno-omit-frame-pointer
+CFLAGS  := -std=c99 -g -fno-omit-frame-pointer
 LDFLAGS := -L$(ROOT) -ldoubletake
 
 include $(ROOT)/common.mk

@@ -680,8 +680,6 @@ private:
   }
 
   inline void* allocSyncEntry(int size, thrSyncCmd synccmd) {
-    SyncEventList* syncList;
-
     // We allocate a synchorniation event list here and attach to this real
     // synchronziation variable so that they can be deleted in the same time.
     void* entry = ((void*)InternalHeap::getInstance().malloc(size + sizeof(SyncEventList)));
@@ -689,7 +687,7 @@ private:
     void* ptr = (void*)((intptr_t)entry + size);
 
     // Using placement new here
-    syncList = new (ptr) SyncEventList(entry, synccmd);
+    new (ptr) SyncEventList(entry, synccmd);
     return entry;
   }
 

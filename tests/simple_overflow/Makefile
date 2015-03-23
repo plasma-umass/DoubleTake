@@ -1,6 +1,6 @@
 ROOT    := ../..
 TARGETS := simple_overflow
-CFLAGS  := -g
+CFLAGS  := -std=c99 -g
 LDFLAGS := -L$(ROOT) -ldoubletake
 
 include $(ROOT)/common.mk
