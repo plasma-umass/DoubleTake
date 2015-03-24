@@ -8,6 +8,7 @@
 
 #include <dlfcn.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstddef>
@@ -908,6 +909,7 @@ extern "C" {
     va_list ap;
     va_start(ap, cmd);
     long arg = va_arg(ap, long);
+    va_end(ap);
     //  fprintf(stderr, " in doubletake at %d cmd %d))))))))))\n", __LINE__, cmd);
     return syscalls::getInstance().fcntl(fd, cmd, arg);
   }

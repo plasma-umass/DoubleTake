@@ -13,7 +13,11 @@
 
 class CallSite {
 public:
-  CallSite() : _depth(0) {}
+  CallSite() : _depth(0) {
+    for (auto i = 0; i < xdefines::CALLSITE_MAXIMUM_LENGTH; i++) {
+      _callsite[i] = nullptr;
+    }
+  }
 
   unsigned long depth() { return _depth; }
 

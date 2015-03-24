@@ -536,13 +536,15 @@ public:
 
   size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
     size_t ret;
-    int fd = stream->_fileno;
+    int fd;
+    if (stream != nullptr) {
+      fd = stream->_fileno;
+    }
     // assert(stream == NULL);
     // For stdout, stream is NULL. So we just pass this to
     // fwrite.
-    if(stream == NULL) {
+    if(stream == nullptr) {
       ret = Real::fwrite(ptr, size, nmemb, stream);
-      ;
     } else if(_fops.checkPermission(fd)) {
       ret = Real::fwrite(ptr, size, nmemb, stream);
     } else {

@@ -89,6 +89,10 @@ public:
   inline void initialThreadRegister() {
     int tindex = allocThreadIndex();
 
+    if (tindex == -1) {
+      return;
+    }
+
     thread_t* tinfo = getThreadInfo(tindex);
 
     // Set the current to corresponding tinfo.

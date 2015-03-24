@@ -130,7 +130,8 @@ void watchpoint::installWatchpoints() {
     if(i == 0) {
       perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, -1);
     } else {
-      install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, perffd);
+      // EDB: added set of perffd.
+      perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, perffd);
     }
     // PRINT("Watchpoint %d: addr %p done\n", i, _wp[i].faultyaddr);
   }

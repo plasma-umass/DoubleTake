@@ -22,7 +22,7 @@ private:
   unsigned long off[WORDBITS];
 
 public:
-  bitmap() : _start(NULL), _elements(0) {}
+  bitmap() : _start(NULL), _words(0), _elements(0) {}
 
   void initialize(void* addr, size_t elements, size_t words) {
     _start = (unsigned long*)addr;

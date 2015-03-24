@@ -9,7 +9,7 @@
 /*
  * @file   objectheader.h
  * @brief  Heap object header, including size information and sentinels.
- *         Since all memory blocks are ligned to 8bytes at 32bits machine and 16bytes for 64bits.
+ *         Since all memory blocks are aligned to 8 bytes on 32-bit systems and 16 bytes on 64-bit systems.
  *         We also add some padding here. See
            http://www.gnu.org/software/libc/manual/html_node/Aligned-Memory-Blocks.html.
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
@@ -18,7 +18,7 @@
 class objectHeader {
 public:
   objectHeader(size_t sz)
-      : _blockSize(sz), _sentinel(xdefines::SENTINEL_WORD)
+    : _blockSize(sz), _objectSize(0), _sentinel(xdefines::SENTINEL_WORD)
   {
   }
 
