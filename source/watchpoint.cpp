@@ -42,12 +42,12 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
   bool hasWatchpoint = true;
 
   if(objtype == OBJECT_TYPE_OVERFLOW) {
-    //   PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. size %lx start %p\n",
-    // addr, value, objectsize, objectstart);
+    PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. size %lx start %p\n",
+	  addr, value, objectsize, objectstart);
     // PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   } else {
     assert(objtype == OBJECT_TYPE_USEAFTERFREE);
-    //    PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
+    PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
   }
 
   if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {

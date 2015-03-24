@@ -30,3 +30,4 @@ define primes (limit) {
 
 
 print "\ntyping 'primes (10)' will print all primes less than 10.\n"
+primes(1000)

@@ -22,11 +22,11 @@ void xmemory::handleSegFault() {
   // Check whether the segmentation fault is called by buffer overflow.
   if(xmemory::getInstance().checkHeapOverflow()) {
     // Now we can roll back
-    PRINF("\n\nOVERFLOW causes segmenation fault!!!! ROLLING BACK\n\n\n");
+    PRINF("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
 
     xrun::getInstance().rollback();
   } else {
-    PRINF("\n\nNO overflow in segmenation fault, ROLLING BACK and stop\n\n\n");
+    PRINF("\n\nNO overflow in segmentation fault, ROLLING BACK and stop\n\n\n");
     // We may rely on gdb to find out this problem.
     // We do not need to install watchpoints at all.
     // But we can rollback everything and hault there

@@ -34,7 +34,7 @@ private:
       : _memory(xmemory::getInstance()), _thread(xthread::getInstance()),
         _watchpoint(watchpoint::getInstance()),
 	_detectOverflow (true),    // FIXME to be set from command-line
-	_detectMemoryLeaks (true),
+	_detectMemoryLeaks (false), // FIXME
 	_detectUseAfterFree (true)
   {
     // PRINF("xrun constructor\n");
