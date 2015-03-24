@@ -48,7 +48,7 @@ public:
     _semaKey = createSemaKey(key);
     while(true) {
       /* Create the semaphore with external key KEY if it doesn't already
-       exists. Give permissions to the world. */
+	 exist. Give permissions to the world. */
       id = Real::semget(_semaKey, 1, 0666);
       /* Always check system returns. */
       if(id < 0) {
@@ -63,10 +63,10 @@ public:
     // Initialize semaphore to the desired number.
     arg.val = initValue;
     _semaId = Real::semget(_semaKey, nsemas, 0666 | IPC_CREAT);
-    // PRINF("Semaphore %p _semaId %d semaphore creation\n", &_semaKey, _semaId);
     if(_semaId == -1) {
-      PRWRN("semaphore creates failure %s\n", strerror(errno));
-      abort();
+      PRWRN("semaphore creation failure %s\n", strerror(errno));
+      // EDB FIXME: for now, do nothing.
+      // abort();
     } else {
       Real::semctl(_semaId, 0, SETVAL, arg);
     }
