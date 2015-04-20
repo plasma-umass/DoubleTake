@@ -47,9 +47,9 @@ void selfmap::printCallStack(int depth, void** array) {
     void* addr = (void*)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
     if(true) { // EDB: was isApplication(addr)) {
       index++;
-      //      PRINT("\tcallstack frame %d: %p\t", index, addr);
       // Print out the corresponding source code information
       sprintf(buf, "addr2line -e %s %p", _main_exe.c_str(), addr);
+      //PRINT("\tcallstack frame %d: %p\t", index, addr);
       system(buf);
     }
 #if 0

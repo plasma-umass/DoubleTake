@@ -120,15 +120,19 @@ public:
   // Actual allocations
   inline void* realmalloc(size_t sz) {
     unsigned char* ptr = NULL;
-    int mysize = sz;
+   	size_t mysize = sz;
 
     if(sz == 0) {
       return NULL;
     }
 
+//		PRINT("realmalloc in the beginning sz %ld\n",sz);
+		
+		// Align the object size, which should be multiple of 16 bytes.
     if(sz < 16) {
       mysize = 16;
     }
+		mysize = (mysize + 15) & ~15;
 
     ptr = (unsigned char*)_pheap.malloc(mysize);
     objectHeader* o = getObject(ptr);
@@ -138,19 +142,19 @@ public:
 
     // Set actual size there.
     o->setObjectSize(sz);
-// Set actual size there.
+
 #ifdef DETECT_OVERFLOW
     assert(size >= sz);
     // Add another guard zone if block size is larger than actual size
     // in order to capture the 1 byte overflow.
-    // PRINT("realmalloc at line %d\n", __LINE__);
+//    PRINT("realmalloc at line %d size %ld sz %ld mysize %ld\n", __LINE__, size, sz, mysize);
     // Set actual size there.
     if(size > sz) {
       size_t offset = size - sz;
 
       // We are using the ptr to varify the size
       unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
-      // PRINT("realmalloc at line %d\n", __LINE__);
+ //     PRINT("realmalloc at line %d\n", __LINE__);
 
       // If everything is aligned, add the guardzone.
       size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
@@ -196,6 +200,7 @@ public:
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
 
+//		PRINT("realmalloc object %p\n", ptr);
     // We donot need to do anything if size is equal to sz
     //   PRINT("***********malloc object from %p to %lx. sz %lx\n", ptr, (unsigned long)ptr + sz,
     // sz);
@@ -489,12 +494,11 @@ public:
       return false;
     }
 		
-		PRINT("checkHeapOverflow: line %d\n", __LINE__);
 
 #ifdef DETECT_OVERFLOW
     hasOverflow = _pheap.checkHeapOverflow();
 #endif
-		PRINT("checkHeapOverflow: line %d hasOverflow %d\n", __LINE__, hasOverflow);
+//		PRINT("checkHeapOverflow: line %d hasOverflow %d\n", __LINE__, hasOverflow);
     // double elapse = stop(&startTime, NULL);
     if(hasOverflow == false) {
       // Check whether overflows and underflows have been detected

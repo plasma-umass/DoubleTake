@@ -106,7 +106,7 @@ public:
     int words = bytes / WORDBYTES;
     bool hasCorrupted = false;
 
-    PRINT("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %ld\n", begin, end, bytes, words, startIndex);
+    //PRINT("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %ld\n", begin, end, bytes, words, startIndex);
     // We are trying to calculate
     // We know that for a bit, we can use it for a word.
     // For a word with specified bytes, then we can use it for multiple words.
@@ -114,7 +114,7 @@ public:
     for(auto i = 0; i < (int) words; i++, index++) {
       unsigned long bitword = _bitmap.readWord(index);
       if(bitword != 0) {
-				PRINT("checkHeapIntegrity: i %d index %ld\n", i, index);
+		//		PRINT("checkHeapIntegrity: i %d index %ld\n", i, index);
         if(checkIntegrityOnBMW(bitword, index)) {
           hasCorrupted = true;
         }
@@ -354,9 +354,7 @@ private:
     bool checkNonAligned = false;
     bool hasCorrupted = false;
 
-    PRINT("checkSentinelOnBMD: word %ld, bitword %lx address %p\n", wordIndex, bits, address);
-    // PRINF("checkSentinelOnBMD: at %lx with value %lx\n", 0x100000028, *((unsigned long
-    // *)0x100000028));
+    //PRINF("checkSentinelOnBMD: word %ld, bitword %lx address %p\n", wordIndex, bits, address);
 
     for(int i = 0; i < WORDBITS; i++) {
       // Only check those address when corresponding bit has been set
@@ -383,14 +381,14 @@ private:
           }
 
           if(isBadSentinel) {
-            PRINT("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits,
-                  checkNonAligned, address[i], &address[i]);
+      //      PRINT("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits,
+      //            checkNonAligned, address[i], &address[i]);
             // Find the starting address of this object.
             unsigned long objectStart = 0;
 
             if(findObjectStartAddr((void*)&address[i], &objectStart)) {
               objectHeader* object = (objectHeader*)(objectStart - sizeof(objectHeader));
-            	PRINT("OVERFLOW at line %d object %p address[i] %p\n", __LINE__, object, &address[i]);
+       //     	PRINT("OVERFLOW at line %d object %p address[i] %p\n", __LINE__, object, &address[i]);
               watchpoint::getInstance().addWatchpoint(&address[i], *((size_t*)&address[i]),
                                                       OBJECT_TYPE_OVERFLOW, (void*)objectStart,
                                                       object->getObjectSize());

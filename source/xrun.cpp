@@ -126,7 +126,7 @@ void xrun::epochBegin() {
 
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd(bool endOfProgram) {
-  // PRINF("in the end of an epoch with endOfProgram %d\n", endOfProgram);
+//   PRINT("in the end of an epoch with endOfProgram %d\n", endOfProgram);
   // Tell other threads to stop and save context.
   stopAllThreads();
 

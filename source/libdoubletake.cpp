@@ -106,10 +106,10 @@ extern "C" {
   void* xxmalloc(size_t sz) {
     void* ptr;
     // Align the object size. FIXME for now, just use 16 byte alignment and min size.
-    if (sz < 16) {
-      sz = 16;
-    }
-    sz = (sz + 15) & ~15;
+    //if (sz < 16) {
+    //  sz = 16;
+   // }
+   // sz = (sz + 15) & ~15;
     if(!initialized) {
       ptr = tempmalloc(sz);
     } else {
