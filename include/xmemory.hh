@@ -488,10 +488,13 @@ public:
     if(global_isRollback()) {
       return false;
     }
+		
+		PRINT("checkHeapOverflow: line %d\n", __LINE__);
 
 #ifdef DETECT_OVERFLOW
     hasOverflow = _pheap.checkHeapOverflow();
 #endif
+		PRINT("checkHeapOverflow: line %d hasOverflow %d\n", __LINE__, hasOverflow);
     // double elapse = stop(&startTime, NULL);
     if(hasOverflow == false) {
       // Check whether overflows and underflows have been detected
