@@ -70,11 +70,6 @@ public:
       listInsertTail(&event->list, &this->list);
       Real::pthread_mutex_unlock(&this->lock);
     } else {
-      if((unsigned long)this == 0x100001cffe48) {
-        PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__,
-              event, current, this, *((unsigned long*)this));
-        PRINT("event->list %p this->list %p\n", &event->list, &this->list);
-      }
       // We only record synchronization inside critical section.
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);

@@ -110,6 +110,7 @@ public:
   int allocThreadIndex() {
     int index = -1;
 
+		// Return a failure if the number of alive threads is larger than 
     if(_aliveThreads >= _totalThreads) {
       return index;
     }
@@ -155,6 +156,7 @@ public:
     return thread->outputBuf;
   }
 
+	// Everytime, a pthread_join call will put the joinee into the queue of deadthreads.
   inline int incrementReapableThreads() {
     _reapableThreads++;
     return _reapableThreads;
@@ -214,13 +216,16 @@ public:
   */
   void runDeferredSyncs() {
     list_t* entry;
+    global_lock();
 
     // Get all entries from _deferSyncs.
     while((entry = listRetrieveItem(&_deferSyncs)) != NULL) {
       struct deferSyncVariable* syncvar = (struct deferSyncVariable*)entry;
 
       switch(syncvar->syncVarType) {
+				
       case E_SYNCVAR_THREAD: {
+				fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
         threadmap::getInstance().removeAliveThread((thread_t*)syncvar->variable);
         _aliveThreads--;
         _reapableThreads--;
@@ -247,12 +252,20 @@ public:
         assert(0);
         break;
       }
+      
+			// We should deallocate the actual synchronization variable.
+			if(syncvar->syncVarType != E_SYNCVAR_THREAD) {
+				void** ptr = (void**)syncvar->variable;
+				InternalHeap::getInstance().free(*ptr);
+			}
 
       // Free this entry.
       InternalHeap::getInstance().free((void*)entry);
     }
+		fprintf(stderr, "runDeferredSyncs done\n");
 
     listInit(&_deferSyncs);
+		global_unlock();
   }
 
 private:

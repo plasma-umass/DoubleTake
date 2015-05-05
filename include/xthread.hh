@@ -79,7 +79,8 @@ public:
   // need to rollback anymore
   // tnrere are three types of events here.
   void epochEndWell() {
-    //  runDeferredSyncs();
+		// There is no need to run deferred synchronizations 
+		// since we will do this in epochBegin();
 
     // The global syncrecord
     cleanSyncEvents();
@@ -135,7 +136,7 @@ public:
 
       // This can be caused by two reasons:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
-      // Second, we haven't meet commit point for a long time.
+      // Second, we haven't reaped the threads for a long time.
       if(tindex == -1) {
         REQUIRE(hasReapableThreads(), "No reapable threads");
         global_unlock();
@@ -275,8 +276,41 @@ public:
 
     insertDeadThread(thread);
 
+		// Check whether we should reap all active threads or not?
+		// If the number of actually-active threads is only one and the 
+		// reapable number of threads is very close to the maximum number of threads.
+		reapDeadThreads();
+ 
     return 0;
   }
+
+	/// @brief Reap those dead threads if necessary
+	inline void reapDeadThreads(void) {
+		// Check whether we should reap all active threads or not?
+    // If the number of actually-active threads is only one and the 
+    // reapable number of threads is very close to the maximum number of threads.
+
+		/* Critical parameters in threadinfo.hh:
+			 _reapableThreads:
+			 Incrementation:
+				incrementReapableThreads() will be called at deferSync() when type is E_SYNCVAR_THREAD. 
+				That is, insertDeadThread() in pthread_join().  
+					
+			 Decrementation:
+				E_SYNCVAR_THREAD, we will remove the thread from the alive threads by calling removeAliveThread().
+				cancelAliveThread() will be called when pthread_cancel() is called. But pthread_cancel() has to be reimplemented.    
+
+			 _aliveThreads: 
+
+			 Incrementation:
+					
+			 Decrementation:
+				cancelAliveThread() 
+
+
+		*/
+
+	}
 
   /// @brief Detach a thread
   inline int thread_detach(pthread_t thread) {
@@ -309,9 +343,8 @@ public:
 
   /// Save those actual mutex address in original mutex.
   int mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* attr) {
-    // TODO: The synchronization here is totally broken: initializer should read state, then check
-    // if
-    // init is needed. If so, then allocate and atomic compare exchange.
+    // The synchronization here is totally broken: initializer should read state, then check
+    // if init is needed. If so, then allocate and atomic compare exchange.
 
     if(!global_isRollback()) {
       // Allocate a mutex
@@ -825,13 +858,12 @@ private:
   }
 
   // Insert a synchronization variable into the global list, which
-  // are reaped later at commit points.
+  // are reaped later in the beginning of next epoch.
   inline static void deferSync(void* ptr, syncVariableType type) {
-    // Checking whether the ptr is globals or heap variables
-    // we should not record ptr for stack variable since it will change
-    if(!isStackVariable(ptr)) {
-      threadinfo::getInstance().deferSync(ptr, type);
-    }
+    // We won't handle the re-use the same synchronization variable in the same epoch.
+		// That is, one synchronization variable will have two different purposes, which are detroyed 
+		// at first and then re-utilize for another purpose. 
+    threadinfo::getInstance().deferSync(ptr, type);
   }
 
   static void setThreadSafe();
@@ -894,8 +926,8 @@ private:
       //      PRINF("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
-    // What to do in the end of a thread? Who will send out this message?
-    // When heap overflow occurs
+    // What to do in the end of a thread?
+		// It can only have two status, one is to rollback and another is to exit successfully.
     if(current->status == E_THREAD_ROLLBACK) {
       PRINF("THREAD%d (at %p) is wakenup\n", current->index, current);
       current->status = E_THREAD_RUNNING;

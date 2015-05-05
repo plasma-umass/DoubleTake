@@ -115,7 +115,7 @@ public:
 
   // This is a experimental results. When we are using a larger number, rollback may fail.
   // Don't know why, although maximum number of semaphore is close to 128.
-  enum { MAX_ALIVE_THREADS = 112 };
+  enum { MAX_ALIVE_THREADS = 65 };
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 };
   enum { THREAD_MAP_SIZE = 1024 };
