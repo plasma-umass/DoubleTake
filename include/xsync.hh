@@ -45,6 +45,8 @@ public:
     entry->realEntry = realentry;
     entry->list = list;
     _syncvars.insert(key, sizeof(key), entry);
+
+		PRINT("insertSyncMap entry %p entry %p\n", realentry, entry);
   }
 
   void deleteMap(void* key) {
@@ -153,7 +155,10 @@ public:
     syncvarsHashMap::iterator i;
 
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
-      SyncEventList* eventlist = (SyncEventList*)i.getData();
+			struct SyncEntry* entry = (struct SyncEntry*)i.getData();
+      SyncEventList* eventlist = (SyncEventList*)entry->list;
+
+			PRINT("cleaningup the eventlist %p\n", eventlist);
       eventlist->cleanup();
     }
   }
