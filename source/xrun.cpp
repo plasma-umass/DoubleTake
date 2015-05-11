@@ -23,6 +23,7 @@ void xrun::startRollback() {
   global_rollback();
 
   PRINF("Starting rollback for other threads\n");
+  PRINF("Starting rollback for other threads\n");
 
   // Set context for current thread.
   // Since the new context is not valid, how to
@@ -52,19 +53,19 @@ void xrun::rollback() {
     abort();
   }
 
-  //  PRINT("\n\nNOW RE-EXECUTION!!!\n\n\n");
+  PRINF("\n\nNOW RE-EXECUTION!!!\n\n\n");
   // We should prepare those system calls before memory rollback.
   // For example, if we don't want to reproduce fds, then we should
   // close those newly added files by calling fclose.
   // However, memory rollback can destroy filestream in the user space.
   syscalls::getInstance().prepareRollback();
-  //  PRINT("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
+   PRINF("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
 
   // Rollback all memory before rolling back the context.
   _memory.rollback();
 
   //  PRINF("_memory rollback!!!\n");
-  //  PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
+   PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
@@ -75,7 +76,7 @@ void xrun::rollback() {
   // PRINF("\n\nset rollback\n\n\n");
 
   // Now we are going to rollback
-  //  PRINT("\n\nSTARTING ROLLBACK!!!\n\n\n");
+  PRINF("\n\nSTARTING ROLLBACK!!!\n\n\n");
   startRollback();
 
   assert(0);
@@ -87,9 +88,11 @@ void xrun::rollback() {
 void xrun::epochBegin() {
 
   threadmap::aliveThreadIterator i;
+ 
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
 
+	//	PRINF("xrun epochBegin setting the map\n");
     if(thread != current) {
       lock_thread(thread);
 
@@ -104,8 +107,10 @@ void xrun::epochBegin() {
     }
   }
 
-  // Saving the context of the memory.
+	// Cleanup the event list.
   xthread::epochBegin();
+  
+	// Saving the context of the memory.
   _memory.epochBegin();
   xthread::getInstance().runDeferredSyncs();
 
@@ -113,10 +118,8 @@ void xrun::epochBegin() {
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   global_epochBegin();
 
-#ifdef HANDLE_SYSCALL
-  // Start the new epoch for current thread
-  syscalls::getInstance().handleEpochBegin();
-#endif
+  // Cleaning up the system calls.
+  syscalls::getInstance().atEpochBegin();
 
   PRINF("getpid %d: xrun::epochBegin\n", getpid());
 
@@ -126,13 +129,12 @@ void xrun::epochBegin() {
 
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd(bool endOfProgram) {
-//   PRINT("in the end of an epoch with endOfProgram %d\n", endOfProgram);
   // Tell other threads to stop and save context.
   stopAllThreads();
 
   // To avoid endless rollback
   if(global_isRollback()) {
-    // PRINT("in the end of an epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
+    // PRINF("in the end of an epoch, endOfProgram %d. global_isRollback true\n", endOfProgram);
     while(1)
       ;
   }
@@ -163,12 +165,12 @@ void xrun::epochEnd(bool endOfProgram) {
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
 #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
-  PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRINT("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
   } else {
 #elif defined(DETECT_OVERFLOW)
-  PRDBG("in the end of an epoch, hasOverflow %d\n", hasOverflow);
+  PRINT("in the end of an epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   } else {
@@ -180,7 +182,6 @@ void xrun::epochEnd(bool endOfProgram) {
   } else {
 #endif
 #endif
-    PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     // PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
@@ -189,6 +190,7 @@ void xrun::epochEnd(bool endOfProgram) {
   }
 #endif
 #endif
+  //PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
 }
 
 bool isThreadSafe(thread_t* thread) { return thread->isSafe; }
@@ -301,7 +303,7 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
     // PRINF("%p reset contexts~~~~~\n", pthread_self());
     xthread::epochBegin();
     xthread::getInstance().saveSpecifiedContext((ucontext_t*)context);
-    syscalls::getInstance().handleEpochBegin();
+    syscalls::getInstance().atEpochBegin();
     // xthread::getInstance().resetContexts();
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.

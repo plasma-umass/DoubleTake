@@ -80,7 +80,10 @@ public:
   // Put and get are only used for simple increment and decrement operation.
   void get() { set(-1); }
 
-  void put() { set(1); }
+  void put() {
+		//PRINT("someone up the semaphore on semid %d\n", _semaId);  
+		set(1); 
+	}
 
   void destroy() {
     semaArg argument;

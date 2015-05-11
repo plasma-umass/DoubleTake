@@ -167,19 +167,18 @@ public:
     return (_reapableThreads != 0);
   }
 
-  inline void insertDeadThread(thread_t* thread) { deferSync((void*)thread, E_SYNCVAR_THREAD); }
-
   // Insert a synchronization variable into the global list, which
   // are reaped later at commit points.
-  inline void deferSync(void* ptr, syncVariableType type) {
+  inline bool deferSync(void* ptr, syncVariableType type) {
     struct deferSyncVariable* syncVar = NULL;
+		bool toReapThreads = false;
 
     syncVar = (struct deferSyncVariable*)InternalHeap::getInstance().malloc(
         sizeof(struct deferSyncVariable));
 
     if(syncVar == NULL) {
       fprintf(stderr, "No enough private memory, syncVar %p\n", syncVar);
-      return;
+      return toReapThreads;
     }
 
     listInit(&syncVar->list);
@@ -190,10 +189,16 @@ public:
 
     listInsertTail(&syncVar->list, &_deferSyncs);
     if(type == E_SYNCVAR_THREAD) {
-      incrementReapableThreads();
+      int reapThreads = incrementReapableThreads();
+
+			if((reapThreads >= xdefines::MAX_REAPABLE_THREADS) && (_aliveThreads - reapThreads) == 1) {
+				toReapThreads = true;
+			}
     }
 
     global_unlock();
+
+		return toReapThreads; 
   }
 
   void cancelAliveThread(pthread_t thread) {
@@ -225,7 +230,7 @@ public:
       switch(syncvar->syncVarType) {
 				
       case E_SYNCVAR_THREAD: {
-				fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
+				//fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
         threadmap::getInstance().removeAliveThread((thread_t*)syncvar->variable);
         _aliveThreads--;
         _reapableThreads--;
@@ -262,7 +267,6 @@ public:
       // Free this entry.
       InternalHeap::getInstance().free((void*)entry);
     }
-		fprintf(stderr, "runDeferredSyncs done\n");
 
     listInit(&_deferSyncs);
 		global_unlock();

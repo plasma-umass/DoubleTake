@@ -80,6 +80,7 @@ inline bool global_hasRollbacked() { return g_hasRollbacked; }
 inline void global_rollback() {
   global_setRollback();
 
+//	PRINT("Setting the global_rollback and broadcast to all waiting threads\n");
   // Wakeup all other threads.
   Real::pthread_cond_broadcast(&g_condWaiters);
   //    PRINF("after setting ROLLLBACK g_phase %d E_SYS_ROLLBACK %d\n", g_phase, E_SYS_ROLLBACK);

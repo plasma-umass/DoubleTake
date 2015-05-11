@@ -46,14 +46,18 @@ public:
 
   // Destroy all semaphores
   void finalize() {
-    // PRINF("Destroy all semaphores NOOOOOOOOO!\n");
+     PRINF("Destroy all semaphores NOOOOOOOOO!\n");
     destroyAllSemaphores();
   }
 
   thread_t* getThreadInfo(pthread_t thread) {
     thread_t* info = NULL;
+
     _xmap.find((void*)thread, sizeof(void*), &info);
-    // PRERR("getThreadInfo now, thread info %p\n", info);
+		if(info == NULL) {
+    	PRINF("Can't find thread_t for thread %lx. Exit now!!\n", thread);
+			abort();
+		}
     return info;
   }
 
@@ -136,6 +140,7 @@ public:
       // Set the entry of each thread to the first synchronization event.
       thread->syncevents.prepareRollback();
 
+			PRINF("preparing rollback for thread %d status %d\n", thread->index, thread->status);
       // Update to the next thread.
       if(isListTail(&ath->list, &_alivethreads)) {
         break;
@@ -182,6 +187,7 @@ public:
   void initThreadSemaphore(thread_t* thread) {
     semaphore* sema = &thread->sema;
 
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
     PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
     // We initialize the semaphore value to 0.
     sema->init((unsigned long)thread->self, 1, 0);

@@ -322,6 +322,8 @@ public:
   // For some list, we donot need to search one by one.
   // We can clear the whole list.
   void epochBegin() {
+//		PRINT("!!!!!recordentries cleanup!!!!!!\n");
+
     // Do munmap for all entries
     struct recordMunmap* record = NULL;
     while(true) {

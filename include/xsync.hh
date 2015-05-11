@@ -46,7 +46,7 @@ public:
     entry->list = list;
     _syncvars.insert(key, sizeof(key), entry);
 
-		PRINT("insertSyncMap entry %p entry %p\n", realentry, entry);
+		PRINF("insertSyncMap entry %p entry %p\n", realentry, entry);
   }
 
   void deleteMap(void* key) {
@@ -158,7 +158,7 @@ public:
 			struct SyncEntry* entry = (struct SyncEntry*)i.getData();
       SyncEventList* eventlist = (SyncEventList*)entry->list;
 
-			PRINT("cleaningup the eventlist %p!!!\n", eventlist);
+			PRINF("cleaningup the eventlist %p!!!\n", eventlist);
       eventlist->cleanup();
     }
   }
@@ -183,17 +183,16 @@ public:
       syncvariable = i.getkey();
 			entry = (struct SyncEntry*)i.getData();
 
-			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry);
-#if 1  
+			PRINF("prepareRollback syncvariable %p pointintto %p entry %p realentry %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry);
 			// If syncvariable is not equal to the entry->realEntry, 
 			// those are mutex locks, conditional variables or mutexlocks
-			// Those variables are setted to 0 at epochBegin() or some non-valid variables.
-			// We have to recove them and making them to pointing to actual entries.
+			// The starting address of tose variables are cleaning up at epochBegin() (by backingup)
+			// We have to make them to pointing to actual synchronization entries since there are not 
+			// mutex_init or something else.
       if((*((void **)syncvariable)) != entry->realEntry) {
         // Setting the address
         setSyncVariable((void**)syncvariable, entry->realEntry);
-      }
-#endif
+			}
 
       eventlist = entry->list;
       prepareEventListRollback(eventlist);
@@ -209,6 +208,7 @@ public:
   inline void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
+		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
     if(event) {
       // Signal to next thread with the top event
       signalNextThread(event);

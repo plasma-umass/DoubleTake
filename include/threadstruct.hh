@@ -54,7 +54,7 @@ typedef struct thread {
   thrStatus status;
 
   // We will use this to link this thread to other lists.
-  list_t list;
+ // list_t list;
 
   // We have to allocate the space for all record initially.
   void* record;

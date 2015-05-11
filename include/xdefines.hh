@@ -115,7 +115,11 @@ public:
 
   // This is a experimental results. When we are using a larger number, rollback may fail.
   // Don't know why, although maximum number of semaphore is close to 128.
-  enum { MAX_ALIVE_THREADS = 65 };
+  enum { MAX_ALIVE_THREADS = 128 };
+
+	// Start to reap threads when reaplable threas is larer than that.
+  //enum { MAX_REAPABLE_THREADS = 8 };
+  enum { MAX_REAPABLE_THREADS = (MAX_ALIVE_THREADS - 10) };
   enum { NUM_HEAPS = MAX_ALIVE_THREADS };
   enum { SYNCMAP_SIZE = 4096 };
   enum { THREAD_MAP_SIZE = 1024 };

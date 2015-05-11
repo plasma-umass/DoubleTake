@@ -66,13 +66,16 @@ public:
     // fake variable name _spawningList here
     _sync.insertSyncMap((void*)_spawningList, _spawningList, _spawningList);
 
+		PRINF("SpawnList %p is inserted into the syncmap\n", _spawningList); 
     // Register the first thread
     initialThreadRegister();
     current->isSafe = true;
     PRINF("Done with thread initialization");
   }
 
-  void finalize() { threadmap::getInstance().finalize(); }
+  void finalize() { 
+		threadmap::getInstance().finalize(); 
+	}
 
   // After an epoch is end and there is no overflow,
   // we should discard those record events since there is no
@@ -82,7 +85,9 @@ public:
 		// There is no need to run deferred synchronizations 
 		// since we will do this in epochBegin();
 
-    // The global syncrecord
+		// Cleanup all synchronization events in the global list (mostly thread creations) and lists of 
+		// different synchronization variables
+		// FIXME: now it seems like that this function doesn't perform correctly.
     cleanSyncEvents();
   }
 
@@ -134,6 +139,7 @@ public:
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
 
+			PRINF("allocating tindex %d\n", tindex);
       // This can be caused by two reasons:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
       // Second, we haven't reaped the threads for a long time.
@@ -164,7 +170,7 @@ public:
         }
       }
 
-      // PRINT("create children %p\n", children);
+      // PRINF("create children %p\n", children);
       children->parent = current;
       children->index = tindex;
       children->startRoutine = fn;
@@ -187,7 +193,7 @@ public:
         Real::exit(-1);
       }
 
-      // PRINT("thread creation with index %d result %p\n", tindex, result);
+      PRINF("thread creation with index %d tid %lx\n", tindex, *tid);
       // Record spawning event
       _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
       getRecord()->recordCloneOps(result, *tid);
@@ -207,26 +213,27 @@ public:
           //     PRINF("Children %d status %d. now wakenup\n", children->index, children->status);
         }
         unlock_thread(children);
-        //  	PRINT("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
+        //  	PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
       }
     } else {
       PRINF("process %d is before thread_create now\n", current->index);
       result = _sync.peekSyncEvent();
+      PRINF("process %d is before thread_create, result %d\n", current->index, result);
 
       getRecord()->getCloneOps(tid, &result);
       PRINF("process %d in creation, result %d\n", current->index, result);
       if(result == 0) {
         waitSemaphore();
-        PRINF("process %d is after waitsemaphore\n", current->index);
+        PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
 
         // Wakeup correponding thread, now they can move on.
         thread_t* thread = getThread(*tid);
-        PRINF("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread,
-              thread->index);
 
         // Wakeup corresponding thread
         thread->joiner = NULL;
         thread->status = E_THREAD_ROLLBACK;
+        PRINF("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread,
+              thread->index);
         signal_thread(thread);
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
@@ -248,6 +255,7 @@ public:
     thread = getThread(joinee);
     assert(thread != NULL);
 
+		PRINF("main thread is joining thread %d\n", thread->index);
     // Now the thread has finished the register
     lock_thread(thread);
 
@@ -274,43 +282,15 @@ public:
     // Now we unlock and proceed
     unlock_thread(thread);
 
-    insertDeadThread(thread);
-
-		// Check whether we should reap all active threads or not?
-		// If the number of actually-active threads is only one and the 
-		// reapable number of threads is very close to the maximum number of threads.
-		reapDeadThreads();
+		// Defer the reaping of this thread for memory deterministic usage.
+		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
+			PRINF("Before reap dead threads!!!!\n");
+			// deferSync may return TRUE if we have to reapDeadThreads now.
+    	invokeCommit();
+		}
  
     return 0;
   }
-
-	/// @brief Reap those dead threads if necessary
-	inline void reapDeadThreads(void) {
-		// Check whether we should reap all active threads or not?
-    // If the number of actually-active threads is only one and the 
-    // reapable number of threads is very close to the maximum number of threads.
-
-		/* Critical parameters in threadinfo.hh:
-			 _reapableThreads:
-			 Incrementation:
-				incrementReapableThreads() will be called at deferSync() when type is E_SYNCVAR_THREAD. 
-				That is, insertDeadThread() in pthread_join().  
-					
-			 Decrementation:
-				E_SYNCVAR_THREAD, we will remove the thread from the alive threads by calling removeAliveThread().
-				cancelAliveThread() will be called when pthread_cancel() is called. But pthread_cancel() has to be reimplemented.    
-
-			 _aliveThreads: 
-
-			 Incrementation:
-					
-			 Decrementation:
-				cancelAliveThread() 
-
-
-		*/
-
-	}
 
   /// @brief Detach a thread
   inline int thread_detach(pthread_t thread) {
@@ -383,7 +363,7 @@ public:
         realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       }
 
-      //  PRINT("pthread_self %lx: do_mutex_lock at line %d: mutex %p realMutex %p\n",
+      //  PRINF("pthread_self %lx: do_mutex_lock at line %d: mutex %p realMutex %p\n",
       // pthread_self(), __LINE__, mutex, realMutex);
       assert(realMutex != NULL);
 
@@ -402,14 +382,14 @@ public:
 
       // Record this event
       //  PRINF("do_mutex_lock before recording\n");
-      // PRINT("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(),
+      // PRINF("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(),
       // __LINE__, mutex, realMutex);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      //			PRINT("mutex_lock at mutex %p realMutex %p list %p\n", mutex, realMutex, list);
+      //			PRINF("mutex_lock at mutex %p realMutex %p list %p\n", mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     } else {
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      //		PRINT("mutex_lock at mutex %p list %p\n", mutex, list);
+      //		PRINF("mutex_lock at mutex %p list %p\n", mutex, list);
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
       assert(list != NULL);
       ret = _sync.peekSyncEvent();
@@ -434,10 +414,10 @@ public:
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
-      //		PRINT("mutex_unlock at mutex %p\n", mutex);
+      //		PRINF("mutex_unlock at mutex %p\n", mutex);
     } else {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      //	PRINT("mutex_unlock at mutex %p list %p\n", mutex, list);
+      //	PRINF("mutex_unlock at mutex %p list %p\n", mutex, list);
       struct syncEvent* nextEvent = list->advanceSyncEvent();
       if(nextEvent) {
         _sync.signalNextThread(nextEvent);
@@ -669,7 +649,7 @@ public:
   inline static void enableCheck() {
     current->internalheap = false;
     current->disablecheck = false;
-    // PRINT("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
+    // PRINF("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
 
   inline static bool isCheckDisabled() { return current->disablecheck; }
@@ -677,7 +657,7 @@ public:
   inline static void disableCheck() {
     current->internalheap = true;
     current->disablecheck = true;
-    // PRINT("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
+    // PRINF("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
 
   inline static pid_t gettid() { return syscall(SYS_gettid); }
@@ -693,7 +673,7 @@ private:
 
   inline SyncEventList* getSyncEventList(void* ptr, size_t size) {
     void** entry = (void**)ptr;
-    //    PRINT("ptr %p *entry is %p, size %ld\n", ptr, *entry, size);
+    //    PRINF("ptr %p *entry is %p, size %ld\n", ptr, *entry, size);
     return (SyncEventList*)((intptr_t)(*entry) + size);
   }
 
@@ -736,7 +716,10 @@ private:
   // If it is my turn, I should get the semaphore.
   static void waitSemaphore() {
     semaphore* sema = &current->sema;
+
+		PRINF("wait on semaphore %p\n", sema);
     sema->get();
+		PRINF("Get the semaphore %p\n", sema);
   }
 
   semaphore* getSemaphore() { return &current->sema; }
@@ -756,7 +739,7 @@ private:
     lock_thread(current);
 
     // Initialize corresponding cond and mutex.
-    listInit(&current->list);
+    //listInit(&current->list);
 
     current->tid = tid;
     current->status = E_THREAD_RUNNING;
@@ -850,7 +833,6 @@ private:
   }
 
   inline static void insertDeadThread(thread_t* thread) {
-    threadinfo::getInstance().insertDeadThread(thread);
   }
 
   static bool isStackVariable(void* ptr) {
@@ -859,11 +841,11 @@ private:
 
   // Insert a synchronization variable into the global list, which
   // are reaped later in the beginning of next epoch.
-  inline static void deferSync(void* ptr, syncVariableType type) {
+  inline static bool deferSync(void* ptr, syncVariableType type) {
     // We won't handle the re-use the same synchronization variable in the same epoch.
 		// That is, one synchronization variable will have two different purposes, which are detroyed 
 		// at first and then re-utilize for another purpose. 
-    threadinfo::getInstance().deferSync(ptr, type);
+    return threadinfo::getInstance().deferSync(ptr, type);
   }
 
   static void setThreadSafe();
@@ -873,8 +855,8 @@ private:
     void* result = NULL;
     current = (thread_t*)arg;
 
-    // PRINT("STARTTHREAD: current %p\n", current);
-    // PRINT("thread %p self %p is starting now.\n", current, (void*)current->self);
+    // PRINF("STARTTHREAD: current %p\n", current);
+    // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
 
@@ -886,7 +868,7 @@ private:
     // We actually get those parameter about new created thread
     // from the TLS storage.
     result = current->startRoutine(current->startArg);
-    //	PRINT("result of calling startRoutine %p\n", result);
+    //	PRINF("result of calling startRoutine %p\n", result);
     // Insert dead list now so that the corresponding entry can be cleaned up if
     // there is no need to rollback.
 
@@ -923,13 +905,13 @@ private:
       PRINF("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       PRINF("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
       wait_thread(current);
-      //      PRINF("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
+      PRINF("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
     // What to do in the end of a thread?
 		// It can only have two status, one is to rollback and another is to exit successfully.
     if(current->status == E_THREAD_ROLLBACK) {
-      PRINF("THREAD%d (at %p) is wakenup\n", current->index, current);
+      PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, current);
       current->status = E_THREAD_RUNNING;
       unlock_thread(current);
 
@@ -944,7 +926,7 @@ private:
       assert(0);
     } else {
       assert(current->status == E_THREAD_EXITING);
-      PRINF("THREAD%d (at %p) is exiting now\n", current->index, current);
+      PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, current);
       unlock_thread(current);
     }
     return result;

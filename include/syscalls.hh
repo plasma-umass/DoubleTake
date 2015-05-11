@@ -59,7 +59,7 @@ public:
   void epochBegin() { xrun::getInstance().epochBegin(); }
 
   // Called by xrun::epochBegin()
-  void handleEpochBegin() {
+  void atEpochBegin() {
 #ifdef REPRODUCIBLE_FDS
     // Handle those closed files
     _fops.cleanClosedFiles();

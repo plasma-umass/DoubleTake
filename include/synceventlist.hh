@@ -53,9 +53,6 @@ public:
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent* event = allocSyncEvent();
 
-    PRINF("recordSyncEvent event %p thread %p eventlist %p\n", event, current, this);
-    //    PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event,
-    // current, this);
     listInit(&event->list);
 
     // Change the event there.
@@ -63,8 +60,7 @@ public:
     event->eventlist = this;
     event->ret = ret;
 
-    //  PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event,
-    // current, this);
+    PRINF("recordSyncEvent line %d: event %p thread %p eventlist %p\n", __LINE__, event, current, this);
     if(synccmd != E_SYNC_MUTEX_LOCK) {
       Real::pthread_mutex_lock(&this->lock);
       listInsertTail(&event->list, &this->list);
@@ -73,10 +69,6 @@ public:
       // We only record synchronization inside critical section.
       // so there is no need to acquire another lock.
       listInsertTail(&event->list, &this->list);
-      if((unsigned long)this == 0x100001cffe48) {
-        PRINT("recordSyncEvent line %d: event %p thread %p eventlist %p nowthis %lx\n", __LINE__,
-              event, current, this, *((unsigned long*)this));
-      }
     }
     // PRINF("RECORDING: syncCmd %d on event %p thread %p (THREAD%d)", synccmd, event,
     // event->thread, current->index);
@@ -90,7 +82,7 @@ public:
   inline struct syncEvent* advanceSyncEvent() {
     list_t* curentry = this->curentry;
 
-    //		PRINT("currenty is %p this->list address %p\n", curentry, &this->list);
+    //PRINF("currenty is %p this->list address %p\n", curentry, &this->list);
     if(!isListTail(curentry, &this->list)) {
       this->curentry = nextEntry(curentry);
     } else {
@@ -101,7 +93,9 @@ public:
   }
 
   // cleanup all events in a list.
-  void cleanup() { listInit(&this->list); }
+  void cleanup() {
+		listInit(&this->list); 
+	}
 
   struct syncEvent* allocSyncEvent() { return current->syncevents.alloc(); }
 
@@ -114,7 +108,7 @@ public:
       event = (struct syncEvent*)this->curentry;
     }
 
-    //    PRINF("synceventlist at %p event %p\n", &list, event);
+    PRINF("prepareRollback: synceventlist at %p event %p\n", &list, event);
     return event;
   }
 

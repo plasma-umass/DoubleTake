@@ -54,10 +54,10 @@ void xthread::epochBegin() {
 	// Handle the quarantine list of memory.
   current->qlist.restore();
 
-	//PRINT("Cleanup all synchronization events for this thread\n");
+	//PRINF("Cleanup all synchronization events for this thread\n");
 	// Handle the synchronization events
   current->syncevents.cleanup();
-	//PRINT("Cleanup all synchronization events for this thread done\n");
+	//PRINF("Cleanup all synchronization events for this thread done\n");
 }
 
 void xthread::prepareRollback() {
@@ -65,16 +65,16 @@ void xthread::prepareRollback() {
   // System call should be rolled back before memory rollback.
   // syscalls::getInstance().prepareRollback();
 
-  PRINT("calling threadmap::prepareRollback\n");
+  PRINF("calling threadmap::prepareRollback\n");
   // Initialize the semaphores for threads at first since preparing synchronization may
   // increment corresponding semaphore.
   threadmap::getInstance().prepareRollback();
 
   PRINF("calling xsync::prepareRollback\n");
-  PRINT("before calling sync::prepareRollback\n");
+  PRINF("before calling sync::prepareRollback\n");
   // Update the semaphores and synchronization entry
   _sync.prepareRollback();
-  PRINT("after calling sync::prepareRollback\n");
+  PRINF("after calling sync::prepareRollback\n");
 }
 
 void xthread::setThreadSafe() {
@@ -94,7 +94,7 @@ bool xthread::addQuarantineList(void* ptr, size_t sz) {
 void xthread::rollback() {
   current->qlist.restore();
 
-  PRINT("xthread::rollback now\n");
+  PRINF("xthread::rollback now\n");
   // Recover the context for current thread.
   restoreContext();
 }
