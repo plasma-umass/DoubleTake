@@ -158,7 +158,7 @@ public:
 			struct SyncEntry* entry = (struct SyncEntry*)i.getData();
       SyncEventList* eventlist = (SyncEventList*)entry->list;
 
-			PRINT("cleaningup the eventlist %p\n", eventlist);
+			PRINT("cleaningup the eventlist %p!!!\n", eventlist);
       eventlist->cleanup();
     }
   }
@@ -181,11 +181,19 @@ public:
 
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
       syncvariable = i.getkey();
-      entry = (struct SyncEntry*)i.getData();
-      if(syncvariable != entry) {
+			entry = (struct SyncEntry*)i.getData();
+
+			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry);
+#if 1  
+			// If syncvariable is not equal to the entry->realEntry, 
+			// those are mutex locks, conditional variables or mutexlocks
+			// Those variables are setted to 0 at epochBegin() or some non-valid variables.
+			// We have to recove them and making them to pointing to actual entries.
+      if((*((void **)syncvariable)) != entry->realEntry) {
         // Setting the address
         setSyncVariable((void**)syncvariable, entry->realEntry);
       }
+#endif
 
       eventlist = entry->list;
       prepareEventListRollback(eventlist);
