@@ -182,6 +182,7 @@ DEFINE_WRAPPER(pthread_cond_destroy);
 DEFINE_WRAPPER(pthread_cond_init);
 DEFINE_WRAPPER(pthread_cond_signal);
 DEFINE_WRAPPER(pthread_cond_wait);
+DEFINE_WRAPPER(pthread_cond_timedwait);
 DEFINE_WRAPPER(pthread_create);
 DEFINE_WRAPPER(pthread_detach);
 DEFINE_WRAPPER(pthread_exit);
@@ -445,6 +446,7 @@ void initializer() {
   INIT_WRAPPER(pthread_cond_init, pthread_handle);
   INIT_WRAPPER(pthread_cond_signal, pthread_handle);
   INIT_WRAPPER(pthread_cond_wait, pthread_handle);
+  INIT_WRAPPER(pthread_cond_timedwait, pthread_handle);
   INIT_WRAPPER(pthread_create, pthread_handle);
   INIT_WRAPPER(pthread_detach, pthread_handle);
   INIT_WRAPPER(pthread_exit, pthread_handle);

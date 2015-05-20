@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstddef>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include "globalinfo.hh"
 #include "real.hh"
@@ -23,6 +27,7 @@
 // Install xxmalloc, xxfree, etc. as custom allocator
 #include "wrappers/gnuwrapper.cpp"
 
+using namespace std;
 enum { InitialMallocSize = 512 * 1024 * 1024 };
 
 size_t __max_stack_size;
@@ -41,6 +46,8 @@ pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;
 int g_waitersTotal;
+static stringstream buffer;
+//static streambuf * coutbuf;
 
 __attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
@@ -53,7 +60,11 @@ __attribute__((constructor)) void initializer() {
   if(!funcInitialized) {
     funcInitialized = true;
     xrun::getInstance().initialize();
+  
+	//	cout << "DoubleTake 1.0" << endl;
     initialized = true;
+//		coutbuf = cout.rdbuf(); //save old buf
+//	 	cout.rdbuf(buffer.rdbuf());
   }
 }
 
@@ -214,6 +225,14 @@ extern "C" {
     return 0;
   }
 
+  int pthread_cond_timedwait(pthread_cond_t* cond, pthread_mutex_t* mutex,
+			const struct timespec * abstime) 
+		{
+    assert(initialized == true);
+
+    return xthread::getInstance().cond_timedwait(cond, mutex, abstime);
+  }
+
   int pthread_cond_destroy(pthread_cond_t* cond) {
     if(initialized)
       xthread::getInstance().cond_destroy(cond);
@@ -302,7 +321,6 @@ extern "C" {
 
   int pthread_create(pthread_t* tid, const pthread_attr_t* attr, void* (*start_routine)(void*),
 		     void* arg) {
-    //  fprintf(stderr, "Calling spawning now!!!\n");
     return xthread::getInstance().thread_create(tid, attr, start_routine, arg);
   }
 
@@ -1069,8 +1087,6 @@ extern "C" {
   }
 
   int gettimeofday(struct timeval* tv, struct timezone* tz) {
-
-    // fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().gettimeofday(tv, tz);
   }
 

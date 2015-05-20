@@ -139,7 +139,6 @@ public:
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
 
-			PRINF("allocating tindex %d\n", tindex);
       // This can be caused by two reasons:
       // First, xdefines::MAX_ALIVE_THREADS is too small.
       // Second, we haven't reaped the threads for a long time.
@@ -170,7 +169,6 @@ public:
         }
       }
 
-      // PRINF("create children %p\n", children);
       children->parent = current;
       children->index = tindex;
       children->startRoutine = fn;
@@ -357,7 +355,7 @@ public:
 
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-      // PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
+     // PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
       if(isInvalidMutex(realMutex)) {
         mutex_init((pthread_mutex_t*)mutex, NULL);
         realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
@@ -478,6 +476,43 @@ public:
 
     return ret;
   }
+  
+	// Cond_timedwait: since we usually get the mutex before this. So there is
+  // no need to check mutex any more.
+  int cond_timedwait(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
+    int ret;
+    SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+    assert(list != NULL);
+
+    if(!global_isRollback()) {
+      pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
+      assert(realMutex != NULL);
+
+      // Add the event into eventlist
+      ret = Real::pthread_cond_timedwait(cond, realMutex, abstime);
+
+      // Record the waking up of conditional variable
+      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+    } else {
+      ret = _sync.peekSyncEvent();
+
+      if(ret == 0) {
+        struct syncEvent* event = list->advanceSyncEvent();
+        if(event) {
+          // Actually, we will wakeup next thread on the event list.
+          // Since cond_wait will call unlock at first.
+          _sync.signalNextThread(event);
+        }
+
+        // Now waiting for the lock
+        waitSemaphore();
+      }
+
+      _sync.advanceThreadSyncList();
+    }
+
+    return ret;
+	}
 
   int cond_broadcast(pthread_cond_t* cond) { return Real::pthread_cond_broadcast(cond); }
 
@@ -855,7 +890,6 @@ private:
     void* result = NULL;
     current = (thread_t*)arg;
 
-    // PRINF("STARTTHREAD: current %p\n", current);
     // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
     // Record some information before the thread moves on
     threadRegister(false);
