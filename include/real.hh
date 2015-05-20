@@ -228,6 +228,7 @@ DECLARE_WRAPPER(pthread_cond_destroy);
 DECLARE_WRAPPER(pthread_cond_init);
 DECLARE_WRAPPER(pthread_cond_signal);
 DECLARE_WRAPPER(pthread_cond_wait);
+DECLARE_WRAPPER(pthread_cond_timedwait);
 DECLARE_WRAPPER(pthread_create);
 DECLARE_WRAPPER(pthread_detach);
 DECLARE_WRAPPER(pthread_exit);
