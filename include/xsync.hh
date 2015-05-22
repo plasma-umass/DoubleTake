@@ -61,18 +61,24 @@ public:
   void signalNextThread(struct syncEvent* event) {
     thread_t* thread = (thread_t*)event->thread;
 
+		// Acquire the lock before adding an event to the pending list
+		// since the thread may try to check whether it can proceed or not
+    lock_thread(thread);
+
+    // Add this pending event into corresponding thread.
     // Whether this event is on the top of thread?
     if(isThreadNextEvent(event, thread)) {
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
+      PRINT("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
       signalThread(thread);
-      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index,
-            event);
     } else {
-      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index,
+      PRINT("Thread %d adding pending event to next thread %d on event %p", current->index,
             thread->index, event);
       addPendingSyncEvent(event, thread);
     }
+
+		unlock_thread(thread);
   }
 
   // Signal current thread if event is one of pending events.
@@ -82,8 +88,7 @@ public:
 
     assert(thread == current);
 
-    // PRINF("singalCurrentThread: event %p on variable %p command %d", event,
-    // event->eventlist->getSyncVariable(), event->eventlist->getSyncCmd());
+    lock_thread(current);
 
     if(!isListEmpty(eventlist)) {
       //     PRINF("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event,
@@ -96,8 +101,7 @@ public:
       while(true) {
         // We found this event
         if(pe->event == event) {
-          PRINF("singalCurrentThread: signal myself, retrieve event %p pe->event %p", event,
-                pe->event);
+          PRINT("singalCurrentThread: signal myself thread %d, retrieve event %p pe->event %p", current->index, event, pe->event);
           // Remove this event from the list.
           listRemoveNode(&pe->list);
 
@@ -106,6 +110,8 @@ public:
 
           // Now signal current thread.
           signalThread(thread);
+    			
+					PRINT("singalCurrentThread %d: event %p", thread->index, event);
           break;
         }
 
@@ -119,6 +125,8 @@ public:
     } else {
       PRINF("thread pending list is empty now!!!");
     }
+    
+		unlock_thread(current);
   }
 
   // Update the synchronization list.
@@ -136,13 +144,21 @@ public:
   }
 
   // peekSyncEvent return the saved event value for current synchronization.
-  inline int peekSyncEvent() {
+  inline int peekSyncEvent(void* tlist) {
     int result = -1;
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
+		PRINT("peekSyncEvent at thread %d: event %p event thread %d\n", current->index, event, ((thread_t*)event->thread)->index);
     if(event) {
       REQUIRE(event->thread == current,
               "Event %p belongs to thread %p, not the current thread (%p)", event, event->thread,
               current);
+			// If the event pointing to a different thread, or the target event 
+			// is not the current one, warn about this situaion. Something wrong!
+			if((event->thread != current) || (event->eventlist != tlist)) {
+				PRINT("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+			assert(event->thread == current);
+			assert(event->eventlist == tlist);
+			}
       result = event->ret;
     } else {
       // ERROR("Event not exising now at thread %p!!!!\n", current);
@@ -176,14 +192,12 @@ public:
   void prepareRollback() {
     syncvarsHashMap::iterator i;
     struct SyncEntry* entry;
-    SyncEventList* eventlist = NULL;
     void* syncvariable;
 
     for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
       syncvariable = i.getkey();
 			entry = (struct SyncEntry*)i.getData();
 
-			PRINF("prepareRollback syncvariable %p pointintto %p entry %p realentry %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry);
 			// If syncvariable is not equal to the entry->realEntry, 
 			// those are mutex locks, conditional variables or mutexlocks
 			// The starting address of tose variables are cleaning up at epochBegin() (by backingup)
@@ -193,9 +207,10 @@ public:
         // Setting the address
         setSyncVariable((void**)syncvariable, entry->realEntry);
 			}
+			
+			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
 
-      eventlist = entry->list;
-      prepareEventListRollback(eventlist);
+      prepareEventListRollback(entry->list);
     }
   }
 
@@ -208,7 +223,7 @@ public:
   inline void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
-		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
+		PRINT("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
     if(event) {
       // Signal to next thread with the top event
       signalNextThread(event);
@@ -225,7 +240,6 @@ public:
     listInit(&pendingEvent->list);
     pendingEvent->event = event;
 
-    // Add this pending event into corresponding thread.
     listInsertTail(&pendingEvent->list, &thread->pendingSyncevents);
   }
 
@@ -236,7 +250,7 @@ public:
 
   void signalThread(thread_t* thread) {
     semaphore* sema = &thread->sema;
-    PRINF("Signal semaphore to thread%d (at %p)\n", thread->index, thread);
+    PRINT("Thread %d: ^^^^^Signal semaphore to thread %d\n", current->index, thread->index);
     sema->put();
   }
 
