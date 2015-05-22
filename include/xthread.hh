@@ -215,7 +215,7 @@ public:
       }
     } else {
       PRINF("process %d is before thread_create now\n", current->index);
-      result = _sync.peekSyncEvent();
+      result = _sync.peekSyncEvent(_spawningList);
       PRINF("process %d is before thread_create, result %d\n", current->index, result);
 
       getRecord()->getCloneOps(tid, &result);
@@ -238,7 +238,7 @@ public:
       // Update the events.
       PRINF("#############process %d before updateSyncEvent now\n", current->index);
       updateSyncEvent(_spawningList);
-      //      _spawningList->advanceSyncEvent();
+      PRINF("#############process %d after updateSyncEvent now\n", current->index);
     }
 
     return result;
@@ -257,6 +257,7 @@ public:
     // Now the thread has finished the register
     lock_thread(thread);
 
+		PRINF("main thread is joining thread %d with status %d\n", thread->index, thread->status);
     if(thread->status != E_THREAD_WAITFOR_REAPING) {
       // Set the joiner to current thread
       thread->joiner = current;
@@ -350,12 +351,12 @@ public:
 
   int do_mutex_lock(void* mutex, thrSyncCmd synccmd) {
     int ret = 0;
-    pthread_mutex_t* realMutex = NULL;
     SyncEventList* list = NULL;
 
     if(!global_isRollback()) {
+    	pthread_mutex_t* realMutex = NULL;
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-     // PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
+      //PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
       if(isInvalidMutex(realMutex)) {
         mutex_init((pthread_mutex_t*)mutex, NULL);
         realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
@@ -383,20 +384,34 @@ public:
       // PRINF("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(),
       // __LINE__, mutex, realMutex);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      //			PRINF("mutex_lock at mutex %p realMutex %p list %p\n", mutex, realMutex, list);
+     	PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+     	//PRINF("Thread %d: mutex_lock at mutex %p realMutex %p list %p. Record done!!\n", current->index, mutex, realMutex, list);
     } else {
+     	PRDBG("mutex_lock at mutex %p list %p\n", mutex, list);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-      //		PRINF("mutex_lock at mutex %p list %p\n", mutex, list);
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
+     PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
-      ret = _sync.peekSyncEvent();
+
+			/* Peek the synchronization event (first event in the thread), it will confirm the following things
+			 1. Whether this event is expected event? If it is not, maybe it is caused by
+			    a race condition. Maybe we should restart the rollback or just simply reported this problem.
+			 2. Whether the first event is on the pending list, which means it is the thread's turn? 
+					If yes, then the current signal thread should increment its semaphore.
+			 3. Whether the mutex_lock is successful or not? If it is not successful, 
+					no need to wait for the semaphore since there is no actual lock happens.
+			*/ 
+      ret = _sync.peekSyncEvent(list);
+     	PRINF("REPLAY: After peek: Thread %d: mutex_lock at mutex %p list %p ret %d.\n", current->index, mutex, list, ret);
       if(ret == 0) {
         waitSemaphore();
       }
 
-      // Update thread synchronization event in order to handle the nesting lock.
-      _sync.advanceThreadSyncList();
+     	PRINF("REPLAY: After peekandwait: Thread %d: mutex_lock at mutex %p list %p ret %d.\n", current->index, mutex, list, ret);
+     	PRDBG("mutex_lock at mutex %p list %p done\n", mutex, list);
+     	//PRINF("mutex_lock at mutex %p list %p done!\n", mutex, list);
+			_sync.advanceThreadSyncList();
     }
     return ret;
   }
@@ -415,11 +430,13 @@ public:
       //		PRINF("mutex_unlock at mutex %p\n", mutex);
     } else {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+      PRDBG("mutex_unlock at mutex %p list %p\n", mutex, list);
       //	PRINF("mutex_unlock at mutex %p list %p\n", mutex, list);
       struct syncEvent* nextEvent = list->advanceSyncEvent();
       if(nextEvent) {
         _sync.signalNextThread(nextEvent);
       }
+      PRDBG("mutex_unlock at mutex %p list %p done\n", mutex, list);
     }
     // WARN("mutex_unlock mutex %p\n", mutex);
     return ret;
@@ -457,7 +474,7 @@ public:
       // Record the waking up of conditional variable
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     } else {
-      ret = _sync.peekSyncEvent();
+      ret = _sync.peekSyncEvent(list);
 
       if(ret == 0) {
         struct syncEvent* event = list->advanceSyncEvent();
@@ -469,9 +486,10 @@ public:
 
         // Now waiting for the lock
         waitSemaphore();
+
+				_sync.advanceThreadSyncList();
       }
 
-      _sync.advanceThreadSyncList();
     }
 
     return ret;
@@ -494,7 +512,7 @@ public:
       // Record the waking up of conditional variable
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
     } else {
-      ret = _sync.peekSyncEvent();
+      ret = _sync.peekSyncEvent(list);
 
       if(ret == 0) {
         struct syncEvent* event = list->advanceSyncEvent();
@@ -506,9 +524,9 @@ public:
 
         // Now waiting for the lock
         waitSemaphore();
+			
+				_sync.advanceThreadSyncList();
       }
-
-      _sync.advanceThreadSyncList();
     }
 
     return ret;
@@ -569,11 +587,12 @@ public:
       ret = Real::pthread_barrier_wait(realBarrier);
       list->recordSyncEvent(E_SYNC_BARRIER, ret);
     } else {
-      ret = _sync.peekSyncEvent();
+      ret = _sync.peekSyncEvent(list);
       if(ret == 0) {
         waitSemaphore();
       }
 
+			// FIXME: how to 
       updateSyncEvent(list);
 
       if(ret == 0) {
@@ -852,8 +871,8 @@ private:
 
   // Actually calling both pdate both thread event list and sync event list.
   inline void updateSyncEvent(SyncEventList* list) {
-    // First step, advance thread's list
-    _sync.advanceThreadSyncList();
+		// Advance the thread eventlist
+		_sync.advanceThreadSyncList();
 
     struct syncEvent* event = list->advanceSyncEvent();
     if(event) {
@@ -902,7 +921,7 @@ private:
     // We actually get those parameter about new created thread
     // from the TLS storage.
     result = current->startRoutine(current->startArg);
-    //	PRINF("result of calling startRoutine %p\n", result);
+    PRINF("result %p of calling startRoutine %p on thread %d\n", result, current->startRoutine, current->index);
     // Insert dead list now so that the corresponding entry can be cleaned up if
     // there is no need to rollback.
 

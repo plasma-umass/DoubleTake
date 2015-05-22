@@ -88,6 +88,10 @@ public:
     }
   }
 
+	void advanceEntry() {
+    _iter++;
+	}
+
   Entry* retrieveIterEntry() {
     Entry* entry = NULL;
     if(_iter < _cur) {

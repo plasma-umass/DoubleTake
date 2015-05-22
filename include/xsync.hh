@@ -70,10 +70,10 @@ public:
     if(isThreadNextEvent(event, thread)) {
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
-      PRINT("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
+      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
       signalThread(thread);
     } else {
-      PRINT("Thread %d adding pending event to next thread %d on event %p", current->index,
+      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index,
             thread->index, event);
       addPendingSyncEvent(event, thread);
     }
@@ -81,19 +81,28 @@ public:
 		unlock_thread(thread);
   }
 
+	// Update the synchronization list.
+  void advanceThreadSyncList() {
+    global_lock();
+
+    // Update next event of thread eventlist.
+    current->syncevents.advanceEntry();
+
+    global_unlock();
+  }
+
+
   // Signal current thread if event is one of pending events.
   void signalCurrentThread(struct syncEvent* event) {
     thread_t* thread = (thread_t*)event->thread;
     list_t* eventlist = &thread->pendingSyncevents;
 
-    assert(thread == current);
-
     lock_thread(current);
 
+		// Having pending events
     if(!isListEmpty(eventlist)) {
-      //     PRINF("singalCurrentThread: event %p thread %p, pending list is not empty!!!\n", event,
-      // thread);
-      // Only signal itself when current event is first event of this thread.
+		PRINF("During peek, calling singalCurrentThread %d. with pending events.\n", thread->index);
+      // Signal itself when current event is first event of this thread.
       struct pendingSyncEvent* pe = NULL;
 
       // Search the whole list for given tid.
@@ -101,7 +110,7 @@ public:
       while(true) {
         // We found this event
         if(pe->event == event) {
-          PRINT("singalCurrentThread: signal myself thread %d, retrieve event %p pe->event %p", current->index, event, pe->event);
+          PRINF("singalCurrentThread: signal myself thread %d, retrieve event %p pe->event %p", current->index, event, pe->event);
           // Remove this event from the list.
           listRemoveNode(&pe->list);
 
@@ -111,7 +120,7 @@ public:
           // Now signal current thread.
           signalThread(thread);
     			
-					PRINT("singalCurrentThread %d: event %p", thread->index, event);
+					PRINF("singalCurrentThread %d: event %p", thread->index, event);
           break;
         }
 
@@ -123,46 +132,36 @@ public:
         }
       } // while (true)
     } else {
-      PRINF("thread pending list is empty now!!!");
+      PRINF("signalCurrentThread %d: thread pending list is empty now!!!", thread->index);
     }
     
 		unlock_thread(current);
   }
 
-  // Update the synchronization list.
-  void advanceThreadSyncList() {
-    struct syncEvent* nextEvent = NULL;
-
-    global_lock();
-
-    // Update next event of thread eventlist.
-    nextEvent = current->syncevents.nextIterEntry();
-    if(nextEvent != NULL) {
-      signalCurrentThread(nextEvent);
-    }
-    global_unlock();
-  }
-
-  // peekSyncEvent return the saved event value for current synchronization.
+	/*  Peek the synchronization event (first event in the thread), it will confirm the following things
+       1. Whether this event is expected event? If it is not, maybe it is caused by
+          a race condition. Maybe we should restart the rollback or just simply reported this problem.
+       2. Whether the first event is on the pending list, which means it is the thread's turn? 
+          If yes, then the current signal thread should increment its semaphore.
+       3. Whether the mutex_lock is successful or not? If it is not successful, 
+          no need to wait for the semaphore since there is no actual lock happens.
+	*/
   inline int peekSyncEvent(void* tlist) {
     int result = -1;
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
-		PRINT("peekSyncEvent at thread %d: event %p event thread %d\n", current->index, event, ((thread_t*)event->thread)->index);
-    if(event) {
-      REQUIRE(event->thread == current,
-              "Event %p belongs to thread %p, not the current thread (%p)", event, event->thread,
-              current);
-			// If the event pointing to a different thread, or the target event 
-			// is not the current one, warn about this situaion. Something wrong!
-			if((event->thread != current) || (event->eventlist != tlist)) {
-				PRINT("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+			
+		// If the event pointing to a different thread, or the target event 
+		// is not the current one, warn about this situaion. Something wrong!
+		if((event->thread != current) || (event->eventlist != tlist)) {
+			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
-			}
-      result = event->ret;
-    } else {
-      // ERROR("Event not exising now at thread %p!!!!\n", current);
-    }
+		}
+
+		// Signal current thread if the event is in the pending list   
+    signalCurrentThread(event);
+
+	  result = event->ret;
     return result;
   }
 
@@ -208,7 +207,7 @@ public:
         setSyncVariable((void**)syncvariable, entry->realEntry);
 			}
 			
-			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
+			PRINF("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
 
       prepareEventListRollback(entry->list);
     }
@@ -223,7 +222,7 @@ public:
   inline void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
-		PRINT("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
+		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
     if(event) {
       // Signal to next thread with the top event
       signalNextThread(event);
@@ -250,7 +249,7 @@ public:
 
   void signalThread(thread_t* thread) {
     semaphore* sema = &thread->sema;
-    PRINT("Thread %d: ^^^^^Signal semaphore to thread %d\n", current->index, thread->index);
+    PRINF("Thread %d: ^^^^^Signal semaphore to thread %d\n", current->index, thread->index);
     sema->put();
   }
 

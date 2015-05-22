@@ -70,6 +70,7 @@ struct syncEvent {
   // Which thread is performing synchronization?
   void* thread;
   void* eventlist;
+//	void* syncvariable;
   int ret; // used for mutex_lock
 };
 

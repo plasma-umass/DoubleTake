@@ -84,7 +84,9 @@ public:
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
-      ptr = realmalloc(sz);
+  	//	PRINT("malloc sz %ld at thread %d\n", sz, current->index);
+	    ptr = realmalloc(sz);
+  	//	PRINT("malloc sz %ld ptr %p at thread %d\n", sz, ptr, current->index);
       // PRINT("malloc, current %p internalheap %d ptr %p\n", current, current->internalheap, ptr);
     }
     return ptr;
@@ -530,7 +532,7 @@ public:
   static void segvHandle(int /* signum */, siginfo_t* siginfo, void* context) {
     void* addr = siginfo->si_addr; // address of access
 
-    PRWRN("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    PRINF("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code,
           addr);
     current->internalheap = true;

@@ -185,7 +185,7 @@ public:
   // Tongping
   void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
     void* ret = NULL;
-
+#if 1
     if(!global_isRollback()) {
       // We only record these mmap requests.
       ret = Real::mmap(start, length, prot, flags, fd, offset);
@@ -195,7 +195,9 @@ public:
       getRecord()->getMmapOps(&ret);
       //    WARN("in rollback, ret %p length %lx\n", ret, length);
     }
+#endif
 #if 0 // Used to test epochBegin
+    PRINT("in the end of mmap, ret %p length %lx\n", ret, length);
     epochEnd();
     ret = Real::mmap(start, length, prot, flags, fd, offset);
     epochBegin();
@@ -1388,8 +1390,7 @@ public:
 
   // We can record this also. Tongping
   int gettimeofday(struct timeval* tv, struct timezone* tz) {
-    int ret;
-
+    int ret = 0;
     if(!global_isRollback()) {
       ret = Real::gettimeofday(tv, tz);
       // Add this to the record list.
