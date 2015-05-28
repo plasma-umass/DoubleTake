@@ -180,7 +180,6 @@ void xrun::epochEnd(bool endOfProgram) {
   } else {
 #endif
 #endif
-		while(1) {; }
     // PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();
