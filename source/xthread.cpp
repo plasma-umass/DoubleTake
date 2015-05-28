@@ -16,6 +16,7 @@
 #include "threadmap.hh"
 #include "threadstruct.hh"
 #include "xrun.hh"
+#include "syscalls.hh"
 #include "xsync.hh"
 
 // Global lock used when joining and exiting a thread.
@@ -62,19 +63,17 @@ void xthread::epochBegin() {
 
 void xthread::prepareRollback() {
   PRINF("calling syscalls::prepareRollback\n");
-  // System call should be rolled back before memory rollback.
-  // syscalls::getInstance().prepareRollback();
-
-  PRINF("calling threadmap::prepareRollback\n");
+  PRINT("calling threadmap::prepareRollback\n");
   // Initialize the semaphores for threads at first since preparing synchronization may
   // increment corresponding semaphore.
+	// Also, prepare the rollback of system call records.
   threadmap::getInstance().prepareRollback();
 
   PRINF("calling xsync::prepareRollback\n");
-  PRINF("before calling sync::prepareRollback\n");
+  PRINT("before calling sync::prepareRollback\n");
   // Update the semaphores and synchronization entry
   _sync.prepareRollback();
-  PRINF("after calling sync::prepareRollback\n");
+  PRINT("after calling sync::prepareRollback\n");
 }
 
 void xthread::setThreadSafe() {
@@ -94,7 +93,7 @@ bool xthread::addQuarantineList(void* ptr, size_t sz) {
 void xthread::rollback() {
   current->qlist.restore();
 
-  PRINF("xthread::rollback now\n");
+  PRINT("xthread::rollback now\n");
   // Recover the context for current thread.
   restoreContext();
 }

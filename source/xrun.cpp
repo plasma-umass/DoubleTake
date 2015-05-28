@@ -23,7 +23,7 @@ void xrun::startRollback() {
   global_rollback();
 
   PRINF("Starting rollback for other threads\n");
-  PRINF("Starting rollback for other threads\n");
+  PRINT("Starting rollback for other threads\n");
 
   // Set context for current thread.
   // Since the new context is not valid, how to
@@ -53,24 +53,22 @@ void xrun::rollback() {
     abort();
   }
 
-  PRINF("\n\nNOW RE-EXECUTION!!!\n\n\n");
-  // We should prepare those system calls before memory rollback.
-  // For example, if we don't want to reproduce fds, then we should
-  // close those newly added files by calling fclose.
-  // However, memory rollback can destroy filestream in the user space.
-  syscalls::getInstance().prepareRollback();
-   PRINF("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
-
   // Rollback all memory before rolling back the context.
   _memory.rollback();
 
+  PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
+ 
+ // We should prepare those system calls after the memory rollback.
+  // since memory rollback can destroy filestream in the user space.
+  syscalls::getInstance().prepareRollback();
+   PRINT("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
+
   //  PRINF("_memory rollback!!!\n");
-   PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
   _thread.prepareRollback();
-  // PRINF("_thread rollback and actual rollback\n");
+   PRINT("_thread rollback and actual rollback\n");
 
   // while(1);
   // PRINF("\n\nset rollback\n\n\n");
@@ -118,7 +116,7 @@ void xrun::epochBegin() {
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   global_epochBegin();
 
-  // Cleaning up the system calls.
+  // Cleaning up the record of system calls.
   syscalls::getInstance().atEpochBegin();
 
   PRINF("getpid %d: xrun::epochBegin\n", getpid());
@@ -182,6 +180,7 @@ void xrun::epochEnd(bool endOfProgram) {
   } else {
 #endif
 #endif
+		while(1) {; }
     // PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
     syscalls::getInstance().epochEndWell();
     xthread::getInstance().epochEndWell();

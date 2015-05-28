@@ -4,7 +4,7 @@
 /*
  * @file   recordsyscalls.h
  * @brief  A simple list (First-In-First-Out) to record different types of information.
- *         This class only support two different kinds of operation. One is PUSH, always
+ *         This class only support two different kinds of syscall. One is PUSH, always
  *         insert an item into the back of list. Another is POP, always poping out the first
  *         item in the list.
  *         To avoid conflict, each thread should maintain all sorts of this information locally.
@@ -26,29 +26,8 @@
 #include "recordentries.hh"
 #include "xdefines.hh"
 
-class Record {
-public:
-  typedef enum e_recordOps {
-    E_OP_FILE_OPEN = 0,
-    E_OP_FILE_CLOSE,
-    E_OP_FILE_DUP,
-    E_OP_DIR_OPEN,
-    E_OP_DIR_CLOSE,
-    E_OP_MMAP,
-    E_OP_MUNMAP,
-    E_OP_TIME,
-    E_OP_GETTIMEOFDAY,
-    E_OP_TIMES,
-    E_OP_CLONE,
-    E_OP_MAX
-  } eRecordOps;
-
+class SysRecord {
 private:
-  class RecordEntry {
-  public:
-    eRecordOps operation;
-    char data[64 - sizeof(eRecordOps)];
-  };
 
   /**
    * In order to handle these record information uniformly, the first item is "list_t"
@@ -97,34 +76,24 @@ private:
   };
 
 public:
-  void initialize() {
-    //    DEBUG("RECORD: _entries %p\n", &_entries);
-    _entries.initialize(xdefines::MAX_SYSCALL_ENTRIES);
 
-    // Initialize corresponding lists
-    for(int i = 0; i < E_OP_MAX; i++) {
-      listInit(&_glist[i]);
-    }
-    //   _lck.init();
-  }
-
-  // Record a file operation according to given op.
-  void recordFileOps(eRecordOps op, int fd) {
+  // Record a file syscall according to given sc.
+  void recordFileOps(eRecordSyscall sc, int fd) {
     // using the assertion since only my code will call this.
-    assert(op <= E_OP_FILE_DUP);
+    assert(sc <= E_SYS_FILE_DUP);
 
-    struct recordFile* record = (struct recordFile*)allocEntry(op);
+    struct recordFile* record = (struct recordFile*)allocEntry(sc);
     record->fd = fd;
-    if(op == E_OP_FILE_CLOSE) {
-      insertList(E_OP_FILE_CLOSE, &record->list);
+    if(sc == E_SYS_FILE_CLOSE) {
+      insertList(E_SYS_FILE_CLOSE, &record->list);
     }
   }
 
-  // Get the fd with specific op and remove corresponding item.
-  bool getFileOps(eRecordOps op, int* fd) {
+  // Get the fd with specific sc and remove corresponding item.
+  bool getFileOps(eRecordSyscall sc, int* fd) {
     bool isFound = false;
-    assert(op <= E_OP_FILE_DUP);
-    struct recordFile* record = (struct recordFile*)getEntry(op);
+    assert(sc <= E_SYS_FILE_DUP);
+    struct recordFile* record = (struct recordFile*)retrieveEntry(sc);
     if(record) {
       *fd = record->fd;
       isFound = true;
@@ -134,7 +103,7 @@ public:
 
   bool retrieveFCloseList(int* fd) {
     bool isFound = false;
-    struct recordFile* record = (struct recordFile*)retrieveListEntry(E_OP_FILE_CLOSE);
+    struct recordFile* record = (struct recordFile*)retrieveListEntry(E_SYS_FILE_CLOSE);
     if(record) {
       *fd = record->fd;
       isFound = true;
@@ -142,23 +111,23 @@ public:
     return isFound;
   }
 
-  // Record a file operation according to given op.
-  void recordDirOps(eRecordOps op, DIR* dir) {
+  // Record a file syscall according to given sc.
+  void recordDirOps(eRecordSyscall sc, DIR* dir) {
     // using the assertion since only my code will call this.
-    assert(op == E_OP_DIR_OPEN || op == E_OP_DIR_CLOSE);
+    assert(sc == E_SYS_DIR_OPEN || sc == E_SYS_DIR_CLOSE);
 
-    struct recordDir* record = (struct recordDir*)allocEntry(op);
+    struct recordDir* record = (struct recordDir*)allocEntry(sc);
     record->dir = dir;
-    if(op == E_OP_DIR_CLOSE) {
-      insertList(E_OP_DIR_CLOSE, &record->list);
+    if(sc == E_SYS_DIR_CLOSE) {
+      insertList(E_SYS_DIR_CLOSE, &record->list);
     }
   }
 
-  // Get the fd with specific op and remove corresponding item.
-  bool getDirOps(eRecordOps op, DIR** dir) {
+  // Get the fd with specific sc and remove corresponding item.
+  bool getDirOps(eRecordSyscall sc, DIR** dir) {
     bool isFound = false;
-    assert(op == E_OP_DIR_OPEN || op == E_OP_DIR_CLOSE);
-    struct recordDir* record = (struct recordDir*)getEntry(op);
+    assert(sc == E_SYS_DIR_OPEN || sc == E_SYS_DIR_CLOSE);
+    struct recordDir* record = (struct recordDir*)retrieveEntry(sc);
     if(record) {
       *dir = record->dir;
       isFound = true;
@@ -168,7 +137,7 @@ public:
 
   bool retrieveDIRCloseList(DIR** dir) {
     bool isFound = false;
-    struct recordDir* record = (struct recordDir*)retrieveListEntry(E_OP_DIR_CLOSE);
+    struct recordDir* record = (struct recordDir*)retrieveListEntry(E_SYS_DIR_CLOSE);
     if(record) {
       *dir = record->dir;
       isFound = true;
@@ -178,14 +147,14 @@ public:
 
   // record time results
   void recordTimeOps(time_t time) {
-    struct recordTime* record = (struct recordTime*)allocEntry(E_OP_TIME);
+    struct recordTime* record = (struct recordTime*)allocEntry(E_SYS_TIME);
     record->time = time;
   }
 
   // Get the first time results
   bool getTimeOps(time_t* time) {
     bool isFound = false;
-    struct recordTime* record = (struct recordTime*)getEntry(E_OP_TIME);
+    struct recordTime* record = (struct recordTime*)retrieveEntry(E_SYS_TIME);
 
     if(record) {
       *time = record->time;
@@ -197,13 +166,13 @@ public:
 
   // record time results
   void recordMmapOps(void* addr) {
-    struct recordMmap* record = (struct recordMmap*)allocEntry(E_OP_MMAP);
+    struct recordMmap* record = (struct recordMmap*)allocEntry(E_SYS_MMAP);
     record->addr = addr;
   }
 
   // Get the first time results
   bool getMmapOps(void** addr) {
-    struct recordMmap* record = (struct recordMmap*)getEntry(E_OP_MMAP);
+    struct recordMmap* record = (struct recordMmap*)retrieveEntry(E_SYS_MMAP);
     bool isFound = false;
 
     if(record) {
@@ -216,25 +185,25 @@ public:
 
   // record time results
   void recordMunmapOps(void* addr, size_t length) {
-    struct recordMunmap* record = (struct recordMunmap*)allocEntry(E_OP_MUNMAP);
+    struct recordMunmap* record = (struct recordMunmap*)allocEntry(E_SYS_MUNMAP);
     record->addr = addr;
     record->length = length;
 
     // Adding this munmap to the list.
-    insertList(E_OP_MUNMAP, &record->list);
+    insertList(E_SYS_MUNMAP, &record->list);
   }
 
   // Get the first time results
   void getMunmapOps() {
     // We actually only update the list.
     /* struct recordMunmap* record = (struct recordMunmap*)*/
-    getEntry(E_OP_MUNMAP); // FIXME unused return value.
+    retrieveEntry(E_SYS_MUNMAP); // FIXME unused return value.
     return;
   }
 
   // record time results
   void recordGettimeofdayOps(int ret, struct timeval* tv, struct timezone* tz) {
-    struct recordTimeofday* record = (struct recordTimeofday*)allocEntry(E_OP_GETTIMEOFDAY);
+    struct recordTimeofday* record = (struct recordTimeofday*)allocEntry(E_SYS_GETTIMEOFDAY);
 
     // Save those tv and tz
     if(tv) {
@@ -248,7 +217,7 @@ public:
 
   // Get the first time results
   bool getGettimeofdayOps(int* ret, struct timeval* tv, struct timezone* tz) {
-    struct recordTimeofday* record = (struct recordTimeofday*)getEntry(E_OP_GETTIMEOFDAY);
+    struct recordTimeofday* record = (struct recordTimeofday*)retrieveEntry(E_SYS_GETTIMEOFDAY);
     bool isFound = false;
 
     if(record) {
@@ -269,7 +238,7 @@ public:
 
   // record time results
   void recordTimesOps(clock_t ret, struct tms* buf) {
-    struct recordTimes* record = (struct recordTimes*)allocEntry(E_OP_TIMES);
+    struct recordTimes* record = (struct recordTimes*)allocEntry(E_SYS_TIMES);
 
     // Save those tv and tz
     record->ret = ret;
@@ -280,7 +249,7 @@ public:
 
   // Get the first time results
   bool getTimesOps(clock_t* ret, struct tms* buf) {
-    struct recordTimes* record = (struct recordTimes*)getEntry(E_OP_TIMES);
+    struct recordTimes* record = (struct recordTimes*)retrieveEntry(E_SYS_TIMES);
     bool isFound = false;
 
     if(record) {
@@ -298,7 +267,7 @@ public:
 
   // record time results
   void recordCloneOps(int ret, pthread_t tid) {
-    struct recordClone* rc = (struct recordClone*)allocEntry(E_OP_CLONE);
+    struct recordClone* rc = (struct recordClone*)allocEntry(E_SYS_CLONE);
     if(rc) {
       rc->ret = ret;
       rc->tid = tid;
@@ -308,7 +277,7 @@ public:
   // Get the first time results
   bool getCloneOps(pthread_t* tid, int* ret) {
     bool isFound = false;
-    struct recordClone* rc = (struct recordClone*)getEntry(E_OP_CLONE);
+    struct recordClone* rc = (struct recordClone*)retrieveEntry(E_SYS_CLONE);
 
     if(rc) {
       *tid = rc->tid;
@@ -327,7 +296,7 @@ public:
     // Do munmap for all entries
     struct recordMunmap* record = NULL;
     while(true) {
-      record = (struct recordMunmap*)retrieveListEntry(E_OP_MUNMAP);
+      record = (struct recordMunmap*)retrieveListEntry(E_SYS_MUNMAP);
 
       if(record == NULL) {
         break;
@@ -335,66 +304,70 @@ public:
 
       Real::munmap(record->addr, record->length);
     }
-    _entries.cleanup();
+
+		// Cleanup all record entries and all list of system calls;
+		current->syscalls.cleanup();
+		for(int i = 0; i< E_SYS_MAX; i++) {
+			listInit(&current->syslist[i]);
+		}
   }
 
   // Prepare the traverse for all list.
-  void prepareRollback() { _entries.prepareRollback(); }
+  void prepareRollback() { current->syscalls.prepareRollback(); }
 
 private:
-#if 0
-  void lock() {
-    _lck.lock();
-  }
 
-  void unlock() {
-    _lck.unlock();
-  }
-#endif
+  inline void* allocEntry(eRecordSyscall sc) {
+    struct SyscallEntry* entry = current->syscalls.alloc();
+    entry->syscall = sc;
 
-  inline void* allocEntry(eRecordOps op) {
-    class RecordEntry* entry = _entries.alloc();
-    entry->operation = op;
+		PRINT("SYSCALL: alloc entry %p for sc %d\n", entry, sc);
     return entry->data;
   }
 
   // For records, we only pop them from the beginning of a list
-  void* getEntry(eRecordOps op) {
-    assert(op >= E_OP_FILE_OPEN && op < E_OP_MAX);
+  void* retrieveEntry(eRecordSyscall sc) {
+    assert(sc >= E_SYS_FILE_OPEN && sc < E_SYS_MAX);
 
-    class RecordEntry* entry = _entries.retrieveIterEntry();
+    struct SyscallEntry* entry = current->syscalls.retrieveIterEntry();
+		
+		PRINT("SYSCALL: retrieveEntry %p for sc %d\n", entry, sc);
+
+		if(entry == NULL) {
+      PRINT("Have we met this entry with sc %d\n", sc);
+			assert(entry != NULL);
+		}
 
     void* ptr = NULL;
     if(entry) {
-      if(entry->operation != op) {
-        PRINT("entry->operation %d (while E_OP_MMAP %d) current op %d\n", entry->operation,
-              E_OP_MMAP, op);
+      if(entry->syscall != sc) {
+        PRINT("entry->syscall %d while we want system call %d\n", entry->syscall, sc);
+      	assert(entry->syscall == sc);
       }
-      assert(entry->operation == op);
       ptr = entry->data;
     }
     return ptr;
   }
 
   // Remove an entry from the list.
-  void* retrieveListEntry(eRecordOps op) {
-    assert(op == E_OP_FILE_CLOSE || op == E_OP_DIR_CLOSE || op == E_OP_MUNMAP);
-    list_t* list = getTargetList(op);
+  void* retrieveListEntry(eRecordSyscall sc) {
+    assert(sc == E_SYS_FILE_CLOSE || sc == E_SYS_DIR_CLOSE || sc == E_SYS_MUNMAP);
+    list_t* list = getTargetList(sc);
     return listRetrieveItem(list);
   }
 
-  inline list_t* getTargetList(e_recordOps op) { return &_glist[op]; }
+  inline list_t* getTargetList(eRecordSyscall sc) { return &current->syslist[sc]; }
 
   // We are always insert an entry into the tail of a list.
-  void insertList(e_recordOps op, list_t* list) {
-    list_t* head = getTargetList(op);
+  void insertList(eRecordSyscall sc, list_t* list) {
+    list_t* head = getTargetList(sc);
     listInit(list);
     listInsertTail(list, head);
   }
 
-  RecordEntries<class RecordEntry> _entries;
-  list_t _glist[E_OP_MAX];
-  //  spinlock _lck;
+private: 
+	// We may have to keep two lists, currently.
+	
 };
 
 #endif

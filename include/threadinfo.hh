@@ -22,7 +22,7 @@
 #include "mm.hh"
 #include "quarantine.hh"
 #include "real.hh"
-#include "record.hh"
+#include "sysrecord.hh"
 #include "recordentries.hh"
 #include "threadmap.hh"
 #include "threadstruct.hh"
@@ -80,22 +80,11 @@ public:
     for(int i = 0; i < xdefines::MAX_ALIVE_THREADS; i++) {
       tinfo = &_threads[i];
 
-      //  WARN("in xthread initialize i %d\n", i );
-      // Initialize the record.
-      Record* sysrecord = (Record*)InternalHeap::getInstance().malloc(sizeof(Record));
-      sysrecord->initialize();
-      tinfo->record = (void*)sysrecord;
-
-      // Initialize this syncevents.
-      tinfo->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
-
-      // Starting
-      tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
-      tinfo->available = true;
-      tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 * i]);
+			// Those information that are only initialized once.
+     	tinfo->available = true;
+     	tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 * i]);
       tinfo->newContext.setupBackup(&stackStart[perStackSize * 2 * i + 1]);
-      Real::pthread_mutex_init(&tinfo->mutex, NULL);
-      Real::pthread_cond_init(&tinfo->cond, NULL);
+      tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
     }
 
     // Initialize the total event list.
@@ -103,6 +92,27 @@ public:
   }
 
   void finalize() {}
+
+	// Everytime, when a corresponding threadstruct is re-utilized by a different
+	// thread, we will re-initilize this. Thus, it is perfect to put this into 
+	// allocThreadIndex();
+
+	void threadInitialize(thread_t * thread) {
+      // Initialize the system call entries.
+      thread->syscalls.initialize(xdefines::MAX_SYSCALL_ENTRIES);
+
+			// Initilize the list of system calls.
+			for(int i = 0; i < E_SYS_MAX; i++) {
+				listInit(&thread->syslist[i]);
+			}
+		
+      // Initialize this syncevents.
+      thread->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
+
+      // Starting
+      Real::pthread_mutex_init(&thread->mutex, NULL);
+      Real::pthread_cond_init(&thread->cond, NULL);
+	}
 
   /// @ internal function: allocation a thread index when spawning.
   /// Since we guarantee that only one thread can be in spawning phase,
@@ -127,11 +137,7 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex + 1) % _totalThreads;
-        Real::pthread_mutex_init(&thread->mutex, NULL);
-        Real::pthread_cond_init(&thread->cond, NULL);
-
-        //        PRINF("origindex %d _threadindex %d (_threadIndex+1) %d - last %d\n", origindex,
-        // _threadIndex, (_threadIndex+1), (_threadIndex+1)%_totalThreads);
+				threadInitialize(thread);
         break;
       } else {
         _threadIndex = (_threadIndex + 1) % _totalThreads;

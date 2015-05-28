@@ -57,6 +57,7 @@ public:
 
   Entry* alloc() {
     Entry* entry = NULL;
+	//	PRINT("allocEntry, _cur %ld\n", _cur);
     if(_cur < _total) {
       entry = (Entry*)&_start[_cur];
       _cur++;
@@ -104,6 +105,7 @@ public:
   // No change on iteration entry.
   Entry* getEntry() {
     Entry* entry = NULL;
+		PRINT("getEntry: _iter %ld, _cur %ld\n", _iter, _cur);
     if(_iter < _cur) {
       entry = getEntry(_iter);
     }

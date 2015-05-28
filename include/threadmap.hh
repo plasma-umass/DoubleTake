@@ -138,7 +138,8 @@ public:
       initThreadSemaphore(thread);
 
       // Set the entry of each thread to the first synchronization event.
-      thread->syncevents.prepareRollback();
+   		thread->syscalls.prepareRollback();
+	   	thread->syncevents.prepareRollback();
 
 			PRINF("preparing rollback for thread %d status %d\n", thread->index, thread->status);
       // Update to the next thread.

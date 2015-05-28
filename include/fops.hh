@@ -21,7 +21,7 @@
 #include "log.hh"
 #include "mm.hh"
 #include "real.hh"
-#include "record.hh"
+#include "sysrecord.hh"
 #include "spinlock.hh"
 #include "threadstruct.hh"
 #include "xdefines.hh"
@@ -144,7 +144,7 @@ public:
 
   void saveDupFd(int oldfd, int newfd) {
     // Save the fd to list and hashmap.
-    getRecord()->recordFileOps(Record::E_OP_FILE_OPEN, newfd);
+    _sysrecord.recordFileOps(E_SYS_FILE_OPEN, newfd);
 
     if(newfd != -1) {
       fileInfo* thisFile;
@@ -176,7 +176,7 @@ public:
   void saveDir(DIR* dir) {
 #ifdef REPRODUCIBLE_FDS
     // Trying to get fd about this dir.
-    getRecord()->recordDirOps(Record::E_OP_DIR_OPEN, dir);
+    _sysrecord.recordDirOps(E_SYS_DIR_OPEN, dir);
 #endif
 
     //    PRINF("saveDir %p\n", dir);
@@ -206,7 +206,7 @@ public:
     dirInfo* dinfo;
     DIR* dir = NULL;
 
-    if(!getRecord()->getDirOps(Record::E_OP_DIR_OPEN, &dir)) {
+    if(!_sysrecord.getDirOps(E_SYS_DIR_OPEN, &dir)) {
       assert(0);
     }
 
@@ -260,7 +260,7 @@ public:
     thisDir->isClosed = true;
 
     // Add to the close list
-    getRecord()->recordDirOps(Record::E_OP_DIR_CLOSE, dir);
+    _sysrecord.recordDirOps(E_SYS_DIR_CLOSE, dir);
 
     return ret;
 #else
@@ -286,7 +286,7 @@ public:
 //    PRINT("saveFd %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
     // Save it even when fopen/open is not successful.
-    getRecord()->recordFileOps(Record::E_OP_FILE_OPEN, fd);
+    _sysrecord.recordFileOps(E_SYS_FILE_OPEN, fd);
 #endif
     if(fd != -1) {
       fileInfo* thisFile = (fileInfo*)InternalHeap::getInstance().malloc(sizeof(fileInfo));
@@ -424,7 +424,7 @@ public:
   int getFdAtOpen() {
     int fd = -1;
 
-    if(!getRecord()->getFileOps(Record::E_OP_FILE_OPEN, &fd)) {
+    if(!_sysrecord.getFileOps(E_SYS_FILE_OPEN, &fd)) {
       assert(0);
     }
     return fd;
@@ -475,7 +475,7 @@ public:
     thisFile->isClosed = true;
 
     // Add to the close list
-    getRecord()->recordFileOps(Record::E_OP_FILE_CLOSE, fd);
+    _sysrecord.recordFileOps(E_SYS_FILE_CLOSE, fd);
 
     return ret;
 #else
@@ -509,7 +509,7 @@ public:
     int fd = -1;
     fileInfo* thisFile = NULL;
 
-    while((getRecord()->retrieveFCloseList(&fd))) {
+    while((_sysrecord.retrieveFCloseList(&fd))) {
 
       if(fd == -1) {
         continue;
@@ -546,7 +546,7 @@ public:
     dirInfo* thisDir = NULL;
     DIR* dir;
 
-    while((getRecord()->retrieveDIRCloseList(&dir))) {
+    while((_sysrecord.retrieveDIRCloseList(&dir))) {
       if(dir == NULL) {
         continue;
       }
@@ -588,11 +588,12 @@ public:
       }
     }
 
+		//PRINT("checkPermission on fd %d isAllowed %d\n", fd, isAllowed);
     return isAllowed;
   }
 
 private:
-  Record* getRecord() { return (Record*)current->record; }
+	SysRecord _sysrecord;
 
   /*
     typedef std::pair<int, fileInfo> objectPair;

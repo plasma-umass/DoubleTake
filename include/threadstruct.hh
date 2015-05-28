@@ -35,6 +35,28 @@ typedef enum e_thrstatus {
   E_THREAD_WAITFOR_REAPING,
 } thrStatus;
 
+// System calls that will be recorded.
+typedef enum e_recordSyscall {
+  E_SYS_FILE_OPEN = 0,
+  E_SYS_FILE_CLOSE,
+  E_SYS_FILE_DUP,
+  E_SYS_DIR_OPEN,
+  E_SYS_DIR_CLOSE,
+  E_SYS_MMAP,
+  E_SYS_MUNMAP,
+  E_SYS_TIME,
+  E_SYS_GETTIMEOFDAY,
+  E_SYS_TIMES,
+  E_SYS_CLONE,
+  E_SYS_MAX
+} eRecordSyscall;
+
+struct SyscallEntry {
+  public:
+    eRecordSyscall syscall;
+    char data[64 - sizeof(eRecordSyscall)];
+};
+
 typedef struct thread {
   bool available; // True: the thread index is free.
   bool internalheap;
@@ -52,12 +74,6 @@ typedef struct thread {
   pid_t tid;      // Current process id of this thread.
   pthread_t self; // Results of pthread_self
   thrStatus status;
-
-  // We will use this to link this thread to other lists.
- // list_t list;
-
-  // We have to allocate the space for all record initially.
-  void* record;
 
   // mutex when a thread is trying to change its state.
   // In fact, this mutex is only protect joiner.
@@ -77,6 +93,10 @@ typedef struct thread {
   struct thread* parent;
 
   struct thread* joiner;
+
+	// System calls happens on this thread.
+	list_t syslist[E_SYS_MAX]; 
+	RecordEntries<struct SyscallEntry> syscalls;
 
   // Synchronization events happens on this thread.
   RecordEntries<struct syncEvent> syncevents;

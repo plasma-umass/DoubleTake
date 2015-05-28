@@ -32,7 +32,7 @@
 #include "globalinfo.hh"
 #include "log.hh"
 #include "real.hh"
-#include "record.hh"
+#include "sysrecord.hh"
 #include "threadstruct.hh"
 #include "xrun.hh"
 
@@ -49,11 +49,6 @@ public:
 
   /// @brief Initialize the system.
   void initialize() { _fops.initialize(); }
-#if 0
-  void setRollback() {
-    _fops.rollback();
-  }
-#endif
 
   // Currently, epochBegin() will call xrun::epochBegin().
   void epochBegin() { xrun::getInstance().epochBegin(); }
@@ -64,7 +59,10 @@ public:
     // Handle those closed files
     _fops.cleanClosedFiles();
 #endif
-    getRecord()->epochBegin();
+		
+		// Called munmap and cleanup existing entries.
+		// Those existing entries are pre-allocated. 
+    _sysrecord.epochBegin();
   }
 
   void epochEnd() {
@@ -90,8 +88,7 @@ public:
 
   // Prepare rollback for system calls
   void prepareRollback() {
-    getRecord()->prepareRollback();
-
+		fprintf(stderr, "syscalls: prepareRollback at thread\n");
     // Handle those closed files
     _fops.prepareRollback();
   }
@@ -190,9 +187,9 @@ public:
       // We only record these mmap requests.
       ret = Real::mmap(start, length, prot, flags, fd, offset);
       //      WARN("in execution, ret %p length %lx\n", ret, length);
-      getRecord()->recordMmapOps(ret);
+      _sysrecord.recordMmapOps(ret);
     } else {
-      getRecord()->getMmapOps(&ret);
+      _sysrecord.getMmapOps(&ret);
       //    WARN("in rollback, ret %p length %lx\n", ret, length);
     }
 #endif
@@ -219,7 +216,6 @@ public:
   int open(const char* pathname, int flags, mode_t mode) {
     int ret;
 
-#ifndef MYDEBUG
 #ifdef REPRODUCIBLE_FDS
     // In the rollback phase, we only call
     if(global_isRollback()) {
@@ -235,12 +231,6 @@ public:
     // Save current fd, pass NULL since it is not a file stream
     _fops.saveFd(ret, NULL);
 #endif
-#else
-    epochEnd();
-    ret = Real::open(pathname, flags, mode);
-    epochBegin();
-#endif
-    // PRINF("OPEN fd %d\n", ret);
     return ret;
   }
 
@@ -449,9 +439,9 @@ public:
     int ret = 0;
 
     if(!global_isRollback()) {
-      getRecord()->recordMunmapOps(start, length);
+      _sysrecord.recordMunmapOps(start, length);
     } else {
-      getRecord()->getMunmapOps();
+      _sysrecord.getMunmapOps();
     }
     return ret;
   }
@@ -1394,9 +1384,9 @@ public:
     if(!global_isRollback()) {
       ret = Real::gettimeofday(tv, tz);
       // Add this to the record list.
-      getRecord()->recordGettimeofdayOps(ret, tv, tz);
+      _sysrecord.recordGettimeofdayOps(ret, tv, tz);
     } else {
-      if(!getRecord()->getGettimeofdayOps(&ret, tv, tz)) {
+      if(!_sysrecord.getGettimeofdayOps(&ret, tv, tz)) {
         assert(0);
       }
     }
@@ -1435,9 +1425,9 @@ public:
     if(!global_isRollback()) {
       ret = Real::times(buf);
       // Add this to the record list.
-      getRecord()->recordTimesOps(ret, buf);
+      _sysrecord.recordTimesOps(ret, buf);
     } else {
-      if(!getRecord()->getTimesOps(&ret, buf)) {
+      if(!_sysrecord.getTimesOps(&ret, buf)) {
         assert(0);
       }
     }
@@ -2295,9 +2285,9 @@ public:
     if(!global_isRollback()) {
       ret = Real::time(t);
       // Add this to the record list.
-      getRecord()->recordTimeOps(ret);
+      _sysrecord.recordTimeOps(ret);
     } else {
-      if(!getRecord()->getTimeOps(&ret)) {
+      if(!_sysrecord.getTimeOps(&ret)) {
         assert(0);
       }
     }
@@ -2952,18 +2942,17 @@ public:
 
     if(!global_isRollback()) {
       ret = Real::__clone(fn, child_stack, flags, arg, pid, tls, ctid);
-      getRecord()->recordCloneOps(ret);
+      _sysrecord.recordCloneOps(ret);
     }
     else {
-      ret = getRecord()->getCloneOps();
+      ret = _sysrecord.getCloneOps();
     }
 
     return ret;
   }*/
 
 private:
-  inline Record* getRecord() { return (Record*)current->record; }
-
+	SysRecord _sysrecord;
   fops _fops;
 };
 

@@ -70,10 +70,10 @@ public:
     if(isThreadNextEvent(event, thread)) {
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
-      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
+      PRINT("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
       signalThread(thread);
     } else {
-      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index,
+      PRINT("Thread %d adding pending event to next thread %d on event %p", current->index,
             thread->index, event);
       addPendingSyncEvent(event, thread);
     }
@@ -148,12 +148,19 @@ public:
 	*/
   inline int peekSyncEvent(void* tlist) {
     int result = -1;
+		PRINF("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
+		PRINF("thread %d syncevents %p: peekSyncEvent targetlist %p\n", current->index, &current->syncevents, tlist);	
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
-			
+		PRINT("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
+	
+		// For debugging purpose. 	
+		if(event == NULL) {
+			while(1) ;
+		}	
 		// If the event pointing to a different thread, or the target event 
 		// is not the current one, warn about this situaion. Something wrong!
-		if((event->thread != current) || (event->eventlist != tlist)) {
-			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {
+			PRINT("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
 		}
@@ -207,7 +214,7 @@ public:
         setSyncVariable((void**)syncvariable, entry->realEntry);
 			}
 			
-			PRINF("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
+			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
 
       prepareEventListRollback(entry->list);
     }

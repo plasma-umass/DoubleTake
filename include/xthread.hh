@@ -26,7 +26,7 @@
 #include "list.hh"
 #include "log.hh"
 #include "real.hh"
-#include "record.hh"
+#include "sysrecord.hh"
 #include "selfmap.hh"
 #include "semaphore.hh"
 #include "synceventlist.hh"
@@ -194,7 +194,7 @@ public:
       PRINF("thread creation with index %d tid %lx\n", tindex, *tid);
       // Record spawning event
       _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
-      getRecord()->recordCloneOps(result, *tid);
+      _sysrecord.recordCloneOps(result, *tid);
 
       if(result == 0) {
         insertAliveThread(children, *tid);
@@ -216,10 +216,10 @@ public:
     } else {
       PRINF("process %d is before thread_create now\n", current->index);
       result = _sync.peekSyncEvent(_spawningList);
-      PRINF("process %d is before thread_create, result %d\n", current->index, result);
+      PRINT("process %d is before thread_create, result %d\n", current->index, result);
 
-      getRecord()->getCloneOps(tid, &result);
-      PRINF("process %d in creation, result %d\n", current->index, result);
+      _sysrecord.getCloneOps(tid, &result);
+      PRINT("process %d in creation, result %d\n", current->index, result);
       if(result == 0) {
         waitSemaphore();
         PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
@@ -384,14 +384,14 @@ public:
       // PRINF("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(),
       // __LINE__, mutex, realMutex);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-     	PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
+     	PRINT("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
      	//PRINF("Thread %d: mutex_lock at mutex %p realMutex %p list %p. Record done!!\n", current->index, mutex, realMutex, list);
     } else {
      	PRDBG("mutex_lock at mutex %p list %p\n", mutex, list);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
-     PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
+     PRINT("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
 
 			/* Peek the synchronization event (first event in the thread), it will confirm the following things
@@ -764,8 +764,6 @@ private:
 
   inline void deallocSyncEntry(void* ptr) { InternalHeap::getInstance().free(ptr); }
 
-  static Record* getRecord() { return (Record*)current->record; }
-
   // Acquire the semaphore for myself.
   // If it is my turn, I should get the semaphore.
   static void waitSemaphore() {
@@ -988,6 +986,7 @@ private:
   // They are claimed in xthread.cpp since I don't
   // want to create an xthread.cpp
   xsync _sync;
+	SysRecord _sysrecord;
   threadinfo& _thread;
   SyncEventList* _spawningList;
 };
