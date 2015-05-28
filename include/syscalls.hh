@@ -237,12 +237,11 @@ public:
   int close(int fd) {
     int ret;
 
-//     PRINF("close fd %d at line %d\n", fd, __LINE__);
 #ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call
       if(global_isRollback()) {
-        ret = 0;
+        ret = _fops.getClose();
       } else {
         ret = _fops.closeFile(fd, NULL);
       }

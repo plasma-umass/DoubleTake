@@ -341,7 +341,7 @@ private:
     void* ptr = NULL;
     if(entry) {
       if(entry->syscall != sc) {
-        PRINT("entry->syscall %d while we want system call %d\n", entry->syscall, sc);
+        PRINT("^^^^^^^^^^entry->syscall %d while we want system call %d^^^^^^^^^^^\n", entry->syscall, sc);
       	assert(entry->syscall == sc);
       }
       ptr = entry->data;

@@ -454,7 +454,6 @@ public:
     // Try to get corresponding entry in the hashmap.
     fileInfo* thisFile;
 
-// PRINF("close file %d\n", fd);
 #ifdef REPRODUCIBLE_FDS
 
     // The file should be in
@@ -501,6 +500,14 @@ public:
     }
     return ret;
 #endif
+  }
+
+	int getClose() {
+		int ret;
+
+		_sysrecord.getFileOps(E_SYS_FILE_CLOSE, &ret);
+
+		return ret;
   }
 
   // Handling all delayed close after the commit.
