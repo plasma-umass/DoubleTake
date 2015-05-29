@@ -147,7 +147,7 @@ public:
   enum { MEMTRACK_MAP_SIZE = 4096 };
   enum { FOPEN_ALLOC_SIZE = 0x238 };
   enum { DIRS_MAP_SIZE = 1024 };
-  enum { DIROPEN_ALLOC_SIZE = 0x8038 };
+  enum { DIROPEN_ALLOC_SIZE = 0x8030 };
 
   //  enum { MAX_RECORD_ENTRIES = 0x1000 };
   enum { MAX_SYSCALL_ENTRIES = 0x100000 };

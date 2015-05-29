@@ -162,6 +162,8 @@ DEFINE_WRAPPER(nanosleep);
 DEFINE_WRAPPER(open);
 DEFINE_WRAPPER(openat);
 DEFINE_WRAPPER(opendir);
+DEFINE_WRAPPER(seekdir);
+DEFINE_WRAPPER(rewinddir);
 DEFINE_WRAPPER(pause);
 DEFINE_WRAPPER(personality);
 DEFINE_WRAPPER(pipe);
@@ -424,6 +426,8 @@ void initializer() {
   INIT_WRAPPER(open, RTLD_NEXT);
   INIT_WRAPPER(openat, RTLD_NEXT);
   INIT_WRAPPER(opendir, RTLD_NEXT);
+  INIT_WRAPPER(seekdir, RTLD_NEXT);
+  INIT_WRAPPER(rewinddir, RTLD_NEXT);
   INIT_WRAPPER(pause, RTLD_NEXT);
   INIT_WRAPPER(personality, RTLD_NEXT);
   INIT_WRAPPER(pipe, RTLD_NEXT);

@@ -81,10 +81,10 @@ public:
   /* Heap-related functions. */
   inline void* malloc(size_t sz) {
     void* ptr;
+  	PRINT("malloc sz %lx at thread %d\n", sz, current->index);
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
-  	//	PRINT("malloc sz %ld at thread %d\n", sz, current->index);
 	    ptr = realmalloc(sz);
   	//	PRINT("malloc sz %ld ptr %p at thread %d\n", sz, ptr, current->index);
       // PRINT("malloc, current %p internalheap %d ptr %p\n", current, current->internalheap, ptr);

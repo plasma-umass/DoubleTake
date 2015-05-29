@@ -31,25 +31,19 @@ class fops {
 
   class fileInfo {
   public:
-    int fd;
+    int 	fd;
     off_t pos;          // Initial position of a file.
     FILE* backupStream; // Saved file stream
     FILE* origStream;   // Where is the actual file stream
-#ifdef REPRODUCIBLE_FDS
-    bool isClosed; // Save some time to update
-#else
-    bool isNew;
-#endif
+    bool  isNew;				// Whether the file is opened in this epoch
   };
 
   class dirInfo {
   public:
-    off_t pos;      // Initial position of a file.
-    DIR* backupDir; // Saved DIR stream
-    DIR* dir;       // Where is the actual dir stream
-#ifdef REPRODUCIBLE_FDS
-    bool isClosed; // Marked when closed, so we can save some time to update
-#endif
+    off_t 	pos;       // Initial position of a file.
+    DIR* 		backupDir; // Saved DIR stream
+    DIR* 		dir;       // Where is the actual dir stream
+    bool  	isNew;		 // Whether the directory is opened in this epoch
   };
 
 public:
@@ -64,6 +58,7 @@ public:
   }
 
   // This is called after we are sure that there is no need to rollback.
+	// Also, we call this after all closed files has been cleaned up.
   void updateOpenedFiles() {
     // Get file position for all files in the global hash table.
     filesHashMap::iterator i;
@@ -72,35 +67,22 @@ public:
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       thisFile = (fileInfo*)i.getData();
       PRINF("thisfile fd %d pos %ld", thisFile->fd, thisFile->pos);
-#ifdef REPRODUCIBLE_FDS
-      if(!thisFile->isClosed) {
-        if(thisFile->origStream) {
-          assert(thisFile->backupStream != NULL);
-        }
-#endif
-        off_t pos = Real::lseek(thisFile->fd, 0, SEEK_CUR);
-        thisFile->pos = pos;
 
-#ifndef REPRODUCIBLE_FDS
-        // Those closed files should not appear here.
-        // Check whether current is a file stream or not.
-        if(thisFile->isNew) {
-          thisFile->isNew = false;
-          if(thisFile->origStream) {
-            assert(thisFile->backupStream == NULL);
-            thisFile->backupStream =
-                (FILE*)InternalHeap::getInstance().malloc(xdefines::FOPEN_ALLOC_SIZE);
-          }
-        }
-#endif
-        if(thisFile->origStream) {
-          assert(thisFile->backupStream != NULL);
-          // Backup the file stream.
-          memcpy(thisFile->backupStream, thisFile->origStream, xdefines::FOPEN_ALLOC_SIZE);
-        }
-#ifdef REPRODUCIBLE_FDS
+			if(thisFile->isNew) {
+        thisFile->isNew = false;
+			}
+			
+			// Fetch the current file position	
+			off_t pos = Real::lseek(thisFile->fd, 0, SEEK_CUR);
+      thisFile->pos = pos;
+
+			// Backup the stream
+      if(thisFile->origStream) {
+        assert(thisFile->backupStream != NULL);
+        	
+				// Backup the file stream.
+        memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
       }
-#endif
     }
 
     // Update those opened dirs.
@@ -109,26 +91,16 @@ public:
 
     for(j = _dirsMap.begin(); j != _dirsMap.end(); j++) {
       thisDir = (dirInfo*)j.getData();
-#ifdef REPRODUCIBLE_FDS
-      if(!thisDir->isClosed) {
-        assert(thisDir->backupDir != NULL);
-#endif
-        off_t pos = telldir(thisDir->dir);
-        thisDir->pos = pos;
+			
+			if(thisDir->isNew) {
+        thisDir->isNew = false;
+			}
+        
+			off_t pos = telldir(thisDir->dir);
+      thisDir->pos = pos;
 
-#ifndef REPRODUCIBLE_FDS
-        if(!thisDir->backupDir) {
-          thisDir->backupDir =
-              (DIR*)InternalHeap::getInstance().malloc(xdefines::DIROPEN_ALLOC_SIZE);
-          assert(thisDir->backupDir != NULL);
-        }
-#endif
-
-        // Backup the file stream.
-        memcpy(thisDir->backupDir, thisDir->dir, xdefines::DIROPEN_ALLOC_SIZE);
-#ifdef REPRODUCIBLE_FDS
-      }
-#endif
+      // Backup the file stream.
+      memcpy(thisDir->backupDir, thisDir->dir, xdefines::DIROPEN_ALLOC_SIZE);
     }
   }
 
@@ -144,7 +116,7 @@ public:
 
   void saveDupFd(int oldfd, int newfd) {
     // Save the fd to list and hashmap.
-    _sysrecord.recordFileOps(E_SYS_FILE_OPEN, newfd);
+    _sysrecord.recordFileOps(E_SYS_FILE_DUP, newfd);
 
     if(newfd != -1) {
       fileInfo* thisFile;
@@ -155,7 +127,7 @@ public:
         memcpy(newFile, thisFile, sizeof(fileInfo));
         newFile->fd = newfd;
 
-        // Check whether this is a file stream.
+        // Create a new copy of stream in case the old one has been closed.
         if(newFile->backupStream != NULL) {
           void* ptr = InternalHeap::getInstance().malloc(xdefines::FOPEN_ALLOC_SIZE);
           // Set to new file stream. We don't want to have some relationship
@@ -173,35 +145,41 @@ public:
     }
   }
 
+	int getDupFd(void) {
+    int fd = -1;
+
+    if(!_sysrecord.getFileOps(E_SYS_FILE_DUP, &fd)) {
+      assert(0);
+    }
+
+		// No need to do anything for dup or dup2
+		return fd;
+	}
+
   void saveDir(DIR* dir) {
-#ifdef REPRODUCIBLE_FDS
     // Trying to get fd about this dir.
     _sysrecord.recordDirOps(E_SYS_DIR_OPEN, dir);
-#endif
 
-    //    PRINF("saveDir %p\n", dir);
     // Only save to the dirmap when a dir is valid.
     if(dir != NULL) {
       dirInfo* thisDir = (dirInfo*)InternalHeap::getInstance().malloc(sizeof(dirInfo));
       assert(thisDir != NULL);
       thisDir->pos = telldir(dir);
       thisDir->dir = dir;
+			thisDir->isNew = true;
 
-// PRINF("thisDir in the insertion %p dir %p\n", thisDir, thisDir->dir);
-#ifdef REPRODUCIBLE_FDS
-      thisDir->isClosed = false;
       // Allocate a block of memory
       void* ptr = InternalHeap::getInstance().malloc(xdefines::DIROPEN_ALLOC_SIZE);
       memcpy(ptr, dir, xdefines::DIROPEN_ALLOC_SIZE);
       thisDir->backupDir = (DIR*)ptr;
-#else
-      thisDir->backupDir = NULL;
-#endif
+
       // Insert this file into the hash map.
       _dirsMap.insert(dir, sizeof(dir), thisDir);
     }
   }
 
+	// Only called in the rollback phase.
+	// We want to get the dir.
   DIR* getDirAtOpen() {
     dirInfo* dinfo;
     DIR* dir = NULL;
@@ -211,83 +189,82 @@ public:
     }
 
     if(dir != NULL) {
+			// We should be able to find this dir in the map
       if(!_dirsMap.find(dir, sizeof(dir), &dinfo)) {
         assert(0);
       }
 
-      // Simulate the fopen, since fopen will always call malloc().
+      // Simulate the fopen, since opendir will always call malloc().
       // It is possible that different library will have different size...
       void* ptr = malloc(xdefines::DIROPEN_ALLOC_SIZE);
-      // PRINF("getFopen fd %d and file %p current ptr %p\n", fd, finfo.origStream, ptr);
 
       // check whether the pointer is the same as before.
       assert(dir == dinfo->dir);
       assert(dir == ptr);
 
       memcpy(ptr, dinfo->backupDir, xdefines::DIROPEN_ALLOC_SIZE);
-      dir = (DIR*)ptr;
-      // Since we already recover all initial file stream initially
-      // there is nothing to do now.
+
+			// Reset to the orignal place
+			Real::rewinddir(dir);
     }
 
     return dir;
   }
 
   int closeDir(DIR* dir) {
-    dirInfo* thisDir;
-
-#ifdef REPRODUCIBLE_FDS
+    dirInfo* thisDir = NULL;
     int ret = 0;
-    if(dir == NULL) {
-      return 0;
-    }
 
     // The file should be in the map.
-    if(!_dirsMap.find(dir, sizeof(dir), &thisDir)) {
+    if((dir == NULL) || !_dirsMap.find(dir, sizeof(dir), &thisDir)) {
       errno = EBADF;
       ret = -1;
-      return ret;
     }
 
     // Check whether the fp is equal to the saved one
-    // assert(fp == thisFile->origStream);
     if(dir != thisDir->dir) {
       errno = EBADF;
       ret = -1;
-      return ret;
     }
-
-    thisDir->isClosed = true;
 
     // Add to the close list
     _sysrecord.recordDirOps(E_SYS_DIR_CLOSE, dir);
 
     return ret;
-#else
-    bool hasFound = false;
+  }
 
-    // PRINF("Finding the entry\n");
-    hasFound = _dirsMap.find(dir, sizeof(dir), &thisDir);
+	int getCloseDir(DIR * dir) {
+    dirInfo* thisDir = NULL;
+    int ret = 0;
 
-    if(hasFound) {
-      // PRINF("Found the entry thisDir %p\n", thisDir);
-      // Remove this entry from the filemap. FIXME
-      _dirsMap.erase(dir, sizeof(dir));
-      InternalHeap::getInstance().free(thisDir);
+    // The file should be in the map.
+		if(dir == NULL) {
+      errno = EBADF;
+      ret = -1;
+		}
+
+    if(!_dirsMap.find(dir, sizeof(dir), &thisDir)) {
+      errno = EBADF;
+      ret = -1;
     }
 
-    // Remove this
-    return Real::closedir(dir);
-#endif
-  }
+    // Check whether the fp is equal to the saved one
+    if(dir != thisDir->dir) {
+      errno = EBADF;
+      ret = -1;
+    }
+
+    // Add to the close list
+    _sysrecord.getDirOps(E_SYS_DIR_CLOSE, &dir);
+
+		return ret;
+	}
 
   // Called in the execution phase when fopen or open
   void saveFd(int fd, FILE* file) {
-//    PRINT("saveFd %d\n", fd);
-#ifdef REPRODUCIBLE_FDS
     // Save it even when fopen/open is not successful.
     _sysrecord.recordFileOps(E_SYS_FILE_OPEN, fd);
-#endif
+
     if(fd != -1) {
       fileInfo* thisFile = (fileInfo*)InternalHeap::getInstance().malloc(sizeof(fileInfo));
       thisFile->fd = fd;
@@ -295,8 +272,6 @@ public:
       thisFile->origStream = file;
 
 //	PRINT("saveFD %d origStream %p\n", fd, file);
-#ifdef REPRODUCIBLE_FDS
-      thisFile->isClosed = false;
       if(file) {
         // Allocate a block of memory
         void* ptr = InternalHeap::getInstance().malloc(xdefines::FOPEN_ALLOC_SIZE);
@@ -305,10 +280,6 @@ public:
       } else {
         thisFile->backupStream = NULL;
       }
-#else
-      thisFile->isNew = true;
-      thisFile->backupStream = NULL;
-#endif
 
       // Insert this file into the hash map.
       _filesMap.insert(fd, sizeof(fd), thisFile);
@@ -317,7 +288,6 @@ public:
 
   void saveFopen(FILE* file) {
     if(file) {
-      // PRINF("saveFopen fd %d and file %p\n", file->_fileno, file);
       saveFd(file->_fileno, (FILE*)file);
     } else {
       saveFd(-1, NULL);
@@ -325,58 +295,37 @@ public:
   }
 
   // Now we have to rollback current transaction
+	// by traversing every entry in _filesMap and _dirsMap.
   void prepareRollback() {
     // We must recove all file offsets of all files now.
     filesHashMap::iterator i;
-    filesHashMap::iterator itemp;
-    // PRINT("***************fops rollback now, _filesMap at %p**************\n", &_filesMap);
-    /*  Traverse each entry of the hash table. */
-    for(i = _filesMap.begin(); i != _filesMap.end();) {
-      itemp = i;
-      itemp++;
-
+    for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       fileInfo* thisFile;
       thisFile = (fileInfo*)i.getData();
-#ifndef REPRODUCIBLE_FDS
-      if(thisFile->isNew) {
-        closeFile(thisFile->fd, thisFile->origStream); // EBD
-      }
-#else
-      Real::lseek(thisFile->fd, thisFile->pos, SEEK_SET);
 
-      // The file has already existed before current epoch
-      if(thisFile->origStream) {
-        memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
-      }
-#endif
-      i = itemp;
+			// We only care about those opened files in the previous epoches.
+			// Newly opened files will be handled when they are actually opened.
+			if(!thisFile->isNew) {
+      	// The file has already existed before current epoch
+      	if(thisFile->origStream) {
+        	memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
+      	}
+      	Real::lseek(thisFile->fd, thisFile->pos, SEEK_SET);
+			}
     }
 
-    dirsHashMap::iterator j, jtemp;
-    dirInfo* thisDir;
+    dirsHashMap::iterator j;
 
-    for(j = _dirsMap.begin(); j != _dirsMap.end();) {
-      jtemp = j;
-      jtemp++;
+    for(j = _dirsMap.begin(); j != _dirsMap.end();j++) {
+    	dirInfo* thisDir = (dirInfo*)j.getData();
+			if(!thisDir->isNew) {
+      	// PRINF("thisdir is %p dir %p\n", thisDir, thisDir->dir);
+				assert(thisDir->backupDir != NULL);
+				assert(thisDir->dir != NULL);
 
-      thisDir = (dirInfo*)j.getData();
-#ifdef REPRODUCIBLE_FDS
-      seekdir(thisDir->dir, thisDir->pos);
-      // PRINF("thisdir is %p dir %p\n", thisDir, thisDir->dir);
-      if(thisDir->backupDir) {
         memcpy(thisDir->dir, thisDir->backupDir, xdefines::DIROPEN_ALLOC_SIZE);
+      	Real::seekdir(thisDir->dir, thisDir->pos);
       }
-#else
-      if(thisDir->backupDir) {
-        seekdir(thisDir->dir, thisDir->pos);
-        memcpy(thisDir->dir, thisDir->backupDir, xdefines::DIROPEN_ALLOC_SIZE);
-      } else {
-        // Close those newly opened directories.
-        closeDir(thisDir->dir);
-      }
-#endif
-      // For those newly created file, maybe we should remove them from the table.
-      j = jtemp;
     }
   }
 
@@ -408,8 +357,6 @@ public:
       memcpy(ptr, finfo->backupStream, xdefines::FOPEN_ALLOC_SIZE);
       file = (FILE*)ptr;
 
-      // finfo->origStream = (FILE *)ptr;
-
       assert(file != NULL);
       // Since we already recover all initial file stream initially
       // there is nothing to do now.
@@ -427,7 +374,19 @@ public:
     if(!_sysrecord.getFileOps(E_SYS_FILE_OPEN, &fd)) {
       assert(0);
     }
-    return fd;
+    
+		// Now let's adjust the file position.
+		if(fd != -1) {
+			fileInfo* thisFile;
+    	if(!_filesMap.find(fd, sizeof(fd), &thisFile)) {
+      	assert(0);
+    	}
+			assert(thisFile != NULL);
+
+			Real::lseek(thisFile->fd, thisFile->pos, SEEK_SET);
+		}
+ 
+		return fd;
   }
 
   // Call when close or fclose.
@@ -454,9 +413,6 @@ public:
     // Try to get corresponding entry in the hashmap.
     fileInfo* thisFile;
 
-#ifdef REPRODUCIBLE_FDS
-
-    // The file should be in
     if(!_filesMap.find(fd, sizeof(fd), &thisFile)) {
       errno = EBADF;
       ret = -1;
@@ -471,35 +427,10 @@ public:
       return ret;
     }
 
-    thisFile->isClosed = true;
-
-    // Add to the close list
+    // Add to the closed list
     _sysrecord.recordFileOps(E_SYS_FILE_CLOSE, fd);
 
     return ret;
-#else
-    bool hasFound = false;
-
-    hasFound = _filesMap.find(fd, sizeof(fd), &thisFile);
-
-    if(hasFound) {
-      // Remove this entry from the filemap.
-      _filesMap.erase(fd, sizeof(fd));
-
-      if(thisFile->backupStream) {
-        InternalHeap::getInstance().free(thisFile->backupStream);
-      }
-
-      //	InternalHeap::getInstance().free(thisFile);
-      // Remove this
-      if(fp == NULL) {
-        ret = Real::close(fd);
-      } else {
-        ret = Real::fclose(fp);
-      }
-    }
-    return ret;
-#endif
   }
 
 	int getClose() {
@@ -510,12 +441,13 @@ public:
 		return ret;
   }
 
-  // Handling all delayed close after the commit.
-  // There is no need to rollback any more.
+	// This function is called when an epoch is finished and 
+	// there is no need to rollback
   void cleanClosedFiles() {
     int fd = -1;
     fileInfo* thisFile = NULL;
 
+		// We will check all closed files in this epoch 
     while((_sysrecord.retrieveFCloseList(&fd))) {
 
       if(fd == -1) {
@@ -524,7 +456,9 @@ public:
 
       // Find the entry from the hash map.
       if(_filesMap.find(fd, sizeof(fd), &thisFile)) {
-        // Check whether this file has dup?
+				assert(thisFile != NULL);
+ 
+       // Check whether this file has dup?
         // According to description of dup,
         // http://www.linuxquestions.org/questions/programming-9/close-fd-after-dup-fd-558966/
         // close a newfd won't affect the new fd.
@@ -539,7 +473,7 @@ public:
           Real::close(fd);
         }
 
-        // Remove this entry from the filemap. FIXME
+        // Remove this entry from the filemap.
         _filesMap.erase(fd, sizeof(fd));
         InternalHeap::getInstance().free(thisFile);
       } else {
@@ -551,7 +485,7 @@ public:
     // When there is no need to rollback
     // we can remove the whole list.
     dirInfo* thisDir = NULL;
-    DIR* dir;
+    DIR* dir = NULL;
 
     while((_sysrecord.retrieveDIRCloseList(&dir))) {
       if(dir == NULL) {
@@ -568,7 +502,7 @@ public:
         // Release temporary file stream now.
         InternalHeap::getInstance().free(thisDir->backupDir);
 
-        // Remove this entry from the filemap. FIXME
+        // Remove this entry from the _dirsMap.
         _dirsMap.erase(dir, sizeof(dir));
         InternalHeap::getInstance().free(thisDir);
       } else {

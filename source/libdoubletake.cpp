@@ -433,7 +433,7 @@ extern "C" {
     } else {
       mode = 0;
     }
-     fprintf(stderr, "**********open in doubletake at %d mod %d\n", __LINE__, mode);
+     fprintf(stderr, "**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
     if(!initialized) {
       return Real::open(pathname, flags, mode);
     }
@@ -446,16 +446,30 @@ extern "C" {
   }
 
   int close(int fd) {
-  //fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
+  fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
     if(!initialized) {
       return Real::close(fd);
     }
     return syscalls::getInstance().close(fd);
   }
 
-  DIR* opendir(const char* name) { return syscalls::getInstance().opendir(name); }
+  DIR* opendir(const char* name) { 
+		return syscalls::getInstance().opendir(name); 
+	}
 
-  int closedir(DIR* dir) { return syscalls::getInstance().closedir(dir); }
+  int closedir(DIR* dir) { 
+		return syscalls::getInstance().closedir(dir); 
+	}
+	
+	void seekdir(DIR *dir, long pos) { 
+		syscalls::getInstance().seekdir(dir, pos); 
+	}
+
+	void rewinddir(DIR *dir) {
+		syscalls::getInstance().rewinddir(dir); 
+	}
+
+	// We don't care about telldir and readdir;
 
   FILE* fopen(const char* filename, const char* modes) {
     ////fprintf(stderr, "fopen in libdoubletake\n");
@@ -474,6 +488,7 @@ extern "C" {
     return syscalls::getInstance().fopen64(filename, modes);
   }
 
+	// FIXME: why we should care about fread and fwrite?
   size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
     //  //fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().fread(ptr, size, nmemb, stream);

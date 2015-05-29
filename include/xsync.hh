@@ -161,6 +161,7 @@ public:
 		// is not the current one, warn about this situaion. Something wrong!
 		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {
 			PRINT("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+			while(1) ;
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
 		}

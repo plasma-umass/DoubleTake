@@ -55,11 +55,6 @@ public:
 
   // Called by xrun::epochBegin()
   void atEpochBegin() {
-#ifdef REPRODUCIBLE_FDS
-    // Handle those closed files
-    _fops.cleanClosedFiles();
-#endif
-		
 		// Called munmap and cleanup existing entries.
 		// Those existing entries are pre-allocated. 
     _sysrecord.epochBegin();
@@ -76,7 +71,10 @@ public:
   // in the end of checking when an epoch ends.
   // Now, only one thread is active.
   void epochEndWell() {
-    // Now we are trying to handling all opened files.
+    // Cleanup all closed files so that we don't have to 
+		// update those files and directories. 
+    _fops.cleanClosedFiles();
+
     // Try to updating those information for all opened files.
     // Currently, we don't know whether a file is closed or not.
     // Only the thread to close a file will know that.
@@ -89,7 +87,7 @@ public:
   // Prepare rollback for system calls
   void prepareRollback() {
 		fprintf(stderr, "syscalls: prepareRollback at thread\n");
-    // Handle those closed files
+    // Handle all opened files
     _fops.prepareRollback();
   }
 
@@ -182,7 +180,6 @@ public:
   // Tongping
   void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
     void* ret = NULL;
-#if 1
     if(!global_isRollback()) {
       // We only record these mmap requests.
       ret = Real::mmap(start, length, prot, flags, fd, offset);
@@ -190,9 +187,7 @@ public:
       _sysrecord.recordMmapOps(ret);
     } else {
       _sysrecord.getMmapOps(&ret);
-      //    WARN("in rollback, ret %p length %lx\n", ret, length);
     }
-#endif
 #if 0 // Used to test epochBegin
     PRINT("in the end of mmap, ret %p length %lx\n", ret, length);
     epochEnd();
@@ -203,12 +198,6 @@ public:
     return ret;
   }
 
-#if 0
-  int open(const char *pathname, int flags);
-  int open(const char *pathname, int flags, mode_t mode);
-  int creat(const char *pathname, mode_t mode);
-#endif
-
   // We may record fd in order replay that.
   int open(const char* pathname, int flags) { return open(pathname, flags, 0); }
 
@@ -216,7 +205,6 @@ public:
   int open(const char* pathname, int flags, mode_t mode) {
     int ret;
 
-#ifdef REPRODUCIBLE_FDS
     // In the rollback phase, we only call
     if(global_isRollback()) {
       ret = _fops.getFdAtOpen();
@@ -225,38 +213,25 @@ public:
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
     }
-#else
-    ret = Real::open(pathname, flags, mode);
-
-    // Save current fd, pass NULL since it is not a file stream
-    _fops.saveFd(ret, NULL);
-#endif
     return ret;
   }
 
   int close(int fd) {
     int ret;
 
-#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call
-      if(global_isRollback()) {
-        ret = _fops.getClose();
-      } else {
+      if(!global_isRollback()) {
         ret = _fops.closeFile(fd, NULL);
+      } else {
+        ret = _fops.getClose();
       }
     }
-#else
-    if(_fops.isNormalFile(fd)) {
-      ret = _fops.closeFile(fd, NULL);
-    }
-#endif
     else {
-      //      PRINF("close fd %d at line %d problem\n", fd, __LINE__);
       // selfmap::getInstance().printCallStack(NULL, NULL, true);
-      // epochEnd();
+      epochEnd();
       ret = Real::close(fd);
-      //  epochBegin();
+      epochBegin();
     }
 
     return ret;
@@ -265,8 +240,7 @@ public:
   DIR* opendir(const char* name) {
     DIR* ret;
 
-#ifdef REPRODUCIBLE_FDS
-    // In the rollback phase, we only call
+    // In the normal phase
     if(!global_isRollback()) {
       ret = Real::opendir(name);
       // Save current fd, pass NULL since it is not a file stream
@@ -274,11 +248,6 @@ public:
     } else {
       ret = _fops.getDirAtOpen();
     }
-#else
-    ret = Real::opendir(name);
-    // Save current fd, pass NULL since it is not a file stream
-    _fops.saveDir(ret);
-#endif
     PRINF("(((((((((((((((OPEN dir %s)))))))))\n", name);
 
     return ret;
@@ -287,50 +256,42 @@ public:
   int closedir(DIR* dir) {
     int ret;
 
-#ifdef REPRODUCIBLE_FDS
-    if(global_isRollback()) {
-      ret = 0;
-    } else {
+    if(!global_isRollback()) {
       ret = _fops.closeDir(dir);
+    } else {
+			// We only need to 
+      ret = _fops.getCloseDir(dir);
     }
-#else
-    ret = _fops.closeDir(dir);
-#endif
 
     return ret;
+  }
+
+	// Use the default mechanism for seekdir.
+	void seekdir(DIR *dir, long pos) {
+    epochEnd();
+    Real::seekdir(dir, pos);
+    epochBegin();
+  }
+
+  void rewinddir(DIR *dir) {
+    epochEnd();
+    Real::rewinddir(dir);
+    epochBegin();
   }
 
   FILE* fopen(const char* filename, const char* modes) {
     FILE* ret;
 
-#ifdef REPRODUCIBLE_FDS
     if(!global_isRollback()) {
       ret = Real::fopen(filename, modes);
       if(ret != NULL) {
-        // Commit those local changes now.
-        // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
         // Save current fd
         _fops.saveFopen(ret);
-        PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
-        // PRINF("OPEN fd %d\n", ret->_fileno);
-      } else {
-        _fops.saveFd(-1, NULL);
-      }
+      } 
     } else {
       // rollback phase
       ret = _fops.getFopen();
-      //      PRINF("fopen ret %p fileno %d\n", ret, ret->_fileno);
     }
-#else
-    ret = Real::fopen(filename, modes);
-    if(ret != NULL) {
-      // Commit those local changes now.
-      // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
-      // Save current fd
-      PRINF("fopeeeeeeeeee fd %d\n", ret->_fileno);
-      _fops.saveFopen(ret);
-    }
-#endif
 
     return ret;
   }
@@ -338,16 +299,12 @@ public:
   FILE* fopen64(const char* filename, const char* modes) {
     FILE* ret;
 
-#ifdef REPRODUCIBLE_FDS
     if(!global_isRollback()) {
-      // PRINF("fopeeeeeeeeee %x\n", sizeof(FILE));
       ret = Real::fopen64(filename, modes);
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
         selfmap::getInstance().printCallStack();
-        PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
-        // PRINF("OPEN fd %d\n", ret->_fileno);
       } else {
         _fops.saveFd(-1, NULL);
       }
@@ -355,16 +312,6 @@ public:
       // rollback phase
       ret = _fops.getFopen();
     }
-#else
-    ret = Real::fopen64(filename, modes);
-    PRINF("OPEN64 fd %d at line %d\n", ret->_fileno, __LINE__);
-    if(ret != NULL) {
-      // Commit those local changes now.
-      // atomicCommit(ret, xdefines::FOPEN_ALLOC_SIZE);
-      // Save current fd
-      _fops.saveFopen(ret);
-    }
-#endif
 
     return ret;
   }
@@ -728,27 +675,15 @@ public:
   int dup(int oldfd) {
     int ret = 0;
 
-#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(oldfd)) {
-      // In the rollback phase, we only call
-      if(global_isRollback()) {
-        ret = _fops.getFdAtOpen();
-      } else {
-        //  PRINF("before, dup oldfd %d newfd %d\n", oldfd, ret);
+      if(!global_isRollback()) {
         ret = Real::dup(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
+      } else {
+        ret = _fops.getDupFd();
       }
     }
-#else
-    if(_fops.isNormalFile(oldfd)) {
-      ret = Real::dup(oldfd);
-      if(ret != -1) {
-        // Save current fd, pass NULL since it is not a file stream
-        _fops.saveFd(ret, NULL);
-      }
-    }
-#endif
     else {
       epochEnd();
       ret = Real::dup(oldfd);
@@ -761,25 +696,15 @@ public:
   int dup2(int oldfd, int newfd) {
     int ret;
 
-#ifdef REPRODUCIBLE_FDS
     if(_fops.isNormalFile(newfd)) {
-      if(global_isRollback()) {
-        ret = _fops.getFdAtOpen();
-      } else {
+      if(!global_isRollback()) {
         ret = Real::dup2(oldfd, newfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
+      } else {
+        ret = _fops.getFdAtOpen();
       }
     }
-#else
-    if(_fops.isNormalFile(newfd)) {
-      ret = Real::dup2(oldfd, newfd);
-      if(ret != -1) {
-        // Save current fd, pass NULL since it is not a file stream
-        _fops.saveFd(ret, NULL);
-      }
-    }
-#endif
     else {
       // newfd is an opened file descriptor,
       // We have to stop the phase.
@@ -1085,7 +1010,6 @@ public:
   }
 
   int semctl(int semid, int semnum, int cmd, ...) {
-    // FIXME
     int ret;
     epochEnd();
     ret = Real::semctl(semid, semnum, cmd);
@@ -1098,7 +1022,6 @@ public:
 
     switch(cmd) {
     case F_DUPFD: {
-#ifdef REPRODUCIBLE_FDS
       // In the rollback phase, we only call
       if(global_isRollback()) {
         ret = _fops.getFdAtOpen();
@@ -1107,13 +1030,6 @@ public:
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveFd(ret, NULL);
       }
-#else
-      ret = Real::fcntl(fd, cmd, arg);
-      if(ret != -1) {
-        // Save current fd, pass NULL since it is not a file stream
-        _fops.saveFd(ret, NULL);
-      }
-#endif
       break;
     }
 
@@ -1126,9 +1042,6 @@ public:
     /* Fall through */
     case F_GETLK:
       /* Fall through */
-      ret = Real::fcntl(fd, cmd, arg);
-      break;
-
     default: {
       epochEnd();
       ret = Real::fcntl(fd, cmd, arg);
@@ -1136,7 +1049,6 @@ public:
       break;
     }
     }
-    // PRINF("cmd is
     return ret;
   }
 
