@@ -43,11 +43,11 @@ typedef enum e_recordSyscall {
   E_SYS_DIR_OPEN,
   E_SYS_DIR_CLOSE,
   E_SYS_MMAP,
-  E_SYS_MUNMAP,
+  E_SYS_MUNMAP, //6
   E_SYS_TIME,
   E_SYS_GETTIMEOFDAY,
   E_SYS_TIMES,
-  E_SYS_CLONE,
+  E_SYS_CLONE, // 10
   E_SYS_MAX
 } eRecordSyscall;
 

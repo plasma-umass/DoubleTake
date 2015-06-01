@@ -416,7 +416,6 @@ public:
     if(!_filesMap.find(fd, sizeof(fd), &thisFile)) {
       errno = EBADF;
       ret = -1;
-      return ret;
     }
 
     // Check whether the fp is equal to the saved one
@@ -424,20 +423,23 @@ public:
     if(fp != thisFile->origStream) {
       errno = EBADF;
       ret = -1;
-      return ret;
     }
-
+	
     // Add to the closed list
-    _sysrecord.recordFileOps(E_SYS_FILE_CLOSE, fd);
+    _sysrecord.recordFileOps(E_SYS_FILE_CLOSE, fd, ret);
 
     return ret;
   }
 
-	int getClose() {
+	int getCloseFile(int fd, FILE *fp) {
 		int ret;
-
-		_sysrecord.getFileOps(E_SYS_FILE_CLOSE, &ret);
-
+		_sysrecord.getFileOps(E_SYS_FILE_CLOSE, &fd, &ret);
+		return ret;
+	}
+	
+	int getClose(int fd) {
+		int ret;
+		_sysrecord.getFileOps(E_SYS_FILE_CLOSE, &fd, &ret);
 		return ret;
   }
 

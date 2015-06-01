@@ -224,7 +224,7 @@ public:
       if(!global_isRollback()) {
         ret = _fops.closeFile(fd, NULL);
       } else {
-        ret = _fops.getClose();
+        ret = _fops.getClose(fd);
       }
     }
     else {
@@ -324,8 +324,14 @@ public:
     // flush the result, required by the posix standard
     fflush(fp);
 
-    // fclose is actually delayed
-    ret = _fops.closeFile(fp->_fileno, fp);
+		PRINT("calling fclose on fp %p\n", fp);
+
+		if(!global_isRollback()) {
+      ret = _fops.closeFile(fp->_fileno, fp);
+    } else {
+      // We only need to 
+      ret = _fops.getCloseFile(fp->_fileno, fp);
+    }
 
     return ret;
   }

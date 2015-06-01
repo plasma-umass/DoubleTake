@@ -35,6 +35,7 @@ private:
   struct recordFile {
     list_t list;
     int fd;
+		int ret;
   };
 
   struct recordMmap {
@@ -79,23 +80,40 @@ public:
 
   // Record a file syscall according to given sc.
   void recordFileOps(eRecordSyscall sc, int fd) {
+		recordFileOps(sc, fd, 0);
+	}
+
+  void recordFileOps(eRecordSyscall sc, int fd, int ret) {
     // using the assertion since only my code will call this.
     assert(sc <= E_SYS_FILE_DUP);
 
     struct recordFile* record = (struct recordFile*)allocEntry(sc);
     record->fd = fd;
     if(sc == E_SYS_FILE_CLOSE) {
+			record->ret = ret;
       insertList(E_SYS_FILE_CLOSE, &record->list);
     }
   }
 
   // Get the fd with specific sc and remove corresponding item.
   bool getFileOps(eRecordSyscall sc, int* fd) {
+		int ret;
+
+		// We don't care about the return value for this case
+		return getFileOps(sc, fd, &ret);
+	}
+
+  bool getFileOps(eRecordSyscall sc, int* fd, int * ret) {
     bool isFound = false;
     assert(sc <= E_SYS_FILE_DUP);
     struct recordFile* record = (struct recordFile*)retrieveEntry(sc);
     if(record) {
-      *fd = record->fd;
+			if(sc == E_SYS_FILE_CLOSE) {
+				*ret = record->ret;
+			}
+			else {
+      	*fd = record->fd;
+			}
       isFound = true;
     }
     return isFound;
