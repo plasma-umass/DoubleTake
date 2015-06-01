@@ -81,7 +81,7 @@ public:
   /* Heap-related functions. */
   inline void* malloc(size_t sz) {
     void* ptr;
-  	PRINT("malloc sz %lx at thread %d\n", sz, current->index);
+  	//PRINT("malloc sz %lx at thread %d\n", sz, current->index);
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
