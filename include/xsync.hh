@@ -83,12 +83,12 @@ public:
 
 	// Update the synchronization list.
   void advanceThreadSyncList() {
-    global_lock();
+    lock_thread(current);
 
     // Update next event of thread eventlist.
     current->syncevents.advanceEntry();
 
-    global_unlock();
+    unlock_thread(current);
   }
 
 

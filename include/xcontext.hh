@@ -201,6 +201,8 @@ public:
 
   static void rollbackInsideSignalHandler(ucontext_t* context, xcontext* oldContext) {
     // We first rollback the stack.
+		// Since the thread is inside the context of signal handler, we can simply 
+		// recover the stack by copying, no need to worry about the correctness
     memcpy(oldContext->getPrivateStart(), oldContext->getBackupStart(),
            oldContext->getBackupSize());
 

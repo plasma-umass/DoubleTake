@@ -44,12 +44,6 @@ public:
     listInit(&_alivethreads);
   }
 
-  // Destroy all semaphores
-  void finalize() {
-     PRINF("Destroy all semaphores NOOOOOOOOO!\n");
-    destroyAllSemaphores();
-  }
-
   thread_t* getThreadInfo(pthread_t thread) {
     thread_t* info = NULL;
 
@@ -122,77 +116,6 @@ public:
     return (struct syncEvent*)((intptr_t)entry - threadEventOffset);
   }
 
-  /*
-   prepareRollback:
-    each thread will update its synchronization entry to the first one on its synchronization list.
-   */
-  void prepareRollback() {
-    struct aliveThread* ath;
-
-    // Search the whole list for given tid.
-    ath = (struct aliveThread*)nextEntry(&_alivethreads);
-    while(true) {
-      thread_t* thread = ath->thread;
-
-      // Initialize the semaphore for this thread.
-      initThreadSemaphore(thread);
-
-      // Set the entry of each thread to the first synchronization event.
-   		thread->syscalls.prepareRollback();
-	   	thread->syncevents.prepareRollback();
-
-			PRINF("preparing rollback for thread %d status %d\n", thread->index, thread->status);
-      // Update to the next thread.
-      if(isListTail(&ath->list, &_alivethreads)) {
-        break;
-      } else {
-        ath = (struct aliveThread*)nextEntry(&ath->list);
-      }
-    }
-  }
-
-  /*
-    destroy all semaphores:
-   */
-  void destroyAllSemaphores() {
-    struct aliveThread* ath;
-    /*    thread_t* thread; */
-    /* struct syncEventList* eventlist; */
-
-    // Search the whole list for given tid.
-    ath = (struct aliveThread*)nextEntry(&_alivethreads);
-    while(true) {
-      thread_t* thread = ath->thread;
-
-      // If we found the entry, remove this entry from the list.
-      destroyThreadSemaphore(thread);
-
-      // Update to the next thread.
-      if(isListTail(&ath->list, &_alivethreads)) {
-        break;
-      } else {
-        ath = (struct aliveThread*)nextEntry(&ath->list);
-      }
-    }
-  }
-
-  // Initialize the semaphore for  specified thread
-  void destroyThreadSemaphore(thread_t* thread) {
-    semaphore* sema = &thread->sema;
-
-    // We initialize the semaphore value to 0.
-    sema->destroy();
-  }
-
-  // Initialize the semaphore for  specified thread
-  void initThreadSemaphore(thread_t* thread) {
-    semaphore* sema = &thread->sema;
-
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
-    // We initialize the semaphore value to 0.
-    sema->init((unsigned long)thread->self, 1, 0);
-  }
 
 public:
   class aliveThreadIterator {

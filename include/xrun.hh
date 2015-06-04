@@ -76,6 +76,8 @@ public:
 
     while(1);
 #endif
+
+		// Initialize the locks and condvar used in epoch switches
     global_initialize();
 
     installSignalHandler();

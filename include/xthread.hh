@@ -66,15 +66,14 @@ public:
     // fake variable name _spawningList here
     _sync.insertSyncMap((void*)_spawningList, _spawningList, _spawningList);
 
-		PRINF("SpawnList %p is inserted into the syncmap\n", _spawningList); 
     // Register the first thread
     initialThreadRegister();
     current->isSafe = true;
     PRINF("Done with thread initialization");
   }
 
-  void finalize() { 
-		threadmap::getInstance().finalize(); 
+  void finalize() {
+		destroyAllSemaphores(); 
 	}
 
   // After an epoch is end and there is no overflow,
@@ -84,7 +83,6 @@ public:
   void epochEndWell() {
 		// There is no need to run deferred synchronizations 
 		// since we will do this in epochBegin();
-
 		// Cleanup all synchronization events in the global list (mostly thread creations) and lists of 
 		// different synchronization variables
 		// FIXME: now it seems like that this function doesn't perform correctly.
@@ -182,6 +180,7 @@ public:
       // the parent may already sleep on that.
       children->joiner = NULL;
 
+      PRINT("thread creation with index %d\n", tindex);
       // Now we are going to record this spawning event.
       disableCheck();
       result = Real::pthread_create(tid, attr, xthread::startThread, (void*)children);
@@ -191,7 +190,6 @@ public:
         Real::exit(-1);
       }
 
-      PRINF("thread creation with index %d tid %lx\n", tindex, *tid);
       // Record spawning event
       _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
       _sysrecord.recordCloneOps(result, *tid);
@@ -264,6 +262,7 @@ public:
       current->status = E_THREAD_JOINING;
 
       // Now we are waiting the finish of child thread
+			// FIXME
       while(current->status != E_THREAD_RUNNING) {
         // Wait for the joinee to wake me up
         wait_thread(thread);
@@ -273,7 +272,7 @@ public:
     // Now mark this thread's status so that the thread can be reaped.
     thread->hasJoined = true;
 
-    // FIXME: actually, we should get the result from corresponding thread
+    // Actually, we should get the result from corresponding thread
     if(result) {
       *result = thread->result;
     }
@@ -456,9 +455,55 @@ public:
   // Add this into destoyed list.
   void cond_destroy(pthread_cond_t* cond) { deferSync((void*)cond, E_SYNCVAR_COND); }
 
+
+	// Mark whether 
+	void markThreadCondwait(pthread_cond_t * cond) {
+		lock_thread(current);
+		assert(current->status == E_THREAD_RUNNING);
+		current->status = E_THREAD_COND_WAITING;
+		current->condwait = cond;
+		unlock_thread(current);
+	}
+
+	/*
+    The thread can be waken up on two different situations. 
+		One is waken up through the application.
+		Another is waken up by DoubleTake because of rollback.
+	*/
+	void unmarkThreadCondwait(pthread_cond_t * cond, pthread_mutex_t * mutex) {
+		lock_thread(current);
+		// Cleanup this thread
+		current->condwait = NULL;
+
+		if(current->status == E_THREAD_ROLLBACK) {
+      PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, current);
+			unlock_thread(current);
+			
+			// Time to rollback. Since we still have the lock, we should call the unlock before we
+			// actually rollback.
+			Real::pthread_mutex_unlock(mutex);
+
+			rollbackCurrent();
+		}
+		else {
+			unlock_thread(current);
+		}
+	}
+
+
+  int cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex) {
+		return cond_wait_core(cond, mutex, NULL);
+	}
+
+	// Cond_timedwait: since we usually get the mutex before this. So there is
+  // no need to check mutex any more.
+  int cond_timedwait(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
+		return cond_wait_core(cond, mutex, abstime);
+	}
+
   // Condwait: since we usually get the mutex before this. So there is
   // no need to check mutex any more.
-  int cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex) {
+  int cond_wait_core(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
     int ret;
     SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
     assert(list != NULL);
@@ -468,8 +513,19 @@ public:
       assert(realMutex != NULL);
 
       PRINF("cond_wait for thread %d\n", current->index);
+			// Mark the status of this thread before going to sleep.
+			markThreadCondwait(cond);
+
       // Add the event into eventlist
-      ret = Real::pthread_cond_wait(cond, realMutex);
+			if(abstime == NULL) {
+      	ret = Real::pthread_cond_wait(cond, realMutex);
+			}
+			else {
+      	ret = Real::pthread_cond_timedwait(cond, realMutex, abstime);
+			}
+		
+			// This thread exits cond_wait status	
+			unmarkThreadCondwait(cond, realMutex);
 
       // Record the waking up of conditional variable
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
@@ -495,43 +551,6 @@ public:
     return ret;
   }
   
-	// Cond_timedwait: since we usually get the mutex before this. So there is
-  // no need to check mutex any more.
-  int cond_timedwait(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
-    int ret;
-    SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-    assert(list != NULL);
-
-    if(!global_isRollback()) {
-      pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-      assert(realMutex != NULL);
-
-      // Add the event into eventlist
-      ret = Real::pthread_cond_timedwait(cond, realMutex, abstime);
-
-      // Record the waking up of conditional variable
-      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-    } else {
-      ret = _sync.peekSyncEvent(list);
-
-      if(ret == 0) {
-        struct syncEvent* event = list->advanceSyncEvent();
-        if(event) {
-          // Actually, we will wakeup next thread on the event list.
-          // Since cond_wait will call unlock at first.
-          _sync.signalNextThread(event);
-        }
-
-        // Now waiting for the lock
-        waitSemaphore();
-			
-				_sync.advanceThreadSyncList();
-      }
-    }
-
-    return ret;
-	}
-
   int cond_broadcast(pthread_cond_t* cond) { return Real::pthread_cond_broadcast(cond); }
 
   int cond_signal(pthread_cond_t* cond) { return Real::pthread_cond_signal(cond); }
@@ -657,16 +676,23 @@ public:
 
   // Preparing the rollback.
   void prepareRollback();
+	void prepareRollbackAlivethreads();
+	void destroyAllSemaphores();
+	void initThreadSemaphore(thread_t* thread);
+	void destroyThreadSemaphore(thread_t* thread);
+	void wakeupOldWaitingThreads();
 
   static void epochBegin();
 
-  // Rollback the whole process
-  static void rollback();
+  // Rollback the current thread
+  static void rollbackCurrent();
+	void checkRollbackCurrent();
 
+	// It is called when a thread has to rollback.
+	// Thus, it will replace the current context (of signal handler)
+	// with the old context.
   void rollbackInsideSignalHandler(ucontext* context) {
-
     xcontext::rollbackInsideSignalHandler(context, &current->oldContext);
-    //   restoreContext(context);
   }
 
   inline static pthread_t thread_self() { return Real::pthread_self(); }
@@ -963,7 +989,6 @@ private:
 		// It can only have two status, one is to rollback and another is to exit successfully.
     if(current->status == E_THREAD_ROLLBACK) {
       PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, current);
-      current->status = E_THREAD_RUNNING;
       unlock_thread(current);
 
       // Rollback: has the possible race conditions. FIXME
@@ -971,7 +996,7 @@ private:
       // Some thread data maybe overlapped by this rollback.
       // Especially those current->joiner, then we may have a wrong status.
       PRINF("THREAD%d (at %p) is rollngback now\n", current->index, current);
-      xthread::getInstance().rollback();
+      xthread::getInstance().rollbackCurrent();
 
       // We will never reach here
       assert(0);

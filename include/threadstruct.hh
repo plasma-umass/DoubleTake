@@ -26,6 +26,7 @@ typedef enum e_thrstatus {
                     //    E_THREAD_EXITED, // The thread is exiting.
   //  E_THREAD_SIGNALED, // The thread has been signaled, waiting for the instruction
   //  E_THREAD_CONTINUE, // The thread should move forward.
+	E_THREAD_COND_WAITING, // Thre thread is waiting for a conditional variable
   E_THREAD_ROLLBACK,
   E_THREAD_WAITFOR_JOINING, // The thread has finished and wait for the joining.
 
@@ -69,11 +70,16 @@ typedef struct thread {
   // Otherwise, pthread_join may crash since the thread has exited/released.
   bool hasJoined;
   bool isSafe;   // whether a thread is safe to be interrupted
-  bool waitSafe; // whether a thread is safe to be interrupted
   int index;
   pid_t tid;      // Current process id of this thread.
   pthread_t self; // Results of pthread_self
+
+	// What is the status of a thread.
   thrStatus status;
+
+	// If the thread is waiting on a user-provided conditional variable,	
+	// we will record this conditional variable.
+  pthread_cond_t * condwait;;
 
   // mutex when a thread is trying to change its state.
   // In fact, this mutex is only protect joiner.

@@ -56,7 +56,6 @@ public:
   // Called by xrun::epochBegin()
   void atEpochBegin() {
 		// Called munmap and cleanup existing entries.
-		// Those existing entries are pre-allocated. 
     _sysrecord.epochBegin();
   }
 
@@ -206,12 +205,12 @@ public:
     int ret;
 
     // In the rollback phase, we only call
-    if(global_isRollback()) {
-      ret = _fops.getFdAtOpen();
-    } else {
+    if(!global_isRollback()) {
       ret = Real::open(pathname, flags, mode);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
+    } else {
+      ret = _fops.getFdAtOpen();
     }
     return ret;
   }

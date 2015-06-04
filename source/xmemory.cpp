@@ -17,7 +17,6 @@ xpheap<xoneheap<xheap>> xmemory::_pheap;
 // This function is called inside the segmentation fault handler
 // So we must utilize the "context" to achieve our target
 void xmemory::handleSegFault() {
-#ifdef DETECT_OVERFLOW
   PRINF("Returning from segmentation fault error\n");
   // Check whether the segmentation fault is called by buffer overflow.
   if(xmemory::getInstance().checkHeapOverflow()) {
@@ -25,17 +24,7 @@ void xmemory::handleSegFault() {
     PRINF("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
 
     xrun::getInstance().rollback();
-  } else {
-    PRINF("\n\nNO overflow in segmentation fault, ROLLING BACK and stop\n\n\n");
-    // We may rely on gdb to find out this problem.
-    // We do not need to install watchpoints at all.
-    // But we can rollback everything and hault there
-    // so gdb can be used to attach to this process.
-    xrun::getInstance().rollbackandstop();
   }
-#else
-  xrun::getInstance().rollbackandstop();
-#endif
 }
 
 void xmemory::realfree(void* ptr) { _pheap.realfree(ptr); }
