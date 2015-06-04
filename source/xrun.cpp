@@ -74,6 +74,8 @@ void xrun::epochBegin() {
         unlock_thread(thread);
         Real::pthread_join(thread->self, NULL);
       } else {
+				// Since now we are in a new epoch,
+				// mark all existing threads as old threads.
 				thread->isNewlySpawned = false;
         unlock_thread(thread);
       }

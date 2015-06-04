@@ -73,7 +73,6 @@ void xthread::prepareRollbackAlivethreads() {
     // Set the entry of each thread to the first synchronization event.
    	thread->syscalls.prepareRollback();
 	  thread->syncevents.prepareRollback();
-
   }
 }
   
@@ -142,12 +141,12 @@ void xthread::wakeupOldWaitingThreads() {
 		// the parent will wakeup those newly spawned threads appropriately 
 		if(thread->isNewlySpawned != true) {    
     	if(thread->status == E_THREAD_WAITFOR_REAPING) {
-				thread->status = E_THREAD_ROLLBACK;
     		// If the thread is already at E_THREAD_WAITFOR_REAPING and it not a newly spawned thread,
 				// then we should wake this thread up immediately
+				thread->status = E_THREAD_ROLLBACK;
 				signal_thread(thread);
     	}	
- 			else if (thread->status == E_THREAD_COND_WAITING) {
+ 			else if (thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
 				thread->status = E_THREAD_ROLLBACK;
 				Real::pthread_cond_signal(thread->condwait);
 			}

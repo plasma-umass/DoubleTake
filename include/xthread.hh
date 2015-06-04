@@ -227,10 +227,16 @@ public:
 
         // Wakeup corresponding thread
         thread->joiner = NULL;
-        thread->status = E_THREAD_ROLLBACK;
-        PRINF("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread,
-              thread->index);
-        signal_thread(thread);
+        PRINT("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread, thread->index);
+       	// Check the thread's status
+				if(thread->status == E_THREAD_WAITFOR_REAPING) {
+        	thread->status = E_THREAD_ROLLBACK;
+				 	signal_thread(thread);
+				}
+				else if(thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
+        	thread->status = E_THREAD_ROLLBACK;
+        	Real::pthread_cond_signal(thread->condwait);
+				}
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
@@ -242,6 +248,17 @@ public:
     return result;
   }
 
+	inline void markThreadJoining(thread_t * thread) {
+		lock_thread(current);
+		current->status = E_THREAD_JOINING;
+		current->condwait = &thread->cond;
+		unlock_thread(current);
+	}
+
+	inline void unmarkThreadJoining() {
+		checkRollback(NULL);
+	}
+
   /// @brief Wait for a thread to exit.
   /// Should we record this? It is not necessary?? FIXME
   inline int thread_join(pthread_t joinee, void** result) {
@@ -252,21 +269,18 @@ public:
     assert(thread != NULL);
 
 		PRINF("main thread is joining thread %d\n", thread->index);
-    // Now the thread has finished the register
+		
+		markThreadJoining(thread);
+      
     lock_thread(thread);
 
 		PRINF("main thread is joining thread %d with status %d\n", thread->index, thread->status);
-    if(thread->status != E_THREAD_WAITFOR_REAPING) {
+    while(thread->status != E_THREAD_WAITFOR_REAPING) {
       // Set the joiner to current thread
       thread->joiner = current;
-      current->status = E_THREAD_JOINING;
 
-      // Now we are waiting the finish of child thread
-			// FIXME
-      while(current->status != E_THREAD_RUNNING) {
-        // Wait for the joinee to wake me up
-        wait_thread(thread);
-      }
+      // Wait for the joinee to wake me up
+      wait_thread(thread);
     }
 
     // Now mark this thread's status so that the thread can be reaped.
@@ -280,6 +294,9 @@ public:
     // Now we unlock and proceed
     unlock_thread(thread);
 
+		// Check the status since it is possible to be waken up for rollback.
+		unmarkThreadJoining();
+	
 		// Defer the reaping of this thread for memory deterministic usage.
 		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
 			PRINF("Before reap dead threads!!!!\n");
@@ -361,6 +378,7 @@ public:
         realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       }
 
+			// FIXME: mark the thread as unsafe.
       //  PRINF("pthread_self %lx: do_mutex_lock at line %d: mutex %p realMutex %p\n",
       // pthread_self(), __LINE__, mutex, realMutex);
       assert(realMutex != NULL);
@@ -426,6 +444,8 @@ public:
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
+			
+			// FIXME: mark the thread as safe to be interrupted.
       //		PRINF("mutex_unlock at mutex %p\n", mutex);
     } else {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
@@ -470,22 +490,31 @@ public:
 		One is waken up through the application.
 		Another is waken up by DoubleTake because of rollback.
 	*/
-	void unmarkThreadCondwait(pthread_cond_t * cond, pthread_mutex_t * mutex) {
+	void unmarkThreadCondwait(pthread_mutex_t * mutex) {
+		checkRollback(mutex);
+	}
+
+
+	void checkRollback(pthread_mutex_t * mutex) {
 		lock_thread(current);
 		// Cleanup this thread
 		current->condwait = NULL;
 
 		if(current->status == E_THREAD_ROLLBACK) {
-      PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, current);
+      PRINT("THREAD%d (status %d) is wakenup after cond_wait, plan to rollback\n", current->index, current->status);
 			unlock_thread(current);
-			
-			// Time to rollback. Since we still have the lock, we should call the unlock before we
-			// actually rollback.
-			Real::pthread_mutex_unlock(mutex);
 
+			if(mutex) {			
+				// If we are holding the lock, release it before the rollback.
+				Real::pthread_mutex_unlock(mutex);
+			}
+				
+			// Time to rollback. 
 			rollbackCurrent();
 		}
 		else {
+      PRINT("THREAD%d (status %d) is wakenup after cond_wait\n", current->index, current->status);
+			current->status = E_THREAD_RUNNING;
 			unlock_thread(current);
 		}
 	}
@@ -512,7 +541,7 @@ public:
       pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       assert(realMutex != NULL);
 
-      PRINF("cond_wait for thread %d\n", current->index);
+      PRINT("cond_wait for thread %d\n", current->index);
 			// Mark the status of this thread before going to sleep.
 			markThreadCondwait(cond);
 
@@ -523,12 +552,12 @@ public:
 			else {
       	ret = Real::pthread_cond_timedwait(cond, realMutex, abstime);
 			}
+      
+			// Record the waking up of conditional variable
+      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
 		
 			// This thread exits cond_wait status	
-			unmarkThreadCondwait(cond, realMutex);
-
-      // Record the waking up of conditional variable
-      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+			unmarkThreadCondwait(realMutex);
     } else {
       ret = _sync.peekSyncEvent(list);
 
@@ -953,18 +982,14 @@ private:
     lock_thread(current);
 
     current->result = result;
+    current->status = E_THREAD_WAITFOR_REAPING;
 
     // Only check the joiner when the thread is not deatached.
     if(!isThreadDetached()) {
-      thread_t* joiner;
-      // Check the state of joinning thread.
-      joiner = current->joiner;
-
       // Check the state of joiner.
-      if(joiner) {
-        assert(joiner->status == E_THREAD_JOINING);
-        joiner->status = E_THREAD_RUNNING;
-        PRINF("Waking up the joiner %p!!!\n", (void*)joiner->self);
+      if(current->joiner) {
+        assert(current->joiner->status == E_THREAD_JOINING);
+        PRINF("Waking up the joiner %p!!!\n", (void*)current->joiner->self);
         // Now we can wakeup the joiner.
         signal_thread(current);
       }
@@ -972,17 +997,11 @@ private:
       PRINF("Thread is detached!!!\n");
     }
 
-    current->status = E_THREAD_WAITFOR_REAPING;
-
     // At commit points, if no heap overflow is detected, then the thread
     // should set the status to E_THREAD_EXITING, otherwise it should
     // be set to E_THREAD_ROLLBACK
-    // while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {
-    while(current->status == E_THREAD_WAITFOR_REAPING) {
-      PRINF("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
-      PRINF("DEAD thread %d is sleeping, status is %d\n", current->index, current->status);
+    while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {
       wait_thread(current);
-      PRINF("DEAD thread %d is wakenup status is %d\n", current->index, current->status);
     }
 
     // What to do in the end of a thread?
