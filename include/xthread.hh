@@ -388,6 +388,7 @@ public:
       // pthread_self(), __LINE__, mutex, realMutex);
       assert(realMutex != NULL);
 
+  		setThreadUnsafe();
       switch(synccmd) {
       case E_SYNC_MUTEX_LOCK:
         ret = Real::pthread_mutex_lock(realMutex);
@@ -446,9 +447,9 @@ public:
     if(!global_isRollback()) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
-			
-			// FIXME: mark the thread as safe to be interrupted.
-      //		PRINF("mutex_unlock at mutex %p\n", mutex);
+
+			// Now the thread is safe to be interrupted.
+  		setThreadSafe();
     } else {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       PRDBG("mutex_unlock at mutex %p list %p\n", mutex, list);
@@ -500,6 +501,9 @@ public:
 		current->status = E_THREAD_COND_WAITING;
 		current->condwait = cond;
 		unlock_thread(current);
+
+		// Now thread is safe to be interrupted
+		setThreadSafe();
 		PRINT("markThreadCondwait on thread %d with cond %p\n", current->index, cond);		
 	}
 
@@ -510,6 +514,7 @@ public:
 	*/
 	void unmarkThreadCondwait(pthread_mutex_t * mutex) {
 		checkRollback(mutex);
+		setThreadUnsafe();
 	}
 
 
@@ -645,11 +650,9 @@ public:
 	}
 
   // Barrier support
-  int barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr,
-                   unsigned int count) {
+  int barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr, unsigned int count) {
     int result = 0;
     
-		//FIXME
 		pthread_barrier_t* realBarrier = NULL;
 
     if(!global_isRollback()) {
@@ -826,6 +829,7 @@ public:
 
   static void invokeCommit();
   bool addQuarantineList(void* ptr, size_t sz);
+  static bool isThreadSafe(thread_t * thread);
 
 private:
   inline void* getSyncEntry(void* entry) {
@@ -1009,6 +1013,7 @@ private:
   }
 
   static void setThreadSafe();
+  static void setThreadUnsafe();
 
   // @Global entry of all entry function.
   static void* startThread(void* arg) {

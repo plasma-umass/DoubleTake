@@ -156,10 +156,16 @@ void xthread::wakeupOldWaitingThreads() {
 }
 
 void xthread::setThreadSafe() {
-  lock_thread(current);
-  current->isSafe = true;
+  __atomic_store_n(&current->isSafe, true, __ATOMIC_SEQ_CST);
   signal_thread(current);
-  unlock_thread(current);
+}
+
+void xthread::setThreadUnsafe() {
+  __atomic_store_n(&current->isSafe, false, __ATOMIC_SEQ_CST);
+}
+
+bool xthread::isThreadSafe(thread_t * thread) {
+	return __atomic_load_n(&thread->isSafe, __ATOMIC_SEQ_CST);
 }
 
 bool xthread::addQuarantineList(void* ptr, size_t sz) {

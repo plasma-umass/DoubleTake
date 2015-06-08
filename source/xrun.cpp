@@ -168,8 +168,6 @@ void xrun::epochEnd(bool endOfProgram) {
   //PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
 }
 
-bool isThreadSafe(thread_t* thread) { return thread->isSafe; }
-
 void xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
@@ -213,30 +211,18 @@ void xrun::stopAllThreads() {
 		  lock_thread(thread);
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
 			// or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
-     if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING)) {
-				if(thread->status == E_THREAD_COND_WAITING) {
-					assert(thread->condwait != NULL);
-					if(thread->isNewlySpawned != true) {
-						// If it is an old thread, it will wait by calling global_waitForNotification
-        		waiters++;
-					}
-					Real::pthread_cond_signal(thread->condwait);
-				}
-				else {
-        	while(!thread->isSafe) {
-          	wait_thread(thread);
-        	}
+     if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING) && (thread->status != E_THREAD_COND_WAITING)) {
+        while(!xthread::isThreadSafe(thread)) {
+          wait_thread(thread);
+        }
 					
-					// If the thread is not waiting, stop them by sending them SIGUSR2
-     			if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING) && (thread->status != E_THREAD_JOINING)) {
-          	waiters++;
-						PRINT("kill thread %d\n", thread->index);
-          	Real::pthread_kill(thread->self, SIGUSR2);
-        	}
+				// If the thread is not waiting, stop them by sending them SIGUSR2
+     		if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING) && (thread->status != E_THREAD_JOINING)) {
+          waiters++;
+					PRINT("kill thread %d\n", thread->index);
+          Real::pthread_kill(thread->self, SIGUSR2);
+        }
 			}
-        // Else, if thread is not safe, the thread can wait by itself.
-      }
-
       unlock_thread(thread);
     }
   }
