@@ -270,7 +270,7 @@ public:
     thread = getThread(joinee);
     assert(thread != NULL);
 
-		PRINF("main thread is joining thread %d\n", thread->index);
+		PRINT("main thread is joining thread %d\n", thread->index);
 	
 		// FIXME: is there a race here since we are using two locks.
 		// what if the joinee has stopped for reaping, what will happen?
@@ -279,7 +279,7 @@ public:
       
     lock_thread(thread);
 
-		PRINF("main thread is joining thread %d with status %d\n", thread->index, thread->status);
+		PRINT("main thread is joining thread %d with status %d\n", thread->index, thread->status);
     while(thread->status != E_THREAD_WAITFOR_REAPING) {
       // Set the joiner to current thread
       thread->joiner = current;
@@ -514,7 +514,7 @@ public:
 
 
 	void checkRollback(pthread_mutex_t * mutex) {
-		PRINT("checkRollback on thread %d with cond %p\n", current->index, current->condwait);		
+		PRINT("checkRollback on thread %d with cond %p mutex %p\n", current->index, current->condwait, mutex);		
 		lock_thread(current);
 		// Cleanup this thread
 		current->condwait = NULL;
@@ -532,7 +532,7 @@ public:
 			checkRollbackCurrent();
 		}
 		else {
-      PRINT("THREAD%d (status %d) is wakenup after cond_wait\n", current->index, current->status);
+      PRINT("THREAD%d (status %d) is wakenup after cond_wait with mutex %p\n", current->index, current->status, mutex);
 			current->status = E_THREAD_RUNNING;
 			unlock_thread(current);
 		}
@@ -589,22 +589,22 @@ public:
 		
     } else {
 			list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+
+			// Before the condWait, we will have to release the current lock.			
+			struct syncEvent* nextEvent = list->advanceSyncEvent();
+      if(nextEvent) {
+        _sync.signalNextThread(nextEvent);
+      }
+
+			// Then we will have a mutex_lock after wakenup.
       ret = _sync.peekSyncEvent(list);
 
       if(ret == 0) {
-        struct syncEvent* event = list->advanceSyncEvent();
-        if(event) {
-          // Actually, we will wakeup next thread on the event list.
-          // Since cond_wait will call unlock at first.
-          _sync.signalNextThread(event);
-        }
-
         // Now waiting for the lock
         waitSemaphore();
-
-				_sync.advanceThreadSyncList();
       }
-
+				
+			_sync.advanceThreadSyncList();
     }
 
     return ret;
