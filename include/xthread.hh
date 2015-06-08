@@ -64,7 +64,7 @@ public:
 
     // We do not know whether NULL can be support or not, so we use
     // fake variable name _spawningList here
-    _sync.insertSyncMap((void*)_spawningList, _spawningList, _spawningList);
+    _sync.insertSyncMap(E_SYNCVAR_THREAD, (void*)_spawningList, _spawningList, _spawningList);
 
     // Register the first thread
     initialThreadRegister();
@@ -227,16 +227,18 @@ public:
 
         // Wakeup corresponding thread
         thread->joiner = NULL;
-        PRINT("Waken up *tid %p thread %p child %d in thread_creation\n", (void*)*tid, thread, thread->index);
        	// Check the thread's status
 				if(thread->status == E_THREAD_WAITFOR_REAPING) {
         	thread->status = E_THREAD_ROLLBACK;
 				 	signal_thread(thread);
 				}
 				else if(thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
+        	PRINT("Waken up thread %d with status %d condwait %p in thread_creation\n", thread->index, thread->status, thread->condwait);
         	thread->status = E_THREAD_ROLLBACK;
         	Real::pthread_cond_signal(thread->condwait);
 				}
+				//FIXME Tongping 
+				//while(1);
       }
       // Whenever we are calling __clone, then we can ask the thread to rollback?
       // Update the events.
@@ -269,7 +271,10 @@ public:
     assert(thread != NULL);
 
 		PRINF("main thread is joining thread %d\n", thread->index);
-		
+	
+		// FIXME: is there a race here since we are using two locks.
+		// what if the joinee has stopped for reaping, what will happen?
+		// what if the checking happens when it is in the middle of waiting?	
 		markThreadJoining(thread);
       
     lock_thread(thread);
@@ -350,7 +355,7 @@ public:
       int result = Real::pthread_mutex_init(real_mutex, attr);
 
       // If we can't setup this entry, that means that this variable has been initialized.
-      setSyncEntry(mutex, real_mutex, sizeof(pthread_mutex_t));
+      setSyncEntry(E_SYNCVAR_MUTEX, mutex, real_mutex, sizeof(pthread_mutex_t));
 
       return result;
     }
@@ -358,7 +363,7 @@ public:
     return 0;
   }
 
-  inline bool isInvalidMutex(void* realMutex) {
+  inline bool isInvalidSyncVar(void* realMutex) {
     return (((intptr_t)realMutex < xdefines::INTERNAL_HEAP_BASE) ||
                     ((intptr_t)realMutex >= xdefines::INTERNAL_HEAP_END)
                 ? true
@@ -373,7 +378,7 @@ public:
     	pthread_mutex_t* realMutex = NULL;
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       //PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
-      if(isInvalidMutex(realMutex)) {
+      if(isInvalidSyncVar(realMutex)) {
         mutex_init((pthread_mutex_t*)mutex, NULL);
         realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       }
@@ -397,9 +402,6 @@ public:
       }
 
       // Record this event
-      //  PRINF("do_mutex_lock before recording\n");
-      // PRINF("pthread_self %lx: do_mutex_lock line %d: mutex %p realMutex %p\n", pthread_self(),
-      // __LINE__, mutex, realMutex);
       list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
      	PRINT("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
@@ -468,8 +470,23 @@ public:
   }
 
   ///// conditional variable functions.
-  void cond_init(pthread_cond_t* cond, const pthread_condattr_t* attr) {
-    Real::pthread_cond_init(cond, attr);
+  int cond_init(pthread_cond_t* cond, const pthread_condattr_t* attr) {
+    if(!global_isRollback()) {
+      // Allocate a mutex
+      pthread_cond_t* real_cond =
+          (pthread_cond_t*)allocSyncEntry(sizeof(pthread_cond_t), E_SYNC_COND);
+
+      // Initialize the real mutex
+      int result = Real::pthread_cond_init(real_cond, attr);
+
+      // If we can't setup this entry, that means that this variable has been initialized.
+      setSyncEntry(E_SYNCVAR_COND, cond, real_cond, sizeof(pthread_cond_t));
+      PRINT("cond_init for thread %d. cond %p realCond %p\n", current->index, cond, real_cond);
+
+      return result;
+    }
+
+		return 0;
   }
 
   // Add this into destoyed list.
@@ -483,6 +500,7 @@ public:
 		current->status = E_THREAD_COND_WAITING;
 		current->condwait = cond;
 		unlock_thread(current);
+		PRINT("markThreadCondwait on thread %d with cond %p\n", current->index, cond);		
 	}
 
 	/*
@@ -496,10 +514,11 @@ public:
 
 
 	void checkRollback(pthread_mutex_t * mutex) {
+		PRINT("checkRollback on thread %d with cond %p\n", current->index, current->condwait);		
 		lock_thread(current);
 		// Cleanup this thread
 		current->condwait = NULL;
-
+		
 		if(current->status == E_THREAD_ROLLBACK) {
       PRINT("THREAD%d (status %d) is wakenup after cond_wait, plan to rollback\n", current->index, current->status);
 			unlock_thread(current);
@@ -510,7 +529,7 @@ public:
 			}
 				
 			// Time to rollback. 
-			rollbackCurrent();
+			checkRollbackCurrent();
 		}
 		else {
       PRINT("THREAD%d (status %d) is wakenup after cond_wait\n", current->index, current->status);
@@ -518,7 +537,6 @@ public:
 			unlock_thread(current);
 		}
 	}
-
 
   int cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex) {
 		return cond_wait_core(cond, mutex, NULL);
@@ -534,31 +552,43 @@ public:
   // no need to check mutex any more.
   int cond_wait_core(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
     int ret;
-    SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-    assert(list != NULL);
+    SyncEventList* list = NULL;
+      
+		PRINT("cond_wait_core for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
 
     if(!global_isRollback()) {
+      PRINT("cond_wait for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
       pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
+      pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
       assert(realMutex != NULL);
 
-      PRINT("cond_wait for thread %d\n", current->index);
+			if(isInvalidSyncVar(realCond)) {
+        cond_init((pthread_cond_t*)cond, NULL);
+        realCond = (pthread_cond_t*)getSyncEntry(cond);
+      }
+			assert(realCond != NULL);
+
 			// Mark the status of this thread before going to sleep.
-			markThreadCondwait(cond);
+			markThreadCondwait(realCond);
 
       // Add the event into eventlist
 			if(abstime == NULL) {
-      	ret = Real::pthread_cond_wait(cond, realMutex);
+      	ret = Real::pthread_cond_wait(realCond, realMutex);
 			}
 			else {
-      	ret = Real::pthread_cond_timedwait(cond, realMutex, abstime);
+      	ret = Real::pthread_cond_timedwait(realCond, realMutex, abstime);
 			}
+      PRINT("cond_wait wakeup for thread %d\n", current->index);
       
-			// Record the waking up of conditional variable
-      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-		
 			// This thread exits cond_wait status	
 			unmarkThreadCondwait(realMutex);
+
+			// Record the waking up of conditional variable
+			list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
+      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+		
     } else {
+			list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       ret = _sync.peekSyncEvent(list);
 
       if(ret == 0) {
@@ -580,31 +610,58 @@ public:
     return ret;
   }
   
-  int cond_broadcast(pthread_cond_t* cond) { return Real::pthread_cond_broadcast(cond); }
+  int cond_broadcast(pthread_cond_t* cond) { 
+    pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
 
-  int cond_signal(pthread_cond_t* cond) { return Real::pthread_cond_signal(cond); }
+    if(!global_isRollback()) {
+      if(isInvalidSyncVar(realCond)) {
+        cond_init((pthread_cond_t*)cond, NULL);
+        realCond = (pthread_cond_t*)getSyncEntry(cond);
+      }
+			return Real::pthread_cond_broadcast(realCond); 
+		}
+		else {
+			// During the rollback pahse, this should be NULL. 
+			assert(realCond != NULL);
+			return 0;
+		}
+	}
+
+  int cond_signal(pthread_cond_t* cond) { 
+    pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
+
+    if(!global_isRollback()) {
+      if(isInvalidSyncVar(realCond)) {
+        cond_init((pthread_cond_t*)cond, NULL);
+        realCond = (pthread_cond_t*)getSyncEntry(cond);
+      }
+			return Real::pthread_cond_signal(realCond); 
+		}
+		else {
+			// During the rollback pahse, this should be NULL. 
+			assert(realCond != NULL);
+			return 0;
+		}
+	}
 
   // Barrier support
   int barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr,
                    unsigned int count) {
     int result = 0;
-#ifndef BARRIER_SUPPORT
-    // Look for this barrier in the map of initialized barrieres.
-    result = Real::pthread_barrier_init(barrier, attr, count);
-#else
-    pthread_barrier_t* realBarrier = NULL;
+    
+		//FIXME
+		pthread_barrier_t* realBarrier = NULL;
 
     if(!global_isRollback()) {
       // Allocate a real mutex.
       realBarrier = (pthread_barrier_t*)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
 
       // Actually initialize this mutex
-      result = Real::pthread_barrier_init(realBarrier, attr);
+      result = Real::pthread_barrier_init(realBarrier, attr, count);
 
       // If we can't setup this entry, that means that this variable has been initialized.
-      setSyncEntry(barrier, realBarrier, sizeof(pthread_barrier_t));
+      setSyncEntry(E_SYNCVAR_BARRIER, barrier, realBarrier, sizeof(pthread_barrier_t));
     }
-#endif
     return result;
   }
 
@@ -618,15 +675,12 @@ public:
   // Add the barrier support.
   int barrier_wait(pthread_barrier_t* barrier) {
     int ret;
-#ifndef BARRIER_SUPPORT
-    ret = Real::pthread_barrier_wait(barrier);
-#else
     pthread_barrier_t* realBarrier = NULL;
     SyncEventList* list = NULL;
 
     realBarrier = (pthread_barrier_t*)getSyncEntry(barrier);
     assert(realBarrier != NULL);
-    list = getSyncEventList(var, sizeof(pthread_barrier_t));
+    list = getSyncEventList(barrier, sizeof(pthread_barrier_t));
 
     if(!global_isRollback()) {
       // Since we do not have a lock here, which can not guarantee that
@@ -647,7 +701,6 @@ public:
         ret = Real::pthread_barrier_wait(realBarrier);
       }
     }
-#endif
 
     return ret;
   }
@@ -786,7 +839,7 @@ private:
     return (SyncEventList*)((intptr_t)(*entry) + size);
   }
 
-  inline void setSyncEntry(void* syncvar, void* realvar, size_t size) {
+  inline void setSyncEntry(syncVariableType type, void* syncvar, void* realvar, size_t size) {
     unsigned long* target = (unsigned long*)syncvar;
     unsigned long expected = *(unsigned long*)target;
 
@@ -801,7 +854,7 @@ private:
       SyncEventList* list = getSyncEventList(syncvar, size);
 
       // Adding this entry to global synchronization map
-      _sync.insertSyncMap((void*)syncvar, realvar, list);
+      _sync.insertSyncMap(type, (void*)syncvar, realvar, list);
     }
   }
 

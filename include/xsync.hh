@@ -26,8 +26,9 @@
 #include "xdefines.hh"
 
 class xsync {
-
+	
   struct SyncEntry {
+		syncVariableType type; 
     void* realEntry;
     SyncEventList* list;
   };
@@ -39,9 +40,10 @@ public:
     _syncvars.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::SYNCMAP_SIZE);
   }
 
-  void insertSyncMap(void* key, void* realentry, SyncEventList* list) {
+  void insertSyncMap(syncVariableType type, void* key, void* realentry, SyncEventList* list) {
     struct SyncEntry* entry =
         (struct SyncEntry*)InternalHeap::getInstance().malloc(sizeof(struct SyncEntry));
+		entry->type = type;
     entry->realEntry = realentry;
     entry->list = list;
     _syncvars.insert(key, sizeof(key), entry);
@@ -154,9 +156,6 @@ public:
 		PRINT("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
 	
 		// For debugging purpose. 	
-		if(event == NULL) {
-			while(1) ;
-		}	
 		// If the event pointing to a different thread, or the target event 
 		// is not the current one, warn about this situaion. Something wrong!
 		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {

@@ -210,19 +210,30 @@ void xrun::stopAllThreads() {
 
 		// we only care about other threads
     if(thread != current) {
-      lock_thread(thread);
+		  lock_thread(thread);
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
-			// or E_THREAD_COND_WAITING, do nothing since they have stopped. 
-     if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING)) {
-        while(!thread->isSafe) {
-          wait_thread(thread);
-        }
+			// or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
+     if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING)) {
+				if(thread->status == E_THREAD_COND_WAITING) {
+					assert(thread->condwait != NULL);
+					if(thread->isNewlySpawned != true) {
+						// If it is an old thread, it will wait by calling global_waitForNotification
+        		waiters++;
+					}
+					Real::pthread_cond_signal(thread->condwait);
+				}
+				else {
+        	while(!thread->isSafe) {
+          	wait_thread(thread);
+        	}
 					
-				// If the thread is not waiting, stop them by sending them SIGUSR2
-     		if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING)) {
-          waiters++;
-          Real::pthread_kill(thread->self, SIGUSR2);
-        }
+					// If the thread is not waiting, stop them by sending them SIGUSR2
+     			if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING) && (thread->status != E_THREAD_JOINING)) {
+          	waiters++;
+						PRINT("kill thread %d\n", thread->index);
+          	Real::pthread_kill(thread->self, SIGUSR2);
+        	}
+			}
         // Else, if thread is not safe, the thread can wait by itself.
       }
 

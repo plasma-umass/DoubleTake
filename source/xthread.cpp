@@ -139,7 +139,8 @@ void xthread::wakeupOldWaitingThreads() {
  
 		// Currently, we only care about those old threads since 
 		// the parent will wakeup those newly spawned threads appropriately 
-		if(thread->isNewlySpawned != true) {    
+		if(thread->isNewlySpawned != true) {
+			PRINT("wakeup thread %d at wakeupOldWaitingThreads\n", thread->index);    
     	if(thread->status == E_THREAD_WAITFOR_REAPING) {
     		// If the thread is already at E_THREAD_WAITFOR_REAPING and it not a newly spawned thread,
 				// then we should wake this thread up immediately

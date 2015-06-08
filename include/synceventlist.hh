@@ -32,6 +32,7 @@ typedef enum e_thrsynccmd {
   E_SYNC_RWLOCK_WRLOCK,
   E_SYNC_RWLOCK_TIMEDWRLOCK,
   E_SYNC_RWLOCK_TRYWRLOCK,
+  E_SYNC_COND, // We actually don't need to maintain a list of conditional variable
   E_SYNC_THREAD, // Not a actual synchronization event, but for each thread.
   //  E_SYNC_KILL, // Inside the critical section.
 } thrSyncCmd;
