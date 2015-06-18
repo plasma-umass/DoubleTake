@@ -53,12 +53,6 @@ public:
   // Currently, epochBegin() will call xrun::epochBegin().
   void epochBegin() { xrun::getInstance().epochBegin(); }
 
-  // Called by xrun::epochBegin()
-  void atEpochBegin() {
-		// Called munmap and cleanup existing entries.
-    _sysrecord.epochBegin();
-  }
-
   void epochEnd() {
     //    PRINF("$$$$$$epochEnd at line %d\n", __LINE__);
     //    PRINF("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);

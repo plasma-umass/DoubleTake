@@ -254,8 +254,6 @@ public:
       }
 
       case E_SYNCVAR_BARRIER: {
-        // int * test = (int *)syncvar->variable;
-        Real::pthread_barrier_destroy((pthread_barrier_t*)syncvar->variable);
         break;
       }
 

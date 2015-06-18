@@ -48,16 +48,20 @@ void xthread::invokeCommit() {
   xrun::getInstance().epochBegin();
 }
 
-void xthread::epochBegin() {
+// Each thread should 
+void xthread::epochBegin(thread_t * thread) {
 	// Now we should not have the pending synchronization events.	
-	listInit(&current->pendingSyncevents);
+	listInit(&thread->pendingSyncevents);
 
 	// Handle the quarantine list of memory.
-  current->qlist.restore();
+  thread->qlist.restore();
 
 	//PRINF("Cleanup all synchronization events for this thread\n");
-	// Handle the synchronization events
-  current->syncevents.cleanup();
+	// cleanup the synchronization events of this thread
+  thread->syncevents.cleanup();
+
+	// We should cleanup the syscall events for this thread.
+	SysRecord::epochBegin(thread);	
 	//PRINF("Cleanup all synchronization events for this thread done\n");
 }
 
@@ -73,6 +77,7 @@ void xthread::prepareRollbackAlivethreads() {
     // Set the entry of each thread to the first synchronization event.
    	thread->syscalls.prepareRollback();
 	  thread->syncevents.prepareRollback();
+		SysRecord::prepareRollback(thread);	
   }
 }
   
@@ -157,7 +162,7 @@ void xthread::wakeupOldWaitingThreads() {
 
 void xthread::setThreadSafe() {
   __atomic_store_n(&current->isSafe, true, __ATOMIC_SEQ_CST);
-  signal_thread(current);
+//  signal_thread(current);
 }
 
 void xthread::setThreadUnsafe() {

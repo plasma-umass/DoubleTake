@@ -308,13 +308,13 @@ public:
 
   // For some list, we donot need to search one by one.
   // We can clear the whole list.
-  void epochBegin() {
-//		PRINT("!!!!!recordentries cleanup!!!!!!\n");
+  static void epochBegin(thread_t * thread) {
 
-    // Do munmap for all entries
-    struct recordMunmap* record = NULL;
+		list_t * munmapList= &thread->syslist[E_SYS_MUNMAP];
+		struct recordMunmap * record = NULL;
+
     while(true) {
-      record = (struct recordMunmap*)retrieveListEntry(E_SYS_MUNMAP);
+			record = (struct recordMunmap*)listRetrieveItem(munmapList);
 
       if(record == NULL) {
         break;
@@ -324,14 +324,14 @@ public:
     }
 
 		// Cleanup all record entries and all list of system calls;
-		current->syscalls.cleanup();
+		thread->syscalls.cleanup();
 		for(int i = 0; i< E_SYS_MAX; i++) {
-			listInit(&current->syslist[i]);
+			listInit(&thread->syslist[i]);
 		}
   }
 
   // Prepare the traverse for all list.
-  void prepareRollback() { current->syscalls.prepareRollback(); }
+  static void prepareRollback(thread_t * thread) { thread->syscalls.prepareRollback(); }
 
 private:
 

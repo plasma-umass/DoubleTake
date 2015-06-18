@@ -25,39 +25,237 @@
 #include "threadstruct.hh"
 #include "xdefines.hh"
 
+// deferSync should be implemented here, not threadinfo.hh
+// However, those thread spawning or joinning should be kept at threainfo.hh.
+// When a synchronization variable has been destroyed, we should not invoke another 
+// malloc. Thus, 
 class xsync {
-	
+public:
   struct SyncEntry {
+		list_t listactive; 
+		list_t listnew;
+		list_t listdel; 
 		syncVariableType type; 
-    void* realEntry;
-    SyncEventList* list;
+    void * nominal;
+		void * real;
+    SyncEventList* syncevents;
   };
+
+private:
+	class NewSyncvarList {
+		public:
+			void initialization(void) {
+				listInit(&_list);
+			}
+
+			void insertTail(struct SyncEntry * entry) {
+				listInsertTail(&entry->listnew, &_list);
+			}
+
+			struct SyncEntry * getSyncEntry(list_t * listentry) {
+				return (struct SyncEntry *)((intptr_t)listentry - sizeof(list_t)); 	
+			}
+
+			// Reinitialize the list in the epochBegin.
+			// We don't care about original entries in the list since those 
+			// entries are also in the other list, which will be handled correpondingly.
+			void cleanup(void) {
+				listInit(&_list);
+			}
+
+			// Retrieve the first entry in the list (after _currentry);
+			// Since we would like to support the endless replays, thus, whenever
+			// we find an entry, we will move the current entry into the tail of the list.
+			// Thus, we hope that we will have the same list after one round.
+			struct SyncEntry * retrieveSyncEntry(syncVariableType type, void * nominal) {
+				struct SyncEntry * entry = NULL;
+				struct SyncEntry * target = NULL;
+				list_t * last = _list.prev;
+				list_t * next = NULL;
+
+				// If the list is empty, trigger an assertion.
+				if(isListEmpty(&_list)) {
+					PRINT("the listnew should not be empty!\n");
+					assert(0);
+				}	
+
+				// Now we will search the whole list from the beginning.
+				next = _list.next;
+
+				while(true) {
+					// Get the synchronization entry according to list pointer.
+					entry = getSyncEntry(next);
+
+					// Check whether the current entry is what we want. 
+					// In most cases, it is the truth. However, if two threads are initiating two 
+					// different variables in the same epoch, those initialization may be invoked in
+					// a different order in replay phase. We should handle that as well.
+					if(entry->type == type && entry->nominal == nominal) {
+						target = entry;
+				
+						// remove current node.
+						listRemoveNode(&entry->listnew);
+
+						// Insert this node into the end of the list.
+						insertTail(target);	
+						break;
+					}
+
+					// If we have searched the whole list, we will quit as well.
+					if(next == last) {
+						break;
+					}
+					
+					// Otherwise, we will check the next one.
+					next = next->next;
+				}
+
+				assert(target != NULL);
+				
+				return target;
+			}
+
+		private:
+			list_t  _list;
+	};
 
 public:
   xsync() {}
 
-  void initialize() {
-    _syncvars.initialize(HashFuncs::hashAddr, HashFuncs::compareAddr, xdefines::SYNCMAP_SIZE);
+	static xsync& getInstance() {
+    static char buf[sizeof(xsync)];
+    static xsync* theOneTrueObject = new (buf) xsync();
+    return *theOneTrueObject;
   }
 
-  void insertSyncMap(syncVariableType type, void* key, void* realentry, SyncEventList* list) {
+
+  void initialize() {
+		// Initialize two lists for record synchronization variables.
+ 		listInit(&_activeList);
+ 		listInit(&_delList);
+
+		_newList.initialization();
+		
+		Real::pthread_mutex_init(&_mutex, NULL);
+  }
+
+  struct SyncEntry * recordSyncVar(syncVariableType type, void* nominal, void* real, SyncEventList* list) {
+		// Alloc a synchronization variable entry.
     struct SyncEntry* entry =
         (struct SyncEntry*)InternalHeap::getInstance().malloc(sizeof(struct SyncEntry));
 		entry->type = type;
-    entry->realEntry = realentry;
-    entry->list = list;
-    _syncvars.insert(key, sizeof(key), entry);
+    entry->real = real;
+    entry->nominal = nominal;
+    entry->syncevents = list;
 
-		PRINF("insertSyncMap entry %p entry %p\n", realentry, entry);
+		lock();
+
+		// record this synchronization variables on two lists
+    listInsertTail(&entry->listactive, &_activeList);
+
+		// Insert this into new list.
+		_newList.insertTail(entry);
+
+		unlock();
+
+		return entry;
   }
 
-  void deleteMap(void* key) {
-    struct SyncEntry* entry;
-    if(_syncvars.find(key, sizeof(key), &entry)) {
-      InternalHeap::getInstance().free(entry);
-    }
-    _syncvars.erase(key, sizeof(void*));
-  }
+	void freeSyncEntry(struct SyncEntry * entry) {
+		InternalHeap::getInstance().free((void *)entry);
+	}
+
+	void deferSync(struct SyncEntry *entry) {
+		lock();
+		listInsertTail(&entry->listdel, &_delList);
+		unlock();
+	}
+
+	struct SyncEntry * getSyncEntryDellist(list_t * listentry) {
+		return (struct SyncEntry *)((intptr_t)listentry - sizeof(list_t) - sizeof(list_t));
+	}
+
+	void removeFromDellist(struct SyncEntry * entry) {
+		listRemoveNode(&entry->listdel);
+	}
+	
+	void removeFromAlllist(struct SyncEntry * entry) {
+		listRemoveNode(&entry->listactive);
+	}
+
+	// In the rollback phase, we will fetch synchronization entry 
+	// during the initialization of every sync variable
+	void * retrieveRealSyncEntry(syncVariableType type, void * nominal) {
+		struct SyncEntry * entry = NULL;
+		lock();
+		entry =  _newList.retrieveSyncEntry(type, nominal);
+		unlock();
+
+		return entry->real;	
+	}
+
+	// During the begin of an epoch
+	void epochBegin(void) {
+		struct SyncEntry * entry = NULL;
+		list_t * last = NULL;
+		list_t * next = NULL;
+		list_t * now = NULL;
+
+		// Cleanup every entry in _delList.
+		if(!isListEmpty(&_delList)) {
+			// Now we will search the whole list from the beginning.
+			last = _delList.prev;
+			now = _delList.next;
+
+			while(true) {
+				next = now->next;
+
+				// Get the synchronization entry according to list pointer.
+				entry = getSyncEntryDellist(now);
+
+				// We will remove the entry from deleted list and activelist.
+				removeFromDellist(entry);
+				removeFromAlllist(entry);
+
+				// Now we can remove this entry.
+				freeSyncEntry(entry);
+	
+				if(now == last) {
+					break;
+				}
+
+				// Get the next entry;
+				now = next;
+			}
+		}
+
+		// Cleanup all entries in the _newList
+		// there is no new entries in the beginning of an epoch 
+		_newList.cleanup();
+
+		// Updating the eventlist for all existing synchronization variables 
+		if(!isListEmpty(&_activeList)) {
+			// Now we will search the whole list from the beginning.
+			last = _activeList.prev;
+			now = _activeList.next;
+
+			while(true) {
+				next = now->next;
+
+				// Get the synchronization entry according to list pointer.
+				entry = (struct SyncEntry *)now;
+
+				// Cleanup the sync events on this synchronization variable since
+				// we will record new ones in the new epoch
+      	entry->syncevents->cleanup();
+
+				if(now == last) {
+					break;
+				}
+			}
+		}
+
+	}
 
   // Signal next thread on the same synchronization variable.
   void signalNextThread(struct syncEvent* event) {
@@ -172,23 +370,6 @@ public:
     return result;
   }
 
-  void cleanSyncEvents() {
-    // Remove all events in the global map and event list.
-    syncvarsHashMap::iterator i;
-
-    for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
-			struct SyncEntry* entry = (struct SyncEntry*)i.getData();
-      SyncEventList* eventlist = (SyncEventList*)entry->list;
-
-			PRINF("cleaningup the eventlist %p!!!\n", eventlist);
-      eventlist->cleanup();
-    }
-  }
-
-  inline void setSyncVariable(void** syncvariable, void* realvariable) {
-    *syncvariable = realvariable;
-  }
-
   /*
    Prepare rollback. Only one thread can call this function.
    It basically check every synchronization variable.
@@ -196,27 +377,29 @@ public:
    we try to UP corresponding thread's semaphore.
    */
   void prepareRollback() {
-    syncvarsHashMap::iterator i;
     struct SyncEntry* entry;
-    void* syncvariable;
+		list_t * next;
+		list_t * last = _activeList.prev;
 
-    for(i = _syncvars.begin(); i != _syncvars.end(); i++) {
-      syncvariable = i.getkey();
-			entry = (struct SyncEntry*)i.getData();
+		// If list is empty, return immediately.
+		if(isListEmpty(&_activeList)) {
+			return;
+		}
+		
+		next = _activeList.next;
+		while(true) {
+			entry = (struct SyncEntry*)next;
+			PRINT("prepareRollback syncvariable %p pointintto %p entry %p, eventlist %p\n", entry->nominal, entry->real, entry, entry->syncevents);
 
-			// If syncvariable is not equal to the entry->realEntry, 
-			// those are mutex locks, conditional variables or mutexlocks
-			// The starting address of tose variables are cleaning up at epochBegin() (by backingup)
-			// We have to make them to pointing to actual synchronization entries since there are not 
-			// mutex_init or something else.
-      if((*((void **)syncvariable)) != entry->realEntry) {
-        // Setting the address
-        setSyncVariable((void**)syncvariable, entry->realEntry);
+      prepareEventListRollback(entry->syncevents);
+		
+			// If we have traverse the whole list, let's quit now.	
+			if(next == last) {
+				break;
 			}
-			
-			PRINT("prepareRollback syncvariable %p pointintto %p entry %p realentry %p, eventlist %p\n", syncvariable, (*((void **)syncvariable)), entry, entry->realEntry, entry->list);
 
-      prepareEventListRollback(entry->list);
+			// Check the next entry;
+			next = next->next;
     }
   }
 
@@ -261,16 +444,25 @@ public:
   }
 
 private:
-  size_t getThreadSyncSeqNum() { return 0; }
 
-  semaphore* getThreadSemaphore(thread_t* thread) { return &thread->sema; }
+	void lock(void) {
+		Real::pthread_mutex_lock(&_mutex);
+	}
 
-  // We are maintainning a private hash map for each thread.
-  typedef HashMap<void*, struct SyncEntry*, spinlock, InternalHeapAllocator> syncvarsHashMap;
+	void unlock(void) {
+		Real::pthread_mutex_unlock(&_mutex);
+	}
 
-  // Synchronization related to different sync variable should be recorded into
-  // the synchronization variable related list.
-  syncvarsHashMap _syncvars;
+	pthread_mutex_t _mutex;
+	
+	// We are keeping track of three different list.
+	// One is the new list, the second one is delete list.
+	// The other one is alllist.
+	NewSyncvarList _newList;
+	
+	// Active list for synchronization variables.
+	list_t  _activeList;
+	list_t  _delList;
 };
 
 #endif

@@ -20,7 +20,6 @@
 
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
-// We are rollback the child process
 void xrun::rollback() {
   // If this is the first time to rollback,
   // then we should rollback now.
@@ -34,13 +33,6 @@ void xrun::rollback() {
 
   PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
  
-  // We should prepare those system calls after the memory rollback.
-  // since memory rollback can destroy filestream in the user space.
-	// the syscalls::prepareRollback() will handle all opened files, which is different
-	// with _thread->syscalls.prepareRollback, which only handles the record entries for this thread.
-  syscalls::getInstance().prepareRollback();
-   PRINT("\n\nNOW PREPARE ROLLBACK!!!\n\n\n");
-
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
@@ -77,24 +69,28 @@ void xrun::epochBegin() {
 				// Since now we are in a new epoch,
 				// mark all existing threads as old threads.
 				thread->isNewlySpawned = false;
+
+				// cleanup the threads's qlist, pendingSyncevents, syncevents;
+				xthread::epochBegin(thread);
+
         unlock_thread(thread);
       }
     }
+		else {
+			thread->isNewlySpawned = false;
+			xthread::epochBegin(thread);
+		}
   }
 
-	// Cleanup the event list.
-  xthread::epochBegin();
+	// Cleanup the global list about synchronizations.
+	xsync::getInstance().epochBegin();	
   
 	// Saving the context of the memory.
   _memory.epochBegin();
-  xthread::runDeferredSyncs();
 
   // Now waken up all other threads then threads can do its cleanup.
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   global_epochBegin();
-
-  // Cleaning up the record of system calls.
-  syscalls::getInstance().atEpochBegin();
 
   PRINF("getpid %d: xrun::epochBegin\n", getpid());
 
@@ -180,6 +176,11 @@ void xrun::finalUAFCheck() {
   }
 }
 
+void waitThreadSafe(void) {
+	int i = 0; 
+	while(i++ < 0x10000) ; 
+}
+
 void xrun::stopAllThreads() {
   threadmap::aliveThreadIterator i;
   int waiters = 0;
@@ -209,19 +210,17 @@ void xrun::stopAllThreads() {
 		// we only care about other threads
     if(thread != current) {
 		  lock_thread(thread);
+      	
+			while(!xthread::isThreadSafe(thread)) {
+				// wait the thread to be safe.
+        waitThreadSafe();
+      }
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
 			// or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
      if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING) && (thread->status != E_THREAD_COND_WAITING)) {
-        while(!xthread::isThreadSafe(thread)) {
-          wait_thread(thread);
-        }
-					
-				// If the thread is not waiting, stop them by sending them SIGUSR2
-     		if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_COND_WAITING) && (thread->status != E_THREAD_JOINING)) {
-          waiters++;
-					PRINT("kill thread %d\n", thread->index);
-          Real::pthread_kill(thread->self, SIGUSR2);
-        }
+        waiters++;
+				PRINT("kill thread %d\n", thread->index);
+        Real::pthread_kill(thread->self, SIGUSR2);
 			}
       unlock_thread(thread);
     }
@@ -258,9 +257,7 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
   // Check what is the current phase
   if(global_isEpochBegin()) {
  		// Current thread is going to enter a new phase
-	  xthread::epochBegin();
     xthread::getInstance().saveSpecifiedContext((ucontext_t*)context);
-    syscalls::getInstance().atEpochBegin();
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.
   } else {

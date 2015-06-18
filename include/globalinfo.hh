@@ -109,11 +109,7 @@ inline void global_waitThreadsStops(int totalwaiters) {
 }
 
 inline void global_checkWaiters() { 
-//	assert(g_waiters == 0); 
-	if(g_waiters != 0) {
-		PRINT("g_waiters is %d\n", g_waiters);
-		while(1) ;
-	}
+	assert(g_waiters == 0); 
 }
 
 // Notify the commiter and wait on the global conditional variable

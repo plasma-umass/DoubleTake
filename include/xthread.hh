@@ -38,9 +38,20 @@
 #include "xsync.hh"
 
 class xthread {
+	// After the first pointer, we will keep 
+	// a data structure to keep all information about this barrier
+	// barrier is typically 32 bytes, thus, it should be enough.	
+	class BarrierInfo {
+	public:
+		int maxThreads;
+		int waitingThreads;
+		bool isArrivalPhase;
+	};
 
 public:
-  xthread() : _thread(threadinfo::getInstance()) {}
+  xthread() : _sync(xsync::getInstance()),
+							_thread(threadinfo::getInstance())
+	{}
 
   // Actually, it is not an actual singleton.
   // Every process will have one copy. They can be used
@@ -64,7 +75,7 @@ public:
 
     // We do not know whether NULL can be support or not, so we use
     // fake variable name _spawningList here
-    _sync.insertSyncMap(E_SYNCVAR_THREAD, (void*)_spawningList, _spawningList, _spawningList);
+    _sync.recordSyncVar(E_SYNCVAR_THREAD, (void*)_spawningList, _spawningList, _spawningList);
 
     // Register the first thread
     initialThreadRegister();
@@ -85,8 +96,7 @@ public:
 		// since we will do this in epochBegin();
 		// Cleanup all synchronization events in the global list (mostly thread creations) and lists of 
 		// different synchronization variables
-		// FIXME: now it seems like that this function doesn't perform correctly.
-    cleanSyncEvents();
+    _sync.epochBegin();
   }
 
   // Register initial thread
@@ -262,7 +272,6 @@ public:
 	}
 
   /// @brief Wait for a thread to exit.
-  /// Should we record this? It is not necessary?? FIXME
   inline int thread_join(pthread_t joinee, void** result) {
     thread_t* thread = NULL;
 
@@ -271,10 +280,11 @@ public:
     assert(thread != NULL);
 
 		PRINT("main thread is joining thread %d\n", thread->index);
+
+		setThreadUnsafe();
 	
-		// FIXME: is there a race here since we are using two locks.
-		// what if the joinee has stopped for reaping, what will happen?
-		// what if the checking happens when it is in the middle of waiting?	
+		// If the joinee has stopped for reaping, this thread will be considered as
+		// in a waiting status, but it is not?
 		markThreadJoining(thread);
       
     lock_thread(thread);
@@ -285,6 +295,7 @@ public:
       thread->joiner = current;
 
       // Wait for the joinee to wake me up
+			setThreadSafe();
       wait_thread(thread);
     }
 
@@ -301,6 +312,8 @@ public:
 
 		// Check the status since it is possible to be waken up for rollback.
 		unmarkThreadJoining();
+			
+		setThreadSafe();
 	
 		// Defer the reaping of this thread for memory deterministic usage.
 		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
@@ -349,7 +362,7 @@ public:
     if(!global_isRollback()) {
       // Allocate a mutex
       pthread_mutex_t* real_mutex =
-          (pthread_mutex_t*)allocSyncEntry(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
+          (pthread_mutex_t*)allocRealSyncVar(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
 
       // Initialize the real mutex
       int result = Real::pthread_mutex_init(real_mutex, attr);
@@ -359,6 +372,10 @@ public:
 
       return result;
     }
+		else {
+			// In the rollback phase, we will get the actual entry at first.
+			resetSyncEntry(E_SYNCVAR_MUTEX, mutex);	
+		}
 
     return 0;
   }
@@ -373,21 +390,18 @@ public:
   int do_mutex_lock(void* mutex, thrSyncCmd synccmd) {
     int ret = 0;
     SyncEventList* list = NULL;
+    pthread_mutex_t* realMutex = NULL;
+    realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
+    if(isInvalidSyncVar(realMutex)) {
+      mutex_init((pthread_mutex_t*)mutex, NULL);
+      realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
+    }
+      
+		assert(realMutex != NULL);
+    list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
 
     if(!global_isRollback()) {
-    	pthread_mutex_t* realMutex = NULL;
-      realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-      //PRINF("do_mutex_lock after getSyncEntry %d realMutex %p\n", __LINE__, realMutex);
-      if(isInvalidSyncVar(realMutex)) {
-        mutex_init((pthread_mutex_t*)mutex, NULL);
-        realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-      }
-
-			// FIXME: mark the thread as unsafe.
-      //  PRINF("pthread_self %lx: do_mutex_lock at line %d: mutex %p realMutex %p\n",
-      // pthread_self(), __LINE__, mutex, realMutex);
-      assert(realMutex != NULL);
-
+			// Mark the thread as unsafe.
   		setThreadUnsafe();
       switch(synccmd) {
       case E_SYNC_MUTEX_LOCK:
@@ -403,13 +417,9 @@ public:
       }
 
       // Record this event
-      list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
-     	PRINT("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-     	//PRINF("Thread %d: mutex_lock at mutex %p realMutex %p list %p. Record done!!\n", current->index, mutex, realMutex, list);
+     	PRINT("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
     } else {
-     	PRDBG("mutex_lock at mutex %p list %p\n", mutex, list);
-      list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
      PRINT("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
@@ -475,7 +485,7 @@ public:
     if(!global_isRollback()) {
       // Allocate a mutex
       pthread_cond_t* real_cond =
-          (pthread_cond_t*)allocSyncEntry(sizeof(pthread_cond_t), E_SYNC_COND);
+          (pthread_cond_t*)allocRealSyncVar(sizeof(pthread_cond_t), E_SYNC_COND);
 
       // Initialize the real mutex
       int result = Real::pthread_cond_init(real_cond, attr);
@@ -486,8 +496,10 @@ public:
 
       return result;
     }
-
-		return 0;
+		else {
+			resetSyncEntry(E_SYNCVAR_COND, cond);	
+			return 0;
+		}
   }
 
   // Add this into destoyed list.
@@ -557,20 +569,22 @@ public:
   // no need to check mutex any more.
   int cond_wait_core(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec * abstime) {
     int ret;
+    pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
+    pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
+    assert(realMutex != NULL);
+
+		// Check whether the cond is available.
+		if(isInvalidSyncVar(realCond)) {
+      cond_init((pthread_cond_t*)cond, NULL);
+      realCond = (pthread_cond_t*)getSyncEntry(cond);
+    }
+
     SyncEventList* list = NULL;
       
 		PRINT("cond_wait_core for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
 
     if(!global_isRollback()) {
       PRINT("cond_wait for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
-      pthread_mutex_t* realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
-      pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
-      assert(realMutex != NULL);
-
-			if(isInvalidSyncVar(realCond)) {
-        cond_init((pthread_cond_t*)cond, NULL);
-        realCond = (pthread_cond_t*)getSyncEntry(cond);
-      }
 			assert(realCond != NULL);
 
 			// Mark the status of this thread before going to sleep.
@@ -617,12 +631,12 @@ public:
   
   int cond_broadcast(pthread_cond_t* cond) { 
     pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
+    if(isInvalidSyncVar(realCond)) {
+      cond_init((pthread_cond_t*)cond, NULL);
+      realCond = (pthread_cond_t*)getSyncEntry(cond);
+    }
 
     if(!global_isRollback()) {
-      if(isInvalidSyncVar(realCond)) {
-        cond_init((pthread_cond_t*)cond, NULL);
-        realCond = (pthread_cond_t*)getSyncEntry(cond);
-      }
 			return Real::pthread_cond_broadcast(realCond); 
 		}
 		else {
@@ -634,12 +648,12 @@ public:
 
   int cond_signal(pthread_cond_t* cond) { 
     pthread_cond_t* realCond = (pthread_cond_t*)getSyncEntry(cond);
+    if(isInvalidSyncVar(realCond)) {
+      cond_init((pthread_cond_t*)cond, NULL);
+      realCond = (pthread_cond_t*)getSyncEntry(cond);
+    }
 
     if(!global_isRollback()) {
-      if(isInvalidSyncVar(realCond)) {
-        cond_init((pthread_cond_t*)cond, NULL);
-        realCond = (pthread_cond_t*)getSyncEntry(cond);
-      }
 			return Real::pthread_cond_signal(realCond); 
 		}
 		else {
@@ -649,22 +663,39 @@ public:
 		}
 	}
 
-  // Barrier support
+  // Barrier initialization. Typically, barrier_init is to be called initially	
   int barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr, unsigned int count) {
     int result = 0;
     
-		pthread_barrier_t* realBarrier = NULL;
-
     if(!global_isRollback()) {
-      // Allocate a real mutex.
-      realBarrier = (pthread_barrier_t*)allocSyncEntry(sizeof(pthread_barrier_t), E_SYNC_BARRIER);
+      // Allocate the mutex and cond related to this barrier.
+			pthread_cond_t * cond;
+			pthread_mutex_t * mutex;
+			size_t totalSize = sizeof(pthread_cond_t) + sizeof(pthread_mutex_t) + sizeof(BarrierInfo);
+			void * ptr = allocRealSyncVar(totalSize, E_SYNC_BARRIER);
+			BarrierInfo * info;
 
-      // Actually initialize this mutex
-      result = Real::pthread_barrier_init(realBarrier, attr, count);
+			// Set the real barrier
+			if(setSyncEntry(E_SYNCVAR_BARRIER, barrier, ptr, totalSize)) {
+				PRINT("can't set synchronization entry??");
+				assert(0);
+			}
+			PRINT("barrier_init barrier %p pointing to %p with count %d\n", barrier, ptr, count); 	
 
-      // If we can't setup this entry, that means that this variable has been initialized.
-      setSyncEntry(E_SYNCVAR_BARRIER, barrier, realBarrier, sizeof(pthread_barrier_t));
+			// Initialize it.
+			getBarrierInfo(barrier, &mutex, &cond, &info);
+
+      // Actual initialization
+			Real::pthread_cond_init(cond, NULL);
+			Real::pthread_mutex_init(mutex, NULL);
+
+			info->maxThreads = count;
+			info->isArrivalPhase = true;
+			info->waitingThreads = 0;
     }
+		else {
+			resetSyncEntry(E_SYNCVAR_BARRIER, barrier);	
+		}
     return result;
   }
 
@@ -675,35 +706,71 @@ public:
 
   ///// mutex functions
 
-  // Add the barrier support.
+	void getBarrierInfo(pthread_barrier_t * barrier, pthread_mutex_t ** mutex, pthread_cond_t ** cond, BarrierInfo ** info) {
+		// Get the real synchronization entry			
+		void * ptr = getSyncEntry(barrier);
+		assert(ptr != NULL);
+
+		*mutex = (pthread_mutex_t *)(ptr);
+		*cond = (pthread_cond_t *)((unsigned long)ptr+ sizeof(pthread_mutex_t));
+		*info = (BarrierInfo *)((intptr_t)(*cond) + sizeof(pthread_cond_t));
+	}
+
+  // Add the barrier support. We have to re-design the barrier since 
+	// it is impossible to wake a thread up when it is waiting on the barrier.
+	// Thus, it is impossible to rollback such a thread.
   int barrier_wait(pthread_barrier_t* barrier) {
-    int ret;
-    pthread_barrier_t* realBarrier = NULL;
-    SyncEventList* list = NULL;
+    int ret = 0;
+		pthread_mutex_t * mutex;
+		pthread_cond_t * cond;
+		BarrierInfo * info;
 
-    realBarrier = (pthread_barrier_t*)getSyncEntry(barrier);
-    assert(realBarrier != NULL);
-    list = getSyncEventList(barrier, sizeof(pthread_barrier_t));
+		// Get the actual barrier information
+		getBarrierInfo(barrier, &mutex, &cond, &info);
+		PRINT("barrier_wait barrier %p mutex %p cond %p info %p\n", barrier, mutex, cond, info); 	
 
-    if(!global_isRollback()) {
-      // Since we do not have a lock here, which can not guarantee that
-      // the first threads cross this will be the first ones pass
-      // actual barrier. So we only record the order to pass the barrier here.
-      ret = Real::pthread_barrier_wait(realBarrier);
-      list->recordSyncEvent(E_SYNC_BARRIER, ret);
-    } else {
-      ret = _sync.peekSyncEvent(list);
-      if(ret == 0) {
-        waitSemaphore();
+		assert(mutex != NULL);
+		setThreadUnsafe();
+	
+		Real::pthread_mutex_lock(mutex);
+
+		// Check whether it is at the arrival phase
+		while(info->isArrivalPhase != true) {
+     		Real::pthread_cond_wait(cond, mutex);
+		}
+
+		// Now in an arrival phase, proceed with barrier synchronization
+    info->waitingThreads++;
+
+		if(info->waitingThreads >= info->maxThreads) {
+      info->isArrivalPhase = false;
+
+			// Waking up all threads that are waiting on this barrier now.
+      Real::pthread_cond_broadcast(cond);
+    } 
+		else {
+			assert(info->isArrivalPhase == true);
+
+			// We are waiting on the barrier now.
+      while(info->isArrivalPhase == true) {
+				markThreadCondwait(cond);
+        Real::pthread_cond_wait(cond, mutex);
+				unmarkThreadCondwait(mutex);
       }
+		}
 
-			// FIXME: how to 
-      updateSyncEvent(list);
+		info->waitingThreads--;	
 
-      if(ret == 0) {
-        ret = Real::pthread_barrier_wait(realBarrier);
-      }
+		// When all threads leave the barrier, entering into the new arrival phase.  
+    if(info->waitingThreads == 0) {
+      info->isArrivalPhase = true;
+
+			// Wakeup all threads that are waiting on the arrival fence
+      Real::pthread_cond_broadcast(cond);
     }
+
+		Real::pthread_mutex_unlock(mutex);
+		setThreadSafe();
 
     return ret;
   }
@@ -767,7 +834,7 @@ public:
 	void destroyThreadSemaphore(thread_t* thread);
 	void wakeupOldWaitingThreads();
 
-  static void epochBegin();
+  static void epochBegin(thread_t * thread);
 
   // Rollback the current thread
   static void rollbackCurrent();
@@ -837,32 +904,43 @@ private:
     return (*ptr);
   }
 
+	inline void  resetSyncEntry(syncVariableType type, void * nominal) {
+			// Geting the starting address of real synchronization variable.
+			void * real = _sync.retrieveRealSyncEntry(type, nominal);
+			*((void **)nominal) = real;
+	}
+
   inline SyncEventList* getSyncEventList(void* ptr, size_t size) {
     void** entry = (void**)ptr;
     //    PRINF("ptr %p *entry is %p, size %ld\n", ptr, *entry, size);
     return (SyncEventList*)((intptr_t)(*entry) + size);
   }
 
-  inline void setSyncEntry(syncVariableType type, void* syncvar, void* realvar, size_t size) {
+  inline int setSyncEntry(syncVariableType type, void* syncvar, void* realvar, size_t size) {
+		int ret = -1;
     unsigned long* target = (unsigned long*)syncvar;
     unsigned long expected = *(unsigned long*)target;
 
     // if(!__sync_bool_compare_and_swap(target, expected, (unsigned long)realvar)) {
     if(!__atomic_compare_exchange_n(target, &expected, (unsigned long)realvar, false,
                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-      deallocSyncEntry(realvar);
+      deallocRealSyncVar(realvar);
     } else {
+			ret = 0;
       // It is always safe to add this list into corresponding map since
       // only those passed the CAS instruction can call this.
       // Thus, it is not existing two lists corresponding to the same synchronization variable.
       SyncEventList* list = getSyncEventList(syncvar, size);
 
       // Adding this entry to global synchronization map
-      _sync.insertSyncMap(type, (void*)syncvar, realvar, list);
+     	void * syncentry = _sync.recordSyncVar(type, (void*)syncvar, realvar, list);
+			*((void **)((intptr_t)syncvar + sizeof(void *))) = syncentry;
     }
+
+		return ret;
   }
 
-  inline void* allocSyncEntry(int size, thrSyncCmd synccmd) {
+  inline void* allocRealSyncVar(int size, thrSyncCmd synccmd) {
     // We allocate a synchorniation event list here and attach to this real
     // synchronziation variable so that they can be deleted in the same time.
     void* entry = ((void*)InternalHeap::getInstance().malloc(size + sizeof(SyncEventList)));
@@ -874,7 +952,7 @@ private:
     return entry;
   }
 
-  inline void deallocSyncEntry(void* ptr) { InternalHeap::getInstance().free(ptr); }
+  inline void deallocRealSyncVar(void* ptr) { InternalHeap::getInstance().free(ptr); }
 
   // Acquire the semaphore for myself.
   // If it is my turn, I should get the semaphore.
@@ -968,8 +1046,6 @@ private:
 
   static bool isThreadDetached() { return current->isDetached; }
 
-  void cleanSyncEvents() { _sync.cleanSyncEvents(); }
-
   /// @ internal function: allocation a thread index
   int allocThreadIndex() { return _thread.allocThreadIndex(); }
 
@@ -1006,10 +1082,15 @@ private:
   // Insert a synchronization variable into the global list, which
   // are reaped later in the beginning of next epoch.
   inline static bool deferSync(void* ptr, syncVariableType type) {
-    // We won't handle the re-use the same synchronization variable in the same epoch.
-		// That is, one synchronization variable will have two different purposes, which are detroyed 
-		// at first and then re-utilize for another purpose. 
-    return threadinfo::getInstance().deferSync(ptr, type);
+		if(type == E_SYNCVAR_THREAD) {
+    	return threadinfo::getInstance().deferSync(ptr, type);
+		}
+		else {
+			// FIXME
+			xsync::SyncEntry * entry = (xsync::SyncEntry *)((intptr_t)ptr + sizeof(void *));
+			xsync::getInstance().deferSync(entry);
+			return true;
+		}
   }
 
   static void setThreadSafe();
@@ -1087,7 +1168,7 @@ private:
 
   // They are claimed in xthread.cpp since I don't
   // want to create an xthread.cpp
-  xsync _sync;
+  xsync& _sync;
 	SysRecord _sysrecord;
   threadinfo& _thread;
   SyncEventList* _spawningList;
