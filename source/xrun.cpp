@@ -82,11 +82,10 @@ void xrun::epochBegin() {
 		}
   }
 
-	// Cleanup the global list about synchronizations.
-	xsync::getInstance().epochBegin();	
-  
 	// Saving the context of the memory.
   _memory.epochBegin();
+
+	xthread::runDeferredSyncs();
 
   // Now waken up all other threads then threads can do its cleanup.
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
@@ -153,8 +152,10 @@ void xrun::epochEnd(bool endOfProgram) {
   } else {
 #endif
 #endif
-    // PRINF("getpid %d: xrun::epochEnd without overflow\n", getpid());
+    
+		PRINT("before calling syscalls epochEndWell\n");
     syscalls::getInstance().epochEndWell();
+		PRINT("After calling syscalls epochEndWell\n");
     _thread.epochEndWell();
 #ifndef EVALUATING_PERF
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)

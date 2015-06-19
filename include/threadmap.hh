@@ -61,7 +61,8 @@ public:
     // Malloc
     struct aliveThread* ath =
         (struct aliveThread*)InternalHeap::getInstance().malloc(sizeof(struct aliveThread));
-
+		
+		assert(ath != NULL);
     listInit(&ath->list);
     ath->thread = thread;
 

@@ -50,6 +50,14 @@ public:
     curentry = NULL;
   }
 
+	void initialization(thrSyncCmd synccmd) {
+    listInit(&list);
+    Real::pthread_mutex_init(&lock, NULL);
+    syncVariable = NULL;
+    syncCmd = synccmd;
+    curentry = NULL;
+	}
+
   // Record a synchronization event
   void recordSyncEvent(thrSyncCmd synccmd, int ret) {
     struct syncEvent* event = allocSyncEvent();

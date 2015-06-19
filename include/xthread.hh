@@ -67,18 +67,14 @@ public:
 
     // Initialize the syncmap and threadmap.
     _sync.initialize();
-    threadmap::getInstance().initialize();
+	  threadmap::getInstance().initialize();
 
-    // Initialize the global list for spawning operations
+		// Initialize the global list for spawning operations
     void* ptr = ((void*)InternalHeap::getInstance().malloc(sizeof(SyncEventList)));
     _spawningList = new (ptr) SyncEventList(NULL, E_SYNC_SPAWN);
 
-    // We do not know whether NULL can be support or not, so we use
-    // fake variable name _spawningList here
-    _sync.recordSyncVar(E_SYNCVAR_THREAD, (void*)_spawningList, _spawningList, _spawningList);
-
     // Register the first thread
-    initialThreadRegister();
+    registerInitialThread();
     current->isSafe = true;
     PRINF("Done with thread initialization");
   }
@@ -97,10 +93,13 @@ public:
 		// Cleanup all synchronization events in the global list (mostly thread creations) and lists of 
 		// different synchronization variables
     _sync.epochBegin();
+
+		// Now we will cleanup recorded sychronizations	
+    _spawningList->initialization(E_SYNC_SPAWN);
   }
 
   // Register initial thread
-  inline void initialThreadRegister() {
+  inline void registerInitialThread() {
     int tindex = allocThreadIndex();
 
     if (tindex == -1) {
@@ -317,9 +316,10 @@ public:
 	
 		// Defer the reaping of this thread for memory deterministic usage.
 		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
-			PRINF("Before reap dead threads!!!!\n");
+			PRINT("Before reap dead threads!!!!\n");
 			// deferSync may return TRUE if we have to reapDeadThreads now.
     	invokeCommit();
+			PRINT("After reap dead threads!!!!\n");
 		}
  
     return 0;
@@ -1171,7 +1171,7 @@ private:
   xsync& _sync;
 	SysRecord _sysrecord;
   threadinfo& _thread;
-  SyncEventList* _spawningList;
+  SyncEventList * _spawningList;
 };
 
 #endif
