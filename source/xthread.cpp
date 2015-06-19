@@ -45,7 +45,7 @@ char* getThreadBuffer() {
 
 void xthread::invokeCommit() {
   xrun::getInstance().epochEnd(false);
-	PRINT("invokeCommit after epochEnd\n");
+	PRINF("invokeCommit after epochEnd\n");
   xrun::getInstance().epochBegin();
 }
 
@@ -117,16 +117,16 @@ void xthread::initThreadSemaphore(thread_t* thread) {
 
 void xthread::prepareRollback() {
   PRINF("calling syscalls::prepareRollback\n");
-  PRINT("calling threadmap::prepareRollback\n");
+  PRINF("calling threadmap::prepareRollback\n");
 
 	prepareRollbackAlivethreads();
 
   PRINF("calling xsync::prepareRollback\n");
-  PRINT("before calling sync::prepareRollback\n");
+  PRINF("before calling sync::prepareRollback\n");
   // Update the semaphores and synchronization entry
   _sync.prepareRollback();
 	xsync::prepareEventListRollback(_spawningList);
-	PRINT("after calling sync::prepareRollback\n");
+	PRINF("after calling sync::prepareRollback\n");
 
 	// Setting the phase to rollback
 	global_setRollback(); 
@@ -148,7 +148,7 @@ void xthread::wakeupOldWaitingThreads() {
 		// Currently, we only care about those old threads since 
 		// the parent will wakeup those newly spawned threads appropriately 
 		if(thread->isNewlySpawned != true) {
-			PRINT("wakeup thread %d at wakeupOldWaitingThreads\n", thread->index);    
+			PRINF("wakeup thread %d at wakeupOldWaitingThreads\n", thread->index);    
     	if(thread->status == E_THREAD_WAITFOR_REAPING) {
     		// If the thread is already at E_THREAD_WAITFOR_REAPING and it not a newly spawned thread,
 				// then we should wake this thread up immediately
@@ -198,7 +198,7 @@ void xthread::rollbackCurrent() {
   current->status = E_THREAD_RUNNING;
 
   current->qlist.restore();
-  PRINT("xthread::rollback now\n");
+  PRINF("xthread::rollback now\n");
   // Recover the context for current thread.
   restoreContext();
 }

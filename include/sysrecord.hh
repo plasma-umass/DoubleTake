@@ -339,7 +339,7 @@ private:
     struct SyscallEntry* entry = current->syscalls.alloc();
     entry->syscall = sc;
 
-		PRINT("SYSCALL: alloc entry %p for sc %d\n", entry, sc);
+		PRINF("SYSCALL: alloc entry %p for sc %d\n", entry, sc);
     return entry->data;
   }
 
@@ -349,17 +349,17 @@ private:
 
     struct SyscallEntry* entry = current->syscalls.retrieveIterEntry();
 		
-		PRINT("SYSCALL: retrieveEntry %p for sc %d\n", entry, sc);
+		PRINF("SYSCALL: retrieveEntry %p for sc %d\n", entry, sc);
 
 		if(entry == NULL) {
-      PRINT("Have we met this entry with sc %d\n", sc);
+      PRINF("Have we met this entry with sc %d\n", sc);
 			assert(entry != NULL);
 		}
 
     void* ptr = NULL;
     if(entry) {
       if(entry->syscall != sc) {
-        PRINT("^^^^^^^^^^entry->syscall %d while we want system call %d^^^^^^^^^^^\n", entry->syscall, sc);
+        PRINF("^^^^^^^^^^entry->syscall %d while we want system call %d^^^^^^^^^^^\n", entry->syscall, sc);
       	assert(entry->syscall == sc);
       }
       ptr = entry->data;

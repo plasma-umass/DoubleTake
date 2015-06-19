@@ -317,7 +317,7 @@ public:
     // flush the result, required by the posix standard
     fflush(fp);
 
-		PRINT("calling fclose on fp %p\n", fp);
+		//PRINT("calling fclose on fp %p\n", fp);
 
 		if(!global_isRollback()) {
       ret = _fops.closeFile(fp->_fileno, fp);

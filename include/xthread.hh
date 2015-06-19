@@ -139,7 +139,7 @@ public:
     int tindex;
     int result;
 
-    PRINT("process %d is before thread_create now\n", current->index);
+    PRINF("process %d is before thread_create now\n", current->index);
     if(!global_isRollback()) {
       // Lock and record
       global_lock();
@@ -177,7 +177,7 @@ public:
       // the parent may already sleep on that.
       children->joiner = NULL;
 
-      PRINT("thread creation with index %d\n", tindex);
+      PRINF("thread creation with index %d\n", tindex);
       // Now we are going to record this spawning event.
       disableCheck();
       result = Real::pthread_create(tid, attr, xthread::startThread, (void*)children);
@@ -210,13 +210,13 @@ public:
       }
     } else {
       result = _sync.peekSyncEvent(_spawningList);
-      PRINT("process %d is before thread_create, result %d\n", current->index, result);
+      PRINF("process %d is before thread_create, result %d\n", current->index, result);
 
       _sysrecord.getCloneOps(tid, &result);
-      PRINT("process %d in creation, result %d\n", current->index, result);
+      PRINF("process %d in creation, result %d\n", current->index, result);
       if(result == 0) {
         waitSemaphore();
-        PRINT("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
+        PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
 
         // Wakeup correponding thread, now they can move on.
         thread_t* thread = getThread(*tid);
@@ -229,7 +229,7 @@ public:
 				 	signal_thread(thread);
 				}
 				else if(thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
-        	PRINT("Waken up thread %d with status %d condwait %p in thread_creation\n", thread->index, thread->status, thread->condwait);
+        	PRINF("Waken up thread %d with status %d condwait %p in thread_creation\n", thread->index, thread->status, thread->condwait);
         	thread->status = E_THREAD_ROLLBACK;
         	Real::pthread_cond_signal(thread->condwait);
 				}
@@ -265,7 +265,7 @@ public:
     thread = getThread(joinee);
     assert(thread != NULL);
 
-		PRINT("main thread is joining thread %d\n", thread->index);
+		PRINF("main thread is joining thread %d\n", thread->index);
 
 		setThreadUnsafe();
 	
@@ -275,7 +275,7 @@ public:
       
     lock_thread(thread);
 
-		PRINT("main thread is joining thread %d with status %d\n", thread->index, thread->status);
+		PRINF("main thread is joining thread %d with status %d\n", thread->index, thread->status);
     while(thread->status != E_THREAD_WAITFOR_REAPING) {
       // Set the joiner to current thread
       thread->joiner = current;
@@ -303,10 +303,10 @@ public:
 	
 		// Defer the reaping of this thread for memory deterministic usage.
 		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
-			PRINT("Before reap dead threads!!!!\n");
+			PRINF("Before reap dead threads!!!!\n");
 			// deferSync may return TRUE if we have to reapDeadThreads now.
     	invokeCommit();
-			PRINT("After reap dead threads!!!!\n");
+			PRINF("After reap dead threads!!!!\n");
 		}
  
     return 0;
@@ -405,10 +405,10 @@ public:
 
       // Record this event
       list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-     	PRINT("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
+     	PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
     } else {
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
-     PRINT("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
+     PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
 
 			/* Peek the synchronization event (first event in the thread), it will confirm the following things
@@ -463,7 +463,9 @@ public:
 
   // Add this event into the destory list.
   int mutex_destroy(pthread_mutex_t* mutex) {
-    deferSync((void*)mutex, E_SYNCVAR_MUTEX);
+    if(!global_isRollback()) {
+    	deferSync((void*)mutex, E_SYNCVAR_MUTEX);
+		}
     return 0;
   }
 
@@ -479,7 +481,7 @@ public:
 
       // If we can't setup this entry, that means that this variable has been initialized.
       setSyncEntry(E_SYNCVAR_COND, cond, real_cond, sizeof(pthread_cond_t));
-      PRINT("cond_init for thread %d. cond %p realCond %p\n", current->index, cond, real_cond);
+      PRINF("cond_init for thread %d. cond %p realCond %p\n", current->index, cond, real_cond);
 
       return result;
     }
@@ -490,7 +492,11 @@ public:
   }
 
   // Add this into destoyed list.
-  void cond_destroy(pthread_cond_t* cond) { deferSync((void*)cond, E_SYNCVAR_COND); }
+  void cond_destroy(pthread_cond_t* cond) { 
+    if(!global_isRollback()) {
+			deferSync((void*)cond, E_SYNCVAR_COND); 
+		}
+	}
 
 
 	// Mark whether 
@@ -503,7 +509,7 @@ public:
 
 		// Now thread is safe to be interrupted
 		setThreadSafe();
-		PRINT("markThreadCondwait on thread %d with cond %p\n", current->index, cond);		
+		PRINF("markThreadCondwait on thread %d with cond %p\n", current->index, cond);		
 	}
 
 	/*
@@ -518,13 +524,13 @@ public:
 
 
 	void checkRollback(pthread_mutex_t * mutex) {
-		PRINT("checkRollback on thread %d with cond %p mutex %p\n", current->index, current->condwait, mutex);		
+		PRINF("checkRollback on thread %d with cond %p mutex %p\n", current->index, current->condwait, mutex);		
 		lock_thread(current);
 		// Cleanup this thread
 		current->condwait = NULL;
 		
 		if(current->status == E_THREAD_ROLLBACK) {
-      PRINT("THREAD%d (status %d) is wakenup after cond_wait, plan to rollback\n", current->index, current->status);
+      PRINF("THREAD%d (status %d) is wakenup after cond_wait, plan to rollback\n", current->index, current->status);
 			unlock_thread(current);
 
 			if(mutex) {			
@@ -536,7 +542,7 @@ public:
 			checkRollbackCurrent();
 		}
 		else {
-      PRINT("THREAD%d (status %d) is wakenup after cond_wait with mutex %p\n", current->index, current->status, mutex);
+      PRINF("THREAD%d (status %d) is wakenup after cond_wait with mutex %p\n", current->index, current->status, mutex);
 			current->status = E_THREAD_RUNNING;
 			unlock_thread(current);
 		}
@@ -568,10 +574,10 @@ public:
 
     SyncEventList* list = NULL;
       
-		PRINT("cond_wait_core for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
+		PRINF("cond_wait_core for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
 
     if(!global_isRollback()) {
-      PRINT("cond_wait for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
+      PRINF("cond_wait for thread %d. cond %p mutex %p\n", current->index, cond, mutex);
 			assert(realCond != NULL);
 
 			// Mark the status of this thread before going to sleep.
@@ -584,7 +590,7 @@ public:
 			else {
       	ret = Real::pthread_cond_timedwait(realCond, realMutex, abstime);
 			}
-      PRINT("cond_wait wakeup for thread %d\n", current->index);
+      PRINF("cond_wait wakeup for thread %d\n", current->index);
       
 			// This thread exits cond_wait status	
 			unmarkThreadCondwait(realMutex);
@@ -664,10 +670,10 @@ public:
 
 			// Set the real barrier
 			if(setSyncEntry(E_SYNCVAR_BARRIER, barrier, ptr, totalSize)) {
-				PRINT("can't set synchronization entry??");
+				PRINF("can't set synchronization entry??");
 				assert(0);
 			}
-			PRINT("barrier_init barrier %p pointing to %p with count %d\n", barrier, ptr, count); 	
+			PRINF("barrier_init barrier %p pointing to %p (while next %p) with count %d\n", barrier, ptr, *((void **)((intptr_t)barrier + sizeof(void *))), count); 	
 
 			// Initialize it.
 			getBarrierInfo(barrier, &mutex, &cond, &info);
@@ -687,12 +693,15 @@ public:
   }
 
   int barrier_destroy(pthread_barrier_t* barrier) {
-    deferSync((void*)barrier, E_SYNCVAR_BARRIER);
+    if(!global_isRollback()) {
+		//	PRINF("barrier_destroy on barrier %p next %p\n", barrier, *((void **)((intptr_t)barrier + sizeof(void *))));
+    	deferSync((void*)barrier, E_SYNCVAR_BARRIER);
+		//	PRINF("barrier_destroy on barrier %p done\n", barrier);
+		}
     return 0;
   }
 
   ///// mutex functions
-
 	void getBarrierInfo(pthread_barrier_t * barrier, pthread_mutex_t ** mutex, pthread_cond_t ** cond, BarrierInfo ** info) {
 		// Get the real synchronization entry			
 		void * ptr = getSyncEntry(barrier);
@@ -714,7 +723,7 @@ public:
 
 		// Get the actual barrier information
 		getBarrierInfo(barrier, &mutex, &cond, &info);
-		PRINT("barrier_wait barrier %p mutex %p cond %p info %p\n", barrier, mutex, cond, info); 	
+		//PRINF("barrier_wait barrier %p mutex %p cond %p info %p\n", barrier, mutex, cond, info); 	
 
 		assert(mutex != NULL);
 		setThreadUnsafe();
@@ -922,6 +931,9 @@ private:
       // Adding this entry to global synchronization map
      	void * syncentry = _sync.recordSyncVar(type, (void*)syncvar, realvar, list);
 			*((void **)((intptr_t)syncvar + sizeof(void *))) = syncentry;
+			//if(type == E_SYNCVAR_BARRIER) {
+			//	PRINF("Barrier setSyncEntry: syncvar %p next %p syncentry %p\n", syncvar,  *((void **)((intptr_t)syncvar + sizeof(void *))), syncentry);
+			//}
     }
 
 		return ret;
@@ -1059,9 +1071,6 @@ private:
     threadmap::getInstance().insertAliveThread(thread, tid);
   }
 
-  inline static void insertDeadThread(thread_t* thread) {
-  }
-
   static bool isStackVariable(void* ptr) {
     return (ptr >= current->stackBottom && ptr <= current->stackTop);
   }
@@ -1073,8 +1082,11 @@ private:
     	return threadinfo::getInstance().deferSync(ptr, type);
 		}
 		else {
-			// FIXME
-			xsync::SyncEntry * entry = (xsync::SyncEntry *)((intptr_t)ptr + sizeof(void *));
+			xsync::SyncEntry * entry = (xsync::SyncEntry *)(*((void **)((intptr_t)ptr + sizeof(void *))));
+
+			//if(type == E_SYNCVAR_BARRIER) {
+			//	PRINF("Barrier before detroy ptr %p entry %p\n", ptr, entry);
+			//}
 			xsync::getInstance().deferSync(entry);
 			return true;
 		}
@@ -1147,7 +1159,7 @@ private:
       assert(0);
     } else {
       assert(current->status == E_THREAD_EXITING);
-      PRINT("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, current);
+      PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, current);
       unlock_thread(current);
     }
     return result;

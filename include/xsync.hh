@@ -75,7 +75,7 @@ private:
 
 				// If the list is empty, trigger an assertion.
 				if(isListEmpty(&_list)) {
-					PRINT("the listnew should not be empty!\n");
+					PRINF("the listnew should not be empty!\n");
 					assert(0);
 				}	
 
@@ -270,10 +270,10 @@ public:
     if(isThreadNextEvent(event, thread)) {
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
-      PRINT("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
+      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
       signalThread(thread);
     } else {
-      PRINT("Thread %d adding pending event to next thread %d on event %p", current->index,
+      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index,
             thread->index, event);
       addPendingSyncEvent(event, thread);
     }
@@ -348,16 +348,16 @@ public:
 	*/
   inline int peekSyncEvent(void* tlist) {
     int result = -1;
-		PRINT("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
+		PRINF("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
 		PRINF("thread %d syncevents %p: peekSyncEvent targetlist %p\n", current->index, &current->syncevents, tlist);	
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
-		PRINT("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
+		PRINF("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
 	
 		// For debugging purpose. 	
 		// If the event pointing to a different thread, or the target event 
 		// is not the current one, warn about this situaion. Something wrong!
 		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {
-			PRINT("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
 			while(1) ;
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
@@ -389,7 +389,7 @@ public:
 		next = _activeList.next;
 		while(true) {
 			entry = (struct SyncEntry*)next;
-			PRINT("prepareRollback syncvariable %p pointintto %p entry %p, eventlist %p\n", entry->nominal, entry->real, entry, entry->syncevents);
+			PRINF("prepareRollback syncvariable %p pointintto %p entry %p, eventlist %p\n", entry->nominal, entry->real, entry, entry->syncevents);
 
       prepareEventListRollback(entry->syncevents);
 		

@@ -69,7 +69,7 @@ public:
     event->eventlist = this;
     event->ret = ret;
 
-    PRINT("recordSyncEvent line %d: event %p (at %ld) thread %d eventlist %p\n", __LINE__, event, current->syncevents.getEntriesNumb()-1, current->index, this);
+    PRINF("recordSyncEvent line %d: event %p (at %ld) thread %d eventlist %p\n", __LINE__, event, current->syncevents.getEntriesNumb()-1, current->index, this);
     if(synccmd != E_SYNC_MUTEX_LOCK) {
       Real::pthread_mutex_lock(&this->lock);
       listInsertTail(&event->list, &this->list);

@@ -31,13 +31,13 @@ void xrun::rollback() {
   // Rollback all memory before rolling back the context.
   _memory.rollback();
 
-  PRINT("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
+  PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
  
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
   _thread.prepareRollback();
-   PRINT("_thread rollback and actual rollback\n");
+   PRINF("_thread rollback and actual rollback\n");
 
   // Now we are going to rollback
   PRINF("\n\nSTARTING ROLLBACK!!!\n\n\n");
@@ -53,7 +53,7 @@ void xrun::epochBegin() {
 
   threadmap::aliveThreadIterator i;
  
-	PRINT("xrun epochBegin, joinning every thread.\n");
+	PRINF("xrun epochBegin, joinning every thread.\n");
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
 
@@ -61,13 +61,13 @@ void xrun::epochBegin() {
       lock_thread(thread);
 
       if(thread->hasJoined) {
-				PRINT("xrun, joining thread %d\n", thread->index);
+				PRINF("xrun, joining thread %d\n", thread->index);
         thread->status = E_THREAD_EXITING;
         Real::pthread_cond_signal(&thread->cond);
         unlock_thread(thread);
-				PRINT("xrun, actually joining thread %d\n", thread->index);
+				PRINF("xrun, actually joining thread %d\n", thread->index);
         Real::pthread_join(thread->self, NULL);
-				PRINT("xrun, after joining thread %d\n", thread->index);
+				PRINF("xrun, after joining thread %d\n", thread->index);
       } else {
 				// Since now we are in a new epoch,
 				// mark all existing threads as old threads.
@@ -84,13 +84,13 @@ void xrun::epochBegin() {
 			xthread::epochBegin(thread);
 		}
   }
-	PRINT("xrun epochBegin, joinning every thread done.\n");
+	PRINF("xrun epochBegin, joinning every thread done.\n");
 
 	xthread::epochBegin(current);
 	xthread::runDeferredSyncs();
 
-	PRINT("xrun epochBegin, run deferred synchronizations.\n");
-	PRINT("xrun epochBegin, run deferred synchronizations done.\n");
+	PRINF("xrun epochBegin, run deferred synchronizations.\n");
+	PRINF("xrun epochBegin, run deferred synchronizations done.\n");
 
 
   // Now waken up all other threads then threads can do its cleanup.
@@ -144,12 +144,12 @@ void xrun::epochEnd(bool endOfProgram) {
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
 #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
-  PRINT("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
   } else {
 #elif defined(DETECT_OVERFLOW)
-  PRINT("in the end of an epoch, hasOverflow %d\n", hasOverflow);
+  PRINF("in the end of an epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   } else {
@@ -162,7 +162,7 @@ void xrun::epochEnd(bool endOfProgram) {
 #endif
 #endif
     
-		PRINT("before calling syscalls epochEndWell\n");
+		PRINF("before calling syscalls epochEndWell\n");
     syscalls::getInstance().epochEndWell();
 
 		xthread::getInstance().epochEndWell();
@@ -230,7 +230,7 @@ void xrun::stopAllThreads() {
 			// or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
      if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING) && (thread->status != E_THREAD_COND_WAITING)) {
         waiters++;
-				PRINT("kill thread %d\n", thread->index);
+				PRINF("kill thread %d\n", thread->index);
         Real::pthread_kill(thread->self, SIGUSR2);
 			}
       unlock_thread(thread);

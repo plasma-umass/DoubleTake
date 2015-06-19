@@ -115,7 +115,12 @@ void* call_dlsym(void* handle, const char* funcname) {
 // Memory management functions
 extern "C" {
   void* xxmalloc(size_t sz) {
-    void* ptr;
+    void* ptr = NULL;
+
+		if(sz <= 0) {
+			return NULL;
+		}
+
     // Align the object size. FIXME for now, just use 16 byte alignment and min size.
     if(!initialized) {
     	if (sz < 16) {
@@ -123,11 +128,12 @@ extern "C" {
    		}
     	sz = (sz + 15) & ~15;
       ptr = tempmalloc(sz);
-    } else {
+    } 
+		else {
       ptr = xmemory::getInstance().malloc(sz);
     }
     if(ptr == NULL) {
-    //fprintf(stderr, "Out of memory!\n");
+    	fprintf(stderr, "Out of memory with initialized %d!\n", initialized);
       ::abort();
     }
     return ptr;

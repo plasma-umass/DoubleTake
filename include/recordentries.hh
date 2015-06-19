@@ -45,7 +45,7 @@ public:
       ::abort();
     }
 
-    //  PRINT("recordentries.h::initialize at _cur at %p. memory from %p to 0x%lx\n", &_cur, ptr,
+    //  PRINF("recordentries.h::initialize at _cur at %p. memory from %p to 0x%lx\n", &_cur, ptr,
     // (((unsigned long)ptr) + _size));
     // start to initialize it.
     _start = (Entry*)ptr;
@@ -57,7 +57,7 @@ public:
 
   Entry* alloc() {
     Entry* entry = NULL;
-	//	PRINT("allocEntry, _cur %ld\n", _cur);
+	//	PRINF("allocEntry, _cur %ld\n", _cur);
     if(_cur < _total) {
       entry = (Entry*)&_start[_cur];
       _cur++;
@@ -105,7 +105,7 @@ public:
   // No change on iteration entry.
   Entry* getEntry() {
     Entry* entry = NULL;
-		PRINT("getEntry: _iter %ld, _cur %ld\n", _iter, _cur);
+		PRINF("getEntry: _iter %ld, _cur %ld\n", _iter, _cur);
     if(_iter < _cur) {
       entry = getEntry(_iter);
     }
