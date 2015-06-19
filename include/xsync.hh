@@ -258,7 +258,7 @@ public:
 	}
 
   // Signal next thread on the same synchronization variable.
-  void signalNextThread(struct syncEvent* event) {
+  static void signalNextThread(struct syncEvent* event) {
     thread_t* thread = (thread_t*)event->thread;
 
 		// Acquire the lock before adding an event to the pending list
@@ -409,7 +409,7 @@ public:
     thread. If yes, then we will signal specific thread so that this thread can acquire
     the semaphore immediately.
    */
-  inline void prepareEventListRollback(SyncEventList* eventlist) {
+  static void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
 		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
@@ -420,7 +420,7 @@ public:
   }
 
   // Add one synchronization event into the pending list of a thread.
-  void addPendingSyncEvent(struct syncEvent* event, thread_t* thread) {
+  static void addPendingSyncEvent(struct syncEvent* event, thread_t* thread) {
     struct pendingSyncEvent* pendingEvent = NULL;
 
     pendingEvent = (struct pendingSyncEvent*)InternalHeap::getInstance().malloc(
@@ -433,11 +433,11 @@ public:
   }
 
   // Check whether this event is the first event of corresponding thread.
-  bool isThreadNextEvent(struct syncEvent* event, thread_t* thread) {
+  static bool isThreadNextEvent(struct syncEvent* event, thread_t* thread) {
     return (event == thread->syncevents.firstIterEntry());
   }
 
-  void signalThread(thread_t* thread) {
+  static void signalThread(thread_t* thread) {
     semaphore* sema = &thread->sema;
     PRINF("Thread %d: ^^^^^Signal semaphore to thread %d\n", current->index, thread->index);
     sema->put();

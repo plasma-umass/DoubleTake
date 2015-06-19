@@ -124,6 +124,7 @@ void xthread::prepareRollback() {
   PRINT("before calling sync::prepareRollback\n");
   // Update the semaphores and synchronization entry
   _sync.prepareRollback();
+	xsync::prepareEventListRollback(_spawningList);
 	PRINT("after calling sync::prepareRollback\n");
 
 	// Setting the phase to rollback

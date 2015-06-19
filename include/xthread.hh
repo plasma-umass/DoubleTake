@@ -221,7 +221,7 @@ public:
         //  	PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
       }
     } else {
-      PRINF("process %d is before thread_create now\n", current->index);
+      PRINT("process %d is before thread_create now\n", current->index);
       result = _sync.peekSyncEvent(_spawningList);
       PRINT("process %d is before thread_create, result %d\n", current->index, result);
 
@@ -229,7 +229,7 @@ public:
       PRINT("process %d in creation, result %d\n", current->index, result);
       if(result == 0) {
         waitSemaphore();
-        PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
+        PRINT("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
 
         // Wakeup correponding thread, now they can move on.
         thread_t* thread = getThread(*tid);
