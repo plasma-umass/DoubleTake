@@ -51,6 +51,7 @@ void xthread::invokeCommit() {
 
 // Each thread should 
 void xthread::epochBegin(thread_t * thread) {
+	
 	// Now we should not have the pending synchronization events.	
 	listInit(&thread->pendingSyncevents);
 

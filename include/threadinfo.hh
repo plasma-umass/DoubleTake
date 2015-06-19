@@ -232,6 +232,7 @@ public:
     // Get all entries from _deferSyncs.
     while((entry = listRetrieveItem(&_deferSyncs)) != NULL) {
       struct deferSyncVariable* syncvar = (struct deferSyncVariable*)entry;
+		fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
 
       switch(syncvar->syncVarType) {
 				

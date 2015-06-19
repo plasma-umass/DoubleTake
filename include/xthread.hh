@@ -139,6 +139,7 @@ public:
     int tindex;
     int result;
 
+    PRINT("process %d is before thread_create now\n", current->index);
     if(!global_isRollback()) {
       // Lock and record
       global_lock();
@@ -146,20 +147,7 @@ public:
       // Allocate a global thread index for current thread.
       tindex = allocThreadIndex();
 
-      // This can be caused by two reasons:
-      // First, xdefines::MAX_ALIVE_THREADS is too small.
-      // Second, we haven't reaped the threads for a long time.
-      if(tindex == -1) {
-        REQUIRE(hasReapableThreads(), "No reapable threads");
-        global_unlock();
-
-        invokeCommit();
-
-        global_lock();
-        tindex = allocThreadIndex();
-        REQUIRE(tindex != -1, "System can support %d threads", xdefines::MAX_ALIVE_THREADS);
-        PRINF("AFTER commit now******* tindex %d\n", tindex);
-      }
+			assert(tindex != -1);
 
       // WRAP up the actual thread function.
       // Get corresponding thread_t structure.
@@ -221,7 +209,6 @@ public:
         //  	PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
       }
     } else {
-      PRINT("process %d is before thread_create now\n", current->index);
       result = _sync.peekSyncEvent(_spawningList);
       PRINT("process %d is before thread_create, result %d\n", current->index, result);
 
@@ -1160,7 +1147,7 @@ private:
       assert(0);
     } else {
       assert(current->status == E_THREAD_EXITING);
-      PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, current);
+      PRINT("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, current);
       unlock_thread(current);
     }
     return result;

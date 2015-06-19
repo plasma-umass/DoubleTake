@@ -53,18 +53,21 @@ void xrun::epochBegin() {
 
   threadmap::aliveThreadIterator i;
  
+	PRINT("xrun epochBegin, joinning every thread.\n");
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
 
-	//	PRINF("xrun epochBegin setting the map\n");
     if(thread != current) {
       lock_thread(thread);
 
       if(thread->hasJoined) {
+				PRINT("xrun, joining thread %d\n", thread->index);
         thread->status = E_THREAD_EXITING;
         Real::pthread_cond_signal(&thread->cond);
         unlock_thread(thread);
+				PRINT("xrun, actually joining thread %d\n", thread->index);
         Real::pthread_join(thread->self, NULL);
+				PRINT("xrun, after joining thread %d\n", thread->index);
       } else {
 				// Since now we are in a new epoch,
 				// mark all existing threads as old threads.
@@ -81,17 +84,23 @@ void xrun::epochBegin() {
 			xthread::epochBegin(thread);
 		}
   }
+	PRINT("xrun epochBegin, joinning every thread done.\n");
 
-	// Saving the context of the memory.
-  _memory.epochBegin();
-
+	xthread::epochBegin(current);
 	xthread::runDeferredSyncs();
+
+	PRINT("xrun epochBegin, run deferred synchronizations.\n");
+	PRINT("xrun epochBegin, run deferred synchronizations done.\n");
+
 
   // Now waken up all other threads then threads can do its cleanup.
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());
   global_epochBegin();
 
   PRINF("getpid %d: xrun::epochBegin\n", getpid());
+	
+	// Saving the context of the memory.
+  _memory.epochBegin();
 
   // Save the context of this thread
   saveContext();
@@ -155,8 +164,9 @@ void xrun::epochEnd(bool endOfProgram) {
     
 		PRINT("before calling syscalls epochEndWell\n");
     syscalls::getInstance().epochEndWell();
-		PRINT("After calling syscalls epochEndWell\n");
-    _thread.epochEndWell();
+
+		xthread::getInstance().epochEndWell();
+
 #ifndef EVALUATING_PERF
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
   }

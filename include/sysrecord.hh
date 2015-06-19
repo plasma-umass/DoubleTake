@@ -349,7 +349,7 @@ private:
 
     struct SyscallEntry* entry = current->syscalls.retrieveIterEntry();
 		
-		//PRINT("SYSCALL: retrieveEntry %p for sc %d\n", entry, sc);
+		PRINT("SYSCALL: retrieveEntry %p for sc %d\n", entry, sc);
 
 		if(entry == NULL) {
       PRINT("Have we met this entry with sc %d\n", sc);

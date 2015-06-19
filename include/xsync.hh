@@ -348,7 +348,7 @@ public:
 	*/
   inline int peekSyncEvent(void* tlist) {
     int result = -1;
-		PRINF("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
+		PRINT("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
 		PRINF("thread %d syncevents %p: peekSyncEvent targetlist %p\n", current->index, &current->syncevents, tlist);	
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
 		PRINT("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
