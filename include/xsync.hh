@@ -252,6 +252,9 @@ public:
 				if(now == last) {
 					break;
 				}
+				else {
+					now = next;
+				}
 			}
 		}
 
