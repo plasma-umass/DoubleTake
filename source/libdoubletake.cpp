@@ -46,37 +46,66 @@ pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;
 int g_waitersTotal;
-static stringstream buffer;
-//static streambuf * coutbuf;
 
-__attribute__((constructor)) void initializer() {
+void initializer() {
   // Using globals to provide allocation
   // before initialized.
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
   Real::initializer();
-
   if(!funcInitialized) {
     funcInitialized = true;
+
+		// Now setup 
     xrun::getInstance().initialize();
-  
-	//	cout << "DoubleTake 1.0" << endl;
     initialized = true;
-//		coutbuf = cout.rdbuf(); //save old buf
-//	 	cout.rdbuf(buffer.rdbuf());
   }
 }
 
 __attribute__((destructor)) void finalizer() {
   xrun::getInstance().finalize();
+
   funcInitialized = false;
 }
+
+typedef int (*main_fn_t)(int, char**, char**);
+main_fn_t real_main;
+
+void exitfunc(void) {
+	PRINT("in the end of exiting now\n");
+}
+
+// Doubletake's main function
+int doubletake_main(int argc, char** argv, char** envp) {
+  /******** Do doubletake initialization here (runs after ctors) *********/
+	initializer();
+
+	// Now start the first epoch
+	xrun::getInstance().epochBegin();
+
+  // Call the program's main function
+  return real_main(argc, argv, envp);
+}
+
+extern "C" int __libc_start_main(main_fn_t, int, char**, void (*)(), void (*)(), void (*)(), void*) __attribute__((weak, alias("doubletake_libc_start_main")));
+
+extern "C" int doubletake_libc_start_main(main_fn_t main_fn, int argc, char** argv, void (*init)(), void (*fini)(), void (*rtld_fini)(), void* stack_end) {
+  // Find the real __libc_start_main
+  auto real_libc_start_main = (decltype(__libc_start_main)*)dlsym(RTLD_NEXT, "__libc_start_main");
+  // Save the program's real main function
+  real_main = main_fn;
+  // Run the real __libc_start_main, but pass in doubletake's main function
+  return real_libc_start_main(doubletake_main, argc, argv, init, fini, rtld_fini, stack_end);
+}
+
 
 // Temporary bump-pointer allocator for malloc() calls before DoubleTake is initialized
 static void* tempmalloc(int size) {
   static char _buf[InitialMallocSize];
   static int _allocated = 0;
+
+//	fprintf(stderr, "inside tempmalloc with size %d\n", size);
 
   if(_allocated + size > InitialMallocSize) {
     printf("Not enough space for tempmalloc");
@@ -439,7 +468,7 @@ extern "C" {
     } else {
       mode = 0;
     }
-     fprintf(stderr, "**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
+   //  fprintf(stderr, "**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
     if(!initialized) {
       return Real::open(pathname, flags, mode);
     }
@@ -452,7 +481,7 @@ extern "C" {
   }
 
   int close(int fd) {
-  fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
+  //fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
     if(!initialized) {
       return Real::close(fd);
     }

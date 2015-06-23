@@ -92,14 +92,14 @@ public:
 
     syscallsInitialize();
 
-    epochBegin();
+  //  epochBegin();
     //    PRINT("starting!!!!!\n");
 
     //    PRINF("starting!!!!!\n");
   }
 
   void finalize() {
-    PRINT("%d: finalize now !!!!!\n", getpid());
+//    PRINT("%d: finalize now !!!!!\n", getpid());
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
 #ifdef DETECT_USAGE_AFTER_FREE

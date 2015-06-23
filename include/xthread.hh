@@ -300,7 +300,7 @@ public:
 		unmarkThreadJoining();
 			
 		setThreadSafe();
-	
+
 		// Defer the reaping of this thread for memory deterministic usage.
 		if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
 			PRINF("Before reap dead threads!!!!\n");
