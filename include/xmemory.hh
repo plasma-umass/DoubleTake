@@ -368,6 +368,7 @@ public:
     origptr = getObjectPtrAtFree(ptr);
     objectHeader* o = getObject(origptr);
 
+#ifndef EVALUATING_PERF
     // Check for double free
     // if(o->isObjectFree() || !o->isGoodObject()) {
     if(!o->isGoodObject()) {
@@ -375,6 +376,7 @@ public:
       printCallsite();
       abort();
     }
+#endif
 
 #ifdef DETECT_OVERFLOW
     // If this object has a overflow, we donot need to free this object
