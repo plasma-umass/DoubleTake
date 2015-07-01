@@ -146,8 +146,8 @@ extern "C" {
   void* xxmalloc(size_t sz) {
     void* ptr = NULL;
 
-		if(sz <= 0) {
-			return NULL;
+		if(sz == 0) {
+			sz = 1;
 		}
 
     // Align the object size. FIXME for now, just use 16 byte alignment and min size.
