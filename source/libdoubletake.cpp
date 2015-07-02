@@ -372,18 +372,7 @@ extern "C" {
 
 #if !defined(DISABLE_SYSCALLS)
 
-  // void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
-  // //fprintf(stderr, "mmap in doubletake at %d start %p fd %d length %x\n", __LINE__, start, fd,
-  // length);
-  //   CallSite::getCallsite(2);
-  //   //return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
-  //   return Real::mmap()(start, length, prot, flags, fd, offset);
-  // }
-
-  // pid_t getpid() {
-  //   return xrun::getInstance().getpid();
-  // }
-
+#if 0
   ssize_t read(int fd, void* buf, size_t count) {
     ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
     if(!initialized) {
@@ -418,16 +407,9 @@ extern "C" {
     #define _SYS_mprotect                           10
     #define _SYS_munmap                             11
   */
-  void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
-  //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
-    if(!initialized || current->disablecheck) {
-      return Real::mmap(start, length, prot, flags, fd, offset);
-    }
 
-    return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
-    // return Real::mmap(start, length, prot, flags, fd, offset);
-  }
-
+/* 
+	Avoid printing in the rollback phase.
   int puts(const char* s) {
     if(!global_isRollback()) {
       Real::puts(s);
@@ -435,26 +417,27 @@ extern "C" {
     return 0;
   }
 
-  //    int printf(const char *format, ...) {
-  //    PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
-  //     if(!global_isRollback()) {
-  //       va_list ap;
-  //       va_start(ap, format);
-  //       vprintf(format, ap);
-  //     }
-  //
-  //     return 0;
-  //   }
-  //
-  //   int fprintf(FILE *stream, const char *format, ...) {
-  //     if(!global_isRollback()) {
-  //       va_list ap;
-  //       va_start(ap, format);
-  //       vfprintf(stream, format, ap);
-  //     }
-  //
-  //     return 0;
-  //   }
+  int printf(const char *format, ...) {
+    PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
+    if(!global_isRollback()) {
+      va_list ap;
+      va_start(ap, format);
+      vprintf(format, ap);
+    }
+  
+    return 0;
+  }
+
+  int fprintf(FILE *stream, const char *format, ...) {
+    if(!global_isRollback()) {
+      va_list ap;
+      va_start(ap, format);
+      vfprintf(stream, format, ap);
+    }
+  
+    return 0;
+  }
+*/
 
   // int open(const char *pathname, int flags, mode_t mode) {
   int open(const char* pathname, int flags, ...) {
@@ -475,7 +458,7 @@ extern "C" {
     return syscalls::getInstance().open(pathname, flags, mode);
   }
 
-  FILE* freopen(const char* /* path */, const char* /* mode */, FILE* /* stream */) {
+  FILE* freopen(const char* path, const char* mode, FILE* stream) {
   //fprintf(stderr, "freopen %d ****** in libdoubletake not supported\n", __LINE__);
     abort();
   }
@@ -557,20 +540,20 @@ extern "C" {
   // since it doesn't matter whether those system calls
   // are called again or not.
   int stat(const char *path, struct stat *buf) {
-  return syscalls::getInstance().stat(path, buf);
+  	return syscalls::getInstance().stat(path, buf);
   }
 
   int fstat(int filedes, struct stat *buf) {
-  return syscalls::getInstance().fstat(filedes, buf);
+  	return syscalls::getInstance().fstat(filedes, buf);
   }
 
   int lstat(const char *path, struct stat *buf) {
-  return syscalls::getInstance().lstat(path, buf);
+  	return syscalls::getInstance().lstat(path, buf);
   }
 
 
   int poll(struct pollfd *fds, nfds_t nfds, int timeout) {
-  return syscalls::getInstance().poll(fds, nfds, timeout);
+  	return syscalls::getInstance().poll(fds, nfds, timeout);
   }
 
   */
@@ -582,6 +565,7 @@ extern "C" {
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
   }
+#endif
 
   int mprotect(void* addr, size_t len, int prot) {
   //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
@@ -590,6 +574,17 @@ extern "C" {
     }
     return syscalls::getInstance().mprotect(addr, len, prot);
   }
+  
+	void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
+  //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
+    if(!initialized || current->disablecheck) {
+      return Real::mmap(start, length, prot, flags, fd, offset);
+    }
+
+    return syscalls::getInstance().mmap(start, length, prot, flags, fd, offset);
+    // return Real::mmap(start, length, prot, flags, fd, offset);
+  }
+
 
   int munmap(void* start, size_t length) {
     if(!initialized) {
