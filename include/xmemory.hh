@@ -261,8 +261,10 @@ public:
     // PRINF("xmemory: isObjectOverflow at line %d sz %d\n", __LINE__, sz);
 
     if(size < sz) {
+#ifndef EVALUATING_PERF
       PRWRN("Free isObjectOverflow size %#lx sz %#lx\n", size, sz);
       assert(size >= sz);
+#endif
     }
     // Add another guard zone if block size is larger than actual size
     // in order to capture those 1 byte overflow.
@@ -370,7 +372,6 @@ public:
 
 #ifndef EVALUATING_PERF
     // Check for double free
-    // if(o->isObjectFree() || !o->isGoodObject()) {
     if(!o->isGoodObject()) {
       PRWRN("DoubleTake: Caught double free or invalid free error. ptr %p\n", ptr);
       printCallsite();
@@ -378,15 +379,15 @@ public:
     }
 #endif
 
-#ifdef DETECT_OVERFLOW
     // If this object has a overflow, we donot need to free this object
     if(!global_isRollback()) {
       if(isObjectOverflow(origptr)) {
+#ifndef EVALUATING_PERF
         xthread::invokeCommit();
+#endif
         return;
       }
     }
-#endif
 
     // Check the free if it is in rollback phase.
     if(global_isRollback()) {
