@@ -41,6 +41,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
                                void* objectstart, size_t objectsize) {
   bool hasWatchpoint = true;
 
+#ifndef EVALUATING_PERF
   if(objtype == OBJECT_TYPE_OVERFLOW) {
     PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. size %lx start %p\n",
 	  addr, value, objectsize, objectstart);
@@ -49,6 +50,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
     assert(objtype == OBJECT_TYPE_USEAFTERFREE);
     PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
   }
+#endif
 
   if(_numWatchpoints < xdefines::MAX_WATCHPOINTS) {
     // Record watch point information
