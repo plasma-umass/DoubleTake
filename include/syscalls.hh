@@ -330,13 +330,12 @@ public:
     int ret;
 
     assert(fp != NULL);
+
     // flush the result, required by the posix standard
     fflush(fp);
 
-		//PRINT("calling fclose on fp %p\n", fp);
-
 		if(!global_isRollback()) {
-      selfmap::getInstance().printCallStack();
+//      selfmap::getInstance().printCallStack();
       ret = _fops.closeFile(fp->_fileno, fp);
     } else {
       // We only need to 

@@ -482,6 +482,7 @@ extern "C" {
 		syscalls::getInstance().rewinddir(dir); 
 	}
 
+#if 1
 	// We don't care about telldir and readdir;
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
@@ -521,19 +522,18 @@ extern "C" {
       return syscalls::getInstance().fwrite(ptr, size, nmemb, stream);
     }
   }
-
   int fclose(FILE* fp) {
     if(!initialized) {
       return Real::fclose(fp);
     }
-   // fprintf(stderr, "********fclose is intercepted\n");
     return syscalls::getInstance().fclose(fp);
   }
 
   int fclose64(FILE* fp) { 
-    //fprintf(stderr, "********fclose64 is intercepted\n");
+//    fprintf(stderr, "TONGPING ********fclose64 fp %p is intercepted\n", fp);
 		return syscalls::getInstance().fclose(fp); 
 	}
+#endif
   /*
   // We don't need to handle the following system calls
   // since it doesn't matter whether those system calls
