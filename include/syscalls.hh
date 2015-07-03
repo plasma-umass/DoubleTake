@@ -313,7 +313,7 @@ public:
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
-        selfmap::getInstance().printCallStack();
+       // selfmap::getInstance().printCallStack();
       } else {
         _fops.saveFd(-1, NULL);
       }

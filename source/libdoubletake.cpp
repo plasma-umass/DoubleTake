@@ -482,7 +482,6 @@ extern "C" {
 		syscalls::getInstance().rewinddir(dir); 
 	}
 
-#if 1
 	// We don't care about telldir and readdir;
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
@@ -507,7 +506,7 @@ extern "C" {
   }
 	// FIXME: why we should care about fread and fwrite?
   size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
-    fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
+ //   fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().fread(ptr, size, nmemb, stream);
   }
 
@@ -527,15 +526,14 @@ extern "C" {
     if(!initialized) {
       return Real::fclose(fp);
     }
-    fprintf(stderr, "********fclose is intercepted\n");
+   // fprintf(stderr, "********fclose is intercepted\n");
     return syscalls::getInstance().fclose(fp);
   }
 
   int fclose64(FILE* fp) { 
-    fprintf(stderr, "********fclose64 is intercepted\n");
+    //fprintf(stderr, "********fclose64 is intercepted\n");
 		return syscalls::getInstance().fclose(fp); 
 	}
-#endif
   /*
   // We don't need to handle the following system calls
   // since it doesn't matter whether those system calls
