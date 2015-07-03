@@ -372,41 +372,6 @@ extern "C" {
 
 #if !defined(DISABLE_SYSCALLS)
 
-#if 0
-  ssize_t read(int fd, void* buf, size_t count) {
-    ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
-    if(!initialized) {
-      return Real::read(fd, buf, count);
-    }
-
-    return syscalls::getInstance().read(fd, buf, count);
-  }
-
-  ssize_t write(int fd, const void* buf, size_t count) {
-    if(!initialized || fd == 1 || fd == 2) {
-      return Real::write(fd, buf, count);
-    } else {
-      //  //fprintf(stderr, " write in doubletake at %d\n", __LINE__);
-      return syscalls::getInstance().write(fd, buf, count);
-    }
-  }
-
-  // System calls related functions
-  // SYSCall 1 - 10
-  /*
-    #define _SYS_read                                0
-    #define _SYS_write                               1
-    #define _SYS_open                                2
-    #define _SYS_close                               3
-    #define _SYS_stat                                4
-    #define _SYS_fstat                               5
-    #define _SYS_lstat                               6
-    #define _SYS_poll                                7
-    #define _SYS_lseek                               8
-    #define _SYS_mmap                                9
-    #define _SYS_mprotect                           10
-    #define _SYS_munmap                             11
-  */
 
 /* 
 	Avoid printing in the rollback phase.
@@ -438,6 +403,40 @@ extern "C" {
     return 0;
   }
 */
+  
+	// System calls related functions
+  // SYSCall 1 - 10
+  /*
+    #define _SYS_read                                0
+    #define _SYS_write                               1
+    #define _SYS_open                                2
+    #define _SYS_close                               3
+    #define _SYS_stat                                4
+    #define _SYS_fstat                               5
+    #define _SYS_lstat                               6
+    #define _SYS_poll                                7
+    #define _SYS_lseek                               8
+    #define _SYS_mmap                                9
+    #define _SYS_mprotect                           10
+    #define _SYS_munmap                             11
+  */
+	ssize_t read(int fd, void* buf, size_t count) {
+    ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
+    if(!initialized) {
+      return Real::read(fd, buf, count);
+    }
+
+    return syscalls::getInstance().read(fd, buf, count);
+  }
+
+  ssize_t write(int fd, const void* buf, size_t count) {
+    if(!initialized || fd == 1 || fd == 2) {
+      return Real::write(fd, buf, count);
+    } else {
+      //  //fprintf(stderr, " write in doubletake at %d\n", __LINE__);
+      return syscalls::getInstance().write(fd, buf, count);
+    }
+  }
 
   // int open(const char *pathname, int flags, mode_t mode) {
   int open(const char* pathname, int flags, ...) {
@@ -458,10 +457,6 @@ extern "C" {
     return syscalls::getInstance().open(pathname, flags, mode);
   }
 
-  FILE* freopen(const char* path, const char* mode, FILE* stream) {
-  //fprintf(stderr, "freopen %d ****** in libdoubletake not supported\n", __LINE__);
-    abort();
-  }
 
   int close(int fd) {
   //fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
@@ -487,10 +482,10 @@ extern "C" {
 		syscalls::getInstance().rewinddir(dir); 
 	}
 
+#if 1
 	// We don't care about telldir and readdir;
-
   FILE* fopen(const char* filename, const char* modes) {
-    ////fprintf(stderr, "fopen in libdoubletake\n");
+    //fprintf(stderr, "fopen in libdoubletake\n");
     if(!initialized) {
       return Real::fopen(filename, modes);
     }
@@ -502,13 +497,17 @@ extern "C" {
     if(!initialized) {
       return Real::fopen64(filename, modes);
     }
-  //fprintf(stderr, "fopen64 in libdoubletake\n");
+   // fprintf(stderr, "fopen64 in libdoubletake\n");
     return syscalls::getInstance().fopen64(filename, modes);
   }
-
+  
+	FILE* freopen(const char* path, const char* mode, FILE* stream) {
+  	fprintf(stderr, "freopen %d ****** in libdoubletake not supported\n", __LINE__);
+    abort();
+  }
 	// FIXME: why we should care about fread and fwrite?
   size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
-    //  //fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
+    fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().fread(ptr, size, nmemb, stream);
   }
 
@@ -519,8 +518,7 @@ extern "C" {
     //fprintf(stderr, " in doubletake at %d\n", __LINE__);
       return Real::fwrite(ptr, size, nmemb, stream);
     } else {
-      // printf("fwrite in doubletake at %d is captured, stream %p\n", __LINE__, stream);
-      // while(1) ;
+     // fprintf(stderr, "fwrite in doubletake at %d is captured, stream %p\n", __LINE__, stream);
       return syscalls::getInstance().fwrite(ptr, size, nmemb, stream);
     }
   }
@@ -529,12 +527,15 @@ extern "C" {
     if(!initialized) {
       return Real::fclose(fp);
     }
-    ////fprintf(stderr, "********fclose is intercepted\n");
+    fprintf(stderr, "********fclose is intercepted\n");
     return syscalls::getInstance().fclose(fp);
   }
 
-  int fclose64(FILE* fp) { return syscalls::getInstance().fclose(fp); }
-
+  int fclose64(FILE* fp) { 
+    fprintf(stderr, "********fclose64 is intercepted\n");
+		return syscalls::getInstance().fclose(fp); 
+	}
+#endif
   /*
   // We don't need to handle the following system calls
   // since it doesn't matter whether those system calls
@@ -565,7 +566,6 @@ extern "C" {
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
   }
-#endif
 
   int mprotect(void* addr, size_t len, int prot) {
   //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);

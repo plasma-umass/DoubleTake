@@ -63,10 +63,8 @@ public:
     // Get file position for all files in the global hash table.
     filesHashMap::iterator i;
     fileInfo* thisFile;
-
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
       thisFile = (fileInfo*)i.getData();
-      PRINF("thisfile fd %d pos %ld", thisFile->fd, thisFile->pos);
 
 			if(thisFile->isNew) {
         thisFile->isNew = false;
@@ -81,7 +79,7 @@ public:
         assert(thisFile->backupStream != NULL);
         	
 				// Backup the file stream.
-        memcpy(thisFile->origStream, thisFile->backupStream, xdefines::FOPEN_ALLOC_SIZE);
+        memcpy(thisFile->backupStream, thisFile->origStream, xdefines::FOPEN_ALLOC_SIZE);
       }
     }
 
@@ -265,13 +263,14 @@ public:
     // Save it even when fopen/open is not successful.
     _sysrecord.recordFileOps(E_SYS_FILE_OPEN, fd);
 
+		//PRINT("saveFD %d origStream %p\n", fd, file);
+
     if(fd != -1) {
       fileInfo* thisFile = (fileInfo*)InternalHeap::getInstance().malloc(sizeof(fileInfo));
       thisFile->fd = fd;
       thisFile->pos = 0;
       thisFile->origStream = file;
 
-//	PRINT("saveFD %d origStream %p\n", fd, file);
       if(file) {
         // Allocate a block of memory
         void* ptr = InternalHeap::getInstance().malloc(xdefines::FOPEN_ALLOC_SIZE);
@@ -282,7 +281,7 @@ public:
       }
 
       // Insert this file into the hash map.
-      _filesMap.insert(fd, sizeof(fd), thisFile);
+      _filesMap.insert(fd, sizeof(int), thisFile);
     }
   }
 
@@ -297,6 +296,7 @@ public:
   // Now we have to rollback current transaction
 	// by traversing every entry in _filesMap and _dirsMap.
   void prepareRollback() {
+
     // We must recove all file offsets of all files now.
     filesHashMap::iterator i;
     for(i = _filesMap.begin(); i != _filesMap.end(); i++) {
@@ -456,6 +456,7 @@ public:
         continue;
       }
 
+			
       // Find the entry from the hash map.
       if(_filesMap.find(fd, sizeof(fd), &thisFile)) {
 				assert(thisFile != NULL);

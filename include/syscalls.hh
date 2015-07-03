@@ -273,13 +273,29 @@ public:
   }
 
   FILE* fopen(const char* filename, const char* modes) {
-    FILE* ret;
+    FILE* ret = NULL;
 
     if(!global_isRollback()) {
       ret = Real::fopen(filename, modes);
       if(ret != NULL) {
+#if 0
+      unsigned long * ptr = (unsigned long *) ret;
+      unsigned long i;
+      for(i = 0; i < xdefines::FOPEN_ALLOC_SIZE/sizeof(unsigned long); i++) {
+        fprintf(stderr, "i %ld addr %p content %lx\n", i, ptr, *ptr);
+        ptr++;
+      }
+      fprintf(stderr, "before inserting\n");
+#endif
         // Save current fd
-        _fops.saveFopen(ret);
+	      _fops.saveFopen(ret);
+#if 0
+      fprintf(stderr, "after inserting\n");
+      for(i = 0; i < xdefines::FOPEN_ALLOC_SIZE/sizeof(unsigned long); i++) {
+        fprintf(stderr, "i %ld addr %p content %lx\n", i, ptr, *ptr);
+        ptr++;
+      }
+#endif
       } 
     } else {
       // rollback phase
@@ -297,7 +313,7 @@ public:
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
-        //selfmap::getInstance().printCallStack();
+        selfmap::getInstance().printCallStack();
       } else {
         _fops.saveFd(-1, NULL);
       }
@@ -320,6 +336,7 @@ public:
 		//PRINT("calling fclose on fp %p\n", fp);
 
 		if(!global_isRollback()) {
+      selfmap::getInstance().printCallStack();
       ret = _fops.closeFile(fp->_fileno, fp);
     } else {
       // We only need to 
