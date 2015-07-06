@@ -175,6 +175,7 @@ void xrun::epochEnd(bool endOfProgram) {
   //PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
 }
 
+#ifdef DETECT_USAGE_AFTER_FREE
 void xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
@@ -186,6 +187,7 @@ void xrun::finalUAFCheck() {
     }
   }
 }
+#endif
 
 void waitThreadSafe(void) {
 	int i = 0; 

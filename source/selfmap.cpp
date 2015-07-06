@@ -24,34 +24,42 @@
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.
 void selfmap::printCallStack() {
-  void* array[10];
-  int size;
+  void* array[256];
+  int frames;
 
   // get void*'s for all entries on the stack
   xthread::disableCheck();
-  size = backtrace(array, 10);
-  xthread::enableCheck();
-  //backtrace_symbols_fd(&array[0], size, 2);
+  frames = backtrace(array, 256);
+
+	//char** syms = backtrace_symbols(array, frames);
 
   // Print out the source code information if it is a overflow site.
-  selfmap::getInstance().printCallStack(size, &array[0]);
+  selfmap::getInstance().printCallStack(frames, array);
+  xthread::enableCheck();
 }
 
 // Calling system involves a lot of irrevocable system calls.
-void selfmap::printCallStack(int depth, void** array) {
-  char buf[MAX_BUF_SIZE];
-  int index = 0;
+void selfmap::printCallStack(int frames, void** array) {
+#if 0
+	char** syms = backtrace_symbols(array, frames);
+
+	for(int i=0; i<frames; i++) {
+    fprintf(stderr, "  %d: %s\n", i, syms[i]);
+  }
+#endif
+
+#if 1
+	char buf[256];
   //  fprintf(stderr, "printCallStack(%d, %p)\n", depth, array);
-  xthread::disableCheck();
-  for(int i = 0; i < depth; i++) {
+  for(int i = 0; i < frames; i++) {
     void* addr = (void*)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
-    if(true) { // EDB: was isApplication(addr)) {
-      index++;
-      // Print out the corresponding source code information
-      sprintf(buf, "addr2line -e %s %p", _main_exe.c_str(), addr);
-      //PRINT("\tcallstack frame %d: %p\t", index, addr);
-      system(buf);
-    }
+    	
+		//PRINT("\tcallstack frame %d: %p\t", i, addr);
+    // Print out the corresponding source code information
+    sprintf(buf, "addr2line -a -i -e %s %p", _main_exe.c_str(), addr);
+    system(buf);
+	}
+#endif
 #if 0
 		// We print out the first one who do not belong to library itself
 		//else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {
@@ -60,8 +68,6 @@ void selfmap::printCallStack(int depth, void** array) {
       PRINT("\tcallstack frame %d: %p\n", index, addr);
 		}
 #endif
-  }
-  xthread::enableCheck();
 }
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.

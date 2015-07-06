@@ -417,9 +417,9 @@ public:
       errno = EBADF;
       ret = -1;
     }
+		
 
     // Check whether the fp is equal to the saved one
-    // assert(fp == thisFile->origStream);
     if(fp != thisFile->origStream) {
       errno = EBADF;
       ret = -1;
@@ -427,7 +427,6 @@ public:
 	
     // Add to the closed list
     _sysrecord.recordFileOps(E_SYS_FILE_CLOSE, fd, ret);
-
     return ret;
   }
 
@@ -449,13 +448,13 @@ public:
     int fd = -1;
     fileInfo* thisFile = NULL;
 
+		fprintf(stderr, "TONGPING: cleanClosedFiles\n");
 		// We will check all closed files in this epoch 
     while((_sysrecord.retrieveFCloseList(&fd))) {
 
       if(fd == -1) {
         continue;
       }
-
 			
       // Find the entry from the hash map.
       if(_filesMap.find(fd, sizeof(fd), &thisFile)) {

@@ -210,12 +210,12 @@ public:
   }
 
   int close(int fd) {
-    int ret;
+    int ret = 0;
 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call
       if(!global_isRollback()) {
-        ret = _fops.closeFile(fd, NULL);
+       	ret = _fops.closeFile(fd, NULL);
       } else {
         ret = _fops.getClose(fd);
       }
@@ -226,7 +226,6 @@ public:
       ret = Real::close(fd);
       epochBegin();
     }
-
     return ret;
   }
 

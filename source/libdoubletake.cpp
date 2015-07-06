@@ -420,6 +420,7 @@ extern "C" {
     #define _SYS_mprotect                           10
     #define _SYS_munmap                             11
   */
+#if 1
 	ssize_t read(int fd, void* buf, size_t count) {
     ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
     if(!initialized) {
@@ -437,6 +438,7 @@ extern "C" {
       return syscalls::getInstance().write(fd, buf, count);
     }
   }
+#endif 
 
   // int open(const char *pathname, int flags, mode_t mode) {
   int open(const char* pathname, int flags, ...) {
@@ -463,6 +465,8 @@ extern "C" {
     if(!initialized) {
       return Real::close(fd);
     }
+   // syncfs(fd);
+    //return 0;
     return syscalls::getInstance().close(fd);
   }
 
@@ -473,7 +477,7 @@ extern "C" {
   int closedir(DIR* dir) { 
 		return syscalls::getInstance().closedir(dir); 
 	}
-	
+
 	void seekdir(DIR *dir, long pos) { 
 		syscalls::getInstance().seekdir(dir, pos); 
 	}
@@ -482,7 +486,6 @@ extern "C" {
 		syscalls::getInstance().rewinddir(dir); 
 	}
 
-#if 1
 	// We don't care about telldir and readdir;
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
@@ -530,10 +533,8 @@ extern "C" {
   }
 
   int fclose64(FILE* fp) { 
-//    fprintf(stderr, "TONGPING ********fclose64 fp %p is intercepted\n", fp);
 		return syscalls::getInstance().fclose(fp); 
 	}
-#endif
   /*
   // We don't need to handle the following system calls
   // since it doesn't matter whether those system calls

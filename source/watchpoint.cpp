@@ -74,7 +74,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
 bool watchpoint::findFaultyObject(faultyObject** object) {
   int trigPoints = 0;
 
-  //		PRINT("findFaultyObject: _numWatchpoints %d\n", _numWatchpoints);
+  PRINF("findFaultyObject: _numWatchpoints %d\n", _numWatchpoints);
   for(int i = 0; i < _numWatchpoints; i++) {
     unsigned long value = *((unsigned long*)_wp[i].faultyaddr);
 
@@ -129,12 +129,7 @@ void watchpoint::installWatchpoints() {
     _wp[i].currentvalue = *((unsigned long*)_wp[i].faultyaddr);
 
     // install this watch point.
-    if(i == 0) {
-      perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, -1);
-    } else {
-      // EDB: added set of perffd.
-      perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, perffd);
-    }
+    perffd = install_watchpoint((uintptr_t)_wp[i].faultyaddr, SIGTRAP, -1);
     // PRINT("Watchpoint %d: addr %p done\n", i, _wp[i].faultyaddr);
   }
 
@@ -218,7 +213,6 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
     return;
   }
 
-  //	while(1) ;
   // Check whether this trap is caused by libdoubletake library.
   // If yes, then we don't care it since libdoubletake can fill the canaries.
   if(selfmap::getInstance().isDoubleTakeLibrary(addr)) {

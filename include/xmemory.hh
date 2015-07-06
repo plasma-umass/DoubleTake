@@ -375,7 +375,7 @@ public:
     if(!o->isGoodObject()) {
       PRWRN("DoubleTake: Caught double free or invalid free error. ptr %p\n", ptr);
       printCallsite();
-      abort();
+//      abort();
     }
 #endif
 
@@ -383,6 +383,7 @@ public:
     if(!global_isRollback()) {
       if(isObjectOverflow(origptr)) {
 #ifndef EVALUATING_PERF
+      	PRWRN("DoubleTake: Caught buffer overflow error. ptr %p\n", origptr);
         xthread::invokeCommit();
 #endif
         return;
@@ -450,8 +451,8 @@ public:
 
   inline void printCallsite() {
     selfmap::getInstance().printCallStack();
-    PRINF("Program exited because of a double free or an invalid free.\n");
-    exit(-1);
+   // PRINF("Program exited because of a double free or an invalid free.\n");
+  //  exit(-1);
   }
 
   /// Transaction begins.
