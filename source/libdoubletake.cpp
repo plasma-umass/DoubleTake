@@ -28,7 +28,7 @@
 #include "wrappers/gnuwrapper.cpp"
 
 using namespace std;
-enum { InitialMallocSize = 512 * 1024 * 1024 };
+enum { InitialMallocSize = 1024 * 1024 * 1024 };
 
 size_t __max_stack_size;
 
