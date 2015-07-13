@@ -47,13 +47,17 @@ pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;
 int g_waitersTotal;
 
+__attribute__((constructor)) void initRealFunctions() {
+//	printf("calling min_init\n");
+  Real::initializer();
+}
+
 void initializer() {
   // Using globals to provide allocation
   // before initialized.
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
-  Real::initializer();
   if(!funcInitialized) {
     funcInitialized = true;
 
@@ -79,6 +83,7 @@ void exitfunc(void) {
 // Doubletake's main function
 int doubletake_main(int argc, char** argv, char** envp) {
   /******** Do doubletake initialization here (runs after ctors) *********/
+//	printf("doubletake_main initializer\n");
 	initializer();
 
 	// Now start the first epoch
@@ -423,6 +428,7 @@ extern "C" {
 #if 1
 	ssize_t read(int fd, void* buf, size_t count) {
     ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
+    printf("**** read in doubletake at %d, initialized %d, real %p\n", __LINE__, initialized, Real::read);
     if(!initialized) {
       return Real::read(fd, buf, count);
     }
@@ -452,7 +458,7 @@ extern "C" {
     } else {
       mode = 0;
     }
-   //  fprintf(stderr, "**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
+    //printf("**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
     if(!initialized) {
       return Real::open(pathname, flags, mode);
     }
@@ -465,8 +471,6 @@ extern "C" {
     if(!initialized) {
       return Real::close(fd);
     }
-   // syncfs(fd);
-    //return 0;
     return syscalls::getInstance().close(fd);
   }
 
