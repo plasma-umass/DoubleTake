@@ -17,7 +17,7 @@ VIMNAME		= vim
 EXNAME		= ex
 VIEWNAME	= view
 
-CC		= /usr/bin/gcc -g -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so
+CC		= /usr/bin/gcc -g -rdynamic ../../../../../../libdoubletake.so
 DEFS		= -DHAVE_CONFIG_H
 CFLAGS		= -g -O0 -fno-omit-frame-pointer -fgnu89-inline -ldl -lpthread
 CPPFLAGS	= 

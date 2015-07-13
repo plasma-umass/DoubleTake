@@ -14,12 +14,12 @@
 
 srcdir = .
 
-OPTS    := -O1 -fomit-frame-pointer -fno-exceptions -fno-strict-aliasing -finline-limit=1800
+OPTS    := -O3 -fomit-frame-pointer -fno-exceptions -fno-strict-aliasing -finline-limit=1800
 #OPTS    += -frename-registers -finline-functions -funroll-loops
 #OPTS    += -freduce-all-givs -fmove-all-movables -fgcse -fgcse-lm -fgcse-sm
 
 
-CFLAGS = -g -O1 -Wall -funsigned-char $(OPTS)
+CFLAGS = -g -O3 -Wall -funsigned-char $(OPTS)
 CC = gcc
 LEX = flex -I8
 MAKEINFO = makeinfo
@@ -43,7 +43,7 @@ MAINTAINERCLEANFILES = Makefile.in libmath.h bc.c bc.h scan.c
 
 INCLUDES = -I$(srcdir) -I$(srcdir)/../h $(INCLS)
 LIBBC = ../lib/libbc.a
-LIBL = -lfl -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so
+LIBL = -lfl -rdynamic ../../../../../../libdoubletake.so
 LDADD = $(LIBBC) $(LIBL) 
 
 YFLAGS = -d

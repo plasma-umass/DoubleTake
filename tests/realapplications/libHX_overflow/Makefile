@@ -7,7 +7,7 @@ CFLAGS = -Wall -g -O1
 LIBS = -lm -lrt -ldl
 
 all:
-	$(CC) $(CFLAGS) -o split split.c -L./libHX-3.4/src/.libs -lHX -rdynamic ../../../libdoubletake64.so
+	$(CC) $(CFLAGS) -o split split.c -L./libHX-3.4/src/.libs -lHX -rdynamic ../../../libdoubletake.so
 #	$(CXX) $(CFLAGS) -o split split.c -L./libHX-3.4/src/.libs -lHX -rdynamic ../../../libdoubletake64.so
 
 clean:
