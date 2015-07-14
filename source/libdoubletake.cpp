@@ -50,6 +50,7 @@ int g_waitersTotal;
 __attribute__((constructor)) void initRealFunctions() {
 //	printf("calling min_init\n");
   Real::initializer();
+  funcInitialized = true;
 }
 
 void initializer() {
@@ -58,9 +59,7 @@ void initializer() {
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
-  if(!funcInitialized) {
-    funcInitialized = true;
-
+  if(!initialized) {
 		// Now setup 
     xrun::getInstance().initialize();
     initialized = true;
@@ -428,7 +427,7 @@ extern "C" {
 #if 1
 	ssize_t read(int fd, void* buf, size_t count) {
     ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
-    printf("**** read in doubletake at %d, initialized %d, real %p\n", __LINE__, initialized, Real::read);
+    //printf("**** read in doubletake at %d, initialized %d, real %p\n", __LINE__, initialized, Real::read);
     if(!initialized) {
       return Real::read(fd, buf, count);
     }
@@ -494,6 +493,10 @@ extern "C" {
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
     if(!initialized) {
+			if(!funcInitialized) {
+			  initRealFunctions();
+			}
+
       return Real::fopen(filename, modes);
     }
     return syscalls::getInstance().fopen(filename, modes);
@@ -502,6 +505,9 @@ extern "C" {
   // ostream.open actually calls this function
   FILE* fopen64(const char* filename, const char* modes) {
     if(!initialized) {
+			if(!funcInitialized) {
+			  initRealFunctions();
+			}
       return Real::fopen64(filename, modes);
     }
    // fprintf(stderr, "fopen64 in libdoubletake\n");
