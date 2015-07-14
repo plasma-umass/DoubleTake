@@ -413,6 +413,11 @@ public:
     // Try to get corresponding entry in the hashmap.
     fileInfo* thisFile;
 
+		if(fd == 0 || fd == 1 || fd == 2) {
+			ret = 0;
+			return ret;
+		}
+
     if(!_filesMap.find(fd, sizeof(fd), &thisFile)) {
       errno = EBADF;
       ret = -1;
@@ -448,7 +453,7 @@ public:
     int fd = -1;
     fileInfo* thisFile = NULL;
 
-		fprintf(stderr, "TONGPING: cleanClosedFiles\n");
+		//fprintf(stderr, "TONGPING: cleanClosedFiles\n");
 		// We will check all closed files in this epoch 
     while((_sysrecord.retrieveFCloseList(&fd))) {
 

@@ -288,6 +288,7 @@ public:
 #endif
         // Save current fd
 	      _fops.saveFopen(ret);
+				//printf("fopen fp %p fileno %d\n", ret, ret->_fileno);
 #if 0
       fprintf(stderr, "after inserting\n");
       for(i = 0; i < xdefines::FOPEN_ALLOC_SIZE/sizeof(unsigned long); i++) {
@@ -312,6 +313,7 @@ public:
       if(ret != NULL) {
         // Save current fd
         _fops.saveFopen(ret);
+				//printf("fopen64 fp %p fileno %d\n", ret, ret->_fileno);
        // selfmap::getInstance().printCallStack();
       } else {
         _fops.saveFd(-1, NULL);
@@ -335,6 +337,7 @@ public:
 
 		if(!global_isRollback()) {
 //      selfmap::getInstance().printCallStack();
+			//printf("fclose fp %p fileno %d\n", fp, fp->_fileno);
       ret = _fops.closeFile(fp->_fileno, fp);
     } else {
       // We only need to 
