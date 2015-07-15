@@ -58,7 +58,10 @@ public:
   size_t getSize(void* ptr) {
     objectHeader* o = getObject(ptr);
     size_t sz = o->getSize();
-    REQUIRE(sz != 0, "Object size cannot be zero");
+    if(sz == 0) {
+			PRINT("Object size cannot be zero\n");
+			abort();
+		}
     return sz;
   }
 
@@ -116,7 +119,10 @@ public:
 
   // For getSize, it doesn't matter which heap is used
   // since they are the same
-  size_t getSize(void* ptr) { return _heap[0].getSize(ptr); }
+  size_t getSize(void* ptr) {
+		//fprintf(stderr, "perthreadheap getSize %p\n", ptr);
+		return _heap[0].getSize(ptr); 
+	}
 
 private:
   TheHeapType _heap[NumHeaps];
@@ -205,7 +211,10 @@ public:
 
   void realfree(void* ptr) { _heap->free(getThreadIndex(), ptr); }
 
-  size_t getSize(void* ptr) { return _heap->getSize(ptr); }
+  size_t getSize(void* ptr) { 
+		//fprintf(stderr, "xheap getSize ptr %p\n", ptr);
+		return _heap->getSize(ptr); 
+	}
 
   bool inRange(void* addr) { return ((addr >= _heapStart) && (addr <= _heapEnd)) ? true : false; }
 

@@ -54,7 +54,8 @@ public:
   bool isStack() const { return _file == "[stack]"; }
 
   bool isGlobals() const {
-    return _file.find("/") == 0 && _readable && _writable && !_executable && _copy_on_write;
+    return _readable && _writable && !_executable && _copy_on_write;
+    //return _file.find("/") == 0 && _readable && _writable && !_executable && _copy_on_write;
   }
 
   uintptr_t getBase() const { return _base; }
@@ -181,9 +182,10 @@ public:
       const mapping& m = entry.second;
 
       if(m.isGlobals()) {
-        if(m.getFile() == _main_exe || m.getFile().find("libc-") != std::string::npos ||
-           m.getFile().find("libstdc++") != std::string::npos ||
-           m.getFile().find("libpthread") != std::string::npos) {
+			//fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals\n", m.getBase(), m.getLimit());
+        if(m.getFile() == _main_exe || m.getFile().find("/lib/") != std::string::npos ||
+					 m.getFile().find("[heap]") != std::string::npos) {
+			//fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
 
           regions[index].start = (void*)m.getBase();
           regions[index].end = (void*)m.getLimit();
@@ -191,8 +193,10 @@ public:
         }
       }
 
-      *regionNumb = index;
     }
+    
+		// We only need to return this.  
+		*regionNumb = index;
   }
 
 private:
@@ -209,6 +213,7 @@ private:
       mapping m;
       maps_file >> m;
       if(m.valid()) {
+			//	fprintf(stderr, "Base %lx limit %lx\n", m.getBase(), m.getLimit()); 
         _mappings[interval(m.getBase(), m.getLimit())] = m;
       }
     }

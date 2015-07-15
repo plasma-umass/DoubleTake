@@ -80,13 +80,13 @@ public:
 
   /* Heap-related functions. */
   inline void* malloc(size_t sz) {
-    void* ptr;
+    void* ptr = NULL;
   	//PRINT("malloc sz %lx at thread %d\n", sz, current->index);
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
 	    ptr = realmalloc(sz);
-      // PRINT("malloc, current %p internalheap %d ptr %p\n", current, current->internalheap, ptr);
+    // PRINT("malloc, current %p ptr %p sz %ld\n", current, ptr, sz);
     }
   	//fprintf(stderr, "malloc sz %lx ptr %p\n", sz, ptr);
     return ptr;
@@ -409,6 +409,7 @@ public:
 
   /// @return the allocated size of a dynamically-allocated object.
   inline size_t getSize(void* ptr) {
+		//fprintf(stderr, "xmemory getSize %p\n", ptr);
     // Just pass the pointer along to the heap.
     return _pheap.getSize(ptr);
   }
