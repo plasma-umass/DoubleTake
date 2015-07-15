@@ -187,6 +187,16 @@ extern "C" {
     }
     return 0;
   }
+
+	void * xxrealloc(void * ptr, size_t sz) {
+    if(initialized) {
+      return xmemory::getInstance().realloc(ptr, sz);
+		}
+		else {
+			void * newptr = tempmalloc(sz);
+			return newptr;
+		}
+	}
 }
 
 // Thread functions

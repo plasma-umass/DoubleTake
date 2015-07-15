@@ -97,28 +97,109 @@ public:
     return ptr;
   }
 
+	inline void setSentinels(void * ptr, size_t blockSize, size_t sz) {
+		// Set sentinels by given the starting address and object size
+    size_t offset = blockSize - sz;
+
+    // We are using the ptr to varify the size
+    unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
+
+    // If everything is aligned, add the guardzone.
+    size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
+    if(nonAlignedBytes == 0) {
+      // PRINT("realmalloc at line %d\n", __LINE__);
+      sentinelmap::getInstance().setSentinelAt(p);
+     // PRINT("realmalloc at line %d\n", __LINE__);
+    } else {
+      // For those less than one word access, maybe we do not care since memory block is
+      // always returned by 8bytes aligned or 16bytes aligned.
+      // However, some weird test cases has this overflow. So we should detect this now.
+      void* startp = (void*)((intptr_t)p - nonAlignedBytes);
+      size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
+   
+     // Check how much magic bytes we should put there.
+     // The first byte of this is to specify how many bytes there.
+     // For example, at 64bit, when nonAlignedBytes is 5,
+     // Totally, we should put 3 bytes there.
+     // We are using the first byte to mark the size of magic bytes.
+     // It will end up with (02eeee).
+     if(setBytes >= 2) {
+          // PRINF("******setBytes %d\n", setBytes);
+        p[0] = setBytes - 1;
+        for(size_t i = 1; i < setBytes; i++) {
+          p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
+        }
+      } else if(setBytes == 1) {
+        // PRINF("******setBytes %d\n", setBytes);
+        p[0] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
+      }
+
+      sentinelmap::getInstance().markSentinelAt(startp);
+
+      // We actually setup a next word to capture the next word
+      if(offset > xdefines::WORD_SIZE) {
+        void* nextp = (void*)((intptr_t)p + setBytes);
+        sentinelmap::getInstance().setSentinelAt(nextp);
+      }
+    }
+	}
+
   inline void* realloc(void* ptr, size_t sz) {
 		//fprintf(stderr, "realloc sz %lx ptr %p\n", sz, ptr);
-    if(sz == 0) {
-      free(ptr);
-      return NULL;
-    }
-  	
+		if (ptr == NULL) {
+    	ptr = malloc(sz);
+    	return ptr;
+  	}
 
-    // Do actual allocation
-    void* newptr = malloc(sz);
-    if(ptr == NULL) {
-      return newptr;
-    }
+  	if (sz == 0) {
+    	free(ptr);
+    	// 0 size = free. We return a small object.  This behavior is
+    	// apparently required under Mac OS X and optional under POSIX.
+    	return malloc(1);
+		}
 
-    size_t os = getSize(ptr);
-    if(newptr && os != 0) {
-      size_t copySz = (os < sz) ? os : sz;
-      memcpy(newptr, ptr, copySz);
-    }
+		// Now let's check the object size of this object
+		objectHeader* o = getObject(ptr);
 
-    free(ptr);
-    return newptr;
+    // Get the block size
+		size_t blockSize = o->getSize();
+
+		size_t objSize = o->getObjectSize();
+
+		if(blockSize >= sz) {
+			if(global_isRollback()) {
+				// Check the object overflow.
+      	if(isObjectOverflow(ptr)) {
+	#ifndef EVALUATING_PERF
+      		PRWRN("DoubleTake: Caught non-aligned buffer overflow error. ptr %p\n", ptr);
+        	xthread::invokeCommit();
+	#endif
+				}
+      }
+
+			setSentinels(ptr, blockSize, sz);
+
+			// Change the size of object to the new address
+			o->setObjectSize(sz);
+ 
+			return ptr;
+		}
+		 
+		
+  	void * buf = malloc(sz);
+
+  	if (buf != NULL) {
+    	// Copy the contents of the original object
+    	// up to the size of the new block.
+    	size_t minSize = (objSize < sz) ? objSize : sz;
+    	memcpy (buf, ptr, minSize);
+  	}
+
+  	// Free the old block.
+  	free(ptr);
+
+  	// Return a pointer to the new one.
+  	return buf;
   }
 
   // Actual allocations
@@ -127,10 +208,8 @@ public:
    	size_t mysize = sz;
 
     if(sz == 0) {
-      return NULL;
+			sz = 1;
     }
-
-//		PRINT("realmalloc in the beginning sz %ld\n",sz);
 		
 		// Align the object size, which should be multiple of 16 bytes.
     if(sz < 16) {
@@ -154,48 +233,7 @@ public:
 //    PRINT("realmalloc at line %d size %ld sz %ld mysize %ld\n", __LINE__, size, sz, mysize);
     // Set actual size there.
     if(size > sz) {
-      size_t offset = size - sz;
-
-      // We are using the ptr to varify the size
-      unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
- //     PRINT("realmalloc at line %d\n", __LINE__);
-
-      // If everything is aligned, add the guardzone.
-      size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
-      if(nonAlignedBytes == 0) {
-        // PRINT("realmalloc at line %d\n", __LINE__);
-        sentinelmap::getInstance().setSentinelAt(p);
-        // PRINT("realmalloc at line %d\n", __LINE__);
-      } else {
-        // For those less than one word access, maybe we do not care since memory block is
-        // always returned by 8bytes aligned or 16bytes aligned.
-        // However, some weird test cases has this overflow. So we should detect this now.
-        void* startp = (void*)((intptr_t)p - nonAlignedBytes);
-        size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
-        // Check how much magic bytes we should put there.
-        // The first byte of this is to specify how many bytes there.
-        // For example, at 64bit, when nonAlignedBytes is 5,
-        // Totally, we should put 3 bytes there.
-        // We are using the first byte to mark the size of magic bytes.
-        // It will end up with (02eeee).
-        if(setBytes >= 2) {
-          // PRINF("******setBytes %d\n", setBytes);
-          p[0] = setBytes - 1;
-          for(size_t i = 1; i < setBytes; i++) {
-            p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
-          }
-        } else if(setBytes == 1) {
-          // PRINF("******setBytes %d\n", setBytes);
-          p[0] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
-        }
-
-        sentinelmap::getInstance().markSentinelAt(startp);
-        // We actually setup a next word to capture the next word
-        if(offset > xdefines::WORD_SIZE) {
-          void* nextp = (void*)((intptr_t)p + setBytes);
-          sentinelmap::getInstance().setSentinelAt(nextp);
-        }
-      }
+			setSentinels(ptr, size, sz);
     }
 #endif
 
