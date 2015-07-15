@@ -86,9 +86,9 @@ public:
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
 	    ptr = realmalloc(sz);
-  	//	PRINT("malloc sz %ld ptr %p at thread %d\n", sz, ptr, current->index);
       // PRINT("malloc, current %p internalheap %d ptr %p\n", current, current->internalheap, ptr);
     }
+  	//fprintf(stderr, "malloc sz %lx ptr %p\n", sz, ptr);
     return ptr;
   }
 
@@ -98,10 +98,12 @@ public:
   }
 
   inline void* realloc(void* ptr, size_t sz) {
+		//fprintf(stderr, "realloc sz %lx ptr %p\n", sz, ptr);
     if(sz == 0) {
       free(ptr);
       return NULL;
     }
+  	
 
     // Do actual allocation
     void* newptr = malloc(sz);
@@ -361,6 +363,7 @@ public:
   // list.
   void free(void* ptr) {
     void* origptr;
+  	//fprintf(stderr, "free ptr %p\n", ptr);
 
     if(!inRange((intptr_t)ptr)) {
       return;

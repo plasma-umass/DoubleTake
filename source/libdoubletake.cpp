@@ -59,6 +59,7 @@ void initializer() {
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
+//	fprintf(stderr, "initializer function now\n");
   if(!initialized) {
 		// Now setup 
     xrun::getInstance().initialize();
@@ -149,6 +150,8 @@ void* call_dlsym(void* handle, const char* funcname) {
 extern "C" {
   void* xxmalloc(size_t sz) {
     void* ptr = NULL;
+
+		//printf("xxmalloc sz %ld \n", sz);
 
 		if(sz == 0) {
 			sz = 1;
