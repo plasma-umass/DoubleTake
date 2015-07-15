@@ -40,6 +40,7 @@ extern "C" {
 
   void * xxmalloc (size_t);
   void   xxfree (void *);
+  void * xxrealloc (void *, size_t);
 
   // Takes a pointer and returns how much space it holds.
   size_t xxmalloc_usable_size (void *);
