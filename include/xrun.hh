@@ -91,11 +91,6 @@ public:
     _memory.initialize();
 
     syscallsInitialize();
-
-  //  epochBegin();
-    //    PRINT("starting!!!!!\n");
-
-    //    PRINF("starting!!!!!\n");
   }
 
   void finalize() {

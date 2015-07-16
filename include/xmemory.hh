@@ -582,18 +582,17 @@ public:
   static void segvHandle(int /* signum */, siginfo_t* siginfo, void* context) {
     void* addr = siginfo->si_addr; // address of access
 
-    PRINF("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code,
           addr);
-    current->internalheap = true;
-    selfmap::getInstance().printCallStack();
-    current->internalheap = false;
-    while(1)
-      ;
+   // current->internalheap = true;
+   // selfmap::getInstance().printCallStack();
+   // current->internalheap = false;
+    //while(1) ;
 
-    //    Real::exit(-1);
+    Real::exit(-1);
     // Set the context to handleSegFault
-    jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
+    //jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
     //    xmemory::getInstance().handleSegFault ();
   }
 

@@ -51,6 +51,11 @@ __attribute__((constructor)) void initRealFunctions() {
 //	printf("calling min_init\n");
   Real::initializer();
   funcInitialized = true;
+  if(!initialized) {
+		// Now setup 
+    xrun::getInstance().initialize();
+    initialized = true;
+  }
 }
 
 void initializer() {
@@ -60,11 +65,6 @@ void initializer() {
   // may use this to share information.
   // initialize those library function entries.
 //	fprintf(stderr, "initializer function now\n");
-  if(!initialized) {
-		// Now setup 
-    xrun::getInstance().initialize();
-    initialized = true;
-  }
 }
 
 __attribute__((destructor)) void finalizer() {
