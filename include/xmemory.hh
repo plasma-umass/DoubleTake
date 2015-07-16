@@ -167,9 +167,10 @@ public:
 		size_t objSize = o->getObjectSize();
 
 		if(blockSize >= sz) {
-			if(global_isRollback()) {
+#ifdef DETECT_OVERFLOW
+			if(!global_isRollback()) {
 				// Check the object overflow.
-      	if(isObjectOverflow(ptr)) {
+      	if(checkOverflowAndCleanSentinels(ptr)) {
 	#ifndef EVALUATING_PERF
       		PRWRN("DoubleTake: Caught non-aligned buffer overflow error. ptr %p\n", ptr);
         	xthread::invokeCommit();
@@ -178,6 +179,7 @@ public:
       }
 
 			setSentinels(ptr, blockSize, sz);
+#endif
 
 			// Change the size of object to the new address
 			o->setObjectSize(sz);
@@ -287,7 +289,7 @@ public:
   }
 
 #ifdef DETECT_OVERFLOW
-  bool isObjectOverflow(void* ptr) {
+  bool checkOverflowAndCleanSentinels(void* ptr) {
     bool isOverflow = false;
 
     // Check overflows for this object
@@ -298,11 +300,11 @@ public:
 
     // Set actual size there.
     size_t sz = o->getObjectSize();
-    // PRINF("xmemory: isObjectOverflow at line %d sz %d\n", __LINE__, sz);
+    // PRINF("xmemory: checkOverflowAndCleanSentinels at line %d sz %d\n", __LINE__, sz);
 
     if(size < sz) {
 #ifndef EVALUATING_PERF
-      PRWRN("Free isObjectOverflow size %#lx sz %#lx\n", size, sz);
+      PRWRN("Free checkOverflowAndCleanSentinels size %#lx sz %#lx\n", size, sz);
       assert(size >= sz);
 #endif
     }
@@ -420,9 +422,10 @@ public:
     }
 #endif
 
+#ifdef DETECT_OVERFLOW
     // If this object has a overflow, we donot need to free this object
     if(!global_isRollback()) {
-      if(isObjectOverflow(origptr)) {
+      if(checkOverflowAndCleanSentinels(origptr)) {
 #ifndef EVALUATING_PERF
       	PRWRN("DoubleTake: Caught buffer overflow error. ptr %p\n", origptr);
         xthread::invokeCommit();
@@ -430,6 +433,7 @@ public:
         return;
       }
     }
+#endif
 
     // Check the free if it is in rollback phase.
     if(global_isRollback()) {

@@ -273,6 +273,7 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
   void * buf = CUSTOM_MALLOC(sz);
 
   if (buf != NULL) {
+#if 0
 		// Bug found by Tongping Liu.
 		// We can't do this for doubletake since doubletake 
 		// relies on those malloc-related information to capture buffer overflows.
@@ -284,6 +285,7 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
       CUSTOM_FREE (buf);
       return ptr;
     }
+#endif
     // Copy the contents of the original object
     // up to the size of the new block.
     size_t minSize = (objSize < sz) ? objSize : sz;
