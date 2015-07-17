@@ -100,21 +100,20 @@ public:
     // We don't rely on previous sentinel addr if the last address are checked last time
     _lastSentinelAddr = NULL;
 
-    int bytes = getMapBytes(size);
-    unsigned long startIndex = getIndex(begin);
-
-    int words = bytes / WORDBYTES;
+    int words = getMapBytes(size) / WORDBYTES;
     bool hasCorrupted = false;
 
     //PRINT("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %ld\n", begin, end, bytes, words, startIndex);
-    // We are trying to calculate
-    // We know that for a bit, we can use it for a word.
-    // For a word with specified bytes, then we can use it for multiple words.
-    unsigned long index = startIndex;
+    // A bit is corresponding 1 word with 8 bytes. Thus, a bitword actually is related with
+		// a block with (64 * 8bytes) = 512 Bytes. Typically, checking using the bitwords is fast.
+		// However, for a very large object, maybe we can skip some unnecessary words in the middle. 
+    unsigned long index = getIndex(begin);
     for(auto i = 0; i < (int) words; i++, index++) {
       unsigned long bitword = _bitmap.readWord(index);
       if(bitword != 0) {
 		//		PRINT("checkHeapIntegrity: i %d index %ld\n", i, index);
+				// If there is one buffer overflow, hasCorrupted will be set to true and will 
+				// trigger the buffer overflow detection.
         if(checkIntegrityOnBMW(bitword, index)) {
           hasCorrupted = true;
         }
@@ -184,12 +183,18 @@ public:
 
   void markSentinelAt(void* ptr) { tryToSet(ptr); }
 
-  bool checkAndClearSentinel(void* ptr) {
+  inline bool checkAndClearSentinel(void* ptr) {
     size_t* sentinel = (size_t*)ptr;
     clear(ptr);
 
-    return ((*sentinel == xdefines::SENTINEL_WORD) ? true : false);
+    return ((*sentinel == xdefines::SENTINEL_WORD) ? false : true);
   }
+  
+	inline bool checkSentinel(void* ptr) {
+    size_t* sentinel = (size_t*)ptr;
+
+    return ((*sentinel == xdefines::SENTINEL_WORD) ? false : true);
+	}
 
   // Finding the heap object covering the specified address.
   // Now suppose current address is in the middle of an object,
@@ -244,6 +249,81 @@ public:
 
     return isOverflow;
   }
+	
+	inline bool checkObjectOverflow(void * ptr, size_t blockSize, size_t sz, bool cleanSentinels) {
+			bool hasOverflow = false;
+			bool hasOverflowNext = false;
+			size_t offset = blockSize - sz;
+
+			// P points to the last valid byte
+      unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
+			void * pclean; 
+
+      size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
+      if(nonAlignedBytes == 0) {
+        // This is the easist thing
+        // check up whether the sentinel is intact or not.
+				hasOverflow = checkSentinel(p);
+				pclean = p;
+      }
+      else {
+        // For those less than one word access, maybe we do not care since memory block is
+        // always returned by 8bytes aligned or 16bytes aligned.
+        // However, some weird test cases has this overflow. So we should detect this now.
+        void* startp = (void*)((intptr_t)p - nonAlignedBytes);
+        size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
+
+				if((setBytes > 1) && ((int)p[0] == (int) (setBytes - 1))) {
+          for(int i = 1; i < (int) setBytes; i++) {
+            if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
+              hasOverflow = true;
+              break;
+            }
+          }
+        } else if(setBytes == 1) {
+          if(p[0] != xdefines::MAGIC_BYTE_NOT_ALIGNED)
+            hasOverflow = true;
+        } else {
+          hasOverflow = true;
+        }
+
+				pclean = startp;
+
+        // We actually setup a next word to capture the next word
+        if(offset > xdefines::WORD_SIZE) {
+          void* nextp = (void*)((intptr_t)startp + xdefines::WORD_SIZE);
+					if(cleanSentinels) {
+						hasOverflowNext = checkAndClearSentinel(nextp);
+					}
+					else {
+						hasOverflowNext = checkSentinel(nextp);
+					} 
+
+          if(hasOverflowNext) {
+#ifndef EVALUATING_PERF
+          PRINT("Alligned buffer overflow at address %p\n", nextp);
+#endif
+            // Add this address to watchpoint
+            watchpoint::getInstance().addWatchpoint(nextp, *((size_t*)nextp), OBJECT_TYPE_OVERFLOW, ptr, sz);
+          }
+        }
+      }
+
+			// Clear sentinels
+			if(cleanSentinels) {
+				clear(pclean);
+			}    
+			
+			// Add it as a watchpoint.     
+			if(hasOverflow) {
+#ifndef EVALUATING_PERF
+        PRINT("Detected buffer overflow at address %p\n", pclean);
+#endif
+        watchpoint::getInstance().addWatchpoint(pclean, *((unsigned long*)pclean), OBJECT_TYPE_OVERFLOW, ptr, sz);
+      }
+			return (hasOverflow || hasOverflowNext);
+	}
+
 
 private:
   // How to calculate the shift bits according to the sector size
@@ -354,19 +434,20 @@ private:
     bool checkNonAligned = false;
     bool hasCorrupted = false;
 
-    //PRINF("checkSentinelOnBMD: word %ld, bitword %lx address %p\n", wordIndex, bits, address);
-
+		// Traverse every bit of this bitmap word
     for(int i = 0; i < WORDBITS; i++) {
       // Only check those address when corresponding bit has been set
       if(isBitSet(bits, i)) {
         if(address[i] != xdefines::SENTINEL_WORD &&
            address[i] != xdefines::MEMALIGN_SENTINEL_WORD) {
           bool isBadSentinel = false;
+
           // Whether this word is filled by MAGIC_BYTE_NOT_ALIGNED
           // If it is true, then next word should be sentinel too.
-          if(((i + 1) < WORDBITS) && isBitSet(bits, i + 1)) {
-            checkNonAligned = true;
-          } else if((i + 1) == WORDBITS) {
+          if((i + 1) < WORDBITS) {
+					 	if(isBitSet(bits, i + 1)) 
+            	checkNonAligned = true;
+          } else {
             unsigned long nextBits = _bitmap.readWord(wordIndex + 1);
             checkNonAligned = isBitSet(nextBits, 0);
           }
@@ -381,25 +462,13 @@ private:
           }
 
           if(isBadSentinel) {
-      //      PRINT("OVERFLOW!!!! Bit %d at word %lx, aligned %d, now it is 0x%lx at %p\n", i, bits,
-      //            checkNonAligned, address[i], &address[i]);
             // Find the starting address of this object.
             unsigned long objectStart = 0;
-
+					
             if(findObjectStartAddr((void*)&address[i], &objectStart)) {
               objectHeader* object = (objectHeader*)(objectStart - sizeof(objectHeader));
-       //     	PRINT("OVERFLOW at line %d object %p address[i] %p\n", __LINE__, object, &address[i]);
-              watchpoint::getInstance().addWatchpoint(&address[i], *((size_t*)&address[i]),
-                                                      OBJECT_TYPE_OVERFLOW, (void*)objectStart,
-                                                      object->getObjectSize());
-    					hasCorrupted = true;
-            } else {
-              // Maybe we can't get the starting address, in this case, we only report when there is
-              // a overflow
-              continue;
-              // watchpoint::getInstance().addWatchpoint(&address[i], *((size_t *)&address[i]),
-              // OBJECT_TYPE_OVERFLOW, NULL, 0);
-            }
+							hasCorrupted = checkObjectOverflow((void *)objectStart, object->getSize(), object->getObjectSize(), false);
+            } 
           }
         }
         _lastSentinelAddr = &address[i];

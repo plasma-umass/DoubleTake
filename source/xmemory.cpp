@@ -17,14 +17,20 @@ xpheap<xoneheap<xheap>> xmemory::_pheap;
 // This function is called inside the segmentation fault handler
 // So we must utilize the "context" to achieve our target
 void xmemory::handleSegFault() {
-  PRINF("Returning from segmentation fault error\n");
+  PRINT("Returning from segmentation fault error\n");
+
+#ifdef MYDEBUG
+	// Adding a watchpoint and rollback immediately
+	watchpoint::getInstance().addWatchpoint((void *)0x101003010, sizeof(void *), OBJECT_TYPE_WATCHONLY, NULL, 0);
+#endif
   // Check whether the segmentation fault is called by buffer overflow.
   if(xmemory::getInstance().checkHeapOverflow()) {
     // Now we can roll back
     PRINF("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
-
-    xrun::getInstance().rollback();
+    PRINT("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
   }
+    
+	xrun::getInstance().rollback();
 }
 
 void xmemory::realfree(void* ptr) { _pheap.realfree(ptr); }

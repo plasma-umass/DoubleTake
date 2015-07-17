@@ -118,28 +118,23 @@ void xrun::epochEnd(bool endOfProgram) {
       ;
   }
 
-#ifdef DEBUG_ROLLBACK
-  rollback();
-// assert(0);
+#if defined(DETECT_OVERFLOW)
+  bool hasOverflow = false;
+  hasOverflow = _memory.checkHeapOverflow();
 #endif
 
-  bool hasOverflow = false;
-  if (detectOverflow()) {
-    hasOverflow = _memory.checkHeapOverflow();
-  }
-
+#if defined(DETECT_MEMORY_LEAKS)
   bool hasMemoryLeak = false;
-  if (detectMemoryLeaks()) {
-    if(endOfProgram) {
-      //  PRINF("DETECTING MEMORY LEAKAGE in the end of program!!!!\n");
-      hasMemoryLeak =
+  if(endOfProgram) {
+    //  PRINF("DETECTING MEMORY LEAKAGE in the end of program!!!!\n");
+    hasMemoryLeak =
         leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
-    } else {
-      // PRINF("DETECTING MEMORY LEAKAGE inside a program!!!!\n");
-      hasMemoryLeak =
-        leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
-    }
+  } else {
+    // PRINF("DETECTING MEMORY LEAKAGE inside a program!!!!\n");
+    hasMemoryLeak =
+      leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
   }
+#endif
 
 #ifndef EVALUATING_PERF
 // First, attempt to commit.

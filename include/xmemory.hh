@@ -101,20 +101,19 @@ public:
 		// Set sentinels by given the starting address and object size
     size_t offset = blockSize - sz;
 
-    // We are using the ptr to varify the size
+    // P points to the last valid byte
     unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
 
     // If everything is aligned, add the guardzone.
     size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
     if(nonAlignedBytes == 0) {
-      // PRINT("realmalloc at line %d\n", __LINE__);
       sentinelmap::getInstance().setSentinelAt(p);
      // PRINT("realmalloc at line %d\n", __LINE__);
     } else {
       // For those less than one word access, maybe we do not care since memory block is
       // always returned by 8bytes aligned or 16bytes aligned.
       // However, some weird test cases has this overflow. So we should detect this now.
-      void* startp = (void*)((intptr_t)p - nonAlignedBytes);
+     	unsigned char * startp = (unsigned char *)((intptr_t)p - nonAlignedBytes);
       size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
    
      // Check how much magic bytes we should put there.
@@ -123,8 +122,7 @@ public:
      // Totally, we should put 3 bytes there.
      // We are using the first byte to mark the size of magic bytes.
      // It will end up with (02eeee).
-     if(setBytes >= 2) {
-          // PRINF("******setBytes %d\n", setBytes);
+			if(setBytes >= 2) {
         p[0] = setBytes - 1;
         for(size_t i = 1; i < setBytes; i++) {
           p[i] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
@@ -133,19 +131,19 @@ public:
         // PRINF("******setBytes %d\n", setBytes);
         p[0] = xdefines::MAGIC_BYTE_NOT_ALIGNED;
       }
-
+    
+		//	PRINT("setSentinels ptr %p sz %ld: nonAlignedBytes %ld startp %p p %p value %lx\n", ptr, sz, nonAlignedBytes, startp, p, *((unsigned long *)startp));
       sentinelmap::getInstance().markSentinelAt(startp);
 
       // We actually setup a next word to capture the next word
       if(offset > xdefines::WORD_SIZE) {
-        void* nextp = (void*)((intptr_t)p + setBytes);
+        void* nextp = (void*)((intptr_t)startp + xdefines::WORD_SIZE);
         sentinelmap::getInstance().setSentinelAt(nextp);
       }
     }
 	}
 
   inline void* realloc(void* ptr, size_t sz) {
-		//fprintf(stderr, "realloc sz %lx ptr %p\n", sz, ptr);
 		if (ptr == NULL) {
     	ptr = malloc(sz);
     	return ptr;
@@ -171,6 +169,7 @@ public:
 			if(!global_isRollback()) {
 				// Check the object overflow.
       	if(checkOverflowAndCleanSentinels(ptr)) {
+
 	#ifndef EVALUATING_PERF
       		PRWRN("DoubleTake: Caught non-aligned buffer overflow error. ptr %p\n", ptr);
         	xthread::invokeCommit();
@@ -178,15 +177,13 @@ public:
 				}
       }
 
-			setSentinels(ptr, blockSize, sz);
-#endif
-
 			// Change the size of object to the new address
 			o->setObjectSize(sz);
- 
+
+			setSentinels(ptr, blockSize, sz);
 			return ptr;
 		}
-		 
+#endif
 		
   	void * buf = malloc(sz);
 
@@ -290,89 +287,23 @@ public:
 
 #ifdef DETECT_OVERFLOW
   bool checkOverflowAndCleanSentinels(void* ptr) {
-    bool isOverflow = false;
-
     // Check overflows for this object
     objectHeader* o = getObject(ptr);
 
     // Get the block size
-    size_t size = o->getSize();
+    size_t blockSize = o->getSize();
 
     // Set actual size there.
     size_t sz = o->getObjectSize();
-    // PRINF("xmemory: checkOverflowAndCleanSentinels at line %d sz %d\n", __LINE__, sz);
 
-    if(size < sz) {
+    if(blockSize < sz) {
 #ifndef EVALUATING_PERF
-      PRWRN("Free checkOverflowAndCleanSentinels size %#lx sz %#lx\n", size, sz);
-      assert(size >= sz);
+      PRWRN("Wrong object with blockSize %#lx sz %#lx\n", blockSize, sz);
+      assert(blockSize >= sz);
 #endif
     }
-    // Add another guard zone if block size is larger than actual size
-    // in order to capture those 1 byte overflow.
-    if(size > sz) {
-      size_t offset = size - sz;
 
-      // We are using the ptr to varify the size
-      unsigned char* p = (unsigned char*)((intptr_t)ptr + sz);
-
-      size_t nonAlignedBytes = sz & xdefines::WORD_SIZE_MASK;
-      if(nonAlignedBytes == 0) {
-        // This is the easist thing
-        // check up whether the sentinel is intact or not.
-        if(sentinelmap::getInstance().checkAndClearSentinel(p) != true) {
-          // Add this address to watchpoint
-          //      PRINT("xmemory: free find overflow\n");
-          // PRINF("xmemory: checkandclearsentinal at line %d\n", __LINE__);
-          watchpoint::getInstance().addWatchpoint(p, *((size_t*)p), OBJECT_TYPE_OVERFLOW, ptr, sz);
-          isOverflow = true;
-        }
-      }
-      //#ifdef DETECT_NONALIGNED_OVERFLOW
-      else {
-        // For those less than one word access, maybe we do not care since memory block is
-        // always returned by 8bytes aligned or 16bytes aligned.
-        // However, some weird test cases has this overflow. So we should detect this now.
-        void* startp = (void*)((intptr_t)p - nonAlignedBytes);
-        size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
-        // PRINF("xmemory line %d: nonAlignedBytes %d startp %p setBytes %d\n", __LINE__,
-        // nonAlignedBytes, startp, setBytes);
-        if((setBytes > 1) && ((int)p[0] == (int) (setBytes - 1))) {
-          for(auto i = 1; i < (int) setBytes; i++) {
-            if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
-              isOverflow = true;
-              break;
-            }
-          }
-        } else if(setBytes == 1) {
-          if(p[0] != xdefines::MAGIC_BYTE_NOT_ALIGNED)
-            isOverflow = true;
-        } else {
-          isOverflow = true;
-        }
-
-        if(isOverflow) {
-          // PRINT("xmemory: free find overflow\n");
-          watchpoint::getInstance().addWatchpoint(startp, *((size_t*)startp), OBJECT_TYPE_OVERFLOW,
-                                                  ptr, sz);
-        }
-        sentinelmap::getInstance().clearSentinelAt(startp);
-
-        // We actually setup a next word to capture the next word
-        if(offset > xdefines::WORD_SIZE) {
-          void* nextp = (void*)((intptr_t)p - nonAlignedBytes + xdefines::WORD_SIZE);
-          if(sentinelmap::getInstance().checkAndClearSentinel(nextp) != true) {
-            // Add this address to watchpoint
-            watchpoint::getInstance().addWatchpoint(nextp, *((size_t*)nextp), OBJECT_TYPE_OVERFLOW,
-                                                    ptr, sz);
-            isOverflow = true;
-          }
-        }
-      }
-      // #endif
-    }
-
-    return isOverflow;
+    return sentinelmap::getInstance().checkObjectOverflow(ptr, blockSize, sz, true);
   }
 #endif
 
@@ -418,7 +349,6 @@ public:
     if(!o->isGoodObject()) {
       PRWRN("DoubleTake: Caught double free or invalid free error. ptr %p\n", ptr);
       printCallsite();
-//      abort();
     }
 #endif
 
@@ -585,14 +515,14 @@ public:
     PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
     PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code,
           addr);
-   // current->internalheap = true;
-   // selfmap::getInstance().printCallStack();
-   // current->internalheap = false;
+    current->internalheap = true;
+    selfmap::getInstance().printCallStack();
+    current->internalheap = false;
     //while(1) ;
 
-    Real::exit(-1);
+    //Real::exit(-1);
     // Set the context to handleSegFault
-    //jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
+    jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
     //    xmemory::getInstance().handleSegFault ();
   }
 

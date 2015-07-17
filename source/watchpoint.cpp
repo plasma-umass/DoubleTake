@@ -46,8 +46,9 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
     PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. size %lx start %p\n",
 	  addr, value, objectsize, objectstart);
     // PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
-  } else {
-    assert(objtype == OBJECT_TYPE_USEAFTERFREE);
+  } 
+	else if(objtype == OBJECT_TYPE_USEAFTERFREE) {
+   // assert(objtype == OBJECT_TYPE_USEAFTERFREE);
     PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
   }
 #endif
@@ -66,7 +67,8 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
   }
 
   // Add it to memtrack too.
-  memtrack::getInstance().insert(objectstart, objectsize, objtype);
+	if(objtype != OBJECT_TYPE_WATCHONLY)
+  	memtrack::getInstance().insert(objectstart, objectsize, objtype);
 
   return !hasWatchpoint;
 }
@@ -77,7 +79,9 @@ bool watchpoint::findFaultyObject(faultyObject** object) {
   PRINF("findFaultyObject: _numWatchpoints %d\n", _numWatchpoints);
   for(int i = 0; i < _numWatchpoints; i++) {
     unsigned long value = *((unsigned long*)_wp[i].faultyaddr);
-
+#ifndef EVALUATING_PERF
+    	PRINT("%d point: address %p currentvalue %lx value %lx\n", trigPoints, _wp[i].faultyaddr, _wp[i].currentvalue, value);
+#endif
     // Check whether now overflow actually happens
     if(value != _wp[i].currentvalue) {
       //				PRINT("WARNING: we %d points, currentvalue %lx value %lx\n", trigPoints,
@@ -206,7 +210,7 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
   // Find faulty object.
   faultyObject* object;
 
-  //	PRINT("inside the trap handler\n");
+  PRINT("inside the trap handler, address %p with value %lx\n", addr, *((unsigned long *)addr));
   // If it is a read, we only care about this if it is use-after-free error
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
     PRERR("Can't find faulty object!!!!\n");
@@ -222,11 +226,17 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
   //  PRINF("CAPTURING write at %p: ip %lx. signal pointer %p, code %d. \n", addr,
   // trapcontext->uc_mcontext.gregs[REG_RIP], siginfo->si_ptr, siginfo->si_code);
   faultyObjectType faultType;
-
-  faultType = memtrack::getInstance().getFaultType(object->objectstart, object->faultyaddr);
-  if(faultType == OBJECT_TYPE_NO_ERROR) {
-    return;
-  }
+	if(object->objtype != OBJECT_TYPE_WATCHONLY) {
+  	faultType = memtrack::getInstance().getFaultType(object->objectstart, object->faultyaddr);
+  	if(faultType == OBJECT_TYPE_NO_ERROR) {
+    	return;
+  	}
+	}
+	else {
+    PRINT("\nWatch a memory access on %p (value %lx) with call stack:\n", object->faultyaddr, *((unsigned long *)object->faultyaddr));
+  	selfmap::getInstance().printCallStack();
+		return;
+	}
 
   // Check whether this callsite is the same as the previous callsite.
   void* callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];

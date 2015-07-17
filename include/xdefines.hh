@@ -48,7 +48,8 @@ typedef enum e_faultyObjectType {
   OBJECT_TYPE_NO_ERROR = 0, // No error for this object
   OBJECT_TYPE_OVERFLOW = 1,
   OBJECT_TYPE_USEAFTERFREE = 2,
-  OBJECT_TYPE_LEAK = 4
+  OBJECT_TYPE_LEAK = 4,
+  OBJECT_TYPE_WATCHONLY = 8
 } faultyObjectType;
 
 inline size_t alignup(size_t size, size_t alignto) {
@@ -136,7 +137,7 @@ public:
   enum { WORD_SIZE = sizeof(size_t) };
   enum { WORD_SIZE_MASK = WORD_SIZE - 1 };
   enum { SENTINEL_SIZE = WORD_SIZE };
-  enum { MAGIC_BYTE_NOT_ALIGNED = 0xEE };
+  enum { MAGIC_BYTE_NOT_ALIGNED = 0x7E };
   enum { FREE_OBJECT_CANARY_WORDS = 16 };
   enum { FREE_OBJECT_CANARY_SIZE = 16 * WORD_SIZE };
   enum { CALLSITE_MAXIMUM_LENGTH = 10 };
