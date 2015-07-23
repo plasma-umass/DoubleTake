@@ -211,6 +211,7 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
   faultyObject* object;
 
   PRINT("inside the trap handler, address %p with value %lx\n", addr, *((unsigned long *)addr));
+  PRINT("TRAP, address 0x101003010 with value %lx\n", *((unsigned long *)0x101003010));
   // If it is a read, we only care about this if it is use-after-free error
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
     PRERR("Can't find faulty object!!!!\n");

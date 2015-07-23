@@ -17,7 +17,7 @@ xpheap<xoneheap<xheap>> xmemory::_pheap;
 // This function is called inside the segmentation fault handler
 // So we must utilize the "context" to achieve our target
 void xmemory::handleSegFault() {
-  PRINT("Returning from segmentation fault error\n");
+//  PRINT("Returning from segmentation fault error\n");
 
 #ifdef MYDEBUG
 	// Adding a watchpoint and rollback immediately

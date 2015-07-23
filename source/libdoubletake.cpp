@@ -172,6 +172,8 @@ extern "C" {
     	fprintf(stderr, "Out of memory with initialized %d!\n", initialized);
       ::abort();
     }
+		
+		//fprintf(stderr, "MEMORY allocation with ptr %p to %lx\n", ptr, ((intptr_t)ptr + sz));
     return ptr;
   }
 
@@ -456,7 +458,6 @@ extern "C" {
       return syscalls::getInstance().write(fd, buf, count);
     }
   }
-#endif 
 
   // int open(const char *pathname, int flags, mode_t mode) {
   int open(const char* pathname, int flags, ...) {
@@ -588,6 +589,7 @@ extern "C" {
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
   }
+#endif 
 
   int mprotect(void* addr, size_t len, int prot) {
   //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
@@ -1227,7 +1229,6 @@ extern "C" {
   //fprintf(stderr, " in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().setuid(uid);
   }
-
   int setgid(gid_t gid) { return syscalls::getInstance().setgid(gid); }
 
   // uid_t geteuid(){

@@ -88,7 +88,6 @@ public:
 	    ptr = realmalloc(sz);
     // PRINT("malloc, current %p ptr %p sz %ld\n", current, ptr, sz);
     }
-  	//fprintf(stderr, "malloc sz %lx ptr %p\n", sz, ptr);
     return ptr;
   }
 
@@ -160,16 +159,14 @@ public:
 		objectHeader* o = getObject(ptr);
 
     // Get the block size
-		size_t blockSize = o->getSize();
-
 		size_t objSize = o->getObjectSize();
 
-		if(blockSize >= sz) {
 #ifdef DETECT_OVERFLOW
+		size_t blockSize = o->getSize();
+		if(blockSize >= sz) {
 			if(!global_isRollback()) {
 				// Check the object overflow.
       	if(checkOverflowAndCleanSentinels(ptr)) {
-
 	#ifndef EVALUATING_PERF
       		PRWRN("DoubleTake: Caught non-aligned buffer overflow error. ptr %p\n", ptr);
         	xthread::invokeCommit();
@@ -197,7 +194,6 @@ public:
   	// Free the old block.
   	free(ptr);
 
-  	// Return a pointer to the new one.
   	return buf;
   }
 
@@ -219,13 +215,13 @@ public:
     ptr = (unsigned char*)_pheap.malloc(mysize);
     objectHeader* o = getObject(ptr);
 
-    // Get the block size
-    size_t size = o->getSize();
-
     // Set actual size there.
     o->setObjectSize(sz);
 
 #ifdef DETECT_OVERFLOW
+    // Get the block size
+    size_t size = o->getSize();
+
     assert(size >= sz);
     // Add another guard zone if block size is larger than actual size
     // in order to capture the 1 byte overflow.
@@ -334,7 +330,6 @@ public:
   // list.
   void free(void* ptr) {
     void* origptr;
-  	//fprintf(stderr, "free ptr %p\n", ptr);
 
     if(!inRange((intptr_t)ptr)) {
       return;
@@ -381,7 +376,6 @@ public:
 
   /// @return the allocated size of a dynamically-allocated object.
   inline size_t getSize(void* ptr) {
-		//fprintf(stderr, "xmemory getSize %p\n", ptr);
     // Just pass the pointer along to the heap.
     return _pheap.getSize(ptr);
   }

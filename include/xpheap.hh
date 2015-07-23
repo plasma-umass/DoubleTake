@@ -24,18 +24,20 @@ template <class SourceHeap> class AdaptAppHeap : public SourceHeap {
 
 public:
   void* malloc(size_t sz) {
+		void *ptr;
 
 // We are adding one objectHeader and two "canary" words along the object
 // The layout will be:  objectHeader + "canary" + Object + "canary".
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
-    void* ptr = SourceHeap::malloc(sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
+    ptr = SourceHeap::malloc(sz + sizeof(objectHeader) + 2 * xdefines::SENTINEL_SIZE);
 #else
-    void* ptr = SourceHeap::malloc(sz + sizeof(objectHeader));
+    ptr = SourceHeap::malloc(sz + sizeof(objectHeader));
 #endif
     if(!ptr) {
       return NULL;
     }
 
+//	  fprintf(stderr, "AdaptAppHeap malloc sz %lx ptr %p\n", sz, ptr);
     // Set the objectHeader.
     objectHeader* o = new (ptr) objectHeader(sz);
     void* newptr = getPointer(o);

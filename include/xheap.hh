@@ -119,6 +119,7 @@ public:
 
     unlock();
 
+		//fprintf(stderr, "malloc sz %lx returnptr %p : _position %p remaining %lx\n", sz, p, _position, _remaining);
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
     // We must cleanup corresponding bitmap
     sentinelmap::getInstance().cleanup(p, sz);
