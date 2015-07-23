@@ -94,10 +94,21 @@ namespace HL {
 
     inline void * zoneMalloc (size_t sz) {
       void * ptr;
+
+			//fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx. int sz %x\n", sz, _currentArena, _sizeRemaining, (int)sz);
       // Round up size to an aligned value.
       sz = HL::align<HL::MallocInfo::Alignment>(sz);
+
+			//fprintf(stderr, "after alingment sz %lx: zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx\n", sz, sz, _currentArena, _sizeRemaining);
+	
+			//fprintf(stderr, "first is %d second is %d\n", (_currentArena == NULL), (_sizeRemaining < (unsigned int) sz));	
+			//fprintf(stderr, "first is %d second removing int is %d\n", (_currentArena == NULL), (_sizeRemaining <  sz));	
       // Get more space in our arena if there's not enough room in this one.
-      if ((_currentArena == NULL) || (_sizeRemaining < (int) sz)) {
+			// TONGPING: first bug, we should not use (int) to transfer
+      if ((_currentArena == NULL) || (_sizeRemaining < sz)) {
+			//fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx line %d\n", sz, _currentArena, _sizeRemaining, __LINE__);
+			
+		//	fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx _currentArena at %p\n", sz, _currentArena, _sizeRemaining, &_currentArena);
 	// First, add this arena to our past arena list.
 	if (_currentArena != NULL) {
 	  _currentArena->nextArena = _pastArenas;
@@ -110,12 +121,16 @@ namespace HL {
 	}
 	_currentArena =
 	  (Arena *) SuperHeap::malloc (allocSize + sizeof(Arena));
+	//fprintf(stderr, "_currentArena is %p\n", _currentArena);
 	if (_currentArena == NULL) {
 	  return NULL;
 	}
 	_currentArena->arenaSpace = (char *) (_currentArena + 1);
 	_currentArena->nextArena = NULL;
-	_sizeRemaining = ChunkSize;
+	
+		// TONGPING Second bug: 
+		//_sizeRemaining = ChunkSize;
+			_sizeRemaining = allocSize;
       }
       // Bump the pointer and update the amount of memory remaining.
       _sizeRemaining -= sz;
