@@ -202,8 +202,10 @@ private:
 
         if(object->checkLeakageAndClean()) {
           hasLeakage = true;
+//#ifndef EVALUATING_PERF
           // Adding this object to the global leakage map, which should be tracked in re-execution
           insertLeakageMap(object->getStartPtr(), object->getObjectSize(), object->getSize());
+//#endif
         }
         ptr = (unsigned long*)object->getNextObject();
       } else {

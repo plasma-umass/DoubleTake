@@ -220,9 +220,7 @@ extern "C" {
   int pthread_mutex_lock(pthread_mutex_t* mutex) {
     //  PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
     // current->disablecheck);
-    if(current->disablecheck) {
-      return Real::pthread_mutex_lock(mutex);
-    } else if(initialized) {
+    if(initialized) {
       return xthread::getInstance().mutex_lock(mutex);
     }
     return 0;
@@ -231,9 +229,7 @@ extern "C" {
   // FIXME: add support for trylock
   int pthread_mutex_trylock(pthread_mutex_t* mutex) {
     // PRINT("inside pthread_mutex_lock, line %d!\n", __LINE__);
-    if(current->disablecheck) {
-      return Real::pthread_mutex_trylock(mutex);
-    } else if(initialized) {
+   	if(initialized) {
       return xthread::getInstance().mutex_trylock(mutex);
     }
     return 0;
@@ -242,9 +238,7 @@ extern "C" {
   int pthread_mutex_unlock(pthread_mutex_t* mutex) {
     //   PRINT("inside pthread_mutex_unlock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
     // current->disablecheck);
-    if(current->disablecheck) {
-      return Real::pthread_mutex_unlock(mutex);
-    } else if(initialized) {
+    if(initialized) {
       xthread::getInstance().mutex_unlock(mutex);
     }
 
@@ -257,7 +251,8 @@ extern "C" {
 
   // Condition variable related functions
   int pthread_cond_init(pthread_cond_t* cond, const pthread_condattr_t* condattr) {
-    xthread::getInstance().cond_init(cond, condattr);
+    if(initialized)
+    	xthread::getInstance().cond_init(cond, condattr);
     return 0;
   }
 
@@ -532,23 +527,8 @@ extern "C" {
   	fprintf(stderr, "freopen %d ****** in libdoubletake not supported\n", __LINE__);
     abort();
   }
-	// FIXME: why we should care about fread and fwrite?
-  size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
- //   fprintf(stderr, " fread in doubletake at %d\n", __LINE__);
-    return syscalls::getInstance().fread(ptr, size, nmemb, stream);
-  }
 
-  size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
-    int fd = stream->_fileno;
-
-    if(fd == 1 || fd == 2) {
-    //fprintf(stderr, " in doubletake at %d\n", __LINE__);
-      return Real::fwrite(ptr, size, nmemb, stream);
-    } else {
-     // fprintf(stderr, "fwrite in doubletake at %d is captured, stream %p\n", __LINE__, stream);
-      return syscalls::getInstance().fwrite(ptr, size, nmemb, stream);
-    }
-  }
+	// We don't care about fread and fwrite since they won't call sockets.
   int fclose(FILE* fp) {
     if(!initialized) {
       return Real::fclose(fp);
@@ -583,7 +563,7 @@ extern "C" {
   */
   // Close current transaction since it is impossible to rollback.
   off_t lseek(int filedes, off_t offset, int whence) {
-    ////fprintf(stderr, "lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
+    //fprintf(stderr, "lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
     if(!initialized) {
       return Real::lseek(filedes, offset, whence);
     }

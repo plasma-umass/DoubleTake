@@ -403,10 +403,13 @@ public:
         break;
       }
 
-      // Record this event
-      list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
-     	PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
-    } else {
+			if(!current->disablecheck) {
+      	// Record this event
+      	list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
+     		PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
+			}
+    } 
+		else if (!current->disablecheck) {
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
      PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
@@ -447,7 +450,8 @@ public:
 
 			// Now the thread is safe to be interrupted.
   		setThreadSafe();
-    } else {
+    } 
+		else if(!current->disablecheck) {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       PRDBG("mutex_unlock at mutex %p list %p\n", mutex, list);
       //	PRINF("mutex_unlock at mutex %p list %p\n", mutex, list);

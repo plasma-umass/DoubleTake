@@ -32,7 +32,7 @@ public:
     ptr = MM::mmapAllocatePrivate(size + metasize, (void*)startaddr);
     base = (char*)ptr;
 
-    pthread_mutex_init(&_mutex, NULL);
+    Real::pthread_mutex_init(&_mutex, NULL);
 
     // Initialize the following content according the values of xpersist class.
     base = (char*)((intptr_t)ptr + metasize);

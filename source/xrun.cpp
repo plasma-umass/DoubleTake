@@ -108,6 +108,10 @@ void xrun::epochBegin() {
 
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd(bool endOfProgram) {
+
+	fprintf(stderr, "xrun epochEnd\n");
+	//while(1) { ; }
+//	selfmap::getInstance().printCallStack();
   // Tell other threads to stop and save context.
   stopAllThreads();
 

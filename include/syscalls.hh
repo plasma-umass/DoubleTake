@@ -381,9 +381,15 @@ public:
 
   off_t lseek(int filedes, off_t offset, int whence) {
     off_t ret;
-    epochEnd();
-    ret = Real::lseek(filedes, offset, whence);
-    epochBegin();
+		if(whence == SEEK_CUR && offset == 0) {
+			// For performance reason, it is ok to only check the offset. 
+    	ret = Real::lseek(filedes, offset, whence);
+		}
+		else {
+    	epochEnd();
+    	ret = Real::lseek(filedes, offset, whence);
+    	epochBegin();
+		}
     return ret;
   }
 
@@ -461,54 +467,6 @@ public:
     epochEnd();
     ret = Real::sigreturn((struct sigcontext*)__unused);
     epochBegin();
-    return ret;
-  }
-
-  // ioctl
-  size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
-    int fd;
-    size_t ret;
-
-    // assert(stream != NULL);
-    if(stream == NULL) {
-      return 0;
-    }
-
-    fd = stream->_fileno;
-
-    checkOverflowBeforehand(ptr, size * nmemb);
-    if(_fops.checkPermission(fd)) {
-      ret = Real::fread(ptr, size, nmemb, stream);
-    } else {
-      // PRINF("fd %d has no permisson for read\n", fd);
-      epochEnd();
-      ret = Real::fread(ptr, size, nmemb, stream);
-      epochBegin();
-    }
-
-    return ret;
-  }
-
-  size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
-    size_t ret;
-    int fd;
-    if (stream != nullptr) {
-      fd = stream->_fileno;
-    }
-    // assert(stream == NULL);
-    // For stdout, stream is NULL. So we just pass this to
-    // fwrite.
-    if(stream == nullptr) {
-      ret = Real::fwrite(ptr, size, nmemb, stream);
-    } else if(_fops.checkPermission(fd)) {
-      ret = Real::fwrite(ptr, size, nmemb, stream);
-    } else {
-      epochEnd();
-      ret = Real::fwrite(ptr, size, nmemb, stream);
-      epochBegin();
-    }
-
-    // PRINF(" in stopgap at %d\n", __LINE__);
     return ret;
   }
 
@@ -1049,16 +1007,29 @@ public:
       }
       break;
     }
-
-    case F_SETFD:
-    /* FD_CLOEXEC is not important to us
-       Fall through */
-    case F_GETFD:
-    /* Fall through */
-    case F_GETFL:
+   
+		/* For the following commands, there is no need to do anything */ 
+		case F_GETFL:
     /* Fall through */
     case F_GETLK:
-      /* Fall through */
+		case F_GETOWN:
+		case F_GETOWN_EX:
+		case F_GETSIG:
+		case F_GETPIPE_SZ:
+		{
+      ret = Real::fcntl(fd, cmd, arg);
+			break;
+		}
+
+    case F_SETFD:
+		{
+			if(arg == FD_CLOEXEC) {
+				ret = Real::fcntl(fd, cmd, arg);
+      	break;
+			}
+			// else, fall through
+		}
+    /* Fall through */
     default: {
       epochEnd();
       ret = Real::fcntl(fd, cmd, arg);
