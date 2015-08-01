@@ -262,8 +262,8 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
 
   // Check what is the current phase
   if(global_isEpochBegin()) {
- 		// Current thread is going to enter a new phase
-    xthread::getInstance().saveSpecifiedContext((ucontext_t*)context);
+    // Current thread is going to enter a new phase
+    xthread::getInstance().saveContext((ucontext_t*)context);
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.
   } else {
