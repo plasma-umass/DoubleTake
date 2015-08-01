@@ -6,8 +6,10 @@
 
 #ifdef X86_32BIT
 #define REG_IP REG_EIP
+#define REG_SP REG_ESP
 #else
 #define REG_IP REG_RIP
+#define REG_SP REG_RSP
 #endif
 
 #include "list.hh"

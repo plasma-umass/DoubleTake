@@ -67,7 +67,7 @@ public:
     // Initialize the backup stacking information.
     size_t perStackSize = __max_stack_size;
 
-    unsigned long totalStackSize = perStackSize * 2 * xdefines::MAX_ALIVE_THREADS;
+    unsigned long totalStackSize = perStackSize * xdefines::MAX_ALIVE_THREADS;
     unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
     unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
 
@@ -82,8 +82,7 @@ public:
 
 			// Those information that are only initialized once.
      	tinfo->available = true;
-     	tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 * i]);
-      tinfo->newContext.setupBackup(&stackStart[perStackSize * 2 * i + 1]);
+      tinfo->context.setupBackup(&stackStart[perStackSize * i]);
       tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
     }
 

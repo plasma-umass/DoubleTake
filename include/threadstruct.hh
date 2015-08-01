@@ -121,12 +121,8 @@ typedef struct thread {
   bool mainThread;
 
   semaphore sema;
-  // We need to keep two context: one is old context, which is saved in the beginning of
-  // transaction. another one is new context, which is normally saved in the signal handler.
-  // For example, if one thread is going to commit, it is going to signal other threads to stop.
-  // so we need another context to save context.
-  xcontext oldContext;
-  xcontext newContext;
+
+  xcontext context;
 
   // The following is the parameter about starting function.
   threadFunction* startRoutine;

@@ -817,8 +817,8 @@ public:
   */
 
   // Save the given signal handler.
-  void saveSpecifiedContext(ucontext_t* context) {
-    current->newContext.saveSpecifiedContext(context);
+  void saveContext(ucontext_t* context) {
+    current->context.save(context);
   }
 
   // Return actual thread index
@@ -841,29 +841,24 @@ public:
 	// It is called when a thread has to rollback.
 	// Thus, it will replace the current context (of signal handler)
 	// with the old context.
-  void rollbackInsideSignalHandler(ucontext* context) {
-    xcontext::rollbackInsideSignalHandler(context, &current->oldContext);
+  void rollbackInsideSignalHandler(ucontext* uctx) {
+    current->context.rollbackInHandler(uctx);
   }
 
   inline static pthread_t thread_self() { return Real::pthread_self(); }
 
   inline static void saveContext() {
-    current->oldContext.saveContext();
+    current->context.saveCurrent();
   };
 
   inline static void restoreContext() {
     PRINF("restore context now\n");
-    xcontext::restoreContext(&current->oldContext, &current->newContext);
+    current->context.rollback();
   };
 
   // Now we will change the newContext to old context.
   // And also, we will restore context based on newContext.
   inline static void resetContexts() {
-    xcontext::resetContexts(&current->oldContext, &current->newContext);
-
-    // Reset the context to the new context for this thread.
-    // setcontext (&_context);
-    //    memcpy(&current->oldContext, &current->newContext, sizeof(xcontext));
     assert(0);
   }
 
@@ -1037,8 +1032,7 @@ private:
       privateTop = (void*)(((intptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK);
     }
 
-    current->oldContext.setupStackInfo(privateTop, stackSize);
-    current->newContext.setupStackInfo(privateTop, stackSize);
+    current->context.setupStackInfo(privateTop, stackSize);
     current->stackTop = privateTop;
     current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
 
