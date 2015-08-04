@@ -3,8 +3,8 @@ CC  := clang
 CXX := clang++
 
 # Default flags
-CFLAGS   ?= -g -O2
-CXXFLAGS ?= $(CFLAGS)
+CFLAGS   ?= -g -O2 -I/usr/include/x86_64-linux-gnu/c++/4.8/ -I/usr/include/x86_64-linux-gnu/c++/4.8/32
+CXXFLAGS ?= $(CFLAGS) 
 LDFLAGS  += $(addprefix -l,$(LIBS))
 
 # Default source and object files
@@ -52,7 +52,8 @@ obj/%.o: %.cpp $(PREREQS)
 obj/%.o: %.c $(PREREQS)
 	@echo $(LOG_PREFIX) Compiling $< $(LOG_SUFFIX)
 	@mkdir -p obj
-	@$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
+	$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
+#	@$(CC) $(CFLAGS) -MMD -MP -o $@ -c $<
 
 # Link a shared library 
 $(SHARED_LIB_TARGETS): $(OBJS)
@@ -62,7 +63,8 @@ $(SHARED_LIB_TARGETS): $(OBJS)
 # Link binary targets
 $(OTHER_TARGETS): $(OBJS)
 	@echo $(LOG_PREFIX) Linking $@ $(LOG_SUFFIX)
-	@$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(LDFLAGS) -o $@ $^
+#	@$(CXX) $(LDFLAGS) -o $@ $^
 
 # Include dependency rules for all objects
 -include $(OBJS:.o=.d)
