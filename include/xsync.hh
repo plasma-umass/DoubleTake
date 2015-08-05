@@ -190,8 +190,12 @@ public:
 		lock();
 		entry =  _newList.retrieveSyncEntry(type, nominal);
 		unlock();
-
-		return entry->real;	
+		if(entry != NULL) {
+			return entry->real;
+		}
+		else {
+			return NULL;
+		}	
 	}
 
 	// During the begin of an epoch

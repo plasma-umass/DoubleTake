@@ -46,7 +46,9 @@ pthread_mutex_t g_mutex;
 pthread_mutex_t g_mutexSignalhandler;
 int g_waiters;
 int g_waitersTotal;
-
+#ifdef GET_CHARECTERISTICS
+unsigned long count_epochs = 0;
+#endif
 __attribute__((constructor)) void initRealFunctions() {
 //	printf("calling min_init\n");
   Real::initializer();
@@ -89,6 +91,7 @@ int doubletake_main(int argc, char** argv, char** envp) {
 	// Now start the first epoch
 	xrun::getInstance().epochBegin();
 
+
   // Call the program's main function
   return real_main(argc, argv, envp);
 }
@@ -111,7 +114,6 @@ static void* tempmalloc(int size) {
   static int _allocated = 0;
 
 //	fprintf(stderr, "inside tempmalloc with size %d\n", size);
-
   if(_allocated + size > InitialMallocSize) {
     printf("Not enough space for tempmalloc");
     abort();

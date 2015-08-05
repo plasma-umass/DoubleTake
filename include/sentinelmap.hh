@@ -271,8 +271,8 @@ public:
         // always returned by 8bytes aligned or 16bytes aligned.
         // However, some weird test cases has this overflow. So we should detect this now.
         void* startp = (void*)((intptr_t)p - nonAlignedBytes);
+#if 1
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
-
 				if((setBytes > 1) && ((int)p[0] == (int) (setBytes - 1))) {
           for(int i = 1; i < (int) setBytes; i++) {
             if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
@@ -286,7 +286,7 @@ public:
         } else {
           hasOverflow = true;
         }
-
+#endif
 				pclean = startp;
 
         // We actually setup a next word to capture the next word
@@ -301,7 +301,7 @@ public:
 
           if(hasOverflowNext) {
 #ifndef EVALUATING_PERF
-          PRINT("Alligned buffer overflow at address %p\n", nextp);
+          PRWRN("Alligned buffer overflow at address %p\n", nextp);
 #endif
             // Add this address to watchpoint
             watchpoint::getInstance().addWatchpoint(nextp, *((size_t*)nextp), OBJECT_TYPE_OVERFLOW, ptr, sz);
@@ -317,7 +317,7 @@ public:
 			// Add it as a watchpoint.     
 			if(hasOverflow) {
 #ifndef EVALUATING_PERF
-        PRINT("Detected buffer overflow at address %p\n", pclean);
+        PRWRN("Detected buffer overflow at address %p\n", pclean);
 #endif
         watchpoint::getInstance().addWatchpoint(pclean, *((unsigned long*)pclean), OBJECT_TYPE_OVERFLOW, ptr, sz);
       }

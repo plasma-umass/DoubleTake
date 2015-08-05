@@ -125,7 +125,9 @@ public:
       return index;
     }
 
+#ifndef NDEBUG
     int origindex = _threadIndex;
+#endif
     thread_t* thread;
     while(true) {
       thread = getThreadInfo(_threadIndex);

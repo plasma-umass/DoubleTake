@@ -27,6 +27,11 @@
 #include "xmemory.hh"
 #include "xthread.hh"
 
+#ifdef GET_CHARECTERISTICS
+extern "C" {
+	extern unsigned long count_epochs;
+};
+#endif
 class xrun {
 
 private:
@@ -87,6 +92,9 @@ public:
 
   void finalize() {
 //    PRINT("%d: finalize now !!!!!\n", getpid());
+#ifdef GET_CHARECTERISTICS
+			fprintf(stderr, "DOUBLETAKE has epochs %ld\n", count_epochs);
+#endif
     // If we are not in rollback phase, then we should check buffer overflow.
     if(!global_isRollback()) {
 #ifdef DETECT_USAGE_AFTER_FREE

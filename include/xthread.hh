@@ -907,7 +907,22 @@ private:
 	inline void  resetSyncEntry(syncVariableType type, void * nominal) {
 			// Geting the starting address of real synchronization variable.
 			void * real = _sync.retrieveRealSyncEntry(type, nominal);
-			*((void **)nominal) = real;
+			if(real != NULL) {
+				*((void **)nominal) = real;
+			}
+			else if(type == E_SYNCVAR_MUTEX) {
+				// Somehow, replay phase may call different lock, for example, backtrace.
+				// Allocate an real entry for that.
+      	// Allocate a mutex
+      	pthread_mutex_t* real_mutex =
+          (pthread_mutex_t*)allocRealSyncVar(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
+
+      	// Initialize the real mutex
+      	Real::pthread_mutex_init(real_mutex, NULL);
+
+      	// If we can't setup this entry, that means that this variable has been initialized.
+      	setSyncEntry(E_SYNCVAR_MUTEX, nominal, real_mutex, sizeof(pthread_mutex_t));
+			}
 	}
 
   inline SyncEventList* getSyncEventList(void* ptr, size_t size) {

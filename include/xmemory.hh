@@ -109,12 +109,13 @@ public:
       sentinelmap::getInstance().setSentinelAt(p);
      // PRINT("realmalloc at line %d\n", __LINE__);
     } else {
+
       // For those less than one word access, maybe we do not care since memory block is
       // always returned by 8bytes aligned or 16bytes aligned.
       // However, some weird test cases has this overflow. So we should detect this now.
      	unsigned char * startp = (unsigned char *)((intptr_t)p - nonAlignedBytes);
+#if 1   
       size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
-   
      // Check how much magic bytes we should put there.
      // The first byte of this is to specify how many bytes there.
      // For example, at 64bit, when nonAlignedBytes is 5,
@@ -133,7 +134,7 @@ public:
     
 		//	PRINT("setSentinels ptr %p sz %ld: nonAlignedBytes %ld startp %p p %p value %lx\n", ptr, sz, nonAlignedBytes, startp, p, *((unsigned long *)startp));
       sentinelmap::getInstance().markSentinelAt(startp);
-
+#endif
       // We actually setup a next word to capture the next word
       if(offset > xdefines::WORD_SIZE) {
         void* nextp = (void*)((intptr_t)startp + xdefines::WORD_SIZE);
@@ -507,12 +508,11 @@ public:
     void* addr = siginfo->si_addr; // address of access
 
     PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    PRINF("Thread%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code,
-          addr);
     current->internalheap = true;
     selfmap::getInstance().printCallStack();
     current->internalheap = false;
-    //while(1) ;
+    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    while(1) ;
 
     //Real::exit(-1);
     // Set the context to handleSegFault

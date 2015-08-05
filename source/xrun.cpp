@@ -21,6 +21,7 @@
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
+//	PRINT("ROLLBACK now!\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
@@ -109,7 +110,10 @@ void xrun::epochBegin() {
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd(bool endOfProgram) {
 
-	fprintf(stderr, "xrun epochEnd\n");
+#ifdef GET_CHARECTERISTICS
+   count_epochs++;
+#endif
+//	fprintf(stderr, "xrun epochEnd\n");
 	//while(1) { ; }
 //	selfmap::getInstance().printCallStack();
   // Tell other threads to stop and save context.
@@ -143,12 +147,12 @@ void xrun::epochEnd(bool endOfProgram) {
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
 #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
-  PRINF("in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRWRN("DoubleTake: in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
   } else {
 #elif defined(DETECT_OVERFLOW)
-  PRINF("in the end of an epoch, hasOverflow %d\n", hasOverflow);
+  PRINF("DoubleTake: in the end of an epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   } else {
