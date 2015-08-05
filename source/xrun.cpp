@@ -54,45 +54,35 @@ void xrun::epochBegin() {
 
   threadmap::aliveThreadIterator i;
  
-	PRINF("xrun epochBegin, joinning every thread.\n");
+  PRINF("xrun epochBegin, joinning every thread.\n");
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
 
-    if(thread != current) {
-      lock_thread(thread);
+    lock_thread(thread);
 
-      if(thread->hasJoined) {
-				PRINF("xrun, joining thread %d\n", thread->index);
-        thread->status = E_THREAD_EXITING;
-        Real::pthread_cond_signal(&thread->cond);
-        unlock_thread(thread);
-				PRINF("xrun, actually joining thread %d\n", thread->index);
-        Real::pthread_join(thread->self, NULL);
-				PRINF("xrun, after joining thread %d\n", thread->index);
-      } else {
-				// Since now we are in a new epoch,
-				// mark all existing threads as old threads.
-				thread->isNewlySpawned = false;
-
-				// cleanup the threads's qlist, pendingSyncevents, syncevents;
-				xthread::epochBegin(thread);
-
-        unlock_thread(thread);
-      }
+    if(thread != current && thread->hasJoined) {
+      PRINF("xrun, joining thread %d\n", thread->index);
+      thread->status = E_THREAD_EXITING;
+      Real::pthread_cond_signal(&thread->cond);
+      unlock_thread(thread);
+      PRINF("xrun, actually joining thread %d\n", thread->index);
+      Real::pthread_join(thread->self, NULL);
+      PRINF("xrun, after joining thread %d\n", thread->index);
+      continue;
     }
-		else {
-			thread->isNewlySpawned = false;
-			xthread::epochBegin(thread);
-		}
+    // Since now we are in a new epoch mark all existing threads as old threads
+    thread->isNewlySpawned = false;
+
+    // cleanup the threads's qlist, pendingSyncevents, syncevents
+    xthread::epochBegin(thread);
+
+    unlock_thread(thread);
   }
-	PRINF("xrun epochBegin, joinning every thread done.\n");
+  PRINF("xrun epochBegin, joinning every thread done.\n");
 
-	xthread::epochBegin(current);
-	xthread::runDeferredSyncs();
+  xthread::runDeferredSyncs();
 
-	PRINF("xrun epochBegin, run deferred synchronizations.\n");
-	PRINF("xrun epochBegin, run deferred synchronizations done.\n");
-
+  PRINF("xrun epochBegin, run deferred synchronizations done.\n");
 
   // Now waken up all other threads then threads can do its cleanup.
   PRINF("getpid %d: xrun::epochBegin, wakeup others. \n", getpid());

@@ -54,8 +54,10 @@ public:
   bool isStack() const { return _file == "[stack]"; }
 
   bool isGlobals() const {
-    return _readable && _writable && !_executable && _copy_on_write;
-    //return _file.find("/") == 0 && _readable && _writable && !_executable && _copy_on_write;
+    // global mappings are RW_P, and either the heap, or the mapping is backed
+    // by a file (and all files have absolute paths)
+    return (_readable && _writable && !_executable && _copy_on_write) &&
+           (_file.size() > 0 && (_file == "[heap]" || _file[0] == '/'));
   }
 
   uintptr_t getBase() const { return _base; }
@@ -181,22 +183,18 @@ public:
     for(const auto& entry : _mappings) {
       const mapping& m = entry.second;
 
-      if(m.isGlobals()) {
-			//fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals\n", m.getBase(), m.getLimit());
-        if(m.getFile() == _main_exe || m.getFile().find("/lib/") != std::string::npos ||
-					 m.getFile().find("[heap]") != std::string::npos) {
-			//fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
+      // skip libdoubletake
+      if(m.isGlobals() && m.getFile().find("libdoubletake") == std::string::npos) {
+        //fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
 
-          regions[index].start = (void*)m.getBase();
-          regions[index].end = (void*)m.getLimit();
-          index++;
-        }
+        regions[index].start = (void*)m.getBase();
+        regions[index].end = (void*)m.getLimit();
+        index++;
       }
-
     }
     
-		// We only need to return this.  
-		*regionNumb = index;
+    // We only need to return this.
+    *regionNumb = index;
   }
 
 private:
