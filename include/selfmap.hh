@@ -56,8 +56,9 @@ public:
   bool isGlobals() const {
     // global mappings are RW_P, and either the heap, or the mapping is backed
     // by a file (and all files have absolute paths)
+		// the file is the current executable file, with [heap], or with lib*.so
     return (_readable && _writable && !_executable && _copy_on_write) &&
-           (_file.size() > 0 && (_file == "[heap]" || _file[0] == '/'));
+           (_file.size() > 0 && (_file == _main_exe ||  _file == "[heap]" || _file.find(".so") != std::string::npos));
   }
 
   uintptr_t getBase() const { return _base; }
