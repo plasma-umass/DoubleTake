@@ -1,6 +1,6 @@
 CC = gcc
 CXX= g++
-CFLAGS = -Wall -g -O0 -fno-stack-protector -fno-mudflap -D_FORTIFY_SOURCE=0 
+CFLAGS = -Wall -g -O0 -fno-stack-protector -D_FORTIFY_SOURCE=0 
 CXXFLAGS = $(CFLAGS)
 LIBS = -lm -lrt -ldl
 DOUBLETAKE_LIBS += $(LIBS) -rdynamic ../../../libdoubletake.so
@@ -13,13 +13,13 @@ DOUBLETAKE_OBJS_C := $(addsuffix -doubletake, $(TESTS))
 CPPSRCS := $(wildcard *.cpp)
 CPPTESTS := $(CPPSRCS:.cpp=)
 PTHREAD_OBJS_CPP := $(addsuffix -pthread, $(CPPTESTS))
-DOUBLETAKE_OBJS_CPP := $(addsuffix -doubletake, $(TESTS))
+DOUBLETAKE_OBJS_CPP := $(addsuffix -doubletake, $(CPPTESTS))
 
 .PHONY : default all clean
 default: all
-all: $(PTHREAD_OBJS) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP)
+all: $(PTHREAD_OBJS_C) $(PTHREAD_OBJS_CPP) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP)
 clean:
-	rm -f $(PTHREAD_OBJS) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP) 
+	rm -f $(PTHREAD_OBJS_C) $(PTHREAD_OBJS_CPP) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP) 
 
 %-pthread:%.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(PTHREAD_LIBS)
@@ -30,7 +30,7 @@ clean:
 %-pthread:%.c
 	$(CC) $(CFLAGS) -o $@ $< $(PTHREAD_LIBS)
 
-%-dthread:%.c
+%-doubletake:%.c
 	$(CC) $(CFLAGS) -o $@ $< $(DOUBLETAKE_LIBS)
 
 
