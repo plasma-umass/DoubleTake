@@ -129,7 +129,7 @@ public:
   enum { THREAD_MAP_SIZE = 1024 };
   enum { MAX_STACK_SIZE = 0xa00000UL };  // 64pages
   enum { TEMP_STACK_SIZE = 0xa00000UL }; // 64 pages
-  enum { NUM_GLOBALS = 32 }; // At least, we need app globals, libc globals and libthread globals.
+  enum { NUM_GLOBALS = 128 }; // At least, we need app globals, libc globals and libthread globals.
   // enum { MAX_GLOBALS_SIZE = 1048576UL * 10 };
   enum { CACHE_LINE_SIZE = 64 };
 
