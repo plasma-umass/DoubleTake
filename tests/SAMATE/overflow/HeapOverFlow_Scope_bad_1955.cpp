@@ -11,7 +11,8 @@
  * The SAMATE project website is: http://samate.nist.gov
 */
 
-
+#include <string.h>
+#include <stdio.h>
 #include <cstring>
 #define BUFSIZE 5
 
@@ -27,5 +28,6 @@ int main(int argc, const char *argv[])
 		const char *userstr=argv[1];
 		tester(userstr);
 	}
+//	fprintf(stderr, "in the end of program\n");
 	return 0;
 }

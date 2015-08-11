@@ -14,14 +14,16 @@
 #include <iostream>
 using namespace std;
 
-#define BUFSIZE 32
+#define BUFSIZE 6
 
 void tester (const char *__str) {
 	char *test = new (nothrow) char[BUFSIZE];
 	if (test == 0) cout << "Error: memory could not be allocated";
 	else
-	{test[strlen(__str)]='a';
-	delete (test);}
+	{
+	test[strlen(__str)]='a';
+	delete (test);
+	}
 	return;
 }
 

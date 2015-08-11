@@ -83,7 +83,7 @@ bool watchpoint::findFaultyObject(faultyObject** object) {
     	PRINT("DoubleTake: checking %d point: address %p currentvalue %lx value %lx\n", i, _wp[i].faultyaddr, _wp[i].currentvalue, value);
 #endif
     // Check whether now overflow actually happens
-    if(value != _wp[i].currentvalue) {
+    if(value != _wp[i].currentvalue || _numWatchpoints == 1) {
       //				PRINT("WARNING: we %d points, currentvalue %lx value %lx\n", trigPoints,
       //_wp[i].currentvalue, value);
       _wp[i].currentvalue = value;
@@ -158,6 +158,7 @@ int watchpoint::install_watchpoint(uintptr_t address, int sig, int group) {
     PRINT("Failed to open perf event file: %s\n", strerror(errno));
     abort();
   }
+
   // PRINT("Install watchpoint. perf_fd %d group %d\n", perf_fd, group);
 
   // Set the perf_event file to async mode
@@ -211,7 +212,6 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
   faultyObject* object;
 
   PRINT("inside the trap handler, address %p with value %lx\n", addr, *((unsigned long *)addr));
-  PRINT("TRAP, address 0x101003010 with value %lx\n", *((unsigned long *)0x101003010));
   // If it is a read, we only care about this if it is use-after-free error
   if(!watchpoint::getInstance().findFaultyObject(&object)) {
     PRERR("Can't find faulty object!!!!\n");

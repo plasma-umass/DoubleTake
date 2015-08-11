@@ -186,7 +186,7 @@ public:
 
       // skip libdoubletake
       if(m.isGlobals(_main_exe) && m.getFile().find("libdoubletake") == std::string::npos) {
-        //fprintf(stderr, "getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
+    //    PRINT("getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
 
         regions[index].start = (void*)m.getBase();
         regions[index].end = (void*)m.getLimit();

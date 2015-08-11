@@ -122,6 +122,7 @@ namespace HL {
             idx++;
           }
 
+					fprintf(stderr, "segheap idx %lx sz %lx\n", idx, sz);
           assert (idx < NumBins);
           ptr = myLittleHeap[idx].malloc (sz);
 
@@ -141,6 +142,7 @@ namespace HL {
         // There was no free memory in any of the bins.
         // Get some memory.
         ptr = bigheap.malloc (sz);
+					fprintf(stderr, "segheap sz %lx getmemory ptr %lx\n", sz, ptr);
       }
 
       return ptr;

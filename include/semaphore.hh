@@ -95,7 +95,7 @@ public:
 
     // PRWRN("Semaphore %p _semaId %d semaphore destory\n", &_semaKey, _semaId);
     if(Real::semctl(_semaId, 0, IPC_RMID, argument) < 0) {
-      PRWRN("Cannot detroy semaphore.\n");
+      PRINT("Cannot detroy semaphore: %s\n", strerror(errno));
       abort();
     }
   }

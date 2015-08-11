@@ -62,7 +62,9 @@ namespace HL {
       // Enforce alignment.
       sz = (sz + HL::MallocInfo::Alignment - 1) & ~(HL::MallocInfo::Alignment - 1);
 
+//			fprintf(stderr, "sz %lx before superheap mallocnnnn\n", sz); 
       void * ptr = SuperHeap::malloc (sz);
+//			fprintf(stderr, "sz after alingment %lx ptr %p\n", sz, ptr); 
       assert ((size_t) ptr % HL::MallocInfo::Alignment == 0);
       return ptr;
     }

@@ -11,7 +11,8 @@ LIBS     := dl pthread
 #CXXFLAGS := -Wall --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDEBUG_LEVEL=3 -DEVALUATING_PERF -DDETECT_MEMORY_LEAKS
 #CXXFLAGS := -Wall --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_MEMORY_LEAKS  -DDEBUG_LEVEL=3 -DEVALUATING_PERF
 #CXXFLAGS := -O2 -Wall --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDEBUG_LEVEL=3 -DEVALUATING_PERF
-CXXFLAGS := -O2 -Wall -DNDEBUG --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDEBUG_LEVEL=3 -DEVALUATING_PERF -DDETECT_MEMORY_LEAKS -DGET_CHARECTERISTICS
+CXXFLAGS := -Wall -DNDEBUG --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDEBUG_LEVEL=0 
+#CXXFLAGS := -O2 -Wall -DNDEBUG --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDEBUG_LEVEL=3 -DEVALUATING_PERF -DDETECT_MEMORY_LEAKS -DGET_CHARECTERISTICS
 #CXXFLAGS := -O2 -Wall -DNDEBUG --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDEBUG_LEVEL=3 -DEVALUATING_PERF -DDETECT_MEMORY_LEAKS
 #CXXFLAGS := -O2 -Wall -DNDEBUG --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror -DDETECT_OVERFLOW -DDEBUG_LEVEL=3 -DEVALUATING_PERF 
 #CXXFLAGS := -Wall --std=c++11 -g -fPIC -I$(ROOT)/include -I$(ROOT)/heaplayers -fno-omit-frame-pointer -Werror  -DDETECT_OVERFLOW -DDETECT_USAGE_AFTER_FREE -DDETECT_MEMORY_LEAKS -DDEBUG_LEVEL=0

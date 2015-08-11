@@ -8,16 +8,15 @@
 
 int main(int argc, char ** argv) {
   int * ptr;
-  int fd;
-  struct stat status;  
+  int fd = 0;
+//  struct stat status;  
   ptr = (int *) malloc(sizeof(int));
 
   *ptr = 5;
 
-  fd = open("./test", O_RDWR);
+ // fd = open("./test", O_RDWR);
 
   fprintf(stderr, "malloc with ptr %p value %d fd %d\n", ptr, *ptr, fd);
-  //fprintf(stderr, "BEFORE fstat........\n");
   //fstat(fd, &status);
   //fprintf(stderr, "AFTER fstat........\n");
 }

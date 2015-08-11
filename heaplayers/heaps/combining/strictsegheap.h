@@ -95,13 +95,18 @@ namespace HL {
 
       assert (realSize >= sz);
 
+		//  fprintf(stderr, "Size %lx: sizeClass %d realSize %lx maxObjectSize %lx\n", sz, sizeClass, realSize, SuperHeap::_maxObjectSize);
+
       if (realSize <= SuperHeap::_maxObjectSize) {
         assert (sizeClass >= 0);
         assert (sizeClass < NumBins);
+//				fprintf(stderr, "strictsegheap calling myLittleHeap to alloc\n");
         ptr = SuperHeap::myLittleHeap[sizeClass].malloc (realSize);
       }
       if (!ptr) {
+	//			fprintf(stderr, "strictsegheap calling bigheap to alloc\n");
         ptr = SuperHeap::bigheap.malloc (realSize);
+	//			fprintf(stderr, "strictsegheap calling bigheap to alloc: size %lx ptr %p\n", realSize, ptr);
       }
       return ptr;
     }

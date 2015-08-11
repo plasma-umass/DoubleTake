@@ -59,7 +59,7 @@ faultyObjectType memtrack::getFaultType(void* start, void* faultyaddr) {
     } else {
       /*
         Check whether it is an actual overflow. Two conditions should be meet here.
-        A. This place is a sentinel.
+        A. This place has a sentinel.
         B. It is an overflow.
       */
       if(sentinelmap::getInstance().isOverflow(faultyaddr, object->start,
@@ -86,7 +86,6 @@ void memtrack::print(void* start, faultyObjectType type) {
     // Now we should verify the size information for buffer overflow and memory leakage.
     // For use-after-free errors, since it is impossible to know actual object size information,
     // then we do not verify its size information.
-    PRINT("Memory allocation call stack for object starting at %p:\n", start);
 
     // Print its allocation stack.
     selfmap::getInstance().printCallStack(object->allocSite.depth(),
