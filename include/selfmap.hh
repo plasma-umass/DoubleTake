@@ -49,7 +49,7 @@ public:
 
   bool valid() const { return _valid; }
 
-  bool isText() const { return _readable && !_writable && !_executable; }
+  bool isText() const { return _readable && !_writable && _executable; }
 
   bool isStack() const { return _file == "[stack]"; }
 
@@ -133,6 +133,7 @@ public:
 
   /// Check whether an address is inside the DoubleTake library itself.
   bool isDoubleTakeLibrary(void* pcaddr) {
+		fprintf(stderr, "pcaddr %p doubletakestart %p doubletakeend %p\n", pcaddr, _doubletakeStart, _doubletakeEnd);
     return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
   }
 
@@ -168,7 +169,6 @@ public:
         if(m.getFile().find("libdoubletake") != std::string::npos) {
           _doubletakeStart = (void*)m.getBase();
           _doubletakeEnd = (void*)m.getLimit();
-
         } else if(m.getFile() == _main_exe) {
           _appTextStart = (void*)m.getBase();
           _appTextEnd = (void*)m.getLimit();
