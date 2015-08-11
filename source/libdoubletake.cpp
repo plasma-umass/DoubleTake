@@ -49,23 +49,23 @@ int g_waitersTotal;
 #ifdef GET_CHARECTERISTICS
 unsigned long count_epochs = 0;
 #endif
-__attribute__((constructor)) void initRealFunctions() {
+void initRealFunctions() {
+  Real::initializer();
   funcInitialized = true;
-  if(!initialized) {
-		// Now setup 
-    xrun::getInstance().initialize();
-    initialized = true;
-  }
 }
 
-void initializer() {
+__attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
   // before initialized.
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
 //	fprintf(stderr, "initializer function now\n");
-  Real::initializer();
+  if(!initialized) {
+		// Now setup
+    xrun::getInstance().initialize();
+    initialized = true;
+  }
 }
 
 __attribute__((destructor)) void finalizer() {

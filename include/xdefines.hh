@@ -107,6 +107,8 @@ public:
   // enum { MAX_OBJECTS_USER_HEAP_CHUNK = USER_HEAP_CHUNK/MINIMUM_OBJECT_SIZE };
   // enum { TOTAL_USER_HEAP_HUNKS = USER_HEAP_SIZE/USER_HEAP_CHUNK };
 
+	enum { WATCHPOINT_TRAP_MAP_SIZE = 528384 };
+
   // 4 bytes is representing by 1 bit. If bit is 0, it is not a canary word.
   // Otherwise, it is a canary word.
   enum { BIT_SECTOR_SIZE = 32 };
@@ -127,7 +129,7 @@ public:
   enum { THREAD_MAP_SIZE = 1024 };
   enum { MAX_STACK_SIZE = 0xa00000UL };  // 64pages
   enum { TEMP_STACK_SIZE = 0xa00000UL }; // 64 pages
-  enum { NUM_GLOBALS = 10 }; // At least, we need app globals, libc globals and libthread globals.
+  enum { NUM_GLOBALS = 32 }; // At least, we need app globals, libc globals and libthread globals.
   // enum { MAX_GLOBALS_SIZE = 1048576UL * 10 };
   enum { CACHE_LINE_SIZE = 64 };
 
