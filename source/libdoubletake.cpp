@@ -50,8 +50,6 @@ int g_waitersTotal;
 unsigned long count_epochs = 0;
 #endif
 __attribute__((constructor)) void initRealFunctions() {
-//	printf("calling min_init\n");
-  Real::initializer();
   funcInitialized = true;
   if(!initialized) {
 		// Now setup 
@@ -67,6 +65,7 @@ void initializer() {
   // may use this to share information.
   // initialize those library function entries.
 //	fprintf(stderr, "initializer function now\n");
+  Real::initializer();
 }
 
 __attribute__((destructor)) void finalizer() {
