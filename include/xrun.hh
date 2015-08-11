@@ -91,7 +91,6 @@ public:
   }
 
   void finalize() {
-//    PRINT("%d: finalize now !!!!!\n", getpid());
 #ifdef GET_CHARECTERISTICS
 			fprintf(stderr, "DOUBLETAKE has epochs %ld\n", count_epochs);
 #endif
