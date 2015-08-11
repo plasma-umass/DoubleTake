@@ -11,10 +11,8 @@
 #./heap_overflow_location_2147-doubletake
 #./HeapOverFlow_ArrayAddress_bad_1958-doubletake mybadtestnow
 #./HeapOverFlow_ArrayAddress_bad_2064-doubletake mybadtestnow
-./HeapOverFlow_Scope_bad_1955-doubletake mybadtestnow
-
-# Problems
-#./HeapOverFlow_Scope_bad_2063-doubletake
+#./HeapOverFlow_Scope_bad_1955-doubletake mybadtestnow
+./HeapOverFlow_Scope_bad_2063-doubletake mybadtestnow
 
 
 
