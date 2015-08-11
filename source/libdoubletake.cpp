@@ -61,6 +61,10 @@ __attribute__((constructor)) void initializer() {
   // may use this to share information.
   // initialize those library function entries.
 //	fprintf(stderr, "initializer function now\n");
+  if(!funcInitialized) {
+		initRealFunctions();
+	}
+
   if(!initialized) {
 		// Now setup
     xrun::getInstance().initialize();
