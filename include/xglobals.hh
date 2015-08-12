@@ -61,7 +61,7 @@ public:
 
   void recoverMemory() {
     for(int i = 0; i < _numbRegions; i++) {
-      // PRINF("Call begin at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end);
+     // PRINT("recover memory at i %d from %p to %p\n", i, _gRegions[i].start, _gRegions[i].end);
       _maps[i].recoverMemory(NULL);
     }
   }

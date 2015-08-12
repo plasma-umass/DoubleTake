@@ -57,7 +57,8 @@ public:
     // global mappings are RW_P, and either the heap, or the mapping is backed
     // by a file (and all files have absolute paths)
 		// the file is the current executable file, with [heap], or with lib*.so
-    return (_readable && _writable && !_executable && _copy_on_write) &&
+		// Actually, the mainfile can be longer if it has some parameters.
+	 return (_readable && _writable && !_executable && _copy_on_write) &&
            (_file.size() > 0 && (_file == mainfile ||  _file == "[heap]" || _file.find(".so") != std::string::npos));
   }
 
@@ -133,7 +134,6 @@ public:
 
   /// Check whether an address is inside the DoubleTake library itself.
   bool isDoubleTakeLibrary(void* pcaddr) {
-		fprintf(stderr, "pcaddr %p doubletakestart %p doubletakeend %p\n", pcaddr, _doubletakeStart, _doubletakeEnd);
     return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
   }
 
@@ -186,8 +186,7 @@ public:
 
       // skip libdoubletake
       if(m.isGlobals(_main_exe) && m.getFile().find("libdoubletake") == std::string::npos) {
-    //    PRINT("getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
-
+        //PRINT("getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
         regions[index].start = (void*)m.getBase();
         regions[index].end = (void*)m.getLimit();
         index++;
@@ -201,16 +200,24 @@ public:
 private:
   selfmap() {
     // Read the name of the main executable
-    char buffer[PATH_MAX];
-    Real::readlink("/proc/self/exe", buffer, PATH_MAX);
-    _main_exe = std::string(buffer);
-
+   // char buffer[PATH_MAX];
+    //Real::readlink("/proc/self/exe", buffer, PATH_MAX);
+    //_main_exe = std::string(buffer);
+		bool gotMainExe = false;
     // Build the mappings data structure
     ifstream maps_file("/proc/self/maps");
 
     while(maps_file.good() && !maps_file.eof()) {
       mapping m;
       maps_file >> m;
+			// It is more clean that that of using readlink. 
+			// readlink will have some additional bytes after the executable file 
+			// if there are parameters.	
+			if(!gotMainExe) {
+				_main_exe = std::string(m.getFile());
+				gotMainExe = true;
+			} 
+
       if(m.valid()) {
 			//	fprintf(stderr, "Base %lx limit %lx\n", m.getBase(), m.getLimit()); 
         _mappings[interval(m.getBase(), m.getLimit())] = m;

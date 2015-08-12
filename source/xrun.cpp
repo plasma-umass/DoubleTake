@@ -21,7 +21,7 @@
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
-//	PRINT("ROLLBACK now!\n");
+	PRINT("ROLLBACK now!\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {

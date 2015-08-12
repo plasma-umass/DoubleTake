@@ -94,7 +94,7 @@ int doubletake_main(int argc, char** argv, char** envp) {
 	// Now start the first epoch
 	xrun::getInstance().epochBegin();
 
-
+	//PRINT("before actually call real_main function\n");
   // Call the program's main function
   return real_main(argc, argv, envp);
 }

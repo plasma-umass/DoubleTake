@@ -81,12 +81,11 @@ public:
   /* Heap-related functions. */
   inline void* malloc(size_t sz) {
     void* ptr = NULL;
-  	//PRINT("malloc sz %lx at thread %d\n", sz, current->index);
     if(current->internalheap == true) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
 	    ptr = realmalloc(sz);
-    // PRINT("malloc, current %p ptr %p sz %ld\n", current, ptr, sz);
+    //  PRINT("malloc, current %p ptr %p sz %ld\n", current, ptr, sz);
     }
     return ptr;
   }
@@ -371,7 +370,7 @@ public:
 
     // We remove the actual size of this object to set free on an object.
     o->setObjectFree();
-    // PRINT("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
+   // PRINT("DoubleTake, line %d: free ptr %p\n", __LINE__, ptr);
     // Cleanup this object with sentinel except the first word.
   }
 

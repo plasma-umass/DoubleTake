@@ -80,7 +80,7 @@ bool watchpoint::findFaultyObject(faultyObject** object) {
   for(int i = 0; i < _numWatchpoints; i++) {
     unsigned long value = *((unsigned long*)_wp[i].faultyaddr);
 #ifndef EVALUATING_PERF
-    //	PRINT("DoubleTake: checking %d point: address %p currentvalue %lx value %lx\n", i, _wp[i].faultyaddr, _wp[i].currentvalue, value);
+    PRINT("DoubleTake: checking %d point: address %p currentvalue %lx value %lx\n", i, _wp[i].faultyaddr, _wp[i].currentvalue, value);
 #endif
     // Check whether now overflow actually happens
     if(value != _wp[i].currentvalue || _numWatchpoints == 1) {
