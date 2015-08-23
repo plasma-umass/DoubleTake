@@ -1,8 +1,8 @@
 CC=/nfs/cm/scratch1/tonyliu/grace/branches/llvm/llvm/bin/clang
 CXX=/nfs/cm/scratch1/tonyliu/grace/branches/llvm/llvm/bin/clang++
-ASAN_FLAGS=-g  -mllvm -asan-stack=0  -mllvm -asan-opt=1 -asan-instrument-reads=0 -asan-instrument-writes=1   -asan-mapping-scale=3 -asan-mapping-offset-log=-1 -asan-use-after-return=1  -asan-globals=0 -m64
+ASAN_FLAGS=-fsanitize=address -g  -mllvm -asan-stack=0  -mllvm -asan-opt=1 -mllvm -asan-instrument-reads=0 -mllvm -asan-instrument-writes=1  -mllvm -asan-mapping-scale=3 -mllvm -asan-mapping-offset-log=-1 -mllvm -asan-use-after-return=1 -mllvm -asan-globals=1 -m64
 
-CFLAGS = $(ASAN_FLAGS) -Wall -g -O0 -fno-stack-protector -D_FORTIFY_SOURCE=0 
+CFLAGS = $(ASAN_FLAGS) -I/usr/include/x86_64-linux-gnu/c++/4.8/ -Wall -fno-stack-protector -D_FORTIFY_SOURCE=0 
 CXXFLAGS = $(CFLAGS)
 LIBS = -lm -lrt -ldl
 DOUBLETAKE_LIBS += $(LIBS) -rdynamic ../../../libdoubletake.so
