@@ -1,0 +1,38 @@
+CC=/nfs/cm/scratch1/tonyliu/grace/branches/llvm/llvm/bin/clang
+CXX=/nfs/cm/scratch1/tonyliu/grace/branches/llvm/llvm/bin/clang++
+ASAN_FLAGS=-g  -mllvm -asan-stack=0  -mllvm -asan-opt=1 -asan-instrument-reads=0 -asan-instrument-writes=1   -asan-mapping-scale=3 -asan-mapping-offset-log=-1 -asan-use-after-return=1  -asan-globals=0 -m64
+
+CFLAGS = $(ASAN_FLAGS) -Wall -g -O0 -fno-stack-protector -D_FORTIFY_SOURCE=0 
+CXXFLAGS = $(CFLAGS)
+LIBS = -lm -lrt -ldl
+DOUBLETAKE_LIBS += $(LIBS) -rdynamic ../../../libdoubletake.so
+
+SRCS := $(wildcard *.c)
+TESTS := $(SRCS:.c=)
+PTHREAD_OBJS_C := $(addsuffix -pthread, $(TESTS))
+DOUBLETAKE_OBJS_C := $(addsuffix -doubletake, $(TESTS))
+
+CPPSRCS := $(wildcard *.cpp)
+CPPTESTS := $(CPPSRCS:.cpp=)
+PTHREAD_OBJS_CPP := $(addsuffix -pthread, $(CPPTESTS))
+DOUBLETAKE_OBJS_CPP := $(addsuffix -doubletake, $(CPPTESTS))
+
+.PHONY : default all clean
+default: all
+all: $(PTHREAD_OBJS_C) $(PTHREAD_OBJS_CPP) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP)
+clean:
+	rm -f $(PTHREAD_OBJS_C) $(PTHREAD_OBJS_CPP) $(DOUBLETAKE_OBJS_C) $(DOUBLETAKE_OBJS_CPP) 
+
+%-pthread:%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(PTHREAD_LIBS)
+
+%-doubletake:%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(DOUBLETAKE_LIBS)
+
+%-pthread:%.c
+	$(CC) $(CFLAGS) -o $@ $< $(PTHREAD_LIBS)
+
+%-doubletake:%.c
+	$(CC) $(CFLAGS) -o $@ $< $(DOUBLETAKE_LIBS)
+
+
