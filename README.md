@@ -23,8 +23,10 @@ with the lowest overhead to date of any dynamic analysis approach.
 All source code is licensed under the GPLv2 unless otherwise indicated.
 Copyright (C) 2014 University of Massachusetts Amherst
 
-## Note:
-Please increase the limit for number of files in order to run reverse_index or other applications. 
-In order to create the exactly the same sequence, we will preserve the order of file open/close. 
-Thus, DoubleTake won't close those files until the checking of epoch. 
-To increase the number of files for a specific user, we can change like http://askubuntu.com/questions/162229/how-do-i-increase-the-open-files-limit-for-a-non-root-user
+## Note
+
+In order to run certain applications, the maximum number of open files must be increased
+(this includes, for example, the reverse_index benchmark).
+
+To do this for a specific user, see
+http://askubuntu.com/questions/162229/how-do-i-increase-the-open-files-limit-for-a-non-root-user
