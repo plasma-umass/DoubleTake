@@ -3,10 +3,6 @@
 
 int main(int argc, char** argv) {
   int* p = (int*)malloc(sizeof(int));
-  printf ("MOOP.\n");
-  printf ("MOOP.\n");
-  printf ("MOOP.\n");
-  printf ("MOOP.\n");
   *p = 123;
   printf("Hello use after free\n");
   free(p);
