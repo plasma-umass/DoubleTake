@@ -65,12 +65,12 @@ void selfmap::printCallStack(int frames, void** array) {
 #endif
 
 #if 0
-		// We print out the first one who do not belong to library itself
-		//else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {
-		else if(!isDoubleTakeLibrary((void *)addr)) {
-    	index++;
-      PRINT("\tcallstack frame %d: %p\n", index, addr);
-		}
+  // We print out the first one who do not belong to library itself
+  //else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {
+  else if(!isDoubleTakeLibrary((void *)addr)) {
+    index++;
+    PRINT("\tcallstack frame %d: %p\n", index, addr);
+  }
 #endif
 }
 // Print out the code information about an eipaddress
