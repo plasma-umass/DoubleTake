@@ -1,12 +1,10 @@
-all:
-	mkdir -p obj
-	clang -std=c99 -g -MMD -MP -o obj/main.o -c main.c
-	clang -std=c99 -g -MMD -MP -o obj/overflow.o -c overflow.c
-	clang++ -rdynamic ../../libdoubletake.so  -o simple_overflow obj/main.o obj/overflow.o
-#	clang++ -rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/DoubleTakeCharlie/DoubleTake/libdoubletake.so  -o simple_overflow obj/main.o obj/overflow.o
+ROOT    := ../..
+TARGETS := simple_overflow
+CFLAGS  := -g
+LDFLAGS := -L$(ROOT) -ldoubletake
+
+include $(ROOT)/common.mk
 
 test::
-	./simple_overflow
-
-clean:
-	rm -rf obj/* 
+	@printenv
+	@LD_LIBRARY_PATH=$(ROOT) ./simple_overflow

@@ -3,7 +3,7 @@
 
 /*
  * @file   callsite.h
- * @brief  Management about callsite for heap objects.
+ * @brief  Management of callsites for heap objects.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 

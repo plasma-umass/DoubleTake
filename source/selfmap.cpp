@@ -30,10 +30,12 @@ void selfmap::printCallStack() {
   // get void*'s for all entries on the stack
   xthread::disableCheck();
   frames = backtrace(array, 256);
-
+  //  write(2, "FD PRINT:{\n", 11);
+  //  backtrace_symbols_fd(array, frames, 2);
 	//char** syms = backtrace_symbols(array, frames);
+  //  write(2, "}FD PRINT\n", 10);
 
-  // Print out the source code information if it is a overflow site.
+  // Print out the source code information if it is an overflow site.
   selfmap::getInstance().printCallStack(frames, array);
   xthread::enableCheck();
 }
@@ -41,25 +43,26 @@ void selfmap::printCallStack() {
 // Calling system involves a lot of irrevocable system calls.
 void selfmap::printCallStack(int frames, void** array) {
 #if 0
-	char** syms = backtrace_symbols(array, frames);
-
-	for(int i=0; i<frames; i++) {
+  char** syms = backtrace_symbols(array, frames);
+  
+  for(int i=0; i<frames; i++) {
     fprintf(stderr, "  %d: %s\n", i, syms[i]);
   }
 #endif
 
 #if 1
-	char buf[256];
+  char buf[256];
   //  fprintf(stderr, "printCallStack(%d, %p)\n", depth, array);
   for(int i = 0; i < frames; i++) {
     void* addr = (void*)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
-    	
-		//PRINT("\tcallstack frame %d: %p\t", i, addr);
+    
+    //PRINT("\tcallstack frame %d: %p\t", i, addr);
     // Print out the corresponding source code information
-    sprintf(buf, "addr2line -a -i -e %s %p", _main_exe.c_str(), addr);
+    sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), addr);
     system(buf);
-	}
+  }
 #endif
+
 #if 0
 		// We print out the first one who do not belong to library itself
 		//else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {

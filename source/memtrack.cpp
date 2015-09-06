@@ -32,7 +32,7 @@ void memtrack::check(void* start, size_t size, memTrackType type) {
 			// Since printing can cause SPEC2006 benchmarks to fail, thus comment them for evaluating perf.
       // Insert or print.
       if(object->hasLeak()) {
-        PRINT("\nLeak object at address %p size %ld. Current call stack:\n", object->start,
+        PRINT("Leaked object: start address = %p, size = %ld.\nCurrent call stack:\n", object->start,
               object->objectSize);
         selfmap::getInstance().printCallStack(depth, (void**)&callsites[0]);
       }

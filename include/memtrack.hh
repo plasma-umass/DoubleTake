@@ -20,14 +20,13 @@ typedef enum e_memtrackType { MEM_TRACK_MALLOC = 1, MEM_TRACK_FREE = 2 } memTrac
 class trackObject {
 public:
   void* start;
-  size_t objectSize; // Object size, mostly using for memory leak only.
+  size_t objectSize; // Object size, mostly using for memory leak checking.
   size_t currentObjectSize;
   int objecttype;
   int tracktype;
-  // It is important to have this for use-after-free operation.
-  // For example, an object can be re-used. It is possible that
-  // a object are going to use before this, then we do not report any
-  // message on this.
+  // It is important to have this for use-after-free operation.  For
+  // example, an object can be re-used. It is possible that an object
+  // gets used before this, then we would not report any error.
   int tracedOps;
   CallSite allocSite;
   CallSite freeSite;

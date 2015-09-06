@@ -21,27 +21,28 @@
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
-	PRINT("ROLLBACK now!\n");
+  PRINT("DoubleTake: Activating rollback to isolate error.\n")
+  //PRINT("ROLLBACK now!\n");
   // If this is the first time to rollback,
   // then we should rollback now.
   if(global_hasRollbacked()) {
-    PRINF("HAS rolled back, now exiting.\n");
+    // PRINF("HAS rolled back, now exiting.\n");
     abort();
   }
 
   // Rollback all memory before rolling back the context.
   _memory.rollback();
 
-  PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
+  //  PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
  
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
   _thread.prepareRollback();
-   PRINF("_thread rollback and actual rollback\n");
+  //   PRINF("_thread rollback and actual rollback\n");
 
   // Now we are going to rollback
-  PRINF("\n\nSTARTING ROLLBACK!!!\n\n\n");
+   //  PRINF("\n\nSTARTING ROLLBACK!!!\n\n\n");
 
 	// Now time to rollback myself.
   _thread.checkRollbackCurrent();
@@ -137,12 +138,12 @@ void xrun::epochEnd(bool endOfProgram) {
 #ifndef EVALUATING_PERF
 // First, attempt to commit.
 #if defined(DETECT_OVERFLOW) && defined(DETECT_MEMORY_LEAKS)
-  PRWRN("DoubleTake: in the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
+  PRWRN("DoubleTake: At the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
   if(hasOverflow || hasMemoryLeak) {
     rollback();
   } else {
 #elif defined(DETECT_OVERFLOW)
-  PRINF("DoubleTake: in the end of an epoch, hasOverflow %d\n", hasOverflow);
+  PRINF("DoubleTake: At the end of an epoch, hasOverflow %d\n", hasOverflow);
   if(hasOverflow) {
     rollback();
   } else {
