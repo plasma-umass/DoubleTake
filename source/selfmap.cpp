@@ -55,11 +55,12 @@ void selfmap::printCallStack(int frames, void** array) {
   //  fprintf(stderr, "printCallStack(%d, %p)\n", depth, array);
   for(int i = 0; i < frames; i++) {
     void* addr = (void*)((unsigned long)array[i] - PREV_INSTRUCTION_OFFSET);
-    
-    //PRINT("\tcallstack frame %d: %p\t", i, addr);
-    // Print out the corresponding source code information
-    sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), addr);
-    system(buf);
+    if (isApplication(addr)) {
+      //PRINT("\tcallstack frame %d: %p\t", i, addr);
+      // Print out the corresponding source code information
+      sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), addr);
+      system(buf);
+    }
   }
 #endif
 
