@@ -42,10 +42,20 @@ class mapping {
 public:
   mapping() : _valid(false) {}
 
-  mapping(uintptr_t base, uintptr_t limit, char* perms, size_t offset, std::string file)
-      : _valid(true), _base(base), _limit(limit), _readable(perms[0] == 'r'),
-        _writable(perms[1] == 'w'), _executable(perms[2] == 'x'), _copy_on_write(perms[3] == 'p'),
-        _offset(offset), _file(file) {}
+  mapping(uintptr_t base,
+	  uintptr_t limit,
+	  char* perms,
+	  size_t offset,
+	  std::string file)
+      : _valid(true),
+	_base(base),
+	_limit(limit),
+	_readable(perms[0] == 'r'),
+        _writable(perms[1] == 'w'),
+	_executable(perms[2] == 'x'),
+	_copy_on_write(perms[3] == 'p'),
+        _offset(offset),
+	_file(file) {}
 
   bool valid() const { return _valid; }
 
@@ -56,10 +66,10 @@ public:
   bool isGlobals(std::string mainfile) const {
     // global mappings are RW_P, and either the heap, or the mapping is backed
     // by a file (and all files have absolute paths)
-		// the file is the current executable file, with [heap], or with lib*.so
-		// Actually, the mainfile can be longer if it has some parameters.
-	 return (_readable && _writable && !_executable && _copy_on_write) &&
-           (_file.size() > 0 && (_file == mainfile ||  _file == "[heap]" || _file.find(".so") != std::string::npos));
+    // the file is the current executable file, with [heap], or with lib*.so
+    // Actually, the mainfile can be longer if it has some parameters.
+    return (_readable && _writable && !_executable && _copy_on_write) &&
+      (_file.size() > 0 && (_file == mainfile ||  _file == "[heap]" || _file.find(".so") != std::string::npos));
   }
 
   uintptr_t getBase() const { return _base; }
