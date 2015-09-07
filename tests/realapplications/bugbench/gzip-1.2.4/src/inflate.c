@@ -399,7 +399,7 @@ int *m;                 /* maximum lookup bits, returns actual */
         }
         z = 1 << j;             /* table entries for j-bit table */
 
-printf("malloc is called\n");
+	/* printf("malloc is called\n"); */
         /* allocate and link in new table */
         if ((q = (struct huft *)malloc((z + 1)*sizeof(struct huft))) ==
             (struct huft *)NULL)

@@ -397,7 +397,7 @@ void display_ratio(num, den, file)
 voidp xmalloc (size)
     unsigned size;
 {
-    printf("xmalloc is called\n");
+  /*    printf("xmalloc is called\n"); */
     voidp cp = (voidp)malloc (size);
 
     if (cp == NULL) error("out of memory");
