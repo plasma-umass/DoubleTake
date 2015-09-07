@@ -12,7 +12,7 @@ OPTS    += -fomit-frame-pointer -fno-exceptions -fno-strict-aliasing -finline-li
 CFLAGS= $(OPTS)
 CC    = gcc
 
-DOUBLELIB=-rdynamic /nfs/cm/scratch1/tonyliu/grace/branches/DoubleTake/libdoubletake64.so
+DOUBLELIB=-rdynamic ../../../../../libdoubletake.so
 
 OBJS	= bits.o deflate.o gzip.o getopt.o inflate.o lzw.o \
 	  crypt.c trees.o unlzh.o unlzw.o unpack.o unzip.o util.o zip.o
