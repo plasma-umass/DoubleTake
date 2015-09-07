@@ -43,7 +43,7 @@ MAINTAINERCLEANFILES = Makefile.in libmath.h bc.c bc.h scan.c
 
 INCLUDES = -I$(srcdir) -I$(srcdir)/../h $(INCLS)
 LIBBC = ../lib/libbc.a
-LIBL = -lfl -rdynamic ../../../../../../libdoubletake.so
+LIBL = -lfl -rdynamic 
 LDADD = $(LIBBC) $(LIBL) 
 
 YFLAGS = -d
@@ -111,6 +111,8 @@ maintainer-clean-compile:
 bc: $(bc_OBJECTS) $(bc_DEPENDENCIES)
 	@rm -f bc
 	$(LINK) $(bc_LDFLAGS) $(bc_OBJECTS) $(MLOPTS) $(bc_LDADD) $(LIBS)
+	$(LINK) $(bc_LDFLAGS) $(bc_OBJECTS) $(MLOPTS) $(bc_LDADD) $(LIBS) ../../../../../../libdoubletake.so -o bc-doubletake
+
 .l.c:
 	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
 .y.c:
