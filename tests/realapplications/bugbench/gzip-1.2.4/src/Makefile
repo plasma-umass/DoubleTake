@@ -23,7 +23,8 @@ OBJS	= bits.o deflate.o gzip.o getopt.o inflate.o lzw.o \
 all: gzip
 
 gzip: $(OBJS)
-	$(CC) $(MOPTS) -o $@ $^ $(MLOPTS) $(DOUBLELIB)
+	$(CC) $(MOPTS) -o $@-doubletake $^ $(MLOPTS) $(DOUBLELIB)
+	$(CC) $(MOPTS) -o $@ $^ $(MLOPTS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLS) $(DECLS) -c $<
