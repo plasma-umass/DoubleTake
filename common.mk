@@ -11,7 +11,7 @@ LDFLAGS  += $(addprefix -l,$(LIBS))
 SRCS    ?= $(wildcard *.cpp) $(wildcard *.c)
 OBJS    ?= $(addprefix obj/,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SRCS))))
 
-# Targets to build recirsively into $(DIRS)
+# Targets to build recursively into $(DIRS)
 RECURSIVE_TARGETS  ?= all clean bench test
 
 # Build in parallel
