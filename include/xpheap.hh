@@ -18,6 +18,7 @@
 #include "xdefines.hh"
 
 // Include all of heaplayers
+#define MALLOC_TRACE 0
 #include "heaplayers.h"
 
 template <class SourceHeap> class AdaptAppHeap : public SourceHeap {
