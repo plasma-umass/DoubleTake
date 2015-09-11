@@ -21,7 +21,7 @@
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
-  PRINT("DoubleTake: Activating rollback to isolate error.\n")
+  PRINT("DoubleTake: Activating rollback to isolate error.\n");
   //PRINT("ROLLBACK now!\n");
   // If this is the first time to rollback,
   // then we should rollback now.
