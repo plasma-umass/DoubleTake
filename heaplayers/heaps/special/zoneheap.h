@@ -105,7 +105,7 @@ namespace HL {
 			//fprintf(stderr, "first is %d second removing int is %d\n", (_currentArena == NULL), (_sizeRemaining <  sz));	
       // Get more space in our arena if there's not enough room in this one.
 			// TONGPING: first bug, we should not use (int) to transfer
-      if ((_currentArena == NULL) || (_sizeRemaining < sz)) {
+      if ((_currentArena == NULL) || (_sizeRemaining < (ssize_t)sz)) {
 			//fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx line %d\n", sz, _currentArena, _sizeRemaining, __LINE__);
 			
 		//	fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx _currentArena at %p\n", sz, _currentArena, _sizeRemaining, &_currentArena);
