@@ -79,7 +79,7 @@ typedef struct thread {
 
 	// If the thread is waiting on a user-provided conditional variable,	
 	// we will record this conditional variable.
-  pthread_cond_t * condwait;;
+  pthread_cond_t * condwait;
 
   // mutex when a thread is trying to change its state.
   // In fact, this mutex is only protect joiner.
