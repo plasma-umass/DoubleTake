@@ -35,6 +35,9 @@ extern runtime_data_t *global_data;
 #endif
 */
 
+#define __printf_like(a, b) __attribute__((format(printf, a, b)))
+#define __noreturn __attribute__((noreturn))
+
 extern size_t __max_stack_size;
 typedef void* threadFunction(void*);
 extern int getThreadIndex();
