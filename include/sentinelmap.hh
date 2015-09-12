@@ -325,9 +325,8 @@ public:
 	}
 
 
-private:
   // How to calculate the shift bits according to the sector size
-  int calcShiftBits(size_t sectorsize) {
+  static int calcShiftBits(size_t sectorsize) {
     int i = 0;
 
     while((1UL << i) < sectorsize) {
@@ -335,13 +334,15 @@ private:
     }
 
     if((1UL << i) != sectorsize) {
-      PRWRN("Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
-      abort();
+      FATAL("Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
     }
 
     return i;
   }
 
+  static int getBytes(int elements) { return (elements / BYTEBITS); }
+
+private:
   // Calculate word index of an address.
   // Then we can get which bit should we care about.
   inline unsigned long getIndex(void* addr) {
@@ -352,8 +353,6 @@ private:
 
   // Calculate the bitmap word from wordIndex
   inline unsigned long getWordIndex(unsigned long index) { return index >> _itemShiftBits; }
-
-  int getBytes(int elements) { return (elements / BYTEBITS); }
 
   inline unsigned long getBitSize(size_t size) { return size >> _wordShiftBits; }
 

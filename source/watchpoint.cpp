@@ -144,13 +144,16 @@ void watchpoint::installWatchpoints() {
 
 int watchpoint::install_watchpoint(uintptr_t address, int sig, int group) {
   // Perf event settings
-  struct perf_event_attr pe = {.type = PERF_TYPE_BREAKPOINT,
-                               .size = sizeof(struct perf_event_attr),
-                               .bp_type = HW_BREAKPOINT_W,
-                               .bp_len = HW_BREAKPOINT_LEN_4,
-                               .bp_addr = (uintptr_t)address,
-                               .disabled = 1,
-                               .sample_period = 1, };
+  struct perf_event_attr pe;
+
+  memset(&pe, 0, sizeof(pe));
+  pe.type = PERF_TYPE_BREAKPOINT;
+  pe.size = sizeof(pe);
+  pe.bp_type = HW_BREAKPOINT_W;
+  pe.bp_len = HW_BREAKPOINT_LEN_4;
+  pe.bp_addr = (uintptr_t)address;
+  pe.disabled = 1;
+  pe.sample_period = 1;
 
   // Create the perf_event for this thread on all CPUs with no event group
   int perf_fd = perf_event_open(&pe, 0, -1, group, 0);
