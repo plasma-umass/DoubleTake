@@ -1,5 +1,7 @@
 *.o
 *.d
+/source/obj
+/build
 libdoubletake.so
 libdttest_s.a
 simple.test
