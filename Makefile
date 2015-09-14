@@ -18,7 +18,7 @@ WARNFLAGS := \
         -Wno-format-pedantic \
         -Wno-nested-anon-types
 
-SUBDIRS           = tests
+SUBDIRS           = tests tests/unit
 SUBDIR_BUILDFILES = $(addsuffix /build.mk,$(SUBDIRS))
 
 # prefer clang
