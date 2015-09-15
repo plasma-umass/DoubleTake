@@ -120,14 +120,7 @@ private:
 	};
 
 public:
-  xsync() {}
-
-	static xsync& getInstance() {
-    static char buf[sizeof(xsync)];
-    static xsync* theOneTrueObject = new (buf) xsync();
-    return *theOneTrueObject;
-  }
-
+  explicit xsync() {}
 
   void initialize() {
 		// Initialize two lists for record synchronization variables.
@@ -190,12 +183,8 @@ public:
 		lock();
 		entry =  _newList.retrieveSyncEntry(type, nominal);
 		unlock();
-		if(entry != NULL) {
-			return entry->real;
-		}
-		else {
-			return NULL;
-		}	
+
+		return entry->real;
 	}
 
 	// During the begin of an epoch
@@ -308,7 +297,7 @@ public:
 
 		// Having pending events
     if(!isListEmpty(eventlist)) {
-		PRINF("During peek, calling singalCurrentThread %d. with pending events.\n", thread->index);
+		PRINF("During peek, calling singalCurrentThread %d. with pending events.", thread->index);
       // Signal itself when current event is first event of this thread.
       struct pendingSyncEvent* pe = NULL;
 
@@ -419,7 +408,7 @@ public:
   static void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
-		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
+		PRINF("prepareEventListRollback eventlist %p event %p", eventlist, event);
     if(event) {
       // Signal to next thread with the top event
       signalNextThread(event);
