@@ -1,4 +1,7 @@
+#include <execinfo.h>
+
 #include "memtrack.hh"
+#include "xthread.hh"
 
 #include "selfmap.hh"
 #include "sentinelmap.hh"
@@ -26,7 +29,9 @@ void memtrack::check(void* start, size_t size, memTrackType type) {
        (object->hasLeak() && (object->objectSize == size))) {
       // Now we check the type of this object.
       void* callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];
-      int depth = selfmap::getCallStack((void**)&callsites);
+      xthread::disableCheck();
+      int depth = backtrace(callsites, xdefines::CALLSITE_MAXIMUM_LENGTH);
+      xthread::enableCheck();
       object->saveCallsite(size, type, depth, (void**)&callsites[0]);
 #ifndef EVALUATING_PERF
 			// Since printing can cause SPEC2006 benchmarks to fail, thus comment them for evaluating perf.
