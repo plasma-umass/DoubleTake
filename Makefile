@@ -41,6 +41,7 @@ LDFLAGS  =
 
 ifeq ($(ARCH), x86)
 CFLAGS  += -m32 -DX86_32BIT
+LDFLAGS += -m32
 endif
 
 LIB      = libdoubletake.so

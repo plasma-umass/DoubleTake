@@ -368,10 +368,8 @@ public:
   }
 
   inline bool isInvalidSyncVar(void* realMutex) {
-    return (((intptr_t)realMutex < xdefines::INTERNAL_HEAP_BASE) ||
-                    ((intptr_t)realMutex >= xdefines::INTERNAL_HEAP_END)
-                ? true
-                : false);
+    return ((intptr_t)realMutex < (intptr_t)xdefines::INTERNAL_HEAP_BASE ||
+            (intptr_t)realMutex >= (intptr_t)xdefines::INTERNAL_HEAP_END);
   }
 
   int do_mutex_lock(void* mutex, thrSyncCmd synccmd) {

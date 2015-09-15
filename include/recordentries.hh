@@ -63,7 +63,7 @@ public:
       _cur++;
     } else {
       // There are no enough entries now; re-allocate new entries now.
-      PRWRN("Not enough entries, now _cur %lu, _total %lu at %p!!!\n", _cur, _total, &_cur);
+      PRWRN("Not enough entries, now _cur %zu, _total %zu at %p!!!\n", _cur, _total, &_cur);
       ::abort();
     }
     return entry;
@@ -105,7 +105,7 @@ public:
   // No change on iteration entry.
   Entry* getEntry() {
     Entry* entry = NULL;
-		PRINF("getEntry: _iter %ld, _cur %ld\n", _iter, _cur);
+		PRINF("getEntry: _iter %zd, _cur %zd\n", _iter, _cur);
     if(_iter < _cur) {
       entry = getEntry(_iter);
     }

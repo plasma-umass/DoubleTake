@@ -294,7 +294,7 @@ public:
 
     if(blockSize < sz) {
 #ifndef EVALUATING_PERF
-      PRWRN("Wrong object with blockSize %#lx sz %#lx\n", blockSize, sz);
+      PRWRN("Wrong object with blockSize %#zx sz %#zx\n", blockSize, sz);
       assert(blockSize >= sz);
 #endif
     }

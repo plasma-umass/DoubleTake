@@ -18,8 +18,12 @@
 class objectHeader {
 public:
   objectHeader(size_t sz)
-    : _blockSize(sz), _objectSize(0), _sentinel(xdefines::SENTINEL_WORD)
+    : _blockSize(sz), _objectSize(0),
+      _sentinel(xdefines::SENTINEL_WORD)
   {
+#ifdef X86_32BIT
+    _padding = 0;
+#endif
   }
 
   size_t getSize() { return (size_t)_blockSize; }
