@@ -49,9 +49,7 @@ class xthread {
 	};
 
 public:
-  xthread() : _sync(),
-							_thread(threadinfo::getInstance())
-	{}
+  xthread() : _sync(), _sysrecord(), _thread() {}
 
   // Actually, it is not an actual singleton.
   // Every process will have one copy. They can be used
@@ -82,6 +80,9 @@ public:
   void finalize() {
 		destroyAllSemaphores(); 
 	}
+
+  int getThreadIndex() const;
+  char *getCurrentThreadBuffer();
 
   // After an epoch is end and there is no overflow,
   // we should discard those record events since there is no
@@ -334,7 +335,7 @@ public:
     invokeCommit();
     retval = Real::pthread_cancel(thread);
     if(retval == 0) {
-      threadinfo::getInstance().cancelAliveThread(thread);
+      _thread.cancelAliveThread(thread);
     }
     return retval;
   }
@@ -406,10 +407,9 @@ public:
       	list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
      		PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n", current->index, mutex, realMutex, list);
 			}
-    } 
-		else if (!current->disablecheck) {
+    } else if (!current->disablecheck) {
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
-     PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
+      PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n", current->index, mutex, list);
       assert(list != NULL);
 
 			/* Peek the synchronization event (first event in the thread), it will confirm the following things
@@ -434,9 +434,19 @@ public:
     return ret;
   }
 
-  int mutex_lock(pthread_mutex_t* mutex) { return do_mutex_lock(mutex, E_SYNC_MUTEX_LOCK); }
+  int mutex_lock(pthread_mutex_t* mutex) {
+    if (current->disablecheck)
+      return Real::pthread_mutex_lock((pthread_mutex_t *)mutex);
+    else
+      return do_mutex_lock(mutex, E_SYNC_MUTEX_LOCK);
+  }
 
-  int mutex_trylock(pthread_mutex_t* mutex) { return do_mutex_lock(mutex, E_SYNC_MUTEX_TRY_LOCK); }
+  int mutex_trylock(pthread_mutex_t* mutex) {
+    if (current->disablecheck)
+      return Real::pthread_mutex_trylock((pthread_mutex_t *)mutex);
+    else
+      return do_mutex_lock(mutex, E_SYNC_MUTEX_TRY_LOCK);
+  }
 
   int mutex_unlock(pthread_mutex_t* mutex) {
     int ret = 0;
@@ -448,8 +458,7 @@ public:
 
 			// Now the thread is safe to be interrupted.
   		setThreadSafe();
-    } 
-		else if(!current->disablecheck) {
+    } else if(!current->disablecheck) {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       PRDBG("mutex_unlock at mutex %p list %p\n", mutex, list);
       //	PRINF("mutex_unlock at mutex %p list %p\n", mutex, list);
@@ -458,6 +467,8 @@ public:
         _sync.signalNextThread(nextEvent);
       }
       PRDBG("mutex_unlock at mutex %p list %p done\n", mutex, list);
+    } else {
+      Real::pthread_mutex_unlock(mutex);
     }
     // WARN("mutex_unlock mutex %p\n", mutex);
     return ret;
@@ -852,7 +863,7 @@ public:
   };
 
   inline static void restoreContext() {
-    PRINF("restore context now\n");
+    PRINF("restore context now (ROLLBACK)");
     current->context.rollback();
   };
 
@@ -866,10 +877,10 @@ public:
   inline static void rollbackContext() { assert(0); }
 
   // Run those deferred synchronization.
-  inline static void runDeferredSyncs() { threadinfo::getInstance().runDeferredSyncs(); }
+  inline void runDeferredSyncs() { _thread.runDeferredSyncs(); }
 
   //
-  inline static bool hasReapableThreads() { return threadinfo::getInstance().hasReapableThreads(); }
+  inline bool hasReapableThreads() { return _thread.hasReapableThreads(); }
 
   inline static void enableCheck() {
     current->internalheap = false;
@@ -902,8 +913,7 @@ private:
 			void * real = _sync.retrieveRealSyncEntry(type, nominal);
 			if(real != NULL) {
 				*((void **)nominal) = real;
-			}
-			else if(type == E_SYNCVAR_MUTEX) {
+			} else if(type == E_SYNCVAR_MUTEX) {
 				// Somehow, replay phase may call different lock, for example, backtrace.
 				// Allocate an real entry for that.
       	// Allocate a mutex
@@ -970,9 +980,9 @@ private:
   static void waitSemaphore() {
     semaphore* sema = &current->sema;
 
-		PRINF("wait on semaphore %p\n", sema);
+		PRINF("wait on semaphore %p", sema);
     sema->get();
-		PRINF("Get the semaphore %p\n", sema);
+		PRINF("Get the semaphore %p", sema);
   }
 
   semaphore* getSemaphore() { return &current->sema; }
@@ -1089,10 +1099,9 @@ private:
   // Insert a synchronization variable into the global list, which
   // are reaped later in the beginning of next epoch.
   inline bool deferSync(void* ptr, syncVariableType type) {
-		if(type == E_SYNCVAR_THREAD) {
-    	return threadinfo::getInstance().deferSync(ptr, type);
-		}
-		else {
+    if(type == E_SYNCVAR_THREAD) {
+      return _thread.deferSync(ptr, type);
+    } else {
 			xsync::SyncEntry * entry = (xsync::SyncEntry *)(*((void **)((intptr_t)ptr + sizeof(void *))));
 
 			//if(type == E_SYNCVAR_BARRIER) {
@@ -1176,11 +1185,9 @@ private:
     return result;
   }
 
-  // They are claimed in xthread.cpp since I don't
-  // want to create an xthread.cpp
   xsync _sync;
-	SysRecord _sysrecord;
-  threadinfo& _thread;
+  SysRecord _sysrecord;
+  threadinfo _thread;
   SyncEventList * _spawningList;
 };
 

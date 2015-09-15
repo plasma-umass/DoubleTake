@@ -126,6 +126,9 @@ public:
   void epochBegin();
   void epochEnd(bool endOfProgram);
 
+  int getThreadIndex() const { return _thread.getThreadIndex(); }
+  char *getCurrentThreadBuffer() { return _thread.getCurrentThreadBuffer(); }
+
 private:
   void syscallsInitialize();
   void stopAllThreads();

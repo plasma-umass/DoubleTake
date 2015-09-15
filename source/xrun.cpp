@@ -17,6 +17,14 @@
 #include "threadmap.hh"
 #include "threadstruct.hh"
 
+int getThreadIndex() {
+  return xrun::getInstance().getThreadIndex();
+}
+
+char *getCurrentThreadBuffer() {
+  return xrun::getInstance().getCurrentThreadBuffer();
+}
+
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
@@ -80,7 +88,7 @@ void xrun::epochBegin() {
   }
   PRINF("xrun epochBegin, joinning every thread done.\n");
 
-  xthread::runDeferredSyncs();
+  _thread.runDeferredSyncs();
 
   PRINF("xrun epochBegin, run deferred synchronizations done.\n");
 
