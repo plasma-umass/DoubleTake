@@ -57,7 +57,7 @@ public:
     lock();
 
     if(_remaining < sz) {
-      fprintf(stderr, "Out of memory error: available = %lx, requested = %lx, thread = %d.\n",
+      fprintf(stderr, "Out of memory error: available = %zx, requested = %zx, thread = %d.\n",
               _remaining, sz, (int)pthread_self());
 			unlock();
       exit(-1);

@@ -250,9 +250,12 @@ private:
 
   // Search heap pointers inside registers set.
   void searchHeapPointers(ucontext_t* context) {
+    // TODO: 32-bit implementation
+#ifndef X86_32BIT
     for(int i = REG_R8; i <= REG_RCX; i++) {
       checkInsertUnexploredList(context->uc_mcontext.gregs[i]);
     }
+#endif
   }
 
   // Seearch heap pointers inside all stack area

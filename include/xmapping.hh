@@ -23,8 +23,8 @@ public:
 
   // Initialize the map and corresponding part.
   void initialize(void* startaddr = 0, size_t size = 0, void* heapstart = NULL) {
-    REQUIRE(size % xdefines::PageSize == 0, "Wrong size %lx, should be page aligned", size);
-    PRINF("xmapping starts at %p, size %lx", startaddr, size);
+    REQUIRE(size % xdefines::PageSize == 0, "Wrong size %zx, should be page aligned", size);
+    PRINF("xmapping starts at %p, size %zx", startaddr, size);
 
     // Establish two maps to the backing file.
     // The persistent map is shared.

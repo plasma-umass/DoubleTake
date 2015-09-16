@@ -229,7 +229,7 @@ private:
     struct Entry* entry = createNewEntry(key, keylen, value);
     listInsertTail(&entry->list, &head->list);
     head->count++;
-    PRINF("insertEntry entry %p at head %p, headcount %ld\n", entry, head, head->count);
+    PRINF("insertEntry entry %p at head %p, headcount %zd\n", entry, head, head->count);
     PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", entry,
           entry->list.next, head, &head->list, head->list.next);
   }

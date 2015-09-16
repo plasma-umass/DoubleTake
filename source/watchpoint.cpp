@@ -43,7 +43,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
 
 #ifndef EVALUATING_PERF
   if(objtype == OBJECT_TYPE_OVERFLOW) {
-    PRINT("DoubleTake: Buffer overflow detected at address %p: value=0x%lx, size=%lx, start=%p\n",
+    PRINT("DoubleTake: Buffer overflow detected at address %p: value=0x%zx, size=%zx, start=%p\n",
 	  addr, value, objectsize, objectstart);
     // PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
   } 
@@ -209,7 +209,7 @@ bool watchpoint::checkAndSaveCallsite(faultyObject* object, int depth, void** ca
 // Handle those traps on watchpoints now.
 void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* context) {
   ucontext_t* trapcontext = (ucontext_t*)context;
-  size_t* addr = (size_t*)trapcontext->uc_mcontext.gregs[REG_RIP]; // address of access
+  size_t* addr = (size_t*)trapcontext->uc_mcontext.gregs[REG_IP]; // address of access
 
   // Find faulty object.
   faultyObject* object;

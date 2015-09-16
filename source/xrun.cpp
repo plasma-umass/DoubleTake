@@ -17,7 +17,6 @@
 #include "threadmap.hh"
 #include "threadstruct.hh"
 
-
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
@@ -244,9 +243,9 @@ bool isNewThread() { return current->isNewlySpawned; }
 
 void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
   PRINF("%p: inside signal handler %p.\n", (void*)pthread_self(),
-        (void*)cxt->uc_mcontext.gregs[REG_RIP]);
+        (void*)cxt->uc_mcontext.gregs[REG_IP]);
   // selfmap::getInstance().printCallStack(NULL, NULL, true);
-  cxt->uc_mcontext.gregs[REG_RIP] = funcaddr;
+  cxt->uc_mcontext.gregs[REG_IP] = funcaddr;
 }
 
 /* 

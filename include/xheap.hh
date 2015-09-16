@@ -55,7 +55,7 @@ public:
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize + metasize, (void*)_start);
 
-    PRINF("XHEAP %p - %p, position: %p, remaining: %#lx", _start, _end, _position, _remaining);
+    PRINF("XHEAP %p - %p, position: %p, remaining: %#zx", _start, _end, _position, _remaining);
 
     return (void*)ptr;
   }
@@ -74,7 +74,7 @@ public:
   inline void saveHeapMetadata() {
     _positionBackup = _position;
     _remainingBackup = _remaining;
-    PRINF("save heap metadata, _position %p remaining %#lx\n", _position, _remaining);
+    PRINF("save heap metadata, _position %p remaining %#zx\n", _position, _remaining);
   }
 
   /// We will overlap the metadata with the saved ones
@@ -82,7 +82,7 @@ public:
   inline void recoverHeapMetadata() {
     _position = _positionBackup;
     _remaining = _remainingBackup;
-    PRINF("in recover, now _position %p remaining 0x%lx\n", _position, _remaining);
+    PRINF("in recover, now _position %p remaining 0x%zx\n", _position, _remaining);
   }
 
   inline void* getHeapStart() { return (void*)_start; }
@@ -108,7 +108,7 @@ public:
 
     if(_remaining < sz) {
       fprintf(stderr, "Fatal error: out of memory for heap.\n");
-      fprintf(stderr, "Fatal error: remaining %lx sz %lx\n", _remaining, sz);
+      fprintf(stderr, "Fatal error: remaining %zx sz %zx\n", _remaining, sz);
       exit(-1);
     }
 
@@ -119,7 +119,7 @@ public:
 
     unlock();
 
-		//fprintf(stderr, "malloc sz %lx returnptr %p : _position %p remaining %lx\n", sz, p, _position, _remaining);
+		//fprintf(stderr, "malloc sz %zx returnptr %p : _position %p remaining %zx\n", sz, p, _position, _remaining);
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)
     // We must cleanup corresponding bitmap
     sentinelmap::getInstance().cleanup(p, sz);

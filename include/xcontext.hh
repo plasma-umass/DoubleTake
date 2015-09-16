@@ -138,7 +138,7 @@ public:
     _backupSize = size;
 
     if(size >= _stackSize) {
-      PRWRN("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n", size,
+      PRWRN("Wrong. Current stack size (%zx = %p - %p) is larger than total size (%zx)\n", size,
             _privateTop, _privateStart, _stackSize);
       Real::exit(-1);
     }
@@ -158,7 +158,7 @@ public:
     _backupSize = size;
 
     if(size >= _stackSize) {
-      PRWRN("Wrong. Current stack size (%lx = %p - %p) is larger than total size (%lx)\n", size,
+      PRWRN("Wrong. Current stack size (%zx = %p - %p) is larger than total size (%zx)\n", size,
             _privateTop, _privateStart, _stackSize);
       abort();
     }
@@ -304,7 +304,7 @@ private:
   void* getBackupStart() { return _backup; }
   // How to get ESP/RSP from the specified context.
   unsigned long getStackPointer(ucontext* context) {
-#ifndef X86_32BITS
+#ifndef X86_32BIT
     return context->uc_mcontext.gregs[REG_RSP];
 #else
     return context->uc_mcontext.gregs[REG_ESP];

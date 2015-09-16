@@ -4,6 +4,12 @@
 #include <stddef.h>
 #include <ucontext.h>
 
+#ifdef X86_32BIT
+#define REG_IP REG_EIP
+#else
+#define REG_IP REG_RIP
+#endif
+
 #include "list.hh"
 
 /*
@@ -92,8 +98,11 @@ public:
   //  enum { USER_HEAP_SIZE     = 1048576UL * 1024 }; // 8G
   enum { USER_HEAP_BASE = 0x100000000 }; // 4G
   enum { MAX_USER_SPACE = USER_HEAP_BASE + USER_HEAP_SIZE };
+#ifdef X86_32BIT
+  enum { INTERNAL_HEAP_BASE = 0xC0000000 };
+#else
   enum { INTERNAL_HEAP_BASE = 0x100000000000 };
-  // enum { INTERNAL_HEAP_BASE = 0xC0000000 };
+#endif
   enum { INTERNAL_HEAP_SIZE = 1048576UL * 4096 };
   enum { INTERNAL_HEAP_END = INTERNAL_HEAP_BASE + INTERNAL_HEAP_SIZE };
 

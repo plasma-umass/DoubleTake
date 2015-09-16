@@ -334,7 +334,7 @@ public:
     }
 
     if((1UL << i) != sectorsize) {
-      FATAL("Wrong sector size %lu, power of 2 is %d\n", sectorsize, 1 >> i);
+      FATAL("Wrong sector size %zu, power of 2 is %d\n", sectorsize, 1 >> i);
     }
 
     return i;

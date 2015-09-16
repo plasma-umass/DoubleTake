@@ -35,7 +35,7 @@ private:
 
     void* ptr = Real::mmap(startaddr, sz, protInfo, sharedInfo, fd, 0);
     if(ptr == MAP_FAILED) {
-      PRERR("Couldn't do mmap (%s) : startaddr %p, sz %lu, protInfo=%d, sharedInfo=%d\n",
+      PRERR("Couldn't do mmap (%s) : startaddr %p, sz %zu, protInfo=%d, sharedInfo=%d\n",
             strerror(errno), startaddr, sz, protInfo, sharedInfo);
       abort();
     } else {

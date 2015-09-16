@@ -4,8 +4,8 @@
 extern void overflow (void * buf, int actualSize, int overflowSize);
 
 int main(int argc, char** argv) {
-  int * p = new int[1];
-  overflow (p, sizeof(int), 1);
+  int *p = (int*)malloc(sizeof(char));
+  overflow (p, sizeof(char), 4);
 
   return 0;
 }
