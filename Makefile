@@ -15,7 +15,6 @@ WARNFLAGS := \
         -Wall -Wextra -Wpedantic \
         -Wundef \
         -Wno-unused-parameter \
-        -Wno-format-pedantic \
         -Wno-nested-anon-types
 
 SUBDIRS           = tests tests/unit
