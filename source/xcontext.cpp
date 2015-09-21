@@ -38,7 +38,9 @@ void xcontext::save(ucontext_t *uctx) {
           "Wrong. Current stack size (%zx = %p - %p) is larger than total size (%zx)\n",
           size, _privateTop, _privateStart, _stackSize);
 
+  Real::mprotect(_backup, size, PROT_WRITE);
   memcpy(_backup, _privateStart, size);
+  Real::mprotect(_backup, size, PROT_NONE);
 
   // We are trying to save context at first
   memcpy(&_context, uctx, sizeof(ucontext_t));
@@ -73,11 +75,14 @@ void xcontext::saveCurrent() {
           "Stack too large. top:%p sp:%p PAGE_ALIGN(sp):%p size:%zu",
           _privateTop, (void *)sp, (void *)stackBottom, size);
 
+  Real::mprotect(_backup, size, PROT_WRITE);
   memcpy(_backup, _privateStart, size);
   getcontext(&_context);
+  Real::mprotect(_backup, size, PROT_NONE);
 }
 
 void xcontext::rollback() {
+  Real::mprotect(_backup, _backupSize, PROT_READ);
   // call an arch-specific routine to safely copy the stack under us
   // (requires memcpy w/o using the stack, something I don't think we
   // can guarantee in C) and call setcontext
