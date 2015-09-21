@@ -68,8 +68,8 @@ public:
     unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
     unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
 
-    char* stackStart = (char*)MM::mmapAllocatePrivate(totalStackSize + qbufSize);
-    char* qbufStart = (char*)((intptr_t)stackStart + totalStackSize);
+    char* stackStart = (char*)MM::mmapAllocatePrivate(totalStackSize);
+    char* qbufStart = (char*)MM::mmapAllocatePrivate(qbufSize);
 
     // Initialize all mutex.
     thread_t* tinfo;
