@@ -143,7 +143,7 @@ public:
   void insert(const KeyType& key, size_t keylen, ValueType value) {
     if(_initialized != true) {
       PRINT("process %d index %d: initialized at  %p hashmap is not true\n", getpid(),
-            getThreadIndex(), &_initialized);
+            getThreadIndex(), (void *)&_initialized);
     }
 
     assert(_initialized == true);
@@ -229,9 +229,9 @@ private:
     struct Entry* entry = createNewEntry(key, keylen, value);
     listInsertTail(&entry->list, &head->list);
     head->count++;
-    PRINF("insertEntry entry %p at head %p, headcount %zd\n", entry, head, head->count);
-    PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", entry,
-          entry->list.next, head, &head->list, head->list.next);
+    PRINF("insertEntry entry %p at head %p, headcount %zd\n", (void *)entry, (void *)head, head->count);
+    PRINF("insertEntry entry %p, entrynext %p, at head %p hear->list %p headlist->next %p\n", (void *)entry,
+          (void *)entry->list.next, (void *)head, (void *)&head->list, (void *)head->list.next);
   }
 
   // Search the entry in the corresponding list.

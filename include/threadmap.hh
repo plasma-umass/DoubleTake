@@ -66,7 +66,7 @@ public:
     listInit(&ath->list);
     ath->thread = thread;
 
-    PRINF("Insert alive thread %p\n", thread);
+    PRINF("Insert alive thread %p\n", (void *)thread);
     listInsertTail(&ath->list, &_alivethreads);
 
     _xmap.insert((void*)tid, sizeof(void*), thread);
@@ -85,7 +85,7 @@ public:
     // Search the whole list for given tid.
     ath = (struct aliveThread*)nextEntry(&_alivethreads);
     while(true) {
-      PRINF("Traverse thread %p\n", ath->thread);
+      PRINF("Traverse thread %p\n", (void *)ath->thread);
       // If we found the entry, remove this entry from the list.
       if(ath->thread == thread) {
         listRemoveNode(&ath->list);
@@ -93,7 +93,7 @@ public:
       }
       // It is impossible that we haven't find the node until the end of a list.
       if(isListTail(&ath->list, &_alivethreads) == true) {
-        PRWRN("WRong, we can't find alive thread %p in the list.", thread);
+        PRWRN("WRong, we can't find alive thread %p in the list.", (void *)thread);
         abort();
       }
 
@@ -161,7 +161,7 @@ public:
       thread_t* thread = ath->thread;
 
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
-        PRINF("thread %p self %p status %d\n", thread, (void*)thread->self, thread->status);
+        PRINF("thread %p self %p status %d\n", (void *)thread, (void*)thread->self, thread->status);
       }
 
       // Update to the next thread.

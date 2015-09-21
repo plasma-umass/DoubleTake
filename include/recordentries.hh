@@ -63,7 +63,7 @@ public:
       _cur++;
     } else {
       // There are no enough entries now; re-allocate new entries now.
-      PRWRN("Not enough entries, now _cur %zu, _total %zu at %p!!!\n", _cur, _total, &_cur);
+      PRWRN("Not enough entries, now _cur %zu, _total %zu at %p!!!\n", _cur, _total, (void *)&_cur);
       ::abort();
     }
     return entry;

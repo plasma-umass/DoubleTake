@@ -109,8 +109,8 @@ void xthread::destroyThreadSemaphore(thread_t* thread) {
 void xthread::initThreadSemaphore(thread_t* thread) {
     semaphore* sema = &thread->sema;
 
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, (void *)thread, (void *)sema);
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, (void *)thread, (void *)sema);
     // We initialize the semaphore value to 0.
     sema->init((unsigned long)thread->self, 1, 0);
 }

@@ -215,7 +215,7 @@ void xrun::stopAllThreads() {
   // PRINF("EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
   PRINF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. "
         "Stopping other threads\n",
-        current, current->index, (void*)pthread_self());
+        (void *)current, current->index, (void *)pthread_self());
 
 	// Traverse the thread map to check the status of every thread.
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
