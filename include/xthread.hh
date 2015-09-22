@@ -870,7 +870,7 @@ public:
   };
 
   inline static void restoreContext() {
-    PRINF("restore context now (ROLLBACK)");
+    PRINF("restore context now\n");
     current->context.rollback();
   };
 
