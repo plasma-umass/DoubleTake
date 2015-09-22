@@ -547,10 +547,10 @@ public:
 #endif
 
     siga.sa_sigaction = xmemory::segvHandle;
-    if(Real::sigaction(SIGSEGV, &siga, NULL) == -1) {
-      printf("sfug.\n");
-      exit(-1);
-    }
+    //if(Real::sigaction(SIGSEGV, &siga, NULL) == -1) {
+    //  printf("sfug.\n");
+    //  exit(-1);
+    //}
 
     Real::sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
   }

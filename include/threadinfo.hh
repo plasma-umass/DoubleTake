@@ -20,7 +20,6 @@
 #include "internalheap.hh"
 #include "list.hh"
 #include "mm.hh"
-#include "quarantine.hh"
 #include "real.hh"
 #include "sysrecord.hh"
 #include "recordentries.hh"
@@ -46,12 +45,10 @@ struct deferSyncVariable {
 /// @class threadinfo
 class threadinfo {
 public:
-  threadinfo() {}
-
-  static threadinfo& getInstance() {
-    static char buf[sizeof(threadinfo)];
-    static threadinfo* theOneTrueObject = new (buf) threadinfo();
-    return *theOneTrueObject;
+  explicit threadinfo()
+    : _aliveThreads(0), _reapableThreads(0), _totalThreads(0), _threadIndex(0),
+      _deferSyncs() {
+    memset(_threads, 0, sizeof(_threads[0]) * xdefines::MAX_ALIVE_THREADS);
   }
 
   void initialize() {
@@ -67,12 +64,12 @@ public:
     // Initialize the backup stacking information.
     size_t perStackSize = __max_stack_size;
 
-    unsigned long totalStackSize = perStackSize * 2 * xdefines::MAX_ALIVE_THREADS;
+    unsigned long totalStackSize = perStackSize * xdefines::MAX_ALIVE_THREADS;
     unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
     unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
 
-    char* stackStart = (char*)MM::mmapAllocatePrivate(totalStackSize + qbufSize);
-    char* qbufStart = (char*)((intptr_t)stackStart + totalStackSize);
+    char* stackStart = (char*)MM::mmapAllocatePrivate(totalStackSize);
+    char* qbufStart = (char*)MM::mmapAllocatePrivate(qbufSize);
 
     // Initialize all mutex.
     thread_t* tinfo;
@@ -82,8 +79,7 @@ public:
 
 			// Those information that are only initialized once.
      	tinfo->available = true;
-     	tinfo->oldContext.setupBackup(&stackStart[perStackSize * 2 * i]);
-      tinfo->newContext.setupBackup(&stackStart[perStackSize * 2 * i + 1]);
+      tinfo->context.setupBackup(&stackStart[perStackSize * i]);
       tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
     }
 
@@ -125,9 +121,7 @@ public:
       return index;
     }
 
-#ifndef NDEBUG
     int origindex = _threadIndex;
-#endif
     thread_t* thread;
     while(true) {
       thread = getThreadInfo(_threadIndex);
@@ -185,7 +179,7 @@ public:
         sizeof(struct deferSyncVariable));
 
     if(syncVar == NULL) {
-      fprintf(stderr, "No enough private memory, syncVar %p\n", syncVar);
+      fprintf(stderr, "No enough private memory, syncVar %p\n", (void *)syncVar);
       return toReapThreads;
     }
 
@@ -234,7 +228,7 @@ public:
     // Get all entries from _deferSyncs.
     while((entry = listRetrieveItem(&_deferSyncs)) != NULL) {
       struct deferSyncVariable* syncvar = (struct deferSyncVariable*)entry;
-		fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
+      fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (void *)syncvar->variable);
 
       switch(syncvar->syncVarType) {
 				

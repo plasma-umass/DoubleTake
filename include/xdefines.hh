@@ -6,8 +6,10 @@
 
 #ifdef X86_32BIT
 #define REG_IP REG_EIP
+#define REG_SP REG_ESP
 #else
 #define REG_IP REG_RIP
+#define REG_SP REG_RSP
 #endif
 
 #include "list.hh"
@@ -47,7 +49,7 @@ extern runtime_data_t *global_data;
 extern size_t __max_stack_size;
 typedef void* threadFunction(void*);
 extern int getThreadIndex();
-extern char* getThreadBuffer();
+extern char* getCurrentThreadBuffer();
 extern void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void* ptr, size_t size);
 

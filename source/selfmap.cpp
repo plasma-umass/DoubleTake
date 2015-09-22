@@ -58,7 +58,7 @@ void selfmap::printCallStack(int frames, void** array) {
     if (isApplication(addr)) {
       //PRINT("\tcallstack frame %d: %p\t", i, addr);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), addr);
+      sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), (void *)addr);
       system(buf);
     }
   }
@@ -69,7 +69,7 @@ void selfmap::printCallStack(int frames, void** array) {
   //else if(index == 1 && !isDoubleTakeLibrary((void *)addr)) {
   else if(!isDoubleTakeLibrary((void *)addr)) {
     index++;
-    PRINT("\tcallstack frame %d: %p\n", index, addr);
+    PRINT("\tcallstack frame %d: %p\n", index, (void *)addr);
   }
 #endif
 }
@@ -78,12 +78,12 @@ void selfmap::printCallStack(int frames, void** array) {
 int selfmap::getCallStack(void** array) {
   int size;
 
-  PRINF("Try to get backtrace with array %p\n", array);
+  PRINF("Try to get backtrace with array %p\n", (void *)array);
   // get void*'s for all entries on the stack
   xthread::disableCheck();
   size = backtrace(array, xdefines::CALLSITE_MAXIMUM_LENGTH);
   xthread::enableCheck();
-  PRINF("After get backtrace with array %p\n", array);
+  PRINF("After get backtrace with array %p\n", (void *)array);
 
   return size;
 }

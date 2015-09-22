@@ -29,7 +29,7 @@ __thread thread_t* current;
 // threadmap::threadHashMap threadmap::_xmap;
 list_t threadmap::_alivethreads;
 
-int getThreadIndex() {
+int xthread::getThreadIndex() const {
   if(!global_isInitPhase()) {
     return current->index;
   } else {
@@ -37,10 +37,10 @@ int getThreadIndex() {
   }
 }
 
-char* getThreadBuffer() {
+char* xthread::getCurrentThreadBuffer() {
   int index = getThreadIndex();
 
-  return threadinfo::getInstance().getThreadBuffer(index);
+  return _thread.getThreadBuffer(index);
 }
 
 void xthread::invokeCommit() {
@@ -109,8 +109,8 @@ void xthread::destroyThreadSemaphore(thread_t* thread) {
 void xthread::initThreadSemaphore(thread_t* thread) {
     semaphore* sema = &thread->sema;
 
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
-    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, thread, sema);
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, (void *)thread, (void *)sema);
+    PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, (void *)thread, (void *)sema);
     // We initialize the semaphore value to 0.
     sema->init((unsigned long)thread->self, 1, 0);
 }

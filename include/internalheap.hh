@@ -90,7 +90,7 @@ public:
                                                xdefines::INTERNAL_HEAP_SIZE, metasize);
 
     REQUIRE(base != NULL, "Failed to allocated memory for heap metadata");
-    PRINF("Internal heap base %p, metasize %xz", base, metasize);
+    PRINF("Internal heap base %p, metasize %xz", (void *)base, metasize);
 
     _heap = new (base) SuperHeap;
 

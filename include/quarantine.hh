@@ -65,6 +65,11 @@ inline bool hasUsageAfterFree(freeObject* object) {
 
 class quarantine {
 public:
+  quarantine()
+    : _objects(nullptr), _objectsBackup(nullptr), _objectsSize(0),
+      _totalSize(0), _totalSizeBackup(0), _availIndex(0), _availIndexBackup(0),
+      _LRIndex(0), _LRIndexBackup(0) {}
+
   void initialize(void* start, size_t size) {
     _availIndex = 0;
     _LRIndex = 0;

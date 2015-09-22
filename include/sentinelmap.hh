@@ -25,7 +25,9 @@
 
 class sentinelmap {
 public:
-  sentinelmap() {}
+  sentinelmap()
+    : _bitmap(), _wordShiftBits(0), _itemShiftBits(0), _elements(0),
+      _totalBytes(0), _heapStart(0), _lastSentinelAddr(0) {}
 
   // The single instance of sentinelmap. We only need this for
   // heap.
@@ -104,6 +106,7 @@ public:
     bool hasCorrupted = false;
 
     //PRINT("checkSentinelsIntegrity: begin %p end %p bytes %d words %d startindex %ld\n", begin, end, bytes, words, startIndex);
+
     // A bit is corresponding 1 word with 8 bytes. Thus, a bitword actually is related with
 		// a block with (64 * 8bytes) = 512 Bytes. Typically, checking using the bitwords is fast.
 		// However, for a very large object, maybe we can skip some unnecessary words in the middle. 
@@ -271,8 +274,8 @@ public:
         // always returned by 8bytes aligned or 16bytes aligned.
         // However, some weird test cases has this overflow. So we should detect this now.
         void* startp = (void*)((intptr_t)p - nonAlignedBytes);
-#if 1
         size_t setBytes = xdefines::WORD_SIZE - nonAlignedBytes;
+
 				if((setBytes > 1) && ((int)p[0] == (int) (setBytes - 1))) {
           for(int i = 1; i < (int) setBytes; i++) {
             if(p[i] != xdefines::MAGIC_BYTE_NOT_ALIGNED) {
@@ -286,7 +289,7 @@ public:
         } else {
           hasOverflow = true;
         }
-#endif
+
 				pclean = startp;
 
         // We actually setup a next word to capture the next word
@@ -301,7 +304,7 @@ public:
 
           if(hasOverflowNext) {
 #ifndef EVALUATING_PERF
-          PRWRN("Alligned buffer overflow at address %p\n", nextp);
+          PRINT("Alligned buffer overflow at address %p\n", nextp);
 #endif
             // Add this address to watchpoint
             watchpoint::getInstance().addWatchpoint(nextp, *((size_t*)nextp), OBJECT_TYPE_OVERFLOW, ptr, sz);
@@ -317,13 +320,12 @@ public:
 			// Add it as a watchpoint.     
 			if(hasOverflow) {
 #ifndef EVALUATING_PERF
-        PRWRN("Detected buffer overflow at address %p\n", pclean);
+        PRINT("Detected buffer overflow at address %p\n", pclean);
 #endif
         watchpoint::getInstance().addWatchpoint(pclean, *((unsigned long*)pclean), OBJECT_TYPE_OVERFLOW, ptr, sz);
       }
 			return (hasOverflow || hasOverflowNext);
 	}
-
 
   // How to calculate the shift bits according to the sector size
   static int calcShiftBits(size_t sectorsize) {

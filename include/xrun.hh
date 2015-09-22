@@ -61,6 +61,12 @@ public:
       Real::exit(-1);
     }
 
+    // if there is no limit for our stack size, then just pick a
+    // reasonable limit.
+    if (rl.rlim_cur == (rlim_t)-1) {
+      rl.rlim_cur = 2048*4096; // 8 MB
+    }
+
     // Check the stack size.
     __max_stack_size = rl.rlim_cur;
 #if 0 
@@ -125,6 +131,9 @@ public:
 
   void epochBegin();
   void epochEnd(bool endOfProgram);
+
+  int getThreadIndex() const { return _thread.getThreadIndex(); }
+  char *getCurrentThreadBuffer() { return _thread.getCurrentThreadBuffer(); }
 
 private:
   void syscallsInitialize();

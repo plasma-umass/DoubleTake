@@ -17,6 +17,14 @@
 #include "threadmap.hh"
 #include "threadstruct.hh"
 
+int getThreadIndex() {
+  return xrun::getInstance().getThreadIndex();
+}
+
+char *getCurrentThreadBuffer() {
+  return xrun::getInstance().getCurrentThreadBuffer();
+}
+
 void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
@@ -80,7 +88,7 @@ void xrun::epochBegin() {
   }
   PRINF("xrun epochBegin, joinning every thread done.\n");
 
-  xthread::runDeferredSyncs();
+  _thread.runDeferredSyncs();
 
   PRINF("xrun epochBegin, run deferred synchronizations done.\n");
 
@@ -207,7 +215,7 @@ void xrun::stopAllThreads() {
   // PRINF("EPOCHEBD:Current thread at %p self %p\n", current, pthread_self());
   PRINF("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^EPOCHEBD:Current thread at %p THREAD%d self %p. "
         "Stopping other threads\n",
-        current, current->index, (void*)pthread_self());
+        (void *)current, current->index, (void *)pthread_self());
 
 	// Traverse the thread map to check the status of every thread.
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
@@ -262,8 +270,8 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
 
   // Check what is the current phase
   if(global_isEpochBegin()) {
- 		// Current thread is going to enter a new phase
-    xthread::getInstance().saveSpecifiedContext((ucontext_t*)context);
+    // Current thread is going to enter a new phase
+    xthread::getInstance().saveContext((ucontext_t*)context);
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.
   } else {

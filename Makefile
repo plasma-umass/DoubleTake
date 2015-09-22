@@ -15,7 +15,6 @@ WARNFLAGS := \
         -Wall -Wextra -Wpedantic \
         -Wundef \
         -Wno-unused-parameter \
-        -Wno-format-pedantic \
         -Wno-nested-anon-types
 
 SUBDIRS           = tests tests/unit
@@ -34,7 +33,7 @@ CXXVER   = c++11
 CFLAGS   = -g -pedantic -fPIC -fno-omit-frame-pointer -D_DEFAULT_SOURCE -D_BSD_SOURCE \
             $(WARNFLAGS) $(FEATURE_FLAGS) -Iinclude -Iheaplayers
 CXXFLAGS = -std=$(CXXVER) $(CFLAGS)
-ASFLAGS  = $(WARNFLAGS)
+ASFLAGS  =
 # this is for generic linker flags - target specific $LIB dependencies
 # are added later.
 LDFLAGS  =

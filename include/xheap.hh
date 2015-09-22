@@ -55,7 +55,8 @@ public:
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize + metasize, (void*)_start);
 
-    PRINF("XHEAP %p - %p, position: %p, remaining: %#zx", _start, _end, _position, _remaining);
+    PRINF("XHEAP %p - %p, position: %p, remaining: %#zx",
+          (void *)_start, (void *)_end, (void *)_position, _remaining);
 
     return (void*)ptr;
   }
@@ -74,7 +75,7 @@ public:
   inline void saveHeapMetadata() {
     _positionBackup = _position;
     _remainingBackup = _remaining;
-    PRINF("save heap metadata, _position %p remaining %#zx\n", _position, _remaining);
+    PRINF("save heap metadata, _position %p remaining %#zx\n", (void *)_position, _remaining);
   }
 
   /// We will overlap the metadata with the saved ones
@@ -82,7 +83,7 @@ public:
   inline void recoverHeapMetadata() {
     _position = _positionBackup;
     _remaining = _remainingBackup;
-    PRINF("in recover, now _position %p remaining 0x%zx\n", _position, _remaining);
+    PRINF("in recover, now _position %p remaining 0x%zx\n", (void *)_position, _remaining);
   }
 
   inline void* getHeapStart() { return (void*)_start; }

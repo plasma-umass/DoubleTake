@@ -120,14 +120,7 @@ private:
 	};
 
 public:
-  xsync() {}
-
-	static xsync& getInstance() {
-    static char buf[sizeof(xsync)];
-    static xsync* theOneTrueObject = new (buf) xsync();
-    return *theOneTrueObject;
-  }
-
+  explicit xsync() {}
 
   void initialize() {
 		// Initialize two lists for record synchronization variables.
@@ -190,12 +183,8 @@ public:
 		lock();
 		entry =  _newList.retrieveSyncEntry(type, nominal);
 		unlock();
-		if(entry != NULL) {
-			return entry->real;
-		}
-		else {
-			return NULL;
-		}	
+
+		return entry->real;
 	}
 
 	// During the begin of an epoch
@@ -277,11 +266,11 @@ public:
     if(isThreadNextEvent(event, thread)) {
       // If yes, signal to this thread. There is no difference between
       // current thread or other thread.
-      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, event);
+      PRINF("Thread %d actually signal next thread %d on event %p", current->index, thread->index, (void *)event);
       signalThread(thread);
     } else {
-      PRINF("Thread %d adding pending event to next thread %d on event %p", current->index,
-            thread->index, event);
+      PRINF("Thread %d adding pending event to next thread %d on event %p",
+            current->index, thread->index, (void *)event);
       addPendingSyncEvent(event, thread);
     }
 
@@ -308,7 +297,7 @@ public:
 
 		// Having pending events
     if(!isListEmpty(eventlist)) {
-		PRINF("During peek, calling singalCurrentThread %d. with pending events.\n", thread->index);
+		PRINF("During peek, calling singalCurrentThread %d. with pending events.", thread->index);
       // Signal itself when current event is first event of this thread.
       struct pendingSyncEvent* pe = NULL;
 
@@ -317,7 +306,8 @@ public:
       while(true) {
         // We found this event
         if(pe->event == event) {
-          PRINF("singalCurrentThread: signal myself thread %d, retrieve event %p pe->event %p", current->index, event, pe->event);
+          PRINF("singalCurrentThread: signal myself thread %d, retrieve event %p pe->event %p",
+                current->index, (void *)event, (void *)pe->event);
           // Remove this event from the list.
           listRemoveNode(&pe->list);
 
@@ -327,7 +317,7 @@ public:
           // Now signal current thread.
           signalThread(thread);
     			
-					PRINF("singalCurrentThread %d: event %p", thread->index, event);
+					PRINF("singalCurrentThread %d: event %p", thread->index, (void *)event);
           break;
         }
 
@@ -355,16 +345,17 @@ public:
 	*/
   inline int peekSyncEvent(void* tlist) {
     int result = -1;
-		PRINF("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, current, tlist);	
-		PRINF("thread %d syncevents %p: peekSyncEvent targetlist %p\n", current->index, &current->syncevents, tlist);	
+		PRINF("thread %d(%p): peekSyncEvent targetlist %p\n", current->index, (void *)current, (void *)tlist);
+		PRINF("thread %d syncevents %p: peekSyncEvent targetlist %p\n", current->index, (void *)&current->syncevents, (void *)tlist);
     struct syncEvent* event = (struct syncEvent*)current->syncevents.getEntry();
-		PRINF("thread %d: peek event %p targetlist %p\n", current->index, event, tlist);	
+		PRINF("thread %d: peek event %p targetlist %p\n", current->index, (void *)event, (void *)tlist);
 	
 		// For debugging purpose. 	
 		// If the event pointing to a different thread, or the target event 
 		// is not the current one, warn about this situaion. Something wrong!
 		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {
-			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n", current->index, event, ((thread_t*)event->thread)->index, event->eventlist, tlist);
+			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n",
+            current->index, (void *)event, ((thread_t*)event->thread)->index, (void *)event->eventlist, (void *)tlist);
 			while(1) ;
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
@@ -396,7 +387,8 @@ public:
 		next = _activeList.next;
 		while(true) {
 			entry = (struct SyncEntry*)next;
-			PRINF("prepareRollback syncvariable %p pointintto %p entry %p, eventlist %p\n", entry->nominal, entry->real, entry, entry->syncevents);
+			PRINF("prepareRollback syncvariable %p pointintto %p entry %p, eventlist %p\n",
+            (void *)entry->nominal, (void *)entry->real, (void *)entry, (void *)entry->syncevents);
 
       prepareEventListRollback(entry->syncevents);
 		
@@ -419,7 +411,7 @@ public:
   static void prepareEventListRollback(SyncEventList* eventlist) {
     struct syncEvent* event = eventlist->prepareRollback();
 
-		PRINF("prepareEventListRollback eventlist %p event %p\n", eventlist, event);
+		PRINF("prepareEventListRollback eventlist %p event %p", (void *)eventlist, (void *)event);
     if(event) {
       // Signal to next thread with the top event
       signalNextThread(event);

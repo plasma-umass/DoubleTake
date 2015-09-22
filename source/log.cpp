@@ -55,7 +55,7 @@ std::atomic_int DT_LOG_LEVEL(DEBUG_LEVEL);
 
 void doubletake::logf(const char *file, int line, int level, const char *fmt, ...) {
   char fmtbuf[FMTBUF_LEN];
-  char *tbuf = getThreadBuffer();
+  char *tbuf = getCurrentThreadBuffer();
 
   if (level < 1 || (size_t)level >= LEVEL_NAMES_LEN)
     level = 1;
@@ -76,7 +76,7 @@ void doubletake::logf(const char *file, int line, int level, const char *fmt, ..
 
 void doubletake::printf(const char *fmt, ...) {
   char fmtbuf[FMTBUF_LEN];
-  char *tbuf = getThreadBuffer();
+  char *tbuf = getCurrentThreadBuffer();
 
   ::snprintf(fmtbuf, FMTBUF_LEN-1, BRIGHT_MAGENTA "%s" ESC_END "\n", fmt);
 

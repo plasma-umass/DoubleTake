@@ -69,7 +69,8 @@ public:
     event->eventlist = this;
     event->ret = ret;
 
-    PRINF("recordSyncEvent line %d: event %p (at %zd) thread %d eventlist %p\n", __LINE__, event, current->syncevents.getEntriesNumb()-1, current->index, this);
+    PRINF("recordSyncEvent line %d: event %p (at %zd) thread %d eventlist %p\n",
+          __LINE__, (void *)event, current->syncevents.getEntriesNumb()-1, current->index, (void *)this);
     if(synccmd != E_SYNC_MUTEX_LOCK) {
       Real::pthread_mutex_lock(&this->lock);
       listInsertTail(&event->list, &this->list);
@@ -117,7 +118,7 @@ public:
       event = (struct syncEvent*)this->curentry;
     }
 
-    PRINF("prepareRollback: synceventlist at %p event %p\n", &list, event);
+    PRINF("prepareRollback: synceventlist at %p event %p\n", (void *)&list, (void *)event);
     return event;
   }
 

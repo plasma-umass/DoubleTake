@@ -44,15 +44,10 @@
 #include "wrappers/stlallocator.h"
 
 class leakcheck {
-
-  leakcheck() {}
-
 public:
-  static leakcheck& getInstance() {
-    static char buf[sizeof(leakcheck)];
-    static leakcheck* theOneTrueObject = new (buf) leakcheck();
-    return *theOneTrueObject;
-  }
+  leakcheck()
+    : _unexploredObjects(), _totalLeakageSize(), _lck(), _sizeList(),
+      _nonStartAddrs(0), _heapBegin(0), _heapEnd(0) {}
 
   void searchHeapPointersInsideGlobals();
 
@@ -291,7 +286,7 @@ private:
 
 #define MAXIMUM_SIZE_POWER 30
   // From 2^4 to 2 ^ 30
-  objectListType _sizeList[30];
+  objectListType _sizeList[MAXIMUM_SIZE_POWER];
 
   // It is used to count how many non-start addresses in
   // the calculation of reachability
