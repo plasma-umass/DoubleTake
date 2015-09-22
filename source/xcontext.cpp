@@ -38,6 +38,7 @@ void xcontext::save(ucontext_t *uctx) {
           "Wrong. Current stack size (%zx = %p - %p) is larger than total size (%zx)\n",
           size, _privateTop, _privateStart, _stackSize);
 
+  // EDB: do we need this protection here? FIXME
   Real::mprotect(_backup, size, PROT_WRITE);
   memcpy(_backup, _privateStart, size);
   Real::mprotect(_backup, size, PROT_NONE);
@@ -75,6 +76,7 @@ void xcontext::saveCurrent() {
           "Stack too large. top:%p sp:%p PAGE_ALIGN(sp):%p size:%zu",
           _privateTop, (void *)sp, (void *)stackBottom, size);
 
+<<<<<<< HEAD
   Real::mprotect(_backup, size, PROT_WRITE);
   memcpy(_backup, _privateStart, size);
   getcontext(&_context);
@@ -83,6 +85,13 @@ void xcontext::saveCurrent() {
 
 void xcontext::rollback() {
   Real::mprotect(_backup, _backupSize, PROT_READ);
+=======
+  memcpy(_backup, _privateStart, size);
+  getcontext(&_context);
+}
+
+void xcontext::rollback() {
+>>>>>>> 78f5c12744590dfe5a1e66d45d2b2887b46776ec
   // call an arch-specific routine to safely copy the stack under us
   // (requires memcpy w/o using the stack, something I don't think we
   // can guarantee in C) and call setcontext
