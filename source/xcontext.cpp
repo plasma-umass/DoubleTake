@@ -76,22 +76,17 @@ void xcontext::saveCurrent() {
           "Stack too large. top:%p sp:%p PAGE_ALIGN(sp):%p size:%zu",
           _privateTop, (void *)sp, (void *)stackBottom, size);
 
-<<<<<<< HEAD
   Real::mprotect(_backup, size, PROT_WRITE);
   memcpy(_backup, _privateStart, size);
   getcontext(&_context);
+  // doing the mprotect here (after getcontext), so that whenever we
+  // restore a context from xcontext::rollback this PROT_NONE pairs
+  // with/closes the PROT_READ there.
   Real::mprotect(_backup, size, PROT_NONE);
 }
 
 void xcontext::rollback() {
   Real::mprotect(_backup, _backupSize, PROT_READ);
-=======
-  memcpy(_backup, _privateStart, size);
-  getcontext(&_context);
-}
-
-void xcontext::rollback() {
->>>>>>> 78f5c12744590dfe5a1e66d45d2b2887b46776ec
   // call an arch-specific routine to safely copy the stack under us
   // (requires memcpy w/o using the stack, something I don't think we
   // can guarantee in C) and call setcontext
