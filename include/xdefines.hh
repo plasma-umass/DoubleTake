@@ -1,4 +1,4 @@
-#if !defined(DOUBLETAKE_XDEFINES_H)
+#ifndef DOUBLETAKE_XDEFINES_H
 #define DOUBLETAKE_XDEFINES_H
 
 #include <stddef.h>
@@ -21,16 +21,6 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
-#if 0
-//#define DEBUG(...) 
-typedef struct runtime_data {
-  volatile unsigned long thread_index;
-  volatile unsigned long threads;
-  struct runtime_stats stats;
-} runtime_data_t;
-
-extern runtime_data_t *global_data;
-#endif
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 
 /*
