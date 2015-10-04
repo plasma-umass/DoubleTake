@@ -38,18 +38,17 @@ void xrun::initialize() {
   // Check the stack size.
   __max_stack_size = rl.rlim_cur;
 
+  // Initialize the internal heap at first.
+  InternalHeap::getInstance().initialize();
+
+  _memory.initialize();
+
   // Initialize the locks and condvar used in epoch switches
   global_initialize();
 
   installSignalHandlers();
 
-  // Initialize the internal heap at first.
-  InternalHeap::getInstance().initialize();
-
   _thread.initialize();
-
-  // Initialize the memory (install the memory handler)
-  _memory.initialize();
 
   syscallsInitialize();
 }
@@ -108,8 +107,8 @@ void xrun::rollback() {
 
 	// Now time to rollback myself.
   _thread.checkRollbackCurrent();
- 
-	assert(0);
+
+  assert(0);
 }
 
 /// @brief Start a new epoch.
@@ -412,7 +411,7 @@ void xrun::installSignalHandlers() {
   sigemptyset(&sigsegv.sa_mask);
   sigsegv.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
   sigsegv.sa_sigaction = xrun::sigsegvHandler;
-  if(Real::sigaction(SIGSEGV, &sigsegv, NULL) == -1) {
-    FATAL("sigaction(SIGSEGV): %d (%s)", errno, strerror(errno));
-  }
+  //if(Real::sigaction(SIGSEGV, &sigsegv, NULL) == -1) {
+  //  FATAL("sigaction(SIGSEGV): %d (%s)", errno, strerror(errno));
+  //}
 }
