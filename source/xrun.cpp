@@ -17,6 +17,8 @@
 #include "threadmap.hh"
 #include "threadstruct.hh"
 
+static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
+
 int getThreadIndex() {
   return xrun::getInstance().getThreadIndex();
 }
@@ -249,7 +251,7 @@ void xrun::stopAllThreads() {
 
 bool isNewThread() { return current->isNewlySpawned; }
 
-void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
+static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
   PRINF("%p: inside signal handler %p.\n", (void*)pthread_self(),
         (void*)cxt->uc_mcontext.gregs[REG_IP]);
   // selfmap::getInstance().printCallStack(NULL, NULL, true);
@@ -259,7 +261,7 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
 /* 
   We are using the SIGUSR2 to stop other threads.
  */
- void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* context) {
+void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* context) {
   // Check what is current status of the system.
   // If we are in the end of an epoch, then we save the context somewhere since
   // current thread is going to stop execution in order to commit or rollback.
@@ -293,4 +295,64 @@ void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
     xthread::getInstance().rollbackInsideSignalHandler((ucontext_t*)context);
   }
   // Jump to a function and wait for the instruction of the committer thread.
+}
+
+void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* context) {
+    void* addr = siginfo->si_addr; // address of access
+
+    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    current->internalheap = true;
+    selfmap::getInstance().printCallStack();
+    current->internalheap = false;
+    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
+    while(1) ;
+
+    //Real::exit(-1);
+    // Set the context to handleSegFault
+    jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
+    //    xmemory::getInstance().handleSegFault ();
+  }
+
+void xrun::installSignalHandlers()  {
+  // Set up an alternate signal stack.
+  static stack_t altstack;
+  memset(&altstack, 0, sizeof(altstack));
+  altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
+  altstack.ss_size = SIGSTKSZ;
+  altstack.ss_flags = 0;
+  Real::sigaltstack(&altstack, (stack_t *)NULL);
+
+  /**
+     Some parameters used here:
+     SA_RESTART: Provide behaviour compatible with BSD signal
+                 semantics by making certain system calls restartable across signals.
+     SA_SIGINFO: The  signal handler takes 3 arguments, not one.  In this case, sa_sigac-
+                 tion should be set instead of sa_handler.
+     So, we can acquire the user context inside the signal handler
+
+     We do NOT want SA_RESTART - that will cause the signal to
+     potentially be recursively received.
+  */
+
+  struct sigaction sigusr2;
+  memset(&sigusr2, 0, sizeof(sigusr2));
+  // no need to explicitly set SIGUSR2 in the mask - it is
+  // automatically blocked while the handler is running.
+  sigemptyset(&sigusr2.sa_mask);
+  sigusr2.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+  sigusr2.sa_sigaction = xrun::sigusr2Handler;
+  if(Real::sigaction(SIGUSR2, &sigusr2, NULL) == -1) {
+    FATAL("sigaction(SIGUSR2): %d (%s)", errno, strerror(errno));
+  }
+
+  struct sigaction sigsegv;
+  memset(&sigsegv, 0, sizeof(sigsegv));
+  // no need to explicitly set SIGSEGV in the mask - it is
+  // automatically blocked while the handler is running.
+  sigemptyset(&sigsegv.sa_mask);
+  sigsegv.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+  sigsegv.sa_sigaction = xrun::sigsegvHandler;
+  if(Real::sigaction(SIGSEGV, &sigsegv, NULL) == -1) {
+    FATAL("sigaction(SIGSEGV): %d (%s)", errno, strerror(errno));
+  }
 }

@@ -55,11 +55,8 @@ public:
   }
 
   void initialize() {
-    // Install a handler to intercept SEGV signals (used for trapping initial reads and
-    // writes to pages).
-    installSignalHandler();
-
-    // Call _pheap so that xheap.h can be initialized at first and then can work normally.
+    // Call _pheap so that xheap.h can be initialized at first and
+    // then can work normally.
     _heapBegin =
         (intptr_t)_pheap.initialize((void*)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
 
@@ -500,60 +497,6 @@ public:
   void realfree(void* ptr);
   /// Rollback to previous
   static void handleSegFault();
-  /* Signal-related functions for tracking page accesses. */
-
-  /// @brief Signal handler to trap SEGVs.
-  static void segvHandle(int /* signum */, siginfo_t* siginfo, void* context) {
-    void* addr = siginfo->si_addr; // address of access
-
-    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    current->internalheap = true;
-    selfmap::getInstance().printCallStack();
-    current->internalheap = false;
-    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    while(1) ;
-
-    //Real::exit(-1);
-    // Set the context to handleSegFault
-    jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
-    //    xmemory::getInstance().handleSegFault ();
-  }
-
-  /// @brief Install a handler for SEGV signals.
-  void installSignalHandler() {
-#if defined(linux)
-    static stack_t _sigstk;
-
-    // Set up an alternate signal stack.
-    _sigstk.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
-    _sigstk.ss_size = SIGSTKSZ;
-    _sigstk.ss_flags = 0;
-    Real::sigaltstack(&_sigstk, (stack_t*)0);
-#endif
-    // Now set up a signal handler for SIGSEGV events.
-    struct sigaction siga;
-    sigemptyset(&siga.sa_mask);
-
-    // Set the following signals to a set
-    sigaddset(&siga.sa_mask, SIGSEGV);
-
-    Real::sigprocmask(SIG_BLOCK, &siga.sa_mask, NULL);
-
-// Point to the handler function.
-#if defined(linux)
-    siga.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESTART | SA_NODEFER;
-#else
-    siga.sa_flags = SA_SIGINFO | SA_RESTART;
-#endif
-
-    siga.sa_sigaction = xmemory::segvHandle;
-    //if(Real::sigaction(SIGSEGV, &siga, NULL) == -1) {
-    //  printf("sfug.\n");
-    //  exit(-1);
-    //}
-
-    Real::sigprocmask(SIG_UNBLOCK, &siga.sa_mask, NULL);
-  }
 
 private:
   /// The globals region.

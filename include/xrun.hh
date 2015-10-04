@@ -83,7 +83,7 @@ public:
 		// Initialize the locks and condvar used in epoch switches
     global_initialize();
 
-    installSignalHandler();
+    installSignalHandlers();
 
     // Initialize the internal heap at first.
     InternalHeap::getInstance().initialize();
@@ -140,41 +140,10 @@ private:
   void stopAllThreads();
 
   // Handling the signal SIGUSR2
-  static void sigusr2Handler(int signum, siginfo_t* siginfo, void* context);
+  static void sigusr2Handler(int signum, siginfo_t* siginfo, void* uctx);
+  static void sigsegvHandler(int signum, siginfo_t *siginfo, void *uctx);
 
-  /// @brief Install a handler for SIGUSR2 signals.
-  /// We are using the SIGUSR2 to stop all other threads.
-  void installSignalHandler() {
-    struct sigaction sigusr2;
-
-    static stack_t _sigstk;
-
-    // Set up an alternate signal stack.
-    _sigstk.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
-    _sigstk.ss_size = SIGSTKSZ;
-    _sigstk.ss_flags = 0;
-    Real::sigaltstack(&_sigstk, (stack_t*)0);
-
-    // We don't want to receive SIGUSR2 again when a thread is inside signal handler.
-    sigemptyset(&sigusr2.sa_mask);
-    sigaddset(&sigusr2.sa_mask, SIGUSR2);
-    //  Real::sigprocmask (SIG_BLOCK, &sigusr2.sa_mask, NULL);
-    /**
-      Some parameters used here:
-       SA_RESTART: Provide behaviour compatible with BSD signal
-                   semantics by making certain system calls restartable across signals.
-       SA_SIGINFO: The  signal handler takes 3 arguments, not one.  In this case, sa_sigac-
-                   tion should be set instead of sa_handler.
-                   So, we can acquire the user context inside the signal handler
-    */
-    sigusr2.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
-
-    sigusr2.sa_sigaction = xrun::sigusr2Handler;
-    if(Real::sigaction(SIGUSR2, &sigusr2, NULL) == -1) {
-      fprintf(stderr, "setting signal handler SIGUSR2 failed.\n");
-      abort();
-    }
-  }
+  void installSignalHandlers();
 
   // Notify the system call handler about rollback phase
   void startRollback();

@@ -40,7 +40,6 @@ extern size_t __max_stack_size;
 typedef void* threadFunction(void*);
 extern int getThreadIndex();
 extern char* getCurrentThreadBuffer();
-extern void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 extern bool addThreadQuarantineList(void* ptr, size_t size);
 
 // A project can have multiple problems.
