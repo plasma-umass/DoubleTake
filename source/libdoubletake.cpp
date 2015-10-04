@@ -845,11 +845,8 @@ extern "C" {
     //    return syscalls::getInstance().recvmsg(s, msg, flags);
   }
 
-  int shutdown(int /* s */, int /* how */) {
-  //fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    abort();
-    // FIXME
-    return 0;
+  int shutdown(int sockfd, int how) {
+    return syscalls::getInstance().shutdown(sockfd, how);
   }
 
   int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen) {
@@ -1490,11 +1487,16 @@ extern "C" {
   //   return syscalls::getInstance().pivot_root(new_root, put_old);
   // }
 
-  int prctl(int /* option */, ...) {
-  //fprintf(stderr, " in doubletake at %d\n", __LINE__);
-    // No vararg passing. Have to match on option //FIXME
-    abort();
-    // return syscalls::getInstance().prctl(option, arg2, arg3, arg4, arg5);
+  int prctl(int option, ...) {
+    unsigned long x[4];
+    va_list ap;
+
+    va_start(ap, option);
+    for (size_t i = 0; i < 4; i++)
+      x[i] = va_arg(ap, unsigned long);
+    va_end(ap);
+
+    return syscalls::getInstance().prctl(option, x[0], x[1], x[2], x[3]);
   }
 
   // no libc wrapper

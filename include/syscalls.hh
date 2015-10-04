@@ -819,7 +819,14 @@ public:
     return ret;
   }
 
-  //  int shutdown(int s, int how){
+  int shutdown(int sockfd, int how){
+    int ret;
+    epochEnd();
+    ret = Real::shutdown(sockfd, how);
+    epochBegin();
+    return ret;
+  }
+
   int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen) {
     int ret;
     epochEnd();

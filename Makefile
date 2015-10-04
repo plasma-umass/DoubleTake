@@ -36,7 +36,7 @@ CXXFLAGS = -std=$(CXXVER) $(CFLAGS)
 ASFLAGS  =
 # this is for generic linker flags - target specific $LIB dependencies
 # are added later.
-LDFLAGS  =
+LDFLAGS  = -g
 
 ifeq ($(ARCH), x86)
 CFLAGS  += -m32 -DX86_32BIT
