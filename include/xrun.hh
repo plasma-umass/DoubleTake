@@ -50,69 +50,8 @@ public:
     return *theOneTrueObject;
   }
 
-  /// @brief Initialize the system.
-  void initialize() {
-    //		PRINT("xrun: initialization at line %d\n", __LINE__);
-    struct rlimit rl;
-
-    // Get the stack size.
-    if(Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
-      PRWRN("Get the stack size failed.\n");
-      Real::exit(-1);
-    }
-
-    // if there is no limit for our stack size, then just pick a
-    // reasonable limit.
-    if (rl.rlim_cur == (rlim_t)-1) {
-      rl.rlim_cur = 2048*4096; // 8 MB
-    }
-
-    // Check the stack size.
-    __max_stack_size = rl.rlim_cur;
-#if 0 
-    rl.rlim_cur = 524288;
-    rl.rlim_max = 1048576;
-    if(Real::setrlimit(RLIMIT_NOFILE, &rl)) {
-      PRINF("change limit failed, error %s\n", strerror(errno));
-    }
-    PRINF("NUMBER files limit %d\n", rl.rlim_cur);
-
-    while(1);
-#endif
-
-		// Initialize the locks and condvar used in epoch switches
-    global_initialize();
-
-    installSignalHandlers();
-
-    // Initialize the internal heap at first.
-    InternalHeap::getInstance().initialize();
-
-    _thread.initialize();
-
-    // Initialize the memory (install the memory handler)
-    _memory.initialize();
-
-    syscallsInitialize();
-  }
-
-  void finalize() {
-#ifdef GET_CHARECTERISTICS
-			fprintf(stderr, "DOUBLETAKE has epochs %ld\n", count_epochs);
-#endif
-    // If we are not in rollback phase, then we should check buffer overflow.
-    if(!global_isRollback()) {
-#ifdef DETECT_USAGE_AFTER_FREE
-      finalUAFCheck();
-#endif
-
-      epochEnd(true);
-    }
-
-    //    PRINF("%d: finalize now !!!!!\n", getpid());
-    // Now we have to cleanup all semaphores.
-    _thread.finalize();
-  }
+  void initialize();
+  void finalize();
 
 #ifdef DETECT_USAGE_AFTER_FREE
   void finalUAFCheck();
@@ -142,6 +81,10 @@ private:
   // Handling the signal SIGUSR2
   static void sigusr2Handler(int signum, siginfo_t* siginfo, void* uctx);
   static void sigsegvHandler(int signum, siginfo_t *siginfo, void *uctx);
+  static void rollbackFromSegv();
+
+  void endOfEpochSignal(ucontext_t *uctx);
+  void rollbackFromSegvSignal();
 
   void installSignalHandlers();
 

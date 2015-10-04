@@ -19,6 +19,59 @@
 
 static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 
+void xrun::initialize() {
+  // PRINT("xrun: initialization at line %d\n", __LINE__);
+  struct rlimit rl;
+
+  // Get the stack size.
+  if(Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
+    PRWRN("Get the stack size failed.\n");
+    Real::exit(-1);
+  }
+
+  // if there is no limit for our stack size, then just pick a
+  // reasonable limit.
+  if (rl.rlim_cur == (rlim_t)-1) {
+    rl.rlim_cur = 2048*4096; // 8 MB
+  }
+
+  // Check the stack size.
+  __max_stack_size = rl.rlim_cur;
+
+  // Initialize the locks and condvar used in epoch switches
+  global_initialize();
+
+  installSignalHandlers();
+
+  // Initialize the internal heap at first.
+  InternalHeap::getInstance().initialize();
+
+  _thread.initialize();
+
+  // Initialize the memory (install the memory handler)
+  _memory.initialize();
+
+  syscallsInitialize();
+}
+
+void xrun::finalize() {
+#ifdef GET_CHARECTERISTICS
+  fprintf(stderr, "DOUBLETAKE has epochs %ld\n", count_epochs);
+#endif
+  // If we are not in rollback phase, then we should check buffer overflow.
+  if(!global_isRollback()) {
+#ifdef DETECT_USAGE_AFTER_FREE
+    finalUAFCheck();
+#endif
+
+    epochEnd(true);
+  }
+
+  //    PRINF("%d: finalize now !!!!!\n", getpid());
+  // Now we have to cleanup all semaphores.
+  _thread.finalize();
+}
+
 int getThreadIndex() {
   return xrun::getInstance().getThreadIndex();
 }
@@ -43,7 +96,7 @@ void xrun::rollback() {
   _memory.rollback();
 
   //  PRINF("\n\nAFTER MEMORY ROLLBACK!!!\n\n\n");
- 
+
   // We must prepare the rollback, for example, if multiple
   // threads is existing, we must initiate the semaphores for threads
   // Also, we should setup those synchronization event list
@@ -184,7 +237,6 @@ void xrun::finalUAFCheck() {
   // Check all threads' quarantine list
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
-
     if(thread->qlist.finalUAFCheck()) {
       rollback();
     }
@@ -193,8 +245,8 @@ void xrun::finalUAFCheck() {
 #endif
 
 void waitThreadSafe(void) {
-	int i = 0; 
-	while(i++ < 0x10000) ; 
+  int i = 0;
+  while(i++ < 0x10000) ;
 }
 
 void xrun::stopAllThreads() {
@@ -219,25 +271,25 @@ void xrun::stopAllThreads() {
         "Stopping other threads\n",
         (void *)current, current->index, (void *)pthread_self());
 
-	// Traverse the thread map to check the status of every thread.
+  // Traverse the thread map to check the status of every thread.
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
 
-		// we only care about other threads
+    // we only care about other threads
     if(thread != current) {
-		  lock_thread(thread);
-      	
-			while(!xthread::isThreadSafe(thread)) {
-				// wait the thread to be safe.
+      lock_thread(thread);
+
+      while(!xthread::isThreadSafe(thread)) {
+        // wait the thread to be safe.
         waitThreadSafe();
       }
       // If the thread's status is already at E_THREAD_WAITFOR_REAPING
-			// or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
-     if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING) && (thread->status != E_THREAD_COND_WAITING)) {
+      // or E_THREAD_JOINING, thus waiting on internal lock, do nothing since they have stopped.
+      if((thread->status != E_THREAD_WAITFOR_REAPING) && (thread->status != E_THREAD_JOINING) && (thread->status != E_THREAD_COND_WAITING)) {
         waiters++;
-				PRINF("kill thread %d\n", thread->index);
+        PRINF("kill thread %d\n", thread->index);
         Real::pthread_kill(thread->self, SIGUSR2);
-			}
+      }
       unlock_thread(thread);
     }
   }
@@ -258,14 +310,34 @@ static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
   cxt->uc_mcontext.gregs[REG_IP] = funcaddr;
 }
 
-/* 
+void xrun::rollbackFromSegv()
+{
+  xrun::getInstance().rollbackFromSegvSignal();
+}
+
+void xrun::rollbackFromSegvSignal() {
+  PRWRN("rolling back due to SEGV");
+
+  // Check whether the segmentation fault is called by buffer overflow.
+  if(_memory.checkHeapOverflow()) {
+    PRINF("OVERFLOW causes segmentation fault!!!! ROLLING BACK\n");
+  }
+
+	rollback();
+}
+
+/*
   We are using the SIGUSR2 to stop other threads.
- */
-void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* context) {
+*/
+void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* uctx) {
+  xrun::getInstance().endOfEpochSignal((ucontext_t *)uctx);
+}
+
+void xrun::endOfEpochSignal(ucontext_t *uctx) {
   // Check what is current status of the system.
   // If we are in the end of an epoch, then we save the context somewhere since
   // current thread is going to stop execution in order to commit or rollback.
-  assert(global_isEpochEnd() == true);
+  assert(global_isEpochEnd());
 
   // Wait for notification from the commiter
   global_waitForNotification();
@@ -273,14 +345,14 @@ void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* cont
   // Check what is the current phase
   if(global_isEpochBegin()) {
     // Current thread is going to enter a new phase
-    xthread::getInstance().saveContext((ucontext_t*)context);
+    _thread.saveContext((ucontext_t*)uctx);
     // NOTE: we do not need to reset contexts if we are still inside the signal handleer
     // since the exiting from signal handler can do this automatically.
   } else {
     PRINF("epochBegin %d rollback %d\n", global_isEpochBegin(), global_isRollback());
-    assert(global_isRollback() == true);
-		
-		// Check where we should park, on my own cond or common cond 
+    assert(global_isRollback());
+
+    // Check where we should park, on my own cond or common cond
     if(isNewThread()) {
       lock_thread(current);
 
@@ -292,28 +364,16 @@ void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* cont
       unlock_thread(current);
     }
     // Rollback inside signal handler is different
-    xthread::getInstance().rollbackInsideSignalHandler((ucontext_t*)context);
+    _thread.rollbackInsideSignalHandler((ucontext_t*)uctx);
   }
   // Jump to a function and wait for the instruction of the committer thread.
 }
 
-void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* context) {
-    void* addr = siginfo->si_addr; // address of access
+void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* uctx) {
+    jumpToFunction((ucontext_t*)uctx, (unsigned long)rollbackFromSegv);
+}
 
-    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    current->internalheap = true;
-    selfmap::getInstance().printCallStack();
-    current->internalheap = false;
-    PRINT("%d: Segmentation fault error %d at addr %p!\n", current->index, siginfo->si_code, addr);
-    while(1) ;
-
-    //Real::exit(-1);
-    // Set the context to handleSegFault
-    jumpToFunction((ucontext_t*)context, (unsigned long)xmemory::getInstance().handleSegFault);
-    //    xmemory::getInstance().handleSegFault ();
-  }
-
-void xrun::installSignalHandlers()  {
+void xrun::installSignalHandlers() {
   // Set up an alternate signal stack.
   static stack_t altstack;
   memset(&altstack, 0, sizeof(altstack));
