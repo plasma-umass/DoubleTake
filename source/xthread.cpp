@@ -4,6 +4,8 @@
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
  */
 
+#include <sys/types.h>
+
 #include "xthread.hh"
 
 #include "globalinfo.hh"
@@ -75,7 +77,7 @@ void xthread::epochBegin(thread_t * thread) {
 	//PRINF("Cleanup all synchronization events for this thread done\n");
 }
 
-void xthread::prepareRollbackAlivethreads() {
+void xthread::rollbackOtherThreads() {
 	threadmap::aliveThreadIterator i;
 
 	for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
@@ -123,11 +125,11 @@ void xthread::initThreadSemaphore(thread_t* thread) {
     sema->init((unsigned long)thread->self, 1, 0);
 }
 
-void xthread::prepareRollback() {
+void xthread::rollback() {
   PRINF("calling syscalls::prepareRollback\n");
   PRINF("calling threadmap::prepareRollback\n");
 
-	prepareRollbackAlivethreads();
+	rollbackOtherThreads();
 
   PRINF("calling xsync::prepareRollback\n");
   PRINF("before calling sync::prepareRollback\n");
@@ -135,16 +137,6 @@ void xthread::prepareRollback() {
   _sync.prepareRollback();
 	xsync::prepareEventListRollback(_spawningList);
 	PRINF("after calling sync::prepareRollback\n");
-
-	// Setting the phase to rollback
-	global_setRollback(); 
- 
-	// Now it is time to wake up those waiting threads
-	// if they are not newly spawned in this epoch.
-	wakeupOldWaitingThreads();
-
-	// Wakeup those threads that are waiting on the global waiters.
-	global_wakeup();	
 }
 
 void xthread::wakeupOldWaitingThreads() {
@@ -186,19 +178,6 @@ bool xthread::isThreadSafe(thread_t * thread) {
 
 bool xthread::addQuarantineList(void* ptr, size_t sz) {
   return current->qlist.addFreeObject(ptr, sz);
-}
-
-void xthread::checkRollbackCurrent() {
-	// Check whether I should go to sleep or not.
-  lock_thread(current);
-  if(current->isNewlySpawned) {
-    while(current->status != E_THREAD_ROLLBACK) {
-    	wait_thread(current);
-		}
-	}
-  unlock_thread(current);
-
-	rollbackCurrent();
 }
 
 void xthread::rollbackCurrent() {
@@ -337,31 +316,23 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
   return result;
 }
 
-  /// @brief Wait for a thread to exit.
+/// @brief Wait for a thread to exit.
 int xthread::thread_join(pthread_t joinee, void** result) {
   thread_t* thread = NULL;
 
-  // Try to check whether thread is empty or not?
+  // FIXME: if the thread has already terminated, return immediately.
+
   thread = getThread(joinee);
   assert(thread != NULL);
 
-  PRINF("main thread is joining thread %d\n", thread->index);
+  PRINF("thread %d is joining thread %d\n", current->index, thread->index);
 
-  setThreadUnsafe();
-
-  // If the joinee has stopped for reaping, this thread will be
-  // considered as in a waiting status, but it is not?
-  markThreadJoining(thread);
-
-  lock_thread(thread);
+  // FIXME: this logic needs some work
 
   PRINF("main thread is joining thread %d with status %d\n", thread->index, thread->status);
   while(thread->status != E_THREAD_WAITFOR_REAPING) {
     // Set the joiner to current thread
     thread->joiner = current;
-
-    // Wait for the joinee to wake me up
-    setThreadSafe();
     wait_thread(thread);
   }
 
@@ -373,18 +344,9 @@ int xthread::thread_join(pthread_t joinee, void** result) {
     *result = thread->result;
   }
 
-  // Now we unlock and proceed
-  unlock_thread(thread);
-
-  // Check the status since it is possible to be waken up for rollback.
-  unmarkThreadJoining();
-
-  setThreadSafe();
-
   // Defer the reaping of this thread for memory deterministic usage.
   if(deferSync((void *)thread, E_SYNCVAR_THREAD)) {
     PRINF("Before reap dead threads!!!!\n");
-    // deferSync may return TRUE if we have to reapDeadThreads now.
     invokeCommit();
     PRINF("After reap dead threads!!!!\n");
   }
@@ -392,7 +354,7 @@ int xthread::thread_join(pthread_t joinee, void** result) {
   return 0;
 }
 
-  /// @brief Detach a thread
+/// @brief Detach a thread
 int xthread::thread_detach(pthread_t thread) {
   thread_t* threadinfo = NULL;
 
@@ -424,13 +386,91 @@ int xthread::thread_kill(pthread_t thread, int sig) {
   return Real::pthread_kill(thread, sig);
 }
 
+
+void xthread::threadRegister(bool isMainThread) {
+  pid_t tid = gettid();
+  uintptr_t privateTop;
+  size_t stackSize = __max_stack_size;
+
+  current->self = Real::pthread_self();
+
+  // Initialize event pool for this thread.
+  listInit(&current->pendingSyncevents);
+
+  // Lock the mutex for this thread.
+  lock_thread(current);
+
+  // Initialize corresponding cond and mutex.
+  //listInit(&current->list);
+
+  current->tid = tid;
+  current->status = E_THREAD_RUNNING;
+  current->isNewlySpawned = true;
+
+  current->disablecheck = false;
+
+  // FIXME: problem
+  current->joiner = NULL;
+
+  // Initially, we should set to check system calls.
+  enableCheck();
+
+  // Initialize the localized synchronization sequence number.
+  // pthread_t thread = current->self;
+  pthread_t thread = pthread_self();
+
+  if(isMainThread) {
+    uintptr_t stackBottom;
+    current->mainThread = true;
+
+    // First, we must get the stack corresponding information.
+    doubletake::findStack(gettid(), &stackBottom, &privateTop);
+  } else {
+    /*
+      Currently, the memory layout of a thread private area is like the following.
+      ----------------------  Higher address
+      |      TCB           |
+      ---------------------- pd (pthread_self)
+      |      TLS           |
+      ----------------------
+      |      Stacktop      |
+      ---------------------- Lower address
+    */
+    current->mainThread = false;
+    // Calculate the top of this page.
+    privateTop = ((uintptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
+  }
+
+  current->context.setupStackInfo((void *)privateTop, stackSize);
+  current->stackTop = (void *)privateTop;
+  current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
+
+  // Now we can wakeup the parent since the parent must wait for the registe
+  signal_thread(current);
+
+  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n",
+        current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
+        (void *)&current->mutex);
+
+  unlock_thread(current);
+  if(!isMainThread) {
+    // Save the context for non-main thread.
+    saveContext();
+  }
+
+  // WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
+  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d\n", current->index,
+        (void *)current->self, (void *)current, current->status);
+}
+
+
 void* xthread::startThread(void* arg) {
   void* result = NULL;
   current = (thread_t*)arg;
 
   // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
   // Record some information before the thread moves on
-  threadRegister(false);
+  xrun::getInstance().thread()->threadRegister(false);
 
   // Now current thread is safe to be interrupted.
   setThreadSafe();

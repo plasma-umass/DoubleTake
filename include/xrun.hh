@@ -83,7 +83,7 @@ public:
   xthread *thread() { return &_thread; }
 private:
   void syscallsInitialize();
-  void stopAllThreads();
+  void quiesce();  // signal all other threads to wait
 
   // Handling the signal SIGUSR2
   static void sigusr2Handler(int signum, siginfo_t* siginfo, void* uctx);

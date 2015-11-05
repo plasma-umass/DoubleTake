@@ -116,17 +116,6 @@ public:
   void thread_exit(void*);
   int thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFunction* fn, void* arg);
 
-	inline void markThreadJoining(thread_t * thread) {
-		lock_thread(current);
-		current->status = E_THREAD_JOINING;
-		current->condwait = &thread->cond;
-		unlock_thread(current);
-	}
-
-	inline void unmarkThreadJoining() {
-		checkRollback(NULL);
-	}
-
   int thread_join(pthread_t joinee, void** result);
   int thread_detach(pthread_t thread);
   int thread_cancel(pthread_t thread);
@@ -345,9 +334,10 @@ public:
 				// If we are holding the lock, release it before the rollback.
 				Real::pthread_mutex_unlock(mutex);
 			}
-				
-			// Time to rollback. 
-			checkRollbackCurrent();
+
+      // FIXME: we should never hit this - if we are rolling back, we
+      // will receive a signal.
+      FATAL("checkRollback broken");
 		}
 		else {
       PRINF("THREAD%d (status %d) is wakenup after cond_wait with mutex %p\n", current->index, current->status, (void *)mutex);
@@ -631,19 +621,16 @@ public:
   // Return actual thread index
   int getIndex() { return current->index; }
 
-  // Preparing the rollback.
-  void prepareRollback();
-	void prepareRollbackAlivethreads();
+  void rollback();
+  void rollbackCurrent();
+	void rollbackOtherThreads();
+
 	void destroyAllSemaphores();
 	void initThreadSemaphore(thread_t* thread);
 	void destroyThreadSemaphore(thread_t* thread);
 	void wakeupOldWaitingThreads();
 
-  static void epochBegin(thread_t * thread);
-
-  // Rollback the current thread
-  static void rollbackCurrent();
-	void checkRollbackCurrent();
+  void epochBegin(thread_t * thread);
 
 	// It is called when a thread has to rollback.
 	// Thus, it will replace the current context (of signal handler)
@@ -783,82 +770,9 @@ private:
 
   semaphore* getSemaphore() { return &current->sema; }
 
-  // Newly created thread should call this.
-  inline static void threadRegister(bool isMainThread) {
-    pid_t tid = gettid();
-    uintptr_t privateTop;
-    size_t stackSize = __max_stack_size;
+  // Newly created threads MUST call this
+  void threadRegister(bool isMainThread);
 
-    current->self = Real::pthread_self();
-
-    // Initialize event pool for this thread.
-    listInit(&current->pendingSyncevents);
-
-    // Lock the mutex for this thread.
-    lock_thread(current);
-
-    // Initialize corresponding cond and mutex.
-    //listInit(&current->list);
-
-    current->tid = tid;
-    current->status = E_THREAD_RUNNING;
-    current->isNewlySpawned = true;
-
-    current->disablecheck = false;
-
-    // FIXME: problem
-    current->joiner = NULL;
-
-    // Initially, we should set to check system calls.
-    enableCheck();
-
-    // Initialize the localized synchronization sequence number.
-    // pthread_t thread = current->self;
-    pthread_t thread = pthread_self();
-
-    if(isMainThread) {
-      uintptr_t stackBottom;
-      current->mainThread = true;
-
-      // First, we must get the stack corresponding information.
-      doubletake::findStack(gettid(), &stackBottom, &privateTop);
-    } else {
-      /*
-        Currently, the memory layout of a thread private area is like the following.
-          ----------------------  Higher address
-          |      TCB           |
-          ---------------------- pd (pthread_self)
-          |      TLS           |
-          ----------------------
-          |      Stacktop      |
-          ---------------------- Lower address
-      */
-      current->mainThread = false;
-      // Calculate the top of this page.
-      privateTop = ((uintptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
-    }
-
-    current->context.setupStackInfo((void *)privateTop, stackSize);
-    current->stackTop = (void *)privateTop;
-    current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
-
-    // Now we can wakeup the parent since the parent must wait for the registe
-    signal_thread(current);
-
-    PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n",
-          current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
-          (void *)&current->mutex);
-
-    unlock_thread(current);
-    if(!isMainThread) {
-      // Save the context for non-main thread.
-      saveContext();
-    }
-
-    // WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
-    PRINF("THREAD%d (pthread_t %p) registered at %p, status %d\n", current->index,
-          (void *)current->self, (void *)current, current->status);
-  }
 
   static bool isThreadDetached() { return current->isDetached; }
 
