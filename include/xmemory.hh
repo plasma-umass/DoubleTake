@@ -43,20 +43,8 @@ class xmemory {
 public:
   xmemory() {}
 
-  void initialize() {
-    // Call _pheap so that xheap.h can be initialized at first and
-    // then can work normally.
-    _heapBegin =
-        (intptr_t)_pheap.initialize((void*)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
-
-    _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
-    _globals.initialize(_selfmap);
-  }
-
-  void finalize() {
-    _globals.finalize();
-    _pheap.finalize();
-  }
+  void initialize();
+  void finalize();
 
   bool isDoubleTake(void *pcaddr) { return _selfmap.isDoubleTake(pcaddr); }
 

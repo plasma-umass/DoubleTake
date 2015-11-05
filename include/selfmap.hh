@@ -92,9 +92,11 @@ class selfmap {
 public:
   selfmap();
 
+  void initialize();
+
   /// Check whether an address is inside the DoubleTake library itself.
   bool isDoubleTake(void* pcaddr) const {
-    return ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
+    return _doubletakeMapped && ((pcaddr >= _doubletakeStart) && (pcaddr <= _doubletakeEnd));
   }
 
   /// Check whether an address is inside the main application.
@@ -123,34 +125,23 @@ public:
   }
 
   /// Collect all global regions.
-  void getGlobalRegions(RegionInfo* regions, int* regionNumb) const {
-    size_t index = 0;
-
-    for(const auto& entry : _mappings) {
-      const mapping& m = entry.second;
-
-      // skip libdoubletake
-      if(m.isGlobals(_main_exe) && m.getFile().find("libdoubletake") == std::string::npos) {
-        //PRINT("getGlobalRegiions: m.getBase() %lx m.getLimit() %lx isglobals and added\n", m.getBase(), m.getLimit());
-        regions[index].start = m.getBase();
-        regions[index].end = m.getLimit();
-        index++;
-      }
-    }
-    
-    // We only need to return this.
-    *regionNumb = index;
-  }
+  void getGlobalRegions(RegionInfo* regions, int* count) const;
 
 private:
   std::map<interval, mapping, std::less<interval>,
            HL::STLAllocator<std::pair<interval, mapping>, InternalHeapAllocator>> _mappings;
 
-  std::string _main_exe;
+  std::string _exe;
   void* _appTextStart;
   void* _appTextEnd;
   void* _doubletakeStart;
   void* _doubletakeEnd;
+  // if the library is renamed from libdoubletake to something else,
+  // or parts of libdoubletake are statically linked into a binary, we
+  // won't correctly identify a start and end pointer for DT.  Use a
+  // bool to explicitly track this - otherwise selfmap::isDoubleTake
+  // may get confused.
+  bool _doubletakeMapped;
 };
 
 #endif

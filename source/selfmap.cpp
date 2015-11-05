@@ -65,31 +65,68 @@ static std::ifstream& operator>>(std::ifstream& f, mapping& m) {
   return f;
 }
 
-selfmap::selfmap() {
-  // Read the name of the main executable
-  // char buffer[PATH_MAX];
-  //Real::readlink("/proc/self/exe", buffer, PATH_MAX);
-  //_main_exe = std::string(buffer);
-  bool gotMainExe = false;
+static bool isDoubleTake(const mapping &m) {
+  return m.getFile().find("libdoubletake") != std::string::npos;
+}
+
+selfmap::selfmap()
+  : _mappings(), _exe(""), _appTextStart(nullptr), _appTextEnd(nullptr),
+    _doubletakeStart(nullptr), _doubletakeEnd(nullptr),
+    _doubletakeMapped(false) {}
+
+void selfmap::initialize() {
+  char path[PATH_MAX];
+
+  // readlink's result isn't necessarily null-terminated - record the
+  // length of the result.
+  ssize_t len = Real::readlink("/proc/self/exe", path, PATH_MAX-1);
+  _exe = std::string(path, len); // XXX: allocates from tempmalloc?
+
   // Build the mappings data structure
   ifstream maps_file("/proc/self/maps");
 
   while(maps_file.good() && !maps_file.eof()) {
     mapping m;
     maps_file >> m;
-    // It is more clean that that of using readlink. 
-    // readlink will have some additional bytes after the executable file 
-    // if there are parameters.	
-    if(!gotMainExe) {
-      _main_exe = std::string(m.getFile());
-      gotMainExe = true;
-    } 
+    // FIXME: we get an invalid entry when parsing the [vsyscall]
+    // entry on 64-bit systems, I think because the addresses are
+    // quite large: ffffffffff600000.  Luckily, the vsyscall page is
+    // the last one in /maps. We should fix that, and not just bail
+    // out here.
+    if(!m.valid()) {
+      break;
+    }
+    _mappings[interval(m.getBase(), m.getLimit())] = m;
 
-    if(m.valid()) {
-			//	fprintf(stderr, "Base %lx limit %lx\n", m.getBase(), m.getLimit()); 
-      _mappings[interval(m.getBase(), m.getLimit())] = m;
+    // record information on the main executable and libdoubletake
+    if(m.isText()) {
+      if(::isDoubleTake(m)) {
+        _doubletakeStart = (void*)m.getBase();
+        _doubletakeEnd = (void*)m.getLimit();
+        _doubletakeMapped = true;
+      } else if(m.getFile() == _exe) {
+        _appTextStart = (void*)m.getBase();
+        _appTextEnd = (void*)m.getLimit();
+      }
     }
   }
+}
+
+void selfmap::getGlobalRegions(RegionInfo *regions, int *count) const {
+  size_t index = 0;
+
+  for(const auto& entry : _mappings) {
+    const mapping& m = entry.second;
+    // skip libdoubletake
+    if(m.isGlobals(_exe) && !::isDoubleTake(m)) {
+      regions[index].start = m.getBase();
+      regions[index].end = m.getLimit();
+      index++;
+    }
+  }
+
+  // We only need to return this.
+  *count = index;
 }
 
 // Print out the code information about an eipaddress
@@ -130,7 +167,7 @@ void selfmap::printStack(int frames, void** array) {
     if (isApplication(addr)) {
       //PRINT("\tcallstack frame %d: %p\t", i, addr);
       // Print out the corresponding source code information
-      sprintf(buf, "addr2line -C -a -i -p -e %s %p", _main_exe.c_str(), (void *)addr);
+      sprintf(buf, "addr2line -C -a -i -p -e %s %p", _exe.c_str(), (void *)addr);
       system(buf);
     }
   }

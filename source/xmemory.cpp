@@ -14,6 +14,24 @@
 
 xpheap<xoneheap<xheap>> xmemory::_pheap;
 
+void xmemory::initialize() {
+  _selfmap.initialize();
+
+  // Call _pheap so that xheap.h can be initialized at first and
+  // then can work normally.
+  _heapBegin =
+    (intptr_t)_pheap.initialize((void*)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
+  _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
+
+  _globals.initialize(_selfmap);
+}
+
+void xmemory::finalize() {
+  _globals.finalize();
+  _pheap.finalize();
+}
+
+
 // This function is called inside the segmentation fault handler
 // So we must utilize the "context" to achieve our target
 void xmemory::handleSegFault() {
