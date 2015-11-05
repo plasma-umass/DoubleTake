@@ -128,7 +128,7 @@ static void* tempmalloc(int size) {
 }
 
 bool addThreadQuarantineList(void* ptr, size_t sz) {
-  return xthread::getInstance().addQuarantineList(ptr, sz);
+  return xrun::getInstance().thread()->addQuarantineList(ptr, sz);
 }
 
 void* call_dlsym(void* handle, const char* funcname) {
@@ -171,7 +171,7 @@ extern "C" {
       ptr = tempmalloc(sz);
     } 
 		else {
-      ptr = xmemory::getInstance().malloc(sz);
+      ptr = xrun::getInstance().memory()->malloc(sz);
     }
     if(ptr == NULL) {
     	fprintf(stderr, "Out of memory with initialized %d!\n", initialized);
@@ -184,20 +184,20 @@ extern "C" {
 
   void xxfree(void* ptr) {
     if(initialized && ptr) {
-      xmemory::getInstance().free(ptr);
+      xrun::getInstance().memory()->free(ptr);
     }
   }
 
   size_t xxmalloc_usable_size(void* ptr) {
     if(initialized) {
-      return xmemory::getInstance().getSize(ptr);
+      return xrun::getInstance().memory()->getSize(ptr);
     }
     return 0;
   }
 
 	void * xxrealloc(void * ptr, size_t sz) {
     if(initialized) {
-      return xmemory::getInstance().realloc(ptr, sz);
+      return xrun::getInstance().memory()->realloc(ptr, sz);
 		}
 		else {
 			void * newptr = tempmalloc(sz);
@@ -218,7 +218,7 @@ extern "C" {
       initializer();
     }
     if(initialized)
-      return xthread::getInstance().mutex_init(mutex, attr);
+      return xrun::getInstance().thread()->mutex_init(mutex, attr);
     return 0;
   }
 
@@ -226,7 +226,7 @@ extern "C" {
     //  PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
     // current->disablecheck);
     if(initialized) {
-      return xthread::getInstance().mutex_lock(mutex);
+      return xrun::getInstance().thread()->mutex_lock(mutex);
     }
     return 0;
   }
@@ -235,7 +235,7 @@ extern "C" {
   int pthread_mutex_trylock(pthread_mutex_t* mutex) {
     // PRINT("inside pthread_mutex_lock, line %d!\n", __LINE__);
    	if(initialized) {
-      return xthread::getInstance().mutex_trylock(mutex);
+      return xrun::getInstance().thread()->mutex_trylock(mutex);
     }
     return 0;
   }
@@ -244,38 +244,38 @@ extern "C" {
     //   PRINT("inside pthread_mutex_unlock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
     // current->disablecheck);
     if(initialized) {
-      xthread::getInstance().mutex_unlock(mutex);
+      xrun::getInstance().thread()->mutex_unlock(mutex);
     }
 
     return 0;
   }
 
   int pthread_mutex_destroy(pthread_mutex_t* mutex) {
-    return xthread::getInstance().mutex_destroy(mutex);
+    return xrun::getInstance().thread()->mutex_destroy(mutex);
   }
 
   // Condition variable related functions
   int pthread_cond_init(pthread_cond_t* cond, const pthread_condattr_t* condattr) {
     if(initialized)
-    	xthread::getInstance().cond_init(cond, condattr);
+    	xrun::getInstance().thread()->cond_init(cond, condattr);
     return 0;
   }
 
   int pthread_cond_broadcast(pthread_cond_t* cond) {
     if(initialized)
-      return xthread::getInstance().cond_broadcast(cond);
+      return xrun::getInstance().thread()->cond_broadcast(cond);
     return 0;
   }
 
   int pthread_cond_signal(pthread_cond_t* cond) {
     if(initialized)
-      return xthread::getInstance().cond_signal(cond);
+      return xrun::getInstance().thread()->cond_signal(cond);
     return 0;
   }
 
   int pthread_cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex) {
     if(initialized)
-      return xthread::getInstance().cond_wait(cond, mutex);
+      return xrun::getInstance().thread()->cond_wait(cond, mutex);
     return 0;
   }
 
@@ -284,33 +284,33 @@ extern "C" {
 		{
     assert(initialized == true);
 
-    return xthread::getInstance().cond_timedwait(cond, mutex, abstime);
+    return xrun::getInstance().thread()->cond_timedwait(cond, mutex, abstime);
   }
 
   int pthread_cond_destroy(pthread_cond_t* cond) {
     if(initialized)
-      xthread::getInstance().cond_destroy(cond);
+      xrun::getInstance().thread()->cond_destroy(cond);
     return 0;
   }
 
   // Barrier related functions
   int pthread_barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr,
 			   unsigned int count) {
-    return xthread::getInstance().barrier_init(barrier, attr, count);
+    return xrun::getInstance().thread()->barrier_init(barrier, attr, count);
   }
 
   int pthread_barrier_destroy(pthread_barrier_t* barrier) {
-    return xthread::getInstance().barrier_destroy(barrier);
+    return xrun::getInstance().thread()->barrier_destroy(barrier);
   }
 
   int pthread_barrier_wait(pthread_barrier_t* barrier) {
     if(initialized)
-      return xthread::getInstance().barrier_wait(barrier);
+      return xrun::getInstance().thread()->barrier_wait(barrier);
     else
       return 0;
   }
 
-  int pthread_cancel(pthread_t thread) { return xthread::getInstance().thread_cancel(thread); }
+  int pthread_cancel(pthread_t thread) { return xrun::getInstance().thread()->thread_cancel(thread); }
 
   int sched_yield() { return 0; }
 
@@ -318,7 +318,7 @@ extern "C" {
   void pthread_exit(void* /* value_ptr */) {
     // This should probably throw a special exception to be caught in spawn.
     abort();
-    // xthread::getInstance().thread_exit(value_ptr);
+    // xrun::getInstance().thread()->thread_exit(value_ptr);
   }
 
   int pthread_setconcurrency(int) { return 0; }
@@ -327,10 +327,10 @@ extern "C" {
 
   int pthread_kill(pthread_t thread, int sig) {
     // FIX ME
-    return xthread::getInstance().thread_kill(thread, sig);
+    return xrun::getInstance().thread()->thread_kill(thread, sig);
   }
 
-  int pthread_detach(pthread_t thread) { return xthread::getInstance().thread_detach(thread); }
+  int pthread_detach(pthread_t thread) { return xrun::getInstance().thread()->thread_detach(thread); }
 
   // int pthread_rwlock_destroy (pthread_rwlock_t * rwlock) NOTHROW {
   //   return 0;
@@ -375,11 +375,11 @@ extern "C" {
 
   int pthread_create(pthread_t* tid, const pthread_attr_t* attr, void* (*start_routine)(void*),
 		     void* arg) {
-    return xthread::getInstance().thread_create(tid, attr, start_routine, arg);
+    return xrun::getInstance().thread()->thread_create(tid, attr, start_routine, arg);
   }
 
   int pthread_join(pthread_t tid, void** val) {
-    xthread::getInstance().thread_join(tid, val);
+    xrun::getInstance().thread()->thread_join(tid, val);
     return 0;
   }
 

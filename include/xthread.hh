@@ -51,15 +51,6 @@ class xthread {
 public:
   xthread() : _sync(), _sysrecord(), _thread() {}
 
-  // Actually, it is not an actual singleton.
-  // Every process will have one copy. They can be used
-  // to hold different contents specific to different threads.
-  static xthread& getInstance() {
-    static char buf[sizeof(xthread)];
-    static xthread* xthreadObject = new (buf) xthread();
-    return *xthreadObject;
-  }
-
   void initialize() {
     _thread.initialize();
 
@@ -997,7 +988,7 @@ private:
   // Newly created thread should call this.
   inline static void threadRegister(bool isMainThread) {
     pid_t tid = gettid();
-    void* privateTop;
+    uintptr_t privateTop;
     size_t stackSize = __max_stack_size;
 
     current->self = Real::pthread_self();
@@ -1028,11 +1019,11 @@ private:
     pthread_t thread = pthread_self();
 
     if(isMainThread) {
-      void* stackBottom;
+      uintptr_t stackBottom;
       current->mainThread = true;
 
       // First, we must get the stack corresponding information.
-      selfmap::getInstance().getStackInformation(&stackBottom, &privateTop);
+      doubletake::findStack(gettid(), &stackBottom, &privateTop);
     } else {
       /*
         Currently, the memory layout of a thread private area is like the following.
@@ -1046,11 +1037,11 @@ private:
       */
       current->mainThread = false;
       // Calculate the top of this page.
-      privateTop = (void*)(((intptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK);
+      privateTop = ((uintptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
     }
 
-    current->context.setupStackInfo(privateTop, stackSize);
-    current->stackTop = privateTop;
+    current->context.setupStackInfo((void *)privateTop, stackSize);
+    current->stackTop = (void *)privateTop;
     current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
 
     // Now we can wakeup the parent since the parent must wait for the registe
@@ -1123,74 +1114,7 @@ private:
   static void setThreadUnsafe();
 
   // @Global entry of all entry function.
-  static void* startThread(void* arg) {
-    void* result = NULL;
-    current = (thread_t*)arg;
-
-    // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
-    // Record some information before the thread moves on
-    threadRegister(false);
-
-    // Now current thread is safe to be interrupted.
-    setThreadSafe();
-    PRINF("thread %p self %p after thread register now.\n", (void *)current, (void *)current->self);
-
-    PRINF("Child thread %d has been registered.\n", current->index);
-    // We actually get those parameter about new created thread
-    // from the TLS storage.
-    result = current->startRoutine(current->startArg);
-    PRINF("result %p of calling startRoutine %p on thread %d\n", (void *)result, (void *)current->startRoutine, current->index);
-    // Insert dead list now so that the corresponding entry can be cleaned up if
-    // there is no need to rollback.
-
-    // Lock the mutex for this thread.
-    lock_thread(current);
-
-    current->result = result;
-    current->status = E_THREAD_WAITFOR_REAPING;
-
-    // Only check the joiner when the thread is not deatached.
-    if(!isThreadDetached()) {
-      // Check the state of joiner.
-      if(current->joiner) {
-        assert(current->joiner->status == E_THREAD_JOINING);
-        PRINF("Waking up the joiner %p!!!\n", (void*)current->joiner->self);
-        // Now we can wakeup the joiner.
-        signal_thread(current);
-      }
-    } else {
-      PRINF("Thread is detached!!!\n");
-    }
-
-    // At commit points, if no heap overflow is detected, then the thread
-    // should set the status to E_THREAD_EXITING, otherwise it should
-    // be set to E_THREAD_ROLLBACK
-    while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {
-      wait_thread(current);
-    }
-
-    // What to do in the end of a thread?
-		// It can only have two status, one is to rollback and another is to exit successfully.
-    if(current->status == E_THREAD_ROLLBACK) {
-      PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, (void *)current);
-      unlock_thread(current);
-
-      // Rollback: has the possible race conditions. FIXME
-      // Since it is possible that we copy back everything after the join, then
-      // Some thread data maybe overlapped by this rollback.
-      // Especially those current->joiner, then we may have a wrong status.
-      PRINF("THREAD%d (at %p) is rollngback now\n", current->index, (void *)current);
-      xthread::getInstance().rollbackCurrent();
-
-      // We will never reach here
-      assert(0);
-    } else {
-      assert(current->status == E_THREAD_EXITING);
-      PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, (void *)current);
-      unlock_thread(current);
-    }
-    return result;
-  }
+  static void* startThread(void* arg);
 
   xsync _sync;
   SysRecord _sysrecord;

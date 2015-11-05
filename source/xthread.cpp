@@ -29,6 +29,14 @@ __thread thread_t* current;
 // threadmap::threadHashMap threadmap::_xmap;
 list_t threadmap::_alivethreads;
 
+int getThreadIndex() {
+  if(!global_isInitPhase()) {
+    return current->index;
+  } else {
+    return 0;
+  }
+}
+
 int xthread::getThreadIndex() const {
   if(!global_isInitPhase()) {
     return current->index;
@@ -201,4 +209,73 @@ void xthread::rollbackCurrent() {
   PRINF("xthread::rollback now\n");
   // Recover the context for current thread.
   restoreContext();
+}
+
+void* xthread::startThread(void* arg) {
+  void* result = NULL;
+  current = (thread_t*)arg;
+
+  // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
+  // Record some information before the thread moves on
+  threadRegister(false);
+
+  // Now current thread is safe to be interrupted.
+  setThreadSafe();
+  PRINF("thread %p self %p after thread register now.\n", (void *)current, (void *)current->self);
+
+  PRINF("Child thread %d has been registered.\n", current->index);
+  // We actually get those parameter about new created thread
+  // from the TLS storage.
+  result = current->startRoutine(current->startArg);
+  PRINF("result %p of calling startRoutine %p on thread %d\n", (void *)result, (void *)current->startRoutine, current->index);
+  // Insert dead list now so that the corresponding entry can be cleaned up if
+  // there is no need to rollback.
+
+  // Lock the mutex for this thread.
+  lock_thread(current);
+
+  current->result = result;
+  current->status = E_THREAD_WAITFOR_REAPING;
+
+  // Only check the joiner when the thread is not deatached.
+  if(!isThreadDetached()) {
+    // Check the state of joiner.
+    if(current->joiner) {
+      assert(current->joiner->status == E_THREAD_JOINING);
+      PRINF("Waking up the joiner %p!!!\n", (void*)current->joiner->self);
+      // Now we can wakeup the joiner.
+      signal_thread(current);
+    }
+  } else {
+    PRINF("Thread is detached!!!\n");
+  }
+
+  // At commit points, if no heap overflow is detected, then the thread
+  // should set the status to E_THREAD_EXITING, otherwise it should
+  // be set to E_THREAD_ROLLBACK
+  while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {
+    wait_thread(current);
+  }
+
+  // What to do in the end of a thread?
+  // It can only have two status, one is to rollback and another is to exit successfully.
+  if(current->status == E_THREAD_ROLLBACK) {
+    PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, (void *)current);
+    unlock_thread(current);
+
+    // Rollback: has the possible race conditions. FIXME
+    // Since it is possible that we copy back everything after the join, then
+    // Some thread data maybe overlapped by this rollback.
+    // Especially those current->joiner, then we may have a wrong status.
+    PRINF("THREAD%d (at %p) is rollngback now\n", current->index, (void *)current);
+    xrun::getInstance().thread()->rollbackCurrent();
+
+    // We will never reach here
+    assert(0);
+  } else {
+    assert(current->status == E_THREAD_EXITING);
+    PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, (void *)current);
+    unlock_thread(current);
+  }
+  return result;
 }

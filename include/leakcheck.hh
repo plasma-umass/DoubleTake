@@ -39,6 +39,7 @@
 #include "spinlock.hh"
 #include "threadstruct.hh"
 #include "xdefines.hh"
+#include "xmemory.hh"
 
 // From heaplayers
 #include "wrappers/stlallocator.h"
@@ -49,11 +50,11 @@ public:
     : _unexploredObjects(), _totalLeakageSize(), _lck(), _sizeList(),
       _nonStartAddrs(0), _heapBegin(0), _heapEnd(0) {}
 
-  void searchHeapPointersInsideGlobals();
+  void searchHeapPointersInsideGlobals(const xmemory &memory);
 
-  bool doSlowLeakCheck(void* begin, void* end) {
-    _heapBegin = (unsigned long)begin + sizeof(objectHeader);
-    _heapEnd = (unsigned long)end;
+  bool doSlowLeakCheck(const xmemory &memory) {
+    _heapBegin = (uintptr_t)memory.getHeapBegin() + sizeof(objectHeader);
+    _heapEnd = (uintptr_t)memory.getHeapEnd();
     _nonStartAddrs = 0;
     _totalLeakageSize = 0;
 
@@ -72,7 +73,7 @@ public:
     //  PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     // Search the globals to find possible heap pointers
-    searchHeapPointersInsideGlobals();
+    searchHeapPointersInsideGlobals(memory);
     // PRINT("doSlowLeakCheck line %d\n", __LINE__);
 
     // Traverse all possible heap pointers inside unexplored sets.
@@ -82,12 +83,12 @@ public:
 
   // In the end of program, we can only check those non-freed objects.
   // All of them are considered as memory leakage
-  bool doFastLeakCheck(void* begin, void* end) {
-    _heapBegin = (unsigned long)begin;
-    _heapEnd = (unsigned long)end;
+  bool doFastLeakCheck(const xmemory &memory) {
+    _heapBegin = (uintptr_t)memory.getHeapBegin();
+    _heapEnd = (uintptr_t)memory.getHeapEnd();
     _totalLeakageSize = 0;
 
-    return doSlowLeakCheck(begin, end);
+    return doSlowLeakCheck(memory);
     //  return reportUnreachableNonfreedObjects();
   }
 

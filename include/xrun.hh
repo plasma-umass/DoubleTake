@@ -26,18 +26,14 @@
 #include "xdefines.hh"
 #include "xmemory.hh"
 #include "xthread.hh"
+#include "leakcheck.hh"
 
-#ifdef GET_CHARECTERISTICS
-extern "C" {
-	extern unsigned long count_epochs;
-};
-#endif
 class xrun {
 
 private:
   xrun()
-      : _memory(xmemory::getInstance()), _thread(xthread::getInstance()),
-        _watchpoint(watchpoint::getInstance())
+    : _epochId(0), _memory(), _thread(),
+      _watchpoint(watchpoint::getInstance()), _leakcheck()
   {
     // PRINF("xrun constructor\n");
   }
@@ -71,9 +67,20 @@ public:
   void epochBegin();
   void epochEnd(bool endOfProgram);
 
+  bool isDoubleTake(void *pcaddr) { return _memory.isDoubleTake(pcaddr); }
+
+  // findStack is thread specific - either give the current thread ID,
+  // or specificy who you want.
+  int findStack(pid_t tid, uintptr_t *bottom, uintptr_t *top) { return _memory.findStack(tid, bottom, top); }
+
+  void printStackCurrent() { _memory.printStackCurrent(); }
+  void printStack(int depth, void** array) { _memory.printStack(depth, array); }
+
   int getThreadIndex() const { return _thread.getThreadIndex(); }
   char *getCurrentThreadBuffer() { return _thread.getCurrentThreadBuffer(); }
 
+  xmemory *memory() { return &_memory; }
+  xthread *thread() { return &_thread; }
 private:
   void syscallsInitialize();
   void stopAllThreads();
@@ -93,11 +100,13 @@ private:
 
   /*  volatile bool _hasRolledBack; */
 
-  /// The memory manager (for both heap and globals).
-  xmemory& _memory;
-  xthread& _thread;
-  watchpoint& _watchpoint;
+	unsigned long _epochId;
 
+  /// The memory manager (for both heap and globals).
+  xmemory _memory;
+  xthread _thread;
+  watchpoint& _watchpoint;
+  leakcheck _leakcheck;
 
   //  int   _rollbackStatus;
   /*  int _pid; // The first process's id. */

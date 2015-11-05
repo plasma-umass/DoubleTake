@@ -12,9 +12,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "selfmap.hh"
+#include "doubletake.hh"
+
 #include "xdefines.hh"
 #include "xmapping.hh"
+
+using doubletake::RegionInfo;
 
 /// @class xglobals
 /// @brief Maps the globals region onto a persistent store.
@@ -24,32 +27,23 @@ public:
     // PRINF("GLOBALS_START is %x\n", GLOBALS_START);
   }
 
-  void initialize() {
-    // We check the mappings to find existing globals.
-
-    // Trying to get information about different text segmensts.
-    selfmap::getInstance().getTextRegions();
-
-    // Trying to get the information of global regions
-    selfmap::getInstance().getGlobalRegions(_gRegions, &_numbRegions);
+  void initialize(const selfmap &selfmap) {
+    selfmap.getGlobalRegions(_gRegions, &_numbRegions);
 
     // Do the initialization for each global.
     for(int i = 0; i < _numbRegions; i++) {
-      _maps[i].initialize(_gRegions[i].start,
-                          (size_t)((intptr_t)_gRegions[i].end - (intptr_t)_gRegions[i].start));
+      _maps[i].initialize((void *)_gRegions[i].start,
+                          (size_t)(_gRegions[i].end - _gRegions[i].start));
     }
-
-    // fprintf(stderr, "_numbRegions is %d\n", _numbRegions);
-    // while(1);
   }
 
   void finalize() {
     // Nothing need to do here.
   }
 
-  int getRegions() { return _numbRegions; }
+  int getRegions() const { return _numbRegions; }
 
-  void getGlobalRegion(int index, unsigned long* begin, unsigned long* end) {
+  void getGlobalRegion(int index, unsigned long* begin, unsigned long* end) const {
     if(index < _numbRegions) {
       *begin = (unsigned long)_gRegions[index].start;
       *end = (unsigned long)_gRegions[index].end;
@@ -77,7 +71,7 @@ public:
 
 private:
   int _numbRegions; // How many blocks actually.
-  regioninfo _gRegions[xdefines::NUM_GLOBALS];
+  RegionInfo _gRegions[xdefines::NUM_GLOBALS];
   xmapping _maps[xdefines::NUM_GLOBALS];
 };
 

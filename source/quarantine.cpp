@@ -9,14 +9,14 @@
 
 #include "quarantine.hh"
 
-#include "xmemory.hh"
+#include "xrun.hh"
 
 void quarantine::realfree(void* ptr) {
   // Calling actual heap object to free this object.
-  xmemory::getInstance().realfree(ptr);
+  xrun::getInstance().memory()->realfree(ptr);
 }
 
 void quarantine::rollback() {
   // Calling the rollback.
-  xmemory::getInstance().rollback();
+  xrun::getInstance().memory()->rollback();
 }

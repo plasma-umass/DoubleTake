@@ -21,9 +21,80 @@
 // Then addr2line can figure out which instruction correctly
 #define PREV_INSTRUCTION_OFFSET 1
 
+/// Read a mapping from a file input stream
+static std::ifstream& operator>>(std::ifstream& f, mapping& m) {
+  if(f.good() && !f.eof()) {
+    uintptr_t base, limit;
+    char perms[5];
+    size_t offset;
+    size_t dev_major, dev_minor;
+    int inode;
+    string path;
+
+    // Skip over whitespace
+    f >> std::skipws;
+
+    // Read in "<base>-<limit> <perms> <offset> <dev_major>:<dev_minor> <inode>"
+    f >> std::hex >> base;
+    if(f.get() != '-')
+      return f;
+    f >> std::hex >> limit;
+
+    if(f.get() != ' ')
+      return f;
+    f.get(perms, 5);
+
+    f >> std::hex >> offset;
+    f >> std::hex >> dev_major;
+    if(f.get() != ':')
+      return f;
+    f >> std::hex >> dev_minor;
+    f >> std::dec >> inode;
+
+    // Skip over spaces and tabs
+    while(f.peek() == ' ' || f.peek() == '\t') {
+      f.ignore(1);
+    }
+
+    // Read out the mapped file's path
+    getline(f, path);
+
+    m = mapping(base, limit, perms, offset, path);
+  }
+
+  return f;
+}
+
+selfmap::selfmap() {
+  // Read the name of the main executable
+  // char buffer[PATH_MAX];
+  //Real::readlink("/proc/self/exe", buffer, PATH_MAX);
+  //_main_exe = std::string(buffer);
+  bool gotMainExe = false;
+  // Build the mappings data structure
+  ifstream maps_file("/proc/self/maps");
+
+  while(maps_file.good() && !maps_file.eof()) {
+    mapping m;
+    maps_file >> m;
+    // It is more clean that that of using readlink. 
+    // readlink will have some additional bytes after the executable file 
+    // if there are parameters.	
+    if(!gotMainExe) {
+      _main_exe = std::string(m.getFile());
+      gotMainExe = true;
+    } 
+
+    if(m.valid()) {
+			//	fprintf(stderr, "Base %lx limit %lx\n", m.getBase(), m.getLimit()); 
+      _mappings[interval(m.getBase(), m.getLimit())] = m;
+    }
+  }
+}
+
 // Print out the code information about an eipaddress
 // Also try to print out stack trace of given pcaddr.
-void selfmap::printCallStack() {
+void selfmap::printStackCurrent() {
   void* array[256];
   int frames;
 
@@ -36,12 +107,13 @@ void selfmap::printCallStack() {
   //  write(2, "}FD PRINT\n", 10);
 
   // Print out the source code information if it is an overflow site.
-  selfmap::getInstance().printCallStack(frames, array);
+  this->printStack(frames, array);
+
   xthread::enableCheck();
 }
 
 // Calling system involves a lot of irrevocable system calls.
-void selfmap::printCallStack(int frames, void** array) {
+void selfmap::printStack(int frames, void** array) {
 #if 0
   char** syms = backtrace_symbols(array, frames);
   
@@ -72,18 +144,4 @@ void selfmap::printCallStack(int frames, void** array) {
     PRINT("\tcallstack frame %d: %p\n", index, (void *)addr);
   }
 #endif
-}
-// Print out the code information about an eipaddress
-// Also try to print out stack trace of given pcaddr.
-int selfmap::getCallStack(void** array) {
-  int size;
-
-  PRINF("Try to get backtrace with array %p\n", (void *)array);
-  // get void*'s for all entries on the stack
-  xthread::disableCheck();
-  size = backtrace(array, xdefines::CALLSITE_MAXIMUM_LENGTH);
-  xthread::enableCheck();
-  PRINF("After get backtrace with array %p\n", (void *)array);
-
-  return size;
 }

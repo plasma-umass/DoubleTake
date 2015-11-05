@@ -40,19 +40,8 @@
 
 // Encapsulates all memory spaces (globals & heap).
 class xmemory {
-private:
-  // Private on purpose. See getInstance(), below.
-  xmemory() {}
-
 public:
-  // Just one accessor.  Why? We don't want more than one (singleton)
-  // and we want access to it neatly encapsulated here, for use by the
-  // signal handler.
-  static xmemory& getInstance() {
-    static char buf[sizeof(xmemory)];
-    static xmemory* theOneTrueObject = new (buf) xmemory();
-    return *theOneTrueObject;
-  }
+  xmemory() {}
 
   void initialize() {
     // Call _pheap so that xheap.h can be initialized at first and
@@ -61,7 +50,7 @@ public:
         (intptr_t)_pheap.initialize((void*)xdefines::USER_HEAP_BASE, xdefines::USER_HEAP_SIZE);
 
     _heapEnd = _heapBegin + xdefines::USER_HEAP_SIZE;
-    _globals.initialize();
+    _globals.initialize(_selfmap);
   }
 
   void finalize() {
@@ -69,9 +58,18 @@ public:
     _pheap.finalize();
   }
 
-  inline int getGlobalRegionsNumb() { return _globals.getRegions(); }
+  bool isDoubleTake(void *pcaddr) { return _selfmap.isDoubleTake(pcaddr); }
 
-  inline void getGlobalRegion(int index, unsigned long* begin, unsigned long* end) {
+  // findStack is thread specific - either give the current thread ID,
+  // or specificy who you want.
+  int findStack(pid_t tid, uintptr_t *bottom, uintptr_t *top) { return _selfmap.findStack(tid, bottom, top); }
+
+  void printStackCurrent() { _selfmap.printStackCurrent(); }
+  void printStack(int depth, void** array) { _selfmap.printStack(depth, array); }
+
+  inline int getGlobalRegionsCount() const { return _globals.getRegions(); }
+
+  inline void getGlobalRegion(int index, uintptr_t* begin, uintptr_t* end) const {
     _globals.getGlobalRegion(index, begin, end);
   }
 
@@ -417,9 +415,9 @@ public:
   }
 
   inline void printCallsite() {
-    selfmap::getInstance().printCallStack();
-   // PRINF("Program exited because of a double free or an invalid free.\n");
-  //  exit(-1);
+    _selfmap.printStackCurrent();
+    // PRINF("Program exited because of a double free or an invalid free.\n");
+    //  exit(-1);
   }
 
   /// Transaction begins.
@@ -431,9 +429,9 @@ public:
     _globals.backup();
   }
 
-  inline void* getHeapEnd() { return _pheap.getHeapEnd(); }
+  inline void* getHeapEnd() const { return _pheap.getHeapEnd(); }
 
-  inline void* getHeapBegin() { return (void*)_heapBegin; }
+  inline void* getHeapBegin() const { return (void*)_heapBegin; }
 
   // This function is called before the system call is issued.
   inline bool checkOverflowBeforehand(void* start, size_t size) {
@@ -499,6 +497,8 @@ public:
   static void handleSegFault();
 
 private:
+  selfmap _selfmap;
+
   /// The globals region.
   xglobals _globals;
 

@@ -31,7 +31,7 @@ CVER     = c11
 CXXVER   = c++11
 
 CFLAGS   = -g -pedantic -fPIC -fno-omit-frame-pointer -D_DEFAULT_SOURCE -D_BSD_SOURCE \
-            $(WARNFLAGS) $(FEATURE_FLAGS) -Iinclude -Iheaplayers
+           $(WARNFLAGS) $(FEATURE_FLAGS) -Iinclude -Iheaplayers
 CXXFLAGS = -std=$(CXXVER) $(CFLAGS)
 ASFLAGS  =
 # this is for generic linker flags - target specific $LIB dependencies

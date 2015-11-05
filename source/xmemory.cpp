@@ -24,13 +24,13 @@ void xmemory::handleSegFault() {
 	watchpoint::getInstance().addWatchpoint((void *)0x101003010, sizeof(void *), OBJECT_TYPE_WATCHONLY, NULL, 0);
 #endif
   // Check whether the segmentation fault is called by buffer overflow.
-  if(xmemory::getInstance().checkHeapOverflow()) {
+  //if(xmemory::getInstance().checkHeapOverflow()) {
     // Now we can roll back
-    PRINF("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
-    PRINT("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
-  }
+  //  PRINF("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
+  //  PRINT("\n\nOVERFLOW causes segmentation fault!!!! ROLLING BACK\n\n\n");
+  //}
     
-	xrun::getInstance().rollback();
+	//xrun::getInstance().rollback();
 }
 
 void xmemory::realfree(void* ptr) { _pheap.realfree(ptr); }

@@ -55,7 +55,7 @@ void xrun::initialize() {
 
 void xrun::finalize() {
 #ifdef GET_CHARECTERISTICS
-  fprintf(stderr, "DOUBLETAKE has epochs %ld\n", count_epochs);
+  fprintf(stderr, "DOUBLETAKE performed %ld epochs\n", _epochId);
 #endif
   // If we are not in rollback phase, then we should check buffer overflow.
   if(!global_isRollback()) {
@@ -69,10 +69,6 @@ void xrun::finalize() {
   //    PRINF("%d: finalize now !!!!!\n", getpid());
   // Now we have to cleanup all semaphores.
   _thread.finalize();
-}
-
-int getThreadIndex() {
-  return xrun::getInstance().getThreadIndex();
 }
 
 char *getCurrentThreadBuffer() {
@@ -162,12 +158,8 @@ void xrun::epochBegin() {
 /// @brief End a transaction, aborting it if necessary.
 void xrun::epochEnd(bool endOfProgram) {
 
-#ifdef GET_CHARECTERISTICS
-   count_epochs++;
-#endif
-//	fprintf(stderr, "xrun epochEnd\n");
-	//while(1) { ; }
-//	selfmap::getInstance().printCallStack();
+  _epochId++;
+
   // Tell other threads to stop and save context.
   stopAllThreads();
 
@@ -188,11 +180,11 @@ void xrun::epochEnd(bool endOfProgram) {
   if(endOfProgram) {
     //  PRINF("DETECTING MEMORY LEAKAGE in the end of program!!!!\n");
     hasMemoryLeak =
-        leakcheck::getInstance().doFastLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+        leakcheck.doFastLeakCheck(_memory);
   } else {
     // PRINF("DETECTING MEMORY LEAKAGE inside a program!!!!\n");
     hasMemoryLeak =
-      leakcheck::getInstance().doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
+      leakcheck.doSlowLeakCheck(_memory.getHeapBegin(), _memory.getHeapEnd());
   }
 #endif
 
@@ -220,7 +212,7 @@ void xrun::epochEnd(bool endOfProgram) {
 		PRINF("before calling syscalls epochEndWell\n");
     syscalls::getInstance().epochEndWell();
 
-		xthread::getInstance().epochEndWell();
+		_thread.epochEndWell();
 
 #ifndef EVALUATING_PERF
 #if defined(DETECT_OVERFLOW) || defined(DETECT_MEMORY_LEAKS)

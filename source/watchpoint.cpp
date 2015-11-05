@@ -20,12 +20,15 @@
 #include <syscall.h>
 #include <ucontext.h>
 #include <unistd.h>
+#include <execinfo.h>
 
+#include "doubletake.hh"
 #include "log.hh"
 #include "memtrack.hh"
 #include "real.hh"
 #include "selfmap.hh"
 #include "xdefines.hh"
+#include "xthread.hh"
 
 long perf_event_open(struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd,
                      unsigned long flags) {
@@ -223,7 +226,7 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
 
   // Check whether this trap is caused by libdoubletake library.
   // If yes, then we don't care it since libdoubletake can fill the canaries.
-  if(selfmap::getInstance().isDoubleTakeLibrary(addr)) {
+  if(doubletake::isLib(addr)) {
     return;
   }
 
@@ -238,13 +241,15 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
 	}
 	else {
     PRINT("\nWatch a memory access on %p (value %lx) with call stack:\n", object->faultyaddr, *((unsigned long *)object->faultyaddr));
-  	selfmap::getInstance().printCallStack();
+    doubletake::printStackCurrent();
 		return;
 	}
 
   // Check whether this callsite is the same as the previous callsite.
   void* callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];
-  int depth = selfmap::getCallStack((void**)&callsites);
+  xthread::disableCheck();
+  size_t depth = backtrace(callsites, xdefines::CALLSITE_MAXIMUM_LENGTH);
+  xthread::enableCheck();
 
   // If current callsite is the same as the previous one, we do not want to report again.
   if(watchpoint::getInstance().checkAndSaveCallsite(object, depth, (void**)&callsites)) {
@@ -257,7 +262,7 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
   } else if(faultType == OBJECT_TYPE_USEAFTERFREE) {
     PRINT("\nCaught a use-after-free error at %p. Current call stack:\n", object->faultyaddr);
   }
-  selfmap::getInstance().printCallStack(depth, (void**)&callsites);
+  doubletake::printStack(depth, (void**)&callsites);
 
   // Check its allocation or deallocation inf
   if(object->objectstart != NULL) {

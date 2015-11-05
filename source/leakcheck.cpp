@@ -23,16 +23,12 @@
 
 #include "leakcheck.hh"
 
-#include "xmemory.hh"
-
-void leakcheck::searchHeapPointersInsideGlobals() {
-  int totalRegions;
-
-  totalRegions = xmemory::getInstance().getGlobalRegionsNumb();
+void leakcheck::searchHeapPointersInsideGlobals(const xmemory &memory) {
+  const size_t totalRegions = memory.getGlobalRegionsCount();
   unsigned long begin, end;
 
-  for(int i = 0; i < totalRegions; i++) {
-    xmemory::getInstance().getGlobalRegion(i, &begin, &end);
+  for(size_t i = 0; i < totalRegions; i++) {
+    memory.getGlobalRegion(i, &begin, &end);
     if(begin != 0) {
       searchHeapPointers(begin, end);
     }

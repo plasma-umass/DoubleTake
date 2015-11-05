@@ -1,5 +1,7 @@
 #include <execinfo.h>
 
+#include "doubletake.hh"
+
 #include "memtrack.hh"
 #include "xthread.hh"
 
@@ -39,7 +41,7 @@ void memtrack::check(void* start, size_t size, memTrackType type) {
       if(object->hasLeak()) {
         PRINT("Leaked object: start address = %p, size = %zd.\nCurrent call stack:\n", object->start,
               object->objectSize);
-        selfmap::getInstance().printCallStack(depth, (void**)&callsites[0]);
+        doubletake::printStack(depth, (void**)&callsites[0]);
       }
 #endif
     }
@@ -93,14 +95,14 @@ void memtrack::print(void* start, faultyObjectType type) {
     // then we do not verify its size information.
 
     // Print its allocation stack.
-    selfmap::getInstance().printCallStack(object->allocSite.depth(),
-                                          object->allocSite.getCallsite());
+    doubletake::printStack(object->allocSite.depth(),
+                           object->allocSite.getCallsite());
 
     if(type == OBJECT_TYPE_USEAFTERFREE) {
       assert(object->isFreed() == true);
       PRINT("Memory deallocation call stack:\n");
-      selfmap::getInstance().printCallStack(object->freeSite.depth(),
-                                            object->freeSite.getCallsite());
+      doubletake::printStack(object->freeSite.depth(),
+                                 object->freeSite.getCallsite());
     }
   }
 }
