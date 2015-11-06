@@ -56,10 +56,11 @@ xrun::xrun()
   current->isSafe = true;
 
   installSignalHandlers();
+
+  syscalls::getInstance().initialize();
 }
 
 void xrun::initialize() {
-  syscalls::getInstance().initialize();
 }
 
 void xrun::finalize() {

@@ -204,7 +204,7 @@ public:
     syncVar->syncVarType = type;
     syncVar->variable = ptr;
 
-    global_lock();
+    //global_lock();
 
     listInsertTail(&syncVar->list, &_deferSyncs);
     if(type == E_SYNCVAR_THREAD) {
@@ -215,7 +215,7 @@ public:
 			}
     }
 
-    global_unlock();
+    //global_unlock();
 
 		return toReapThreads; 
   }

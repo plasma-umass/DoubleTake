@@ -32,27 +32,10 @@ enum { InitialMallocSize = 1024 * 1024 * 1024 };
 
 size_t __max_stack_size;
 
-bool funcInitialized = false;
 bool initialized = false;
 
 // Some global information.
-bool g_isRollback;
-bool g_hasRollbacked;
-int g_numOfEnds;
-enum SystemPhase g_phase;
-pthread_cond_t g_condCommitter;
-pthread_cond_t g_condWaiters;
 pthread_mutex_t g_mutex;
-pthread_mutex_t g_mutexSignalhandler;
-int g_waiters;
-int g_waitersTotal;
-#ifdef GET_CHARECTERISTICS
-unsigned long count_epochs = 0;
-#endif
-void initRealFunctions() {
-  Real::initializer();
-  funcInitialized = true;
-}
 
 __attribute__((constructor)) void initializer() {
   // Using globals to provide allocation
@@ -60,11 +43,6 @@ __attribute__((constructor)) void initializer() {
   // We can not use stack variable here since different process
   // may use this to share information.
   // initialize those library function entries.
-//	fprintf(stderr, "initializer function now\n");
-  if(!funcInitialized) {
-		initRealFunctions();
-	}
-
   if(!initialized) {
 		// Now setup
     xrun::getInstance().initialize();
@@ -74,8 +52,6 @@ __attribute__((constructor)) void initializer() {
 
 __attribute__((destructor)) void finalizer() {
   xrun::getInstance().finalize();
-
-  funcInitialized = false;
 }
 
 typedef int (*main_fn_t)(int, char**, char**);
@@ -88,7 +64,7 @@ void exitfunc(void) {
 // Doubletake's main function
 int doubletake_main(int argc, char** argv, char** envp) {
   /******** Do doubletake initialization here (runs after ctors) *********/
-//	printf("doubletake_main initializer\n");
+  // printf("doubletake_main initializer\n");
 	initializer();
 
 	// Now start the first epoch
@@ -214,30 +190,16 @@ extern "C" {
   /// Threads's synchronization functions.
   // Mutex related functions
   int pthread_mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* attr) {
-    if(!funcInitialized) {
-      initializer();
-    }
-    if(initialized)
-      return xrun::getInstance().thread()->mutex_init(mutex, attr);
-    return 0;
+    return xrun::getInstance().thread()->mutex_init(mutex, attr);
   }
 
   int pthread_mutex_lock(pthread_mutex_t* mutex) {
-    //  PRINT("inside pthread_mutex_lock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
-    // current->disablecheck);
-    if(initialized) {
-      return xrun::getInstance().thread()->mutex_lock(mutex);
-    }
-    return 0;
+    return xrun::getInstance().thread()->mutex_lock(mutex);
   }
 
   // FIXME: add support for trylock
   int pthread_mutex_trylock(pthread_mutex_t* mutex) {
-    // PRINT("inside pthread_mutex_lock, line %d!\n", __LINE__);
-   	if(initialized) {
-      return xrun::getInstance().thread()->mutex_trylock(mutex);
-    }
-    return 0;
+    return xrun::getInstance().thread()->mutex_trylock(mutex);
   }
 
   int pthread_mutex_unlock(pthread_mutex_t* mutex) {
@@ -507,10 +469,6 @@ extern "C" {
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
     if(!initialized) {
-			if(!funcInitialized) {
-			  initRealFunctions();
-			}
-
       return Real::fopen(filename, modes);
     }
     return syscalls::getInstance().fopen(filename, modes);
@@ -519,9 +477,6 @@ extern "C" {
   // ostream.open actually calls this function
   FILE* fopen64(const char* filename, const char* modes) {
     if(!initialized) {
-			if(!funcInitialized) {
-			  initRealFunctions();
-			}
       return Real::fopen64(filename, modes);
     }
    // fprintf(stderr, "fopen64 in libdoubletake\n");
@@ -569,7 +524,7 @@ extern "C" {
   // Close current transaction since it is impossible to rollback.
   off_t lseek(int filedes, off_t offset, int whence) {
     //fprintf(stderr, "lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
-    if(!initialized) {
+    if (!initialized) {
       return Real::lseek(filedes, offset, whence);
     }
     return syscalls::getInstance().lseek(filedes, offset, whence);
@@ -577,16 +532,16 @@ extern "C" {
 #endif 
 
   int mprotect(void* addr, size_t len, int prot) {
-  //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
-    if(!initialized || current->disablecheck) {
+    //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
+    if (!initialized || current->disablecheck) {
       return Real::mprotect(addr, len, prot);
     }
     return syscalls::getInstance().mprotect(addr, len, prot);
   }
   
 	void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
-  //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
-    if(!initialized || current->disablecheck) {
+    //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
+    if (!initialized || current->disablecheck) {
       return Real::mmap(start, length, prot, flags, fd, offset);
     }
 
@@ -599,7 +554,7 @@ extern "C" {
     if(!initialized) {
       return Real::munmap(start, length);
     }
-  //fprintf(stderr, "munmap in doubletake at %d\n", __LINE__);
+    //fprintf(stderr, "munmap in doubletake at %d\n", __LINE__);
     return syscalls::getInstance().munmap(start, length);
   }
 
