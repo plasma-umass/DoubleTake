@@ -67,7 +67,7 @@ void xrun::finalize() {
   fprintf(stderr, "DOUBLETAKE performed %ld epochs\n", _epochId);
 #endif
   // If we are not in rollback phase, then we should check buffer overflow.
-  if(!global_isRollback()) {
+  if(!doubletake::inRollback) {
 #ifdef DETECT_USAGE_AFTER_FREE
     finalUAFCheck();
 #endif

@@ -175,7 +175,7 @@ public:
   // Tongping
   void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
     void* ret = NULL;
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       // We only record these mmap requests.
       ret = Real::mmap(start, length, prot, flags, fd, offset);
       //      WARN("in execution, ret %p length %lx\n", ret, length);
@@ -201,7 +201,7 @@ public:
     int ret;
 
     // In the rollback phase, we only call
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::open(pathname, flags, mode);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveFd(ret, NULL);
@@ -216,7 +216,7 @@ public:
 
     if(_fops.isNormalFile(fd)) {
       // In the rollback phase, we only call
-      if(!global_isRollback()) {
+      if(!doubletake::inRollback) {
        	ret = _fops.closeFile(fd, NULL);
       } else {
         ret = _fops.getClose(fd);
@@ -235,7 +235,7 @@ public:
     DIR* ret;
 
     // In the normal phase
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::opendir(name);
       // Save current fd, pass NULL since it is not a file stream
       _fops.saveDir(ret);
@@ -250,7 +250,7 @@ public:
   int closedir(DIR* dir) {
     int ret;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = _fops.closeDir(dir);
     } else {
 			// We only need to 
@@ -276,7 +276,7 @@ public:
   FILE* fopen(const char* filename, const char* modes) {
     FILE* ret = NULL;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::fopen(filename, modes);
       if(ret != NULL) {
 #if 0
@@ -310,7 +310,7 @@ public:
   FILE* fopen64(const char* filename, const char* modes) {
     FILE* ret;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::fopen64(filename, modes);
       if(ret != NULL) {
         // Save current fd
@@ -337,7 +337,7 @@ public:
     // flush the result, required by the posix standard
     fflush(fp);
 
-		if(!global_isRollback()) {
+		if(!doubletake::inRollback) {
 //      selfmap::getInstance().printCallStack();
 			//printf("fclose fp %p fileno %d\n", fp, fp->_fileno);
       ret = _fops.closeFile(fp->_fileno, fp);
@@ -409,7 +409,7 @@ public:
   int munmap(void* start, size_t length) {
     int ret = 0;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       _sysrecord.recordMunmapOps(start, length);
     } else {
       _sysrecord.getMunmapOps();
@@ -653,7 +653,7 @@ public:
     int ret = 0;
 
     if(_fops.isNormalFile(oldfd)) {
-      if(!global_isRollback()) {
+      if(!doubletake::inRollback) {
         ret = Real::dup(oldfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -674,7 +674,7 @@ public:
     int ret;
 
     if(_fops.isNormalFile(newfd)) {
-      if(!global_isRollback()) {
+      if(!doubletake::inRollback) {
         ret = Real::dup2(oldfd, newfd);
         // Save current fd, pass NULL since it is not a file stream
         _fops.saveDupFd(oldfd, ret);
@@ -1007,7 +1007,7 @@ public:
     switch(cmd) {
     case F_DUPFD: {
       // In the rollback phase, we only call
-      if(global_isRollback()) {
+      if(doubletake::inRollback) {
         ret = _fops.getFdAtOpen();
       } else {
         ret = Real::fcntl(fd, cmd, arg);
@@ -1289,7 +1289,7 @@ public:
   // We can record this also. Tongping
   int gettimeofday(struct timeval* tv, struct timezone* tz) {
     int ret = 0;
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::gettimeofday(tv, tz);
       // Add this to the record list.
       _sysrecord.recordGettimeofdayOps(ret, tv, tz);
@@ -1330,7 +1330,7 @@ public:
   clock_t times(struct tms* buf) {
     clock_t ret;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::times(buf);
       // Add this to the record list.
       _sysrecord.recordTimesOps(ret, buf);
@@ -2190,7 +2190,7 @@ public:
   time_t time(time_t* t) {
     time_t ret;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::time(t);
       // Add this to the record list.
       _sysrecord.recordTimeOps(ret);
@@ -2848,7 +2848,7 @@ public:
   user_desc * tls, pid_t *ctid) {
     int ret;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       ret = Real::__clone(fn, child_stack, flags, arg, pid, tls, ctid);
       _sysrecord.recordCloneOps(ret);
     }

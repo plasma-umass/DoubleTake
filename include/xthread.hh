@@ -125,7 +125,7 @@ public:
     // The synchronization here is totally broken: initializer should read state, then check
     // if init is needed. If so, then allocate and atomic compare exchange.
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       // Allocate a mutex
       pthread_mutex_t* real_mutex =
           (pthread_mutex_t*)allocRealSyncVar(sizeof(pthread_mutex_t), E_SYNC_MUTEX_LOCK);
@@ -164,7 +164,7 @@ public:
 		assert(realMutex != NULL);
     list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
 			// Mark the thread as unsafe.
   		setThreadUnsafe();
       switch(synccmd) {
@@ -234,7 +234,7 @@ public:
     int ret = 0;
     pthread_mutex_t* realMutex = NULL;
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
 
@@ -258,7 +258,7 @@ public:
 
   // Add this event into the destory list.
   int mutex_destroy(pthread_mutex_t* mutex) {
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
     	deferSync((void*)mutex, E_SYNCVAR_MUTEX);
 		}
     return 0;
@@ -266,7 +266,7 @@ public:
 
   ///// conditional variable functions.
   int cond_init(pthread_cond_t* cond, const pthread_condattr_t* attr) {
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       // Allocate a mutex
       pthread_cond_t* real_cond =
           (pthread_cond_t*)allocRealSyncVar(sizeof(pthread_cond_t), E_SYNC_COND);
@@ -289,7 +289,7 @@ public:
 
   // Add this into destoyed list.
   void cond_destroy(pthread_cond_t* cond) { 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
 			deferSync((void*)cond, E_SYNCVAR_COND); 
 		}
 	}
@@ -373,7 +373,7 @@ public:
       
 		PRINF("cond_wait_core for thread %d. cond %p mutex %p\n", current->index, (void *)cond, (void *)mutex);
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       PRINF("cond_wait for thread %d. cond %p mutex %p\n", current->index, (void *)cond, (void *)mutex);
 			assert(realCond != NULL);
 
@@ -426,7 +426,7 @@ public:
       realCond = (pthread_cond_t*)getSyncEntry(cond);
     }
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
 			return Real::pthread_cond_broadcast(realCond); 
 		}
 		else {
@@ -443,7 +443,7 @@ public:
       realCond = (pthread_cond_t*)getSyncEntry(cond);
     }
 
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
 			return Real::pthread_cond_signal(realCond); 
 		}
 		else {
@@ -457,7 +457,7 @@ public:
   int barrier_init(pthread_barrier_t* barrier, const pthread_barrierattr_t* attr, unsigned int count) {
     int result = 0;
     
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       // Allocate the mutex and cond related to this barrier.
 			pthread_cond_t * cond;
 			pthread_mutex_t * mutex;
@@ -491,7 +491,7 @@ public:
   }
 
   int barrier_destroy(pthread_barrier_t* barrier) {
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
 		//	PRINF("barrier_destroy on barrier %p next %p\n", barrier, *((void **)((intptr_t)barrier + sizeof(void *))));
     	deferSync((void*)barrier, E_SYNCVAR_BARRIER);
 		//	PRINF("barrier_destroy on barrier %p done\n", barrier);

@@ -59,8 +59,6 @@ inline bool global_isInitPhase() { return g_phase == E_SYS_INIT; }
 
 inline bool global_isEpochEnd() { return g_phase == E_SYS_EPOCH_END; }
 
-inline bool global_isRollback() { return doubletake::inRollback; }
-
 inline bool global_isEpochBegin() { return g_phase == E_SYS_EPOCH_BEGIN; }
 
 inline bool global_hasRollbacked() { return g_hasRollbacked; }

@@ -210,7 +210,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
   int result;
 
   PRINF("process %d is before thread_create now\n", current->index);
-  if(!global_isRollback()) {
+  if(!doubletake::inRollback) {
     // Lock and record
     global_lock();
 

@@ -147,7 +147,7 @@ public:
 #ifdef DETECT_OVERFLOW
 		size_t blockSize = o->getSize();
 		if(blockSize >= sz) {
-			if(!global_isRollback()) {
+			if(!doubletake::inRollback) {
 				// Check the object overflow.
       	if(checkOverflowAndCleanSentinels(ptr)) {
 	#ifndef EVALUATING_PERF
@@ -216,7 +216,7 @@ public:
 #endif
 
     // Check the malloc if it is in rollback phase.
-    if(global_isRollback()) {
+    if(doubletake::inRollback) {
       memtrack::getInstance().check(ptr, sz, MEM_TRACK_MALLOC);
     }
 
@@ -332,7 +332,7 @@ public:
 
 #ifdef DETECT_OVERFLOW
     // If this object has a overflow, we donot need to free this object
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       if(checkOverflowAndCleanSentinels(origptr)) {
 #ifndef EVALUATING_PERF
       	PRWRN("DoubleTake: Caught buffer overflow error. ptr %p\n", origptr);
@@ -344,7 +344,7 @@ public:
 #endif
 
     // Check the free if it is in rollback phase.
-    if(global_isRollback()) {
+    if(doubletake::inRollback) {
       // PRERR("Check free on ptr %p size %d\n", ptr, o->getObjectSize());
       memtrack::getInstance().check(ptr, o->getObjectSize(), MEM_TRACK_FREE);
     }
@@ -449,7 +449,7 @@ public:
     bool hasOverflow = false;
 
     // Whether it is a rollback phase
-    if(global_isRollback()) {
+    if(doubletake::inRollback) {
       return false;
     }
 		

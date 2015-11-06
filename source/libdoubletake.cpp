@@ -395,15 +395,15 @@ extern "C" {
 /* 
 	Avoid printing in the rollback phase.
   int puts(const char* s) {
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       Real::puts(s);
     }
     return 0;
   }
 
   int printf(const char *format, ...) {
-    PRINT("inside printf. global_isRolback() %d\n", global_isRollback());
-    if(!global_isRollback()) {
+    PRINT("inside printf. global_isRolback() %d\n", doubletake::inRollback);
+    if(!doubletake::inRollback) {
       va_list ap;
       va_start(ap, format);
       vprintf(format, ap);
@@ -413,7 +413,7 @@ extern "C" {
   }
 
   int fprintf(FILE *stream, const char *format, ...) {
-    if(!global_isRollback()) {
+    if(!doubletake::inRollback) {
       va_list ap;
       va_start(ap, format);
       vfprintf(stream, format, ap);
