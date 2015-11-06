@@ -33,19 +33,16 @@ __thread thread_t* current;
 list_t threadmap::_alivethreads;
 
 int getThreadIndex() {
-  if(!global_isInitPhase()) {
-    return current->index;
-  } else {
+  // if current hasn't been initialized, we must be in the xrun
+  // constructor, in which case we know we are the first and only
+  // thead.
+  if (!current)
     return 0;
-  }
+  return current->index;
 }
 
 int xthread::getThreadIndex() const {
-  if(!global_isInitPhase()) {
-    return current->index;
-  } else {
-    return 0;
-  }
+  return ::getThreadIndex();
 }
 
 char* xthread::getCurrentThreadBuffer() {
