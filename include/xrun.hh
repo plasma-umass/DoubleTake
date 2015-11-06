@@ -34,7 +34,6 @@ private:
   xrun();
 
 public:
-
   static xrun& getInstance() {
     static char buf[sizeof(xrun)];
     static xrun* theOneTrueObject = new (buf) xrun();
@@ -43,9 +42,8 @@ public:
 
   void finalize();
 
-#ifdef DETECT_USAGE_AFTER_FREE
   void finalUAFCheck();
-#endif
+
   // Simply commit specified memory block
   void atomicCommit(void* addr, size_t size) { _memory.atomicCommit(addr, size); }
 

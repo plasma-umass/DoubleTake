@@ -25,6 +25,10 @@
 #define DETECT_OVERFLOW 0
 #endif
 
+#ifndef DETECT_USAGE_AFTER_FREE
+#define DETECT_USAGE_AFTER_FREE 0
+#endif
+
 static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 
 xrun::xrun()
@@ -68,9 +72,8 @@ void xrun::finalize() {
 #endif
   // If we are not in rollback phase, then we should check buffer overflow.
   if(!doubletake::inRollback) {
-#ifdef DETECT_USAGE_AFTER_FREE
-    finalUAFCheck();
-#endif
+    if (DETECT_USAGE_AFTER_FREE)
+      finalUAFCheck();
 
     epochEnd(true);
   }
@@ -224,7 +227,6 @@ void xrun::quiesce() {
   doubletake::waitUntilQuiescent();
 }
 
-#ifdef DETECT_USAGE_AFTER_FREE
 void xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
@@ -235,7 +237,6 @@ void xrun::finalUAFCheck() {
     }
   }
 }
-#endif
 
 bool isNewThread() { return current->isNewlySpawned; }
 
