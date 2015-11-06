@@ -20,6 +20,7 @@
 #include <sys/times.h>
 #include <time.h>
 
+#include "threadstruct.hh"
 #include "list.hh"
 #include "log.hh"
 #include "real.hh"

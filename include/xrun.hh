@@ -27,6 +27,7 @@
 #include "xmemory.hh"
 #include "xthread.hh"
 #include "leakcheck.hh"
+#include "syscalls.hh"
 
 class xrun {
 private:
@@ -75,6 +76,7 @@ public:
 
   xmemory *memory() { return &_memory; }
   xthread *thread() { return &_thread; }
+  syscalls *syscall() { return &_syscalls; }
 private:
   void syscallsInitialize();
   void quiesce();  // signal all other threads to wait
@@ -96,6 +98,7 @@ private:
 
 	unsigned long _epochId;
 
+  syscalls _syscalls;
   /// The memory manager (for both heap and globals).
   xmemory _memory;
   xthread _thread;

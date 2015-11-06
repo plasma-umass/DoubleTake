@@ -28,7 +28,7 @@
 static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 
 xrun::xrun()
-  : _epochId(0), _memory(), _thread(),
+  : _epochId(0), _syscalls(), _memory(), _thread(),
     _watchpoint(watchpoint::getInstance()), _leakcheck()
 {
   // we need early-initialization of our syscall wrappers to ensure
@@ -57,7 +57,7 @@ xrun::xrun()
 
   installSignalHandlers();
 
-  syscalls::getInstance().initialize();
+  _syscalls.initialize();
 }
 
 void xrun::initialize() {
@@ -184,7 +184,7 @@ void xrun::epochEnd(bool endOfProgram) {
     rollback();
   } else {
 		PRINF("before calling syscalls epochEndWell\n");
-    syscalls::getInstance().epochEndWell();
+    _syscalls.epochEndWell();
 		_thread.epochEndWell();
   }
 }

@@ -15,10 +15,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "log.hh"
 #include "hashfuncs.hh"
 #include "hashmap.hh"
 #include "internalheap.hh"
-#include "log.hh"
 #include "mm.hh"
 #include "real.hh"
 #include "sysrecord.hh"

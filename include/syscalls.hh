@@ -28,37 +28,27 @@
 
 #include <new>
 
-#include "fops.hh"
-#include "globalinfo.hh"
+#include "doubletake.hh"
 #include "log.hh"
+#include "fops.hh"
 #include "real.hh"
 #include "sysrecord.hh"
 #include "threadstruct.hh"
-#include "xrun.hh"
 
 class syscalls {
-private:
-  syscalls() : _sysrecord(), _fops() {}
-
 public:
-  static syscalls& getInstance() {
-    static char buf[sizeof(syscalls)];
-    static syscalls* theOneTrueObject = new (buf) syscalls();
-    return *theOneTrueObject;
+  syscalls() : _sysrecord(), _fops() {
   }
 
   /// @brief Initialize the system.
   void initialize() { _fops.initialize(); }
 
   // Currently, epochBegin() will call xrun::epochBegin().
-  void epochBegin() { xrun::getInstance().epochBegin(); }
+  void epochBegin();
+  void epochEnd();
 
-  void epochEnd() {
-    //    PRINF("$$$$$$epochEnd at line %d\n", __LINE__);
-    //    PRINF("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
-    //   printf("$$$$$$epochEnd at line %d$$$$$$$$$$$$$$$\n", __LINE__);
-    xrun::getInstance().epochEnd(false);
-  }
+  // Simply commit specified memory block
+  void atomicCommit(void* addr, size_t size);
 
   // Called by xrun::epochEnd when there is no overflow.
   // in the end of checking when an epoch ends.
@@ -83,9 +73,6 @@ public:
     // Handle all opened files
     _fops.prepareRollback();
   }
-
-  // Simply commit specified memory block
-  void atomicCommit(void* addr, size_t size) { xrun::getInstance().atomicCommit(addr, size); }
 
   void checkOverflowBeforehand(void* start, size_t size) {
     // Make those pages writable, otherwise, read may fail
