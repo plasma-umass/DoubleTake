@@ -54,12 +54,11 @@ xrun::xrun()
   // ensure that is setup too.
   _thread.registerInitialThread(&_memory);
   current->isSafe = true;
+
+  installSignalHandlers();
 }
 
 void xrun::initialize() {
-
-  installSignalHandlers();
-
   syscalls::getInstance().initialize();
 }
 
