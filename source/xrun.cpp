@@ -31,14 +31,16 @@ xrun::xrun()
   : _epochId(0), _memory(), _thread(),
     _watchpoint(watchpoint::getInstance()), _leakcheck()
 {
+  // we need early-initialization of our syscall wrappers to ensure
+  // that libraries like glib can do whatever syscalls they need.
+  Real::initializer();
+
+  _thread.getThreadinfo()->initialize();
+
   // PRINT("xrun: initialization at line %d\n", __LINE__);
 
   // Initialize the internal heap at first.
   InternalHeap::getInstance().initialize();
-
-  // we need early-initialization of our syscall wrappers to ensure
-  // that libraries like glib can do whatever syscalls they need.
-  Real::initializer();
 
   _memory.initialize();
 
@@ -138,6 +140,7 @@ void xrun::epochBegin() {
   saveContext();
 
   doubletake::epochComplete();
+  doubletake::unlock();
   // need to pair with doubletake::unlock here?
 }
 

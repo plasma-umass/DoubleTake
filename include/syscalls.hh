@@ -38,7 +38,9 @@
 
 class syscalls {
 private:
-  syscalls() : _sysrecord(), _fops() {}
+  syscalls() : _sysrecord(), _fops() {
+    xrun::getInstance();
+  }
 
 public:
   static syscalls& getInstance() {

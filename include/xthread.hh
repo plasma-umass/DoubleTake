@@ -51,9 +51,7 @@ class xthread {
 	};
 
 public:
-  xthread() : _sync(), _sysrecord(), _thread() {
-    _thread.initialize();
-  }
+  xthread() : _sync(), _sysrecord(), _thread() {}
 
   void initialize() {
     // Initialize the syncmap and threadmap.
@@ -66,6 +64,8 @@ public:
 
     //PRINF("Done with thread initialization");
   }
+
+  threadinfo *getThreadinfo() { return &_thread; }
 
   void finalize() {
 		destroyAllSemaphores(); 
