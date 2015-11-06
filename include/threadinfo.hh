@@ -52,22 +52,21 @@ public:
   }
 
   void initialize() {
-      struct rlimit rl;
+    struct rlimit rl;
 
-      // Get the stack size.
-      if(Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
-        PRWRN("Get the stack size failed.\n");
-        Real::exit(-1);
-      }
+    // Get the stack size.
+    if(Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
+      PRWRN("Get the stack size failed.\n");
+      Real::exit(-1);
+    }
 
-      // if there is no limit for our stack size, then just pick a
-      // reasonable limit.
-      if (rl.rlim_cur == (rlim_t)-1) {
-        rl.rlim_cur = 2048*4096; // 8 MB
-      }
+    // if there is no limit for our stack size, then just pick a
+    // reasonable limit.
+    if (rl.rlim_cur == (rlim_t)-1) {
+      rl.rlim_cur = 2048*4096; // 8 MB
+    }
 
-      __max_stack_size = rl.rlim_cur;
-
+    __max_stack_size = 2048*4096; // rl.rlim_cur;
 
     _aliveThreads = 0;
     _reapableThreads = 0;
@@ -81,7 +80,7 @@ public:
     // Initialize the backup stacking information.
     size_t perStackSize = __max_stack_size;
 
-    unsigned long totalStackSize = perStackSize * xdefines::MAX_ALIVE_THREADS;
+    unsigned long totalStackSize = (unsigned long)perStackSize * xdefines::MAX_ALIVE_THREADS;
     unsigned long perQbufSize = xdefines::QUARANTINE_BUF_SIZE * sizeof(freeObject);
     unsigned long qbufSize = perQbufSize * xdefines::MAX_ALIVE_THREADS * 2;
 
@@ -96,6 +95,8 @@ public:
 
 			// Those information that are only initialized once.
      	tinfo->available = true;
+      tinfo->origIndex = i;
+      fprintf(stderr, "ctx for %4d at %p\n", i, (void *)&stackStart[perStackSize * i]);
       tinfo->context.setupBackup(&stackStart[perStackSize * i]);
       tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
     }

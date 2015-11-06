@@ -27,6 +27,8 @@ void xcontext::save(ucontext_t *uctx) {
   intptr_t stackBottom;
   size_t size;
 
+  _initialized = true;
+
   sp = getStackPointer(uctx);
   stackBottom = PAGE_ALIGN_DOWN(sp);
 
@@ -64,6 +66,8 @@ void xcontext::saveCurrent() {
     : "=r"(sp));
 #endif
 
+  _initialized = true;
+
   stackBottom = PAGE_ALIGN_DOWN(sp);
 
   _privateStart = (void *)stackBottom;
@@ -99,6 +103,8 @@ void xcontext::rollback() {
 // handler is running so we don't have to worry about receiving a
 // signal in the middle of this method.
 void xcontext::rollbackInHandler(ucontext_t* kctx) {
+  REQUIRE(_initialized, "not initialized");
+  Real::mprotect(_backup, _backupSize, PROT_READ);
   memcpy(_privateStart, _backup, _backupSize);
   memcpy(kctx, &_context, sizeof(_context));
 }

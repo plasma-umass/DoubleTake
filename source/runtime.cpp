@@ -12,7 +12,7 @@ namespace doubletake {
   std::atomic_bool inRollback;
 }
 
-static std::atomic_bool EPOCH_COMPLETE;
+static std::atomic_int EPOCH_ID;
 static std::atomic_int WAITING_COUNT;
 
 // used to make sure all threads have quiesced, and only the
@@ -27,6 +27,15 @@ static pthread_mutex_t epoch_completed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // the global runtime lock
 static pthread_mutex_t rtLock = PTHREAD_MUTEX_INITIALIZER;
+
+void doubletake::unblockEpochSignal() {
+  sigset_t blocked;
+
+  sigemptyset(&blocked);
+  sigaddset(&blocked, SIGUSR2);
+
+  Real::sigprocmask(SIG_UNBLOCK, &blocked, nullptr);
+}
 
 void doubletake::lock() {
   sigset_t blocked, current;
@@ -56,19 +65,13 @@ void doubletake::lock() {
 }
 
 void doubletake::unlock() {
-  sigset_t blocked;
-
   Real::pthread_mutex_unlock(&rtLock);
-
-  sigemptyset(&blocked);
-  sigaddset(&blocked, SIGUSR2);
-
-  Real::sigprocmask(SIG_UNBLOCK, &blocked, nullptr);
+  doubletake::unblockEpochSignal();
 }
 
 void doubletake::setWaiterCount(size_t n) {
-  EPOCH_COMPLETE = false;
   WAITING_COUNT = n;
+  doubletake::printf("waiting count: %d", WAITING_COUNT.load());
 }
 
 void doubletake::waitUntilQuiescent() {
@@ -78,31 +81,38 @@ void doubletake::waitUntilQuiescent() {
   Real::pthread_mutex_unlock(&coordinator_lock);
 }
 
-void doubletake::currentIsQuiesced() {
+int doubletake::currentIsQuiesced() {
+  int id = EPOCH_ID;
+  Real::write(2, "currentIsQuiesced\n", strlen("currentIsQuiesced\n"));
   Real::pthread_mutex_lock(&coordinator_lock);
   // if we're the last thread being waited on at the end of an epoch,
   // wake up the coordinator.
   if (WAITING_COUNT.fetch_sub(1) == 1)
     Real::pthread_cond_broadcast(&coordinator_cond);
   Real::pthread_mutex_unlock(&coordinator_lock);
+  return id;
 }
 
 void doubletake::epochComplete() {
   Real::pthread_mutex_lock(&epoch_completed_lock);
-  EPOCH_COMPLETE = true;
+  EPOCH_ID++;
   Real::pthread_cond_broadcast(&epoch_completed_cond);
   Real::pthread_mutex_unlock(&epoch_completed_lock);
   Real::write(2, "epochComplete\n", strlen("epochComplete\n"));
 }
 
-void doubletake::waitForEpochComplete() {
+void doubletake::waitForEpochComplete(const int id) {
   Real::pthread_mutex_lock(&epoch_completed_lock);
   // FIXME: this serializes the wakeup of all threads, as only 1 can
   // hold epoch_completed_lock at any given time.  Maybe use a barrier
   // instead?
-  while (!EPOCH_COMPLETE)
+  while (EPOCH_ID <= id)
     Real::pthread_cond_wait(&epoch_completed_cond, &epoch_completed_lock);
   Real::pthread_mutex_unlock(&epoch_completed_lock);
+}
+
+int doubletake::epochID() {
+  return EPOCH_ID;
 }
 
 

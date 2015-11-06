@@ -209,7 +209,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
   PRINF("process %d is before thread_create now\n", current->index);
   if(!doubletake::inRollback) {
     // Lock and record
-    global_lock();
+    xrun::getInstance().epochEnd(false);
 
     // Allocate a global thread index for current thread.
     tindex = allocThreadIndex();
@@ -238,6 +238,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     child->status = E_THREAD_STARTING;
     child->hasJoined = false;
     child->isSafe = false;
+    child->creationEpoch = doubletake::epochID();
 
     Real::pthread_mutex_init(&child->mutex, NULL);
     Real::pthread_cond_init(&child->cond, NULL);
@@ -268,8 +269,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
 
     insertAliveThread(child, *tid);
 
-    global_unlock();
-
+    xrun::getInstance().epochBegin();
   } else {
     result = _sync.peekSyncEvent(_spawningList);
     PRINF("process %d is before thread_create, result %d\n", current->index, result);
@@ -466,14 +466,18 @@ void* xthread::startThread(void* arg) {
   xrun::getInstance().thread()->threadRegister(false, nullptr);
 
   Real::pthread_mutex_lock(&current->mutex);
+
   // Now current thread is safe to be interrupted.
   setThreadSafe();
   Real::pthread_cond_broadcast(&current->cond);
   Real::pthread_mutex_unlock(&current->mutex);
 
+  saveContext();
+  doubletake::unblockEpochSignal();
+
   PRINF("thread %p self %p after thread register now.", (void *)current, (void *)current->self);
 
-  doubletake::waitForEpochComplete();
+  doubletake::waitForEpochComplete(current->creationEpoch);
 
   // We actually get those parameter about new created thread
   // from the TLS storage.

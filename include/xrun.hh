@@ -42,7 +42,7 @@ public:
 
   void finalize();
 
-  void finalUAFCheck();
+  bool finalUAFCheck();
 
   // Simply commit specified memory block
   void atomicCommit(void* addr, size_t size) { _memory.atomicCommit(addr, size); }

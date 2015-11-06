@@ -56,6 +56,7 @@ int doubletake_main(int argc, char** argv, char** envp) {
   // printf("doubletake_main initializer\n");
 
 	// Now start the first epoch
+	xrun::getInstance().epochEnd(false);
 	xrun::getInstance().epochBegin();
 
 	//PRINT("before actually call real_main function\n");

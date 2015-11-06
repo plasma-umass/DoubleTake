@@ -40,10 +40,17 @@ namespace doubletake {
   /// decremented once each thread executes its SIGUSR2 handler.
   void setWaiterCount(size_t n);
   void waitUntilQuiescent();
-  void currentIsQuiesced();
+  // returns the current epoch ID
+  int currentIsQuiesced();
 
   void epochComplete();
-  void waitForEpochComplete();
+  // epoch ID from currentIsQuiesced
+  void waitForEpochComplete(const int id);
+
+  // ID of the current epoch
+  int epochID();
+
+  void unblockEpochSignal();
 }
 
 #endif // DOUBLETAKE_DOUBLETAKE_HH

@@ -2301,9 +2301,10 @@ public:
   }
 
   int epoll_wait(int epfd, struct epoll_event* events, int maxevents, int timeout) {
-    int ret;
+    int ret = EINTR;
+    while (ret == EINTR)
+      ret = Real::epoll_wait(epfd, events, maxevents, timeout);
     epochEnd();
-    ret = Real::epoll_wait(epfd, events, maxevents, timeout);
     epochBegin();
     return ret;
   }

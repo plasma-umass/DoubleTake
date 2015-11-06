@@ -74,6 +74,9 @@ typedef struct thread {
   pid_t tid;      // Current process id of this thread.
   pthread_t self; // Results of pthread_self
 
+  int origIndex;
+  int creationEpoch;
+
 	// What is the status of a thread.
   thrStatus status;
 

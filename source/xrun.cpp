@@ -64,6 +64,11 @@ xrun::xrun()
   _syscalls.initialize();
 
   doubletake::initialized = true;
+
+  // epochBegin pairs with the global lock taken in epochEnd, so we
+  // need to grab that lock before we begin our first epoch
+  doubletake::lock();
+  epochBegin();
 }
 
 void xrun::finalize() {
@@ -72,9 +77,6 @@ void xrun::finalize() {
 #endif
   // If we are not in rollback phase, then we should check buffer overflow.
   if(!doubletake::inRollback) {
-    if (DETECT_USAGE_AFTER_FREE)
-      finalUAFCheck();
-
     epochEnd(true);
   }
 
@@ -95,9 +97,7 @@ void xrun::rollback() {
   _memory.rollback();
   _thread.rollback();
 
-  // wake up all other threads
-  doubletake::epochComplete();
-
+  // when we rollback ourselves, we will end up calling epochEnd()
   _thread.rollbackCurrent();
 
   assert(0);
@@ -143,7 +143,6 @@ void xrun::epochBegin() {
 
   doubletake::epochComplete();
   doubletake::unlock();
-  // need to pair with doubletake::unlock here?
 }
 
 /// @brief End a transaction, aborting it if necessary.
@@ -167,6 +166,7 @@ void xrun::epochEnd(bool endOfProgram) {
 
   bool hasOverflow = false;
   bool hasMemoryLeak = false;
+  bool hasUAF = false;
   
   if (DETECT_OVERFLOW)
     hasOverflow = _memory.checkHeapOverflow();
@@ -181,8 +181,13 @@ void xrun::epochEnd(bool endOfProgram) {
     }
   }
 
-  PRWRN("DoubleTake: At the end of an epoch, hasOverflow %d hasMemoryLeak %d\n", hasOverflow, hasMemoryLeak);
-  if (hasOverflow || hasMemoryLeak) {
+  if (endOfProgram && DETECT_USAGE_AFTER_FREE)
+    hasUAF = finalUAFCheck();
+
+  PRWRN("DoubleTake: At the end of an epoch, hasOverflow %d hasMemoryLeak %d hasUAF %d\n",
+        hasOverflow, hasMemoryLeak, hasUAF);
+
+  if (hasOverflow || hasMemoryLeak || hasUAF) {
     rollback();
   } else {
 		PRINF("before calling syscalls epochEndWell\n");
@@ -210,8 +215,10 @@ void xrun::quiesce() {
   }
 
   // bonus: if there are no other threads, just exit now
-  if (!waiters)
+  if (!waiters) {
+    Real::write(2, "no waiters\n", strlen("no waiters\n"));
     return;
+  }
 
   doubletake::setWaiterCount(waiters);
 
@@ -220,6 +227,7 @@ void xrun::quiesce() {
     if (thread == current)
       continue;
 
+    Real::write(2, "end-of-epoch sending\n", strlen("end-of-epoch sending\n"));
     PRINF("sending SIGUSR2 to thread %d", thread->index);
     Real::pthread_kill(thread->self, SIGUSR2);
   }
@@ -227,15 +235,15 @@ void xrun::quiesce() {
   doubletake::waitUntilQuiescent();
 }
 
-void xrun::finalUAFCheck() {
+bool xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
     thread_t* thread = i.getThread();
-    if(thread->qlist.finalUAFCheck()) {
-      rollback();
-    }
+    if(thread->qlist.finalUAFCheck())
+      return true;
   }
+  return false;
 }
 
 bool isNewThread() { return current->isNewlySpawned; }
@@ -271,9 +279,10 @@ void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* uctx
 }
 
 void xrun::endOfEpochSignal(ucontext_t *uctx) {
+  Real::write(2, "end-of-epoch received\n", strlen("end-of-epoch received\n"));
 
-  doubletake::currentIsQuiesced();
-  doubletake::waitForEpochComplete();
+  const int epochID = doubletake::currentIsQuiesced();
+  doubletake::waitForEpochComplete(epochID);
 
   if (!doubletake::inRollback) {
     _thread.saveContext((ucontext_t*)uctx);

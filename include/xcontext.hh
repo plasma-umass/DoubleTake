@@ -25,7 +25,7 @@ class xcontext {
 public:
   explicit xcontext()
     : _context(), _backup(nullptr), _privateStart(nullptr), _privateTop(nullptr),
-      _stackSize(0), _backupSize(0) {}
+      _stackSize(0), _backupSize(0), _initialized(false) {}
 
   void setupBackup(void* ptr) { _backup = ptr; }
 
@@ -58,6 +58,7 @@ private:
   void* _privateTop;
   size_t _stackSize;
   size_t _backupSize;
+  bool _initialized;
 };
 
 #endif
