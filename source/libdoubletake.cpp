@@ -36,6 +36,7 @@ size_t __max_stack_size;
 pthread_mutex_t g_mutex;
 
 __attribute__((constructor)) void initializer() {
+  // force initialization as early as possible
   USED(xrun::getInstance());
 }
 __attribute__((destructor)) void finalizer() {

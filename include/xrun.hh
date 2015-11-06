@@ -41,7 +41,6 @@ public:
     return *theOneTrueObject;
   }
 
-  void initialize();
   void finalize();
 
 #ifdef DETECT_USAGE_AFTER_FREE

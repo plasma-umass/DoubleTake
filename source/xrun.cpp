@@ -62,9 +62,6 @@ xrun::xrun()
   doubletake::initialized = true;
 }
 
-void xrun::initialize() {
-}
-
 void xrun::finalize() {
 #ifdef GET_CHARECTERISTICS
   fprintf(stderr, "DOUBLETAKE performed %ld epochs\n", _epochId);
