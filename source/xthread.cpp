@@ -20,6 +20,7 @@
 #include "xrun.hh"
 #include "syscalls.hh"
 #include "xsync.hh"
+#include "xmemory.hh"
 
 // Global lock used when joining and exiting a thread.
 // threadmap::threadHashMap threadmap::_xmap;
@@ -387,7 +388,7 @@ int xthread::thread_kill(pthread_t thread, int sig) {
 }
 
 
-void xthread::threadRegister(bool isMainThread) {
+void xthread::threadRegister(bool isMainThread, xmemory* memory) {
   pid_t tid = gettid();
   uintptr_t privateTop;
   size_t stackSize = __max_stack_size;
@@ -424,7 +425,7 @@ void xthread::threadRegister(bool isMainThread) {
     current->mainThread = true;
 
     // First, we must get the stack corresponding information.
-    doubletake::findStack(gettid(), &stackBottom, &privateTop);
+    memory->findStack(gettid(), &stackBottom, &privateTop);
   } else {
     /*
       Currently, the memory layout of a thread private area is like the following.
@@ -470,7 +471,7 @@ void* xthread::startThread(void* arg) {
 
   // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
   // Record some information before the thread moves on
-  xrun::getInstance().thread()->threadRegister(false);
+  xrun::getInstance().thread()->threadRegister(false, nullptr);
 
   // Now current thread is safe to be interrupted.
   setThreadSafe();

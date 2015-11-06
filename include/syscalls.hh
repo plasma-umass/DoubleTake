@@ -38,7 +38,7 @@
 
 class syscalls {
 private:
-  syscalls() {}
+  syscalls() : _sysrecord(), _fops() {}
 
 public:
   static syscalls& getInstance() {

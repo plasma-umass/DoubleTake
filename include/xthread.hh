@@ -37,6 +37,8 @@
 #include "xdefines.hh"
 #include "xsync.hh"
 
+class xmemory;
+
 class xthread {
 	// After the first pointer, we will keep 
 	// a data structure to keep all information about this barrier
@@ -49,11 +51,11 @@ class xthread {
 	};
 
 public:
-  xthread() : _sync(), _sysrecord(), _thread() {}
+  xthread() : _sync(), _sysrecord(), _thread() {
+    _thread.initialize();
+  }
 
   void initialize() {
-    _thread.initialize();
-
     // Initialize the syncmap and threadmap.
     _sync.initialize();
 	  threadmap::getInstance().initialize();
@@ -62,10 +64,7 @@ public:
     void* ptr = ((void*)InternalHeap::getInstance().malloc(sizeof(SyncEventList)));
     _spawningList = new (ptr) SyncEventList(NULL, E_SYNC_SPAWN);
 
-    // Register the first thread
-    registerInitialThread();
-    current->isSafe = true;
-    PRINF("Done with thread initialization");
+    //PRINF("Done with thread initialization");
   }
 
   void finalize() {
@@ -91,11 +90,11 @@ public:
   }
 
   // Register initial thread
-  inline void registerInitialThread() {
+  void registerInitialThread(xmemory* memory) {
     int tindex = allocThreadIndex();
 
     if (tindex == -1) {
-      return;
+      FATAL("couldn't allocThreadIndex");
     }
 
     thread_t* tinfo = getThreadInfo(tindex);
@@ -109,7 +108,7 @@ public:
     insertAliveThread(current, pthread_self());
 
     // Setup tindex for initial thread.
-    threadRegister(true);
+    threadRegister(true, memory);
     current->isNewlySpawned = false;
   }
 
@@ -771,7 +770,7 @@ private:
   semaphore* getSemaphore() { return &current->sema; }
 
   // Newly created threads MUST call this
-  void threadRegister(bool isMainThread);
+  void threadRegister(bool isMainThread, xmemory *memory);
 
 
   static bool isThreadDetached() { return current->isDetached; }

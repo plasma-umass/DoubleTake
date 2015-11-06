@@ -29,14 +29,8 @@
 #include "leakcheck.hh"
 
 class xrun {
-
 private:
-  xrun()
-    : _epochId(0), _memory(), _thread(),
-      _watchpoint(watchpoint::getInstance()), _leakcheck()
-  {
-    // PRINF("xrun constructor\n");
-  }
+  xrun();
 
 public:
 

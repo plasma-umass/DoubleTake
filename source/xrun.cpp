@@ -27,38 +27,38 @@
 
 static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
 
-void xrun::initialize() {
+xrun::xrun()
+  : _epochId(0), _memory(), _thread(),
+    _watchpoint(watchpoint::getInstance()), _leakcheck()
+{
   // PRINT("xrun: initialization at line %d\n", __LINE__);
-  struct rlimit rl;
-
-  // Get the stack size.
-  if(Real::getrlimit(RLIMIT_STACK, &rl) != 0) {
-    PRWRN("Get the stack size failed.\n");
-    Real::exit(-1);
-  }
-
-  // if there is no limit for our stack size, then just pick a
-  // reasonable limit.
-  if (rl.rlim_cur == (rlim_t)-1) {
-    rl.rlim_cur = 2048*4096; // 8 MB
-  }
-
-  // Check the stack size.
-  __max_stack_size = rl.rlim_cur;
 
   // Initialize the internal heap at first.
   InternalHeap::getInstance().initialize();
+
+  // we need early-initialization of our syscall wrappers to ensure
+  // that libraries like glib can do whatever syscalls they need.
+  Real::initializer();
 
   _memory.initialize();
 
   // Initialize the locks and condvar used in epoch switches
   global_initialize();
 
-  installSignalHandlers();
-
   _thread.initialize();
 
-  syscallsInitialize();
+  // and some of those library functions, like the sysrecord for
+  // gettimeofday alloc, and that currently accesses current, so
+  // ensure that is setup too.
+  _thread.registerInitialThread(&_memory);
+  current->isSafe = true;
+}
+
+void xrun::initialize() {
+
+  installSignalHandlers();
+
+  syscalls::getInstance().initialize();
 }
 
 void xrun::finalize() {
@@ -80,10 +80,8 @@ void xrun::finalize() {
 }
 
 char *getCurrentThreadBuffer() {
-  return xrun::getInstance().getCurrentThreadBuffer();
+  return current->outputBuf;
 }
-
-void xrun::syscallsInitialize() { syscalls::getInstance().initialize(); }
 
 void xrun::rollback() {
   PRINT("DoubleTake: Activating rollback to isolate error.");

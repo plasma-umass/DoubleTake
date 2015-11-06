@@ -55,8 +55,8 @@ public:
     // Register this heap so that they can be recoved later.
     parent::initialize(ptr, startsize + metasize, (void*)_start);
 
-    PRINF("XHEAP %p - %p, position: %p, remaining: %#zx",
-          (void *)_start, (void *)_end, (void *)_position, _remaining);
+    //PRINF("XHEAP %p - %p, position: %p, remaining: %#zx",
+    //      (void *)_start, (void *)_end, (void *)_position, _remaining);
 
     return (void*)ptr;
   }
