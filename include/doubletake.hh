@@ -8,8 +8,11 @@
 
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
+// ensure that a function call doesn't get optimized away
+#define USED(v) ((void)(v))
 
 namespace doubletake {
+  extern std::atomic_bool initialized;
   extern std::atomic_bool inRollback;
 
   struct RegionInfo {

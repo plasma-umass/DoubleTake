@@ -58,6 +58,8 @@ xrun::xrun()
   installSignalHandlers();
 
   _syscalls.initialize();
+
+  doubletake::initialized = true;
 }
 
 void xrun::initialize() {

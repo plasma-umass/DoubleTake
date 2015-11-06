@@ -8,6 +8,7 @@
 #include "xrun.hh"
 
 namespace doubletake {
+  std::atomic_bool initialized;
   std::atomic_bool inRollback;
 }
 

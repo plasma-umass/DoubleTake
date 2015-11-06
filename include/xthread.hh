@@ -288,12 +288,11 @@ public:
   }
 
   // Add this into destoyed list.
-  void cond_destroy(pthread_cond_t* cond) { 
-    if(!doubletake::inRollback) {
-			deferSync((void*)cond, E_SYNCVAR_COND); 
-		}
-	}
-
+  int cond_destroy(pthread_cond_t* cond) {
+    if(!doubletake::inRollback)
+      deferSync((void*)cond, E_SYNCVAR_COND);
+    return 0;
+  }
 
 	// Mark whether 
 	void markThreadCondwait(pthread_cond_t * cond) {

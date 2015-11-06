@@ -32,24 +32,12 @@ enum { InitialMallocSize = 1024 * 1024 * 1024 };
 
 size_t __max_stack_size;
 
-bool initialized = false;
-
 // Some global information.
 pthread_mutex_t g_mutex;
 
 __attribute__((constructor)) void initializer() {
-  // Using globals to provide allocation
-  // before initialized.
-  // We can not use stack variable here since different process
-  // may use this to share information.
-  // initialize those library function entries.
-  if(!initialized) {
-		// Now setup
-    xrun::getInstance().initialize();
-    initialized = true;
-  }
+  USED(xrun::getInstance());
 }
-
 __attribute__((destructor)) void finalizer() {
   xrun::getInstance().finalize();
 }
@@ -65,7 +53,6 @@ void exitfunc(void) {
 int doubletake_main(int argc, char** argv, char** envp) {
   /******** Do doubletake initialization here (runs after ctors) *********/
   // printf("doubletake_main initializer\n");
-	initializer();
 
 	// Now start the first epoch
 	xrun::getInstance().epochBegin();
@@ -86,15 +73,15 @@ extern "C" int doubletake_libc_start_main(main_fn_t main_fn, int argc, char** ar
   return real_libc_start_main(doubletake_main, argc, argv, init, fini, rtld_fini, stack_end);
 }
 
-
-// Temporary bump-pointer allocator for malloc() calls before DoubleTake is initialized
+// Temporary bump-pointer allocator for malloc() calls before
+// DoubleTake is initialized
 static void* tempmalloc(int size) {
   static char _buf[InitialMallocSize];
   static int _allocated = 0;
 
-//	fprintf(stderr, "inside tempmalloc with size %d\n", size);
-  if(_allocated + size > InitialMallocSize) {
-    printf("Not enough space for tempmalloc");
+  // fprintf(stderr, "inside tempmalloc with size %d\n", size);
+  if (_allocated + size > InitialMallocSize) {
+    write(2, "Not enough space for tempmalloc\n", strlen("Not enough space for tempmalloc\n"));
     abort();
   } else {
     void* p = (void*)&_buf[_allocated];
@@ -108,49 +95,40 @@ bool addThreadQuarantineList(void* ptr, size_t sz) {
 }
 
 void* call_dlsym(void* handle, const char* funcname) {
-  bool isCheckDisabled = false;
-  if(initialized) {
-    isCheckDisabled = xthread::isCheckDisabled();
+  bool isCheckDisabled = !doubletake::initialized || xthread::isCheckDisabled();
 
-    if(!isCheckDisabled) {
-      xthread::disableCheck();
-    }
-  }
+  if(!isCheckDisabled)
+    xthread::disableCheck();
 
   void* p = dlsym(handle, funcname);
 
-  if(initialized) {
-    if(!isCheckDisabled) {
-      xthread::enableCheck();
-    }
-  }
+  if(!isCheckDisabled)
+    xthread::enableCheck();
+
   return p;
 }
 
 // Memory management functions
 extern "C" {
   void* xxmalloc(size_t sz) {
-    void* ptr = NULL;
+    void *ptr = nullptr;
 
 		//printf("xxmalloc sz %ld \n", sz);
 
-		if(sz == 0) {
+		if(sz == 0)
 			sz = 1;
-		}
 
-    // Align the object size. FIXME for now, just use 16 byte alignment and min size.
-    if(!initialized) {
-    	if (sz < 16) {
-      	sz = 16;
-   		}
-    	sz = (sz + 15) & ~15;
-      ptr = tempmalloc(sz);
-    } 
-		else {
+    if (likely(doubletake::initialized)) {
       ptr = xrun::getInstance().memory()->malloc(sz);
+    } else {
+      if (sz < 16)
+        sz = 16;
+      sz = (sz + 15) & ~15;
+      ptr = tempmalloc(sz);
     }
-    if(ptr == NULL) {
-    	fprintf(stderr, "Out of memory with initialized %d!\n", initialized);
+
+    if (!ptr) {
+      Real::write(2, "Out of memory!\n", strlen("Out of memory!\n"));
       ::abort();
     }
 		
@@ -159,26 +137,23 @@ extern "C" {
   }
 
   void xxfree(void* ptr) {
-    if(initialized && ptr) {
+    if (likely(doubletake::initialized) && ptr) {
       xrun::getInstance().memory()->free(ptr);
     }
   }
 
   size_t xxmalloc_usable_size(void* ptr) {
-    if(initialized) {
+    if (likely(doubletake::initialized))
       return xrun::getInstance().memory()->getSize(ptr);
-    }
-    return 0;
+    else
+      return 0;
   }
 
-	void * xxrealloc(void * ptr, size_t sz) {
-    if(initialized) {
+	void *xxrealloc(void * ptr, size_t sz) {
+    if (likely(doubletake::initialized))
       return xrun::getInstance().memory()->realloc(ptr, sz);
-		}
-		else {
-			void * newptr = tempmalloc(sz);
-			return newptr;
-		}
+    else
+      return 0;
 	}
 }
 
@@ -205,11 +180,7 @@ extern "C" {
   int pthread_mutex_unlock(pthread_mutex_t* mutex) {
     //   PRINT("inside pthread_mutex_unlock, line %d at %p. disablecheck %d!\n", __LINE__, mutex,
     // current->disablecheck);
-    if(initialized) {
-      xrun::getInstance().thread()->mutex_unlock(mutex);
-    }
-
-    return 0;
+    return xrun::getInstance().thread()->mutex_unlock(mutex);
   }
 
   int pthread_mutex_destroy(pthread_mutex_t* mutex) {
@@ -218,41 +189,28 @@ extern "C" {
 
   // Condition variable related functions
   int pthread_cond_init(pthread_cond_t* cond, const pthread_condattr_t* condattr) {
-    if(initialized)
-    	xrun::getInstance().thread()->cond_init(cond, condattr);
-    return 0;
+    return xrun::getInstance().thread()->cond_init(cond, condattr);
   }
 
   int pthread_cond_broadcast(pthread_cond_t* cond) {
-    if(initialized)
-      return xrun::getInstance().thread()->cond_broadcast(cond);
-    return 0;
+    return xrun::getInstance().thread()->cond_broadcast(cond);
   }
 
   int pthread_cond_signal(pthread_cond_t* cond) {
-    if(initialized)
-      return xrun::getInstance().thread()->cond_signal(cond);
-    return 0;
+    return xrun::getInstance().thread()->cond_signal(cond);
   }
 
   int pthread_cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex) {
-    if(initialized)
-      return xrun::getInstance().thread()->cond_wait(cond, mutex);
-    return 0;
+    return xrun::getInstance().thread()->cond_wait(cond, mutex);
   }
 
   int pthread_cond_timedwait(pthread_cond_t* cond, pthread_mutex_t* mutex,
-			const struct timespec * abstime) 
-		{
-    assert(initialized == true);
-
+			const struct timespec * abstime) {
     return xrun::getInstance().thread()->cond_timedwait(cond, mutex, abstime);
   }
 
   int pthread_cond_destroy(pthread_cond_t* cond) {
-    if(initialized)
-      xrun::getInstance().thread()->cond_destroy(cond);
-    return 0;
+    return xrun::getInstance().thread()->cond_destroy(cond);
   }
 
   // Barrier related functions
@@ -266,10 +224,7 @@ extern "C" {
   }
 
   int pthread_barrier_wait(pthread_barrier_t* barrier) {
-    if(initialized)
-      return xrun::getInstance().thread()->barrier_wait(barrier);
-    else
-      return 0;
+    return xrun::getInstance().thread()->barrier_wait(barrier);
   }
 
   int pthread_cancel(pthread_t thread) { return xrun::getInstance().thread()->thread_cancel(thread); }
@@ -405,15 +360,14 @@ extern "C" {
 	ssize_t read(int fd, void* buf, size_t count) {
     ////fprintf(stderr, "**** read in doubletake at %d\n", __LINE__);
     //printf("**** read in doubletake at %d, initialized %d, real %p\n", __LINE__, initialized, Real::read);
-    if(!initialized) {
+    if (likely(doubletake::initialized))
+      return xrun::getInstance().syscall()->read(fd, buf, count);
+    else
       return Real::read(fd, buf, count);
-    }
-
-    return xrun::getInstance().syscall()->read(fd, buf, count);
   }
 
   ssize_t write(int fd, const void* buf, size_t count) {
-    if(!initialized || fd == 1 || fd == 2) {
+    if(fd == 1 || fd == 2) {
       return Real::write(fd, buf, count);
     } else {
       //  //fprintf(stderr, " write in doubletake at %d\n", __LINE__);
@@ -434,18 +388,12 @@ extern "C" {
       mode = 0;
     }
     //printf("**********open %s in doubletake at %d mod %d\n", pathname, __LINE__, mode);
-    if(!initialized) {
-      return Real::open(pathname, flags, mode);
-    }
     return xrun::getInstance().syscall()->open(pathname, flags, mode);
   }
 
 
   int close(int fd) {
   //fprintf(stderr, "close fd %d ****** in libdoubletake\n", fd);
-    if(!initialized) {
-      return Real::close(fd);
-    }
     return xrun::getInstance().syscall()->close(fd);
   }
 
@@ -468,19 +416,19 @@ extern "C" {
 	// We don't care about telldir and readdir;
   FILE* fopen(const char* filename, const char* modes) {
     //fprintf(stderr, "fopen in libdoubletake\n");
-    if(!initialized) {
+    if (likely(doubletake::initialized))
+      return xrun::getInstance().syscall()->fopen(filename, modes);
+    else
       return Real::fopen(filename, modes);
-    }
-    return xrun::getInstance().syscall()->fopen(filename, modes);
   }
 
   // ostream.open actually calls this function
   FILE* fopen64(const char* filename, const char* modes) {
-    if(!initialized) {
-      return Real::fopen64(filename, modes);
-    }
-   // fprintf(stderr, "fopen64 in libdoubletake\n");
-    return xrun::getInstance().syscall()->fopen64(filename, modes);
+    // fprintf(stderr, "fopen64 in libdoubletake\n");
+    if (likely(doubletake::initialized))
+      return xrun::getInstance().syscall()->fopen64(filename, modes);
+    else
+      return Real::fopen(filename, modes);
   }
   
 	FILE* freopen(const char* path, const char* mode, FILE* stream) {
@@ -490,10 +438,10 @@ extern "C" {
 
 	// We don't care about fread and fwrite since they won't call sockets.
   int fclose(FILE* fp) {
-    if(!initialized) {
+    if (likely(doubletake::initialized))
+      return xrun::getInstance().syscall()->fclose(fp);
+    else
       return Real::fclose(fp);
-    }
-    return xrun::getInstance().syscall()->fclose(fp);
   }
 
   int fclose64(FILE* fp) { 
@@ -524,16 +472,13 @@ extern "C" {
   // Close current transaction since it is impossible to rollback.
   off_t lseek(int filedes, off_t offset, int whence) {
     //fprintf(stderr, "lseek in doubletake at %d. fd %d whence %d offset %ld\n", __LINE__, filedes, whence, offset);
-    if (!initialized) {
-      return Real::lseek(filedes, offset, whence);
-    }
     return xrun::getInstance().syscall()->lseek(filedes, offset, whence);
   }
 #endif 
 
   int mprotect(void* addr, size_t len, int prot) {
     //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
-    if (!initialized || current->disablecheck) {
+    if (current->disablecheck) {
       return Real::mprotect(addr, len, prot);
     }
     return xrun::getInstance().syscall()->mprotect(addr, len, prot);
@@ -541,7 +486,7 @@ extern "C" {
   
 	void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
     //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
-    if (!initialized || current->disablecheck) {
+    if (current->disablecheck) {
       return Real::mmap(start, length, prot, flags, fd, offset);
     }
 
@@ -551,9 +496,6 @@ extern "C" {
 
 
   int munmap(void* start, size_t length) {
-    if(!initialized) {
-      return Real::munmap(start, length);
-    }
     //fprintf(stderr, "munmap in doubletake at %d\n", __LINE__);
     return xrun::getInstance().syscall()->munmap(start, length);
   }
