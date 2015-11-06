@@ -92,6 +92,7 @@ void doubletake::epochComplete() {
   EPOCH_COMPLETE = true;
   Real::pthread_cond_broadcast(&epoch_completed_cond);
   Real::pthread_mutex_unlock(&epoch_completed_lock);
+  Real::write(2, "epochComplete\n", strlen("epochComplete\n"));
 }
 
 void doubletake::waitForEpochComplete() {

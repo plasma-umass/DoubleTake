@@ -239,6 +239,11 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     child->hasJoined = false;
     child->isSafe = false;
 
+    Real::pthread_mutex_init(&child->mutex, NULL);
+    Real::pthread_cond_init(&child->cond, NULL);
+
+    Real::pthread_mutex_lock(&child->mutex);
+
     // Now we set the joiner to NULL before creation.
     // It is impossible to let newly spawned child to set this correctly since
     // the parent may already sleep on that.
@@ -249,32 +254,22 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     disableCheck();
     result = Real::pthread_create(tid, attr, xthread::startThread, (void*)child);
     enableCheck();
-    if(result != 0) {
-      PRWRN("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
-      Real::exit(-1);
+    if (result != 0) {
+      FATAL("thread creation failed with errno %d -- %s", errno, strerror(errno));
     }
+
+    while (!child->isSafe)
+      Real::pthread_cond_wait(&child->cond, &child->mutex);
+    Real::pthread_mutex_unlock(&child->mutex);
 
     // Record spawning event
     _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
     _sysrecord.recordCloneOps(result, *tid);
 
-    if(result == 0) {
-      insertAliveThread(child, *tid);
-    }
+    insertAliveThread(child, *tid);
 
     global_unlock();
 
-    if(result == 0) {
-      // Waiting for the finish of registering children thread.
-      lock_thread(child);
-
-      while(child->status == E_THREAD_STARTING) {
-        wait_thread(child);
-        //     PRINF("Children %d status %d. now wakenup\n", children->index, children->status);
-      }
-      unlock_thread(child);
-      //  	PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
-    }
   } else {
     result = _sync.peekSyncEvent(_spawningList);
     PRINF("process %d is before thread_create, result %d\n", current->index, result);
@@ -470,20 +465,22 @@ void* xthread::startThread(void* arg) {
   // Record some information before the thread moves on
   xrun::getInstance().thread()->threadRegister(false, nullptr);
 
+  Real::pthread_mutex_lock(&current->mutex);
   // Now current thread is safe to be interrupted.
   setThreadSafe();
-  PRINF("thread %p self %p after thread register now.\n", (void *)current, (void *)current->self);
+  Real::pthread_cond_broadcast(&current->cond);
+  Real::pthread_mutex_unlock(&current->mutex);
 
-  PRINF("Child thread %d has been registered.\n", current->index);
+  PRINF("thread %p self %p after thread register now.", (void *)current, (void *)current->self);
+
+  doubletake::waitForEpochComplete();
+
   // We actually get those parameter about new created thread
   // from the TLS storage.
   result = current->startRoutine(current->startArg);
   PRINF("result %p of calling startRoutine %p on thread %d\n", (void *)result, (void *)current->startRoutine, current->index);
   // Insert dead list now so that the corresponding entry can be cleaned up if
   // there is no need to rollback.
-
-  // Lock the mutex for this thread.
-  lock_thread(current);
 
   current->result = result;
   current->status = E_THREAD_WAITFOR_REAPING;
