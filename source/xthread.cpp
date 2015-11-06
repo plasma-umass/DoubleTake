@@ -221,36 +221,36 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
 
     // WRAP up the actual thread function.
     // Get corresponding thread_t structure.
-    thread_t* children = getThreadInfo(tindex);
+    thread_t *child = getThreadInfo(tindex);
 
-    children->isDetached = false;
+    child->isDetached = false;
     if(attr) {
       int detachState;
       pthread_attr_getdetachstate(attr, &detachState);
 
       // Check whether the thread is detached or not?
       if(detachState == PTHREAD_CREATE_DETACHED) {
-        children->isDetached = true;
+        child->isDetached = true;
       }
     }
 
-    children->parent = current;
-    children->index = tindex;
-    children->startRoutine = fn;
-    children->startArg = arg;
-    children->status = E_THREAD_STARTING;
-    children->hasJoined = false;
-    children->isSafe = false;
+    child->parent = current;
+    child->index = tindex;
+    child->startRoutine = fn;
+    child->startArg = arg;
+    child->status = E_THREAD_STARTING;
+    child->hasJoined = false;
+    child->isSafe = false;
 
     // Now we set the joiner to NULL before creation.
     // It is impossible to let newly spawned child to set this correctly since
     // the parent may already sleep on that.
-    children->joiner = NULL;
+    child->joiner = NULL;
 
     PRINF("thread creation with index %d\n", tindex);
     // Now we are going to record this spawning event.
     disableCheck();
-    result = Real::pthread_create(tid, attr, xthread::startThread, (void*)children);
+    result = Real::pthread_create(tid, attr, xthread::startThread, (void*)child);
     enableCheck();
     if(result != 0) {
       PRWRN("thread creation failed with errno %d -- %s\n", errno, strerror(errno));
@@ -262,20 +262,20 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     _sysrecord.recordCloneOps(result, *tid);
 
     if(result == 0) {
-      insertAliveThread(children, *tid);
+      insertAliveThread(child, *tid);
     }
 
     global_unlock();
 
     if(result == 0) {
       // Waiting for the finish of registering children thread.
-      lock_thread(children);
+      lock_thread(child);
 
-      while(children->status == E_THREAD_STARTING) {
-        wait_thread(children);
+      while(child->status == E_THREAD_STARTING) {
+        wait_thread(child);
         //     PRINF("Children %d status %d. now wakenup\n", children->index, children->status);
       }
-      unlock_thread(children);
+      unlock_thread(child);
       //  	PRINF("Creating thread %d at %p self %p\n", tindex, children, (void*)children->self);
     }
   } else {
