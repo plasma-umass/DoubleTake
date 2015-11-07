@@ -8,6 +8,7 @@
  */
 
 #include <pthread.h>
+#include <signal.h>
 #include <sys/types.h>
 
 #include "list.hh"
@@ -59,6 +60,7 @@ struct SyscallEntry {
 };
 
 typedef struct thread {
+  stack_t altstack;
   bool available; // True: the thread index is free.
   bool internalheap;
   // Should we disable check or not?

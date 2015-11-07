@@ -639,28 +639,9 @@ public:
 
   inline static pthread_t thread_self() { return Real::pthread_self(); }
 
-  inline static void saveContext() {
-    current->context.saveCurrent();
-  };
-
-  inline static void restoreContext() {
-    PRINF("restore context now\n");
-    current->context.rollback();
-  };
-
-  // Now we will change the newContext to old context.
-  // And also, we will restore context based on newContext.
-  inline static void resetContexts() {
-    assert(0);
-  }
-
-  // We will rollback based on old context. We will leave newContext intactly
-  inline static void rollbackContext() { assert(0); }
-
   // Run those deferred synchronization.
   inline void runDeferredSyncs() { _thread.runDeferredSyncs(); }
 
-  //
   inline bool hasReapableThreads() { return _thread.hasReapableThreads(); }
 
   inline static void enableCheck() {

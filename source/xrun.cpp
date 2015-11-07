@@ -59,8 +59,6 @@ xrun::xrun()
   _thread.registerInitialThread(&_memory);
   current->isSafe = true;
 
-  installSignalHandlers();
-
   _syscalls.initialize();
 
   doubletake::initialized = true;
@@ -139,7 +137,7 @@ void xrun::epochBegin() {
   _memory.epochBegin();
 
   // Save the context of this thread
-  saveContext();
+  current->context.saveCurrent();
 
   doubletake::epochComplete();
   doubletake::unlock();
@@ -314,12 +312,11 @@ void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* uctx) {
 
 void xrun::installSignalHandlers() {
   // Set up an alternate signal stack.
-  static stack_t altstack;
-  memset(&altstack, 0, sizeof(altstack));
-  altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
-  altstack.ss_size = SIGSTKSZ;
-  altstack.ss_flags = 0;
-  Real::sigaltstack(&altstack, (stack_t *)NULL);
+  memset(&current->altstack, 0, sizeof(current->altstack));
+  current->altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
+  current->altstack.ss_size = SIGSTKSZ;
+  current->altstack.ss_flags = 0;
+  Real::sigaltstack(&current->altstack, (stack_t *)NULL);
 
   /**
      Some parameters used here:

@@ -47,9 +47,6 @@ public:
   // Simply commit specified memory block
   void atomicCommit(void* addr, size_t size) { _memory.atomicCommit(addr, size); }
 
-  /* Transaction-related functions. */
-  void saveContext() { _thread.saveContext(); }
-
   /// Rollback to previous saved point
   void rollback();
 
@@ -74,6 +71,10 @@ public:
   xmemory *memory() { return &_memory; }
   xthread *thread() { return &_thread; }
   syscalls *syscall() { return &_syscalls; }
+
+  // called from xthread::threadRegister for both the main thread and
+  // any pthreads.
+  static void installSignalHandlers();
 private:
   void syscallsInitialize();
   void quiesce();  // signal all other threads to wait
@@ -85,8 +86,6 @@ private:
 
   void endOfEpochSignal(ucontext_t *uctx);
   void rollbackFromSegvSignal();
-
-  void installSignalHandlers();
 
   // Notify the system call handler about rollback phase
   void startRollback();

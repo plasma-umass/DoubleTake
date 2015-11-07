@@ -183,9 +183,9 @@ void xthread::rollbackCurrent() {
   current->status = E_THREAD_RUNNING;
 
   current->qlist.restore();
-  PRINF("xthread::rollback now\n");
+  PRINF("xthread::rollback now");
   // Recover the context for current thread.
-  restoreContext();
+  current->context.rollback();
 }
 
 /// Handling the specific thread event.
@@ -387,6 +387,8 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
 
   current->self = Real::pthread_self();
 
+  xrun::installSignalHandlers();
+
   // Initialize event pool for this thread.
   listInit(&current->pendingSyncevents);
 
@@ -438,21 +440,14 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
   current->stackTop = (void *)privateTop;
   current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
 
-  // Now we can wakeup the parent since the parent must wait for the registe
-  signal_thread(current);
-
-  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p\n",
+  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p",
         current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
         (void *)&current->mutex);
 
   unlock_thread(current);
-  if(!isMainThread) {
-    // Save the context for non-main thread.
-    saveContext();
-  }
 
   // WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
-  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d\n", current->index,
+  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d", current->index,
         (void *)current->self, (void *)current, current->status);
 }
 
@@ -472,7 +467,7 @@ void* xthread::startThread(void* arg) {
   Real::pthread_cond_broadcast(&current->cond);
   Real::pthread_mutex_unlock(&current->mutex);
 
-  saveContext();
+  current->context.saveCurrent();
   doubletake::unblockEpochSignal();
 
   PRINF("thread %p self %p after thread register now.", (void *)current, (void *)current->self);
