@@ -117,8 +117,8 @@ public:
       ret = Real::read(fd, buf, count);
     } else {
       //      PRINF("Reading special file\n");
-      epochEnd();
       ret = Real::read(fd, buf, count);
+      epochEnd();
       epochBegin();
     }
 
@@ -494,10 +494,10 @@ public:
     if(_fops.checkPermission(fd)) {
       ret = Real::readv(fd, vector, count);
     } else {
-      epochEnd();
       // No need to call aotmicBegin() since this system call
       // won't cause overflow.
       ret = Real::readv(fd, vector, count);
+      epochEnd();
 
       for(int i = 0; i < count; i++) {
         atomicCommit((vector+i)->iov_base, (vector+i)->iov_len);
