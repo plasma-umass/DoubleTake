@@ -487,9 +487,8 @@ public:
   ssize_t readv(int fd, const struct iovec* vector, int count) {
     ssize_t ret;
 
-    struct iovec** vec = (struct iovec**)vector;
-    for(int i = 0; i < count; i++) {
-      checkOverflowBeforehand(vec[i]->iov_base, vec[i]->iov_len);
+    for (int i = 0; i < count; i++) {
+      checkOverflowBeforehand((vector+i)->iov_base, (vector+i)->iov_len);
     }
 
     if(_fops.checkPermission(fd)) {
@@ -501,7 +500,7 @@ public:
       ret = Real::readv(fd, vector, count);
 
       for(int i = 0; i < count; i++) {
-        atomicCommit(vec[i]->iov_base, vec[i]->iov_len);
+        atomicCommit((vector+i)->iov_base, (vector+i)->iov_len);
       }
       epochBegin();
     }
