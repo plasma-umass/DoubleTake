@@ -91,6 +91,7 @@ void xcontext::saveCurrent() {
 
 void xcontext::rollback() {
   Real::mprotect(_backup, _backupSize, PROT_READ);
+
   // call an arch-specific routine to safely copy the stack under us
   // (requires memcpy w/o using the stack, something I don't think we
   // can guarantee in C) and call setcontext
@@ -104,6 +105,7 @@ void xcontext::rollback() {
 // signal in the middle of this method.
 void xcontext::rollbackInHandler(ucontext_t* kctx) {
   REQUIRE(_initialized, "not initialized");
+
   Real::mprotect(_backup, _backupSize, PROT_READ);
   memcpy(_privateStart, _backup, _backupSize);
   memcpy(kctx, &_context, sizeof(_context));

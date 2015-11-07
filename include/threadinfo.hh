@@ -96,7 +96,6 @@ public:
 			// Those information that are only initialized once.
      	tinfo->available = true;
       tinfo->origIndex = i;
-      fprintf(stderr, "ctx for %4d at %p\n", i, (void *)&stackStart[perStackSize * i]);
       tinfo->context.setupBackup(&stackStart[perStackSize * i]);
       tinfo->qlist.initialize(&qbufStart[perQbufSize * i * 2], perQbufSize);
     }

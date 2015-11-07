@@ -71,7 +71,6 @@ void doubletake::unlock() {
 
 void doubletake::setWaiterCount(size_t n) {
   WAITING_COUNT = n;
-  doubletake::printf("waiting count: %d", WAITING_COUNT.load());
 }
 
 void doubletake::waitUntilQuiescent() {
@@ -83,7 +82,6 @@ void doubletake::waitUntilQuiescent() {
 
 int doubletake::currentIsQuiesced() {
   int id = EPOCH_ID;
-  Real::write(2, "currentIsQuiesced\n", strlen("currentIsQuiesced\n"));
   Real::pthread_mutex_lock(&coordinator_lock);
   // if we're the last thread being waited on at the end of an epoch,
   // wake up the coordinator.
@@ -98,7 +96,6 @@ void doubletake::epochComplete() {
   EPOCH_ID++;
   Real::pthread_cond_broadcast(&epoch_completed_cond);
   Real::pthread_mutex_unlock(&epoch_completed_lock);
-  Real::write(2, "epochComplete\n", strlen("epochComplete\n"));
 }
 
 void doubletake::waitForEpochComplete(const int id) {

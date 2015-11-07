@@ -29,8 +29,6 @@
 #define DETECT_USAGE_AFTER_FREE 0
 #endif
 
-static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr);
-
 xrun::xrun()
   : _epochId(0), _syscalls(), _memory(), _thread(),
     _watchpoint(watchpoint::getInstance()), _leakcheck()
@@ -213,10 +211,8 @@ void xrun::quiesce() {
   }
 
   // bonus: if there are no other threads, just exit now
-  if (!waiters) {
-    Real::write(2, "no waiters\n", strlen("no waiters\n"));
+  if (!waiters)
     return;
-  }
 
   doubletake::setWaiterCount(waiters);
 
@@ -225,7 +221,6 @@ void xrun::quiesce() {
     if (thread == current)
       continue;
 
-    Real::write(2, "end-of-epoch sending\n", strlen("end-of-epoch sending\n"));
     PRINF("sending SIGUSR2 to thread %d", thread->index);
     Real::pthread_kill(thread->self, SIGUSR2);
   }
@@ -247,10 +242,14 @@ bool xrun::finalUAFCheck() {
 bool isNewThread() { return current->isNewlySpawned; }
 
 static void jumpToFunction(ucontext_t* cxt, unsigned long funcaddr) {
-  PRINF("%p: inside signal handler %p.\n", (void*)pthread_self(),
-        (void*)cxt->uc_mcontext.gregs[REG_IP]);
+//  PRINF("%p: inside signal handler %p.\n", (void*)pthread_self(),
+//        (void*)cxt->uc_mcontext.gregs[REG_IP]);
   // selfmap::getInstance().printCallStack(NULL, NULL, true);
   cxt->uc_mcontext.gregs[REG_IP] = funcaddr;
+}
+
+static void rollbackOutsideHandler() {
+  current->context.rollback();
 }
 
 void xrun::rollbackFromSegv()
@@ -277,7 +276,6 @@ void xrun::sigusr2Handler(int /* signum */, siginfo_t* /* siginfo */, void* uctx
 }
 
 void xrun::endOfEpochSignal(ucontext_t *uctx) {
-  Real::write(2, "end-of-epoch received\n", strlen("end-of-epoch received\n"));
 
   const int epochID = doubletake::currentIsQuiesced();
   doubletake::waitForEpochComplete(epochID);
@@ -287,27 +285,13 @@ void xrun::endOfEpochSignal(ucontext_t *uctx) {
     return;
   }
 
-  // otherwise, we are rolling back
-  PRINF("rolling back");
-
-  // FIXME: I don't understand this - BP
-  if (isNewThread()) {
-    lock_thread(current);
-
-    // Waiting for the waking up from the its parent thread
-    while(current->status != E_THREAD_ROLLBACK) {
-      Real::pthread_cond_wait(&current->cond, &current->mutex);
-    }
-
-    unlock_thread(current);
-  }
-
   // Rollback inside signal handler is different
-  _thread.rollbackInsideSignalHandler((ucontext_t*)uctx);
+  //current->context.rollbackInHandler(uctx);
+  jumpToFunction(uctx, (unsigned long)rollbackOutsideHandler);
 }
 
 void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* uctx) {
-    jumpToFunction((ucontext_t*)uctx, (unsigned long)rollbackFromSegv);
+  //jumpToFunction((ucontext_t*)uctx, (unsigned long)rollbackFromSegv);
 }
 
 void xrun::installSignalHandlers() {
