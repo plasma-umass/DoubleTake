@@ -194,19 +194,12 @@ void xthread::thread_exit(void*) {
 }
 
 void xthread::registerInitialThread(xmemory* memory) {
-  int tindex = _thread.allocThreadIndex();
-
-  if (tindex == -1) {
+  DT::Thread *t = _thread.allocThread();
+  if (t == nullptr) {
     FATAL("couldn't allocThreadIndex");
   }
 
-  DT::Thread* tinfo = getThreadInfo(tindex);
-
-  // Set the current to corresponding tinfo.
-  current = tinfo;
-  current->joiner = NULL;
-  current->index = tindex;
-  current->parent = NULL;
+  current = t;
 
   insertAliveThread(current, pthread_self());
 
@@ -226,7 +219,6 @@ void xthread::registerInitialThread(xmemory* memory) {
 // possibly polluted pages.  For the parent, because no one is running
 // when spawnning, so there is no need to call epochBegin().
 int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFunction* fn, void* arg) {
-  int tindex;
   int result;
 
   PRINF("process %d is before thread_create now\n", current->index);
@@ -235,16 +227,10 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     xrun::getInstance().epochEnd(false);
 
     // Allocate a global thread index for current thread.
-    tindex = _thread.allocThreadIndex();
+    DT::Thread *child = _thread.allocThread();
+    assert(child != nullptr);
 
-    assert(tindex != -1);
-
-    // WRAP up the actual thread function.
-    // Get corresponding thread_t structure.
-    DT::Thread *child = getThreadInfo(tindex);
-
-    child->isDetached = false;
-    if(attr) {
+    if (attr) {
       int detachState;
       pthread_attr_getdetachstate(attr, &detachState);
 
@@ -255,12 +241,9 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     }
 
     child->parent = current;
-    child->index = tindex;
     child->startRoutine = fn;
     child->startArg = arg;
     child->status = E_THREAD_STARTING;
-    child->hasJoined = false;
-    child->isSafe = false;
     child->creationEpoch = doubletake::epochID();
 
     child->lock();
@@ -270,7 +253,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     // the parent may already sleep on that.
     child->joiner = NULL;
 
-    PRINF("thread creation with index %d\n", tindex);
+    PRINF("thread creation with index %d\n", child->index);
     // Now we are going to record this spawning event.
     disableCheck();
     result = Real::pthread_create(tid, attr, xthread::startThread, (void*)child);
@@ -430,10 +413,10 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
   // pthread_t thread = current->self;
   pthread_t thread = pthread_self();
 
+  current->mainThread = isMainThread;
+
   if(isMainThread) {
     uintptr_t stackBottom;
-    current->mainThread = true;
-
     // First, we must get the stack corresponding information.
     memory->findStack(gettid(), &stackBottom, &privateTop);
   } else {
@@ -447,7 +430,6 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
       |      Stacktop      |
       ---------------------- Lower address
     */
-    current->mainThread = false;
     // Calculate the top of this page.
     privateTop = ((uintptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
   }

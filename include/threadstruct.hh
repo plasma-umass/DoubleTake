@@ -101,7 +101,6 @@ namespace DT {
 
     // What is the parent of this thread
     DT::Thread *parent;
-
     DT::Thread *joiner;
 
     // System calls happens on this thread.
@@ -133,7 +132,7 @@ namespace DT {
     void* startArg;
     void* result;
 
-    void initialize();
+    void initialize(int index);
 
     // These used to be functions in internalsync, but are better as
     // members on the thread object.

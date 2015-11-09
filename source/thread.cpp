@@ -2,21 +2,37 @@
 #include "threadstruct.hh"
 #include "real.hh"
 
-void DT::Thread::initialize() {
-      this->syscalls.initialize(xdefines::MAX_SYSCALL_ENTRIES);
+void DT::Thread::initialize(int idx) {
+  this->index = idx;
 
-			// Initilize the list of system calls.
-			for(int i = 0; i < E_SYS_MAX; i++) {
-				listInit(&this->syslist[i]);
-			}
-		
-      // Initialize this syncevents.
-      this->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
+  this->available = false;
+  this->internalheap = false;
+  this->isNewlySpawned = true;
+  this->parent = nullptr;
+  this->joiner = nullptr;
+  this->hasJoined = false;
+  this->isSafe = false;
+  this->isDetached = false;
+  this->condwait = nullptr;
+  this->mainThread = false;
 
-      // Starting
-      Real::pthread_mutex_init(&_mutex, NULL);
-      Real::pthread_cond_init(&_cond, NULL);
+  this->startRoutine = nullptr;
+  this->startArg = nullptr;
+  this->result = nullptr;
 
+  this->syscalls.initialize(xdefines::MAX_SYSCALL_ENTRIES);
+
+  // Initilize the list of system calls.
+  for(size_t i = 0; i < E_SYS_MAX; i++) {
+    listInit(&this->syslist[i]);
+  }
+
+  // Initialize this syncevents.
+  this->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
+
+  // Starting
+  Real::pthread_mutex_init(&_mutex, NULL);
+  Real::pthread_cond_init(&_cond, NULL);
 }
 
 void DT::Thread::lock() { Real::pthread_mutex_lock(&_mutex); }

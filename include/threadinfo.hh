@@ -109,12 +109,12 @@ public:
   /// @ internal function: allocation a thread index when spawning.
   /// Since we guarantee that only one thread can be in spawning phase,
   /// there is no need to acqurie the lock here.
-  int allocThreadIndex() {
+  DT::Thread *allocThread() {
     int index = -1;
 
 		// Return a failure if the number of alive threads is larger than 
     if(_aliveThreads >= _totalThreads) {
-      return index;
+      return nullptr;
     }
 
     int origindex = _threadIndex;
@@ -129,7 +129,7 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex + 1) % _totalThreads;
-				thread->initialize();
+				thread->initialize(index);
         break;
       } else {
         _threadIndex = (_threadIndex + 1) % _totalThreads;
@@ -139,12 +139,12 @@ public:
       // an available slot.
       assert(_threadIndex != origindex);
     }
-    return index;
+    return thread;
   }
 
-  inline DT::Thread* getThreadInfo(int index) { return &_threads[index]; }
+  inline DT::Thread *getThreadInfo(int index) { return &_threads[index]; }
 
-  inline DT::Thread* getThread(pthread_t thread) {
+  inline DT::Thread *getThread(pthread_t thread) {
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
