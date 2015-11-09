@@ -63,7 +63,7 @@ public:
   /* Heap-related functions. */
   inline void* malloc(size_t sz) {
     void* ptr = NULL;
-    if(current->internalheap == true) {
+    if (current->useInternalHeap()) {
       ptr = InternalHeap::getInstance().malloc(sz);
     } else {
 	    ptr = realmalloc(sz);

@@ -31,9 +31,9 @@ void memtrack::check(void* start, size_t size, memTrackType type) {
        (object->hasLeak() && (object->objectSize == size))) {
       // Now we check the type of this object.
       void* callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];
-      xthread::disableCheck();
+      current->makeUnsafe();
       int depth = backtrace(callsites, xdefines::CALLSITE_MAXIMUM_LENGTH);
-      xthread::enableCheck();
+      current->makeSafe();
       object->saveCallsite(size, type, depth, (void**)&callsites[0]);
 #ifndef EVALUATING_PERF
 			// Since printing can cause SPEC2006 benchmarks to fail, thus comment them for evaluating perf.

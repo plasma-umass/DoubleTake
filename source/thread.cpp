@@ -11,10 +11,11 @@ static pid_t gettid() { return syscall(SYS_gettid); }
 void DT::Thread::allocate(int idx) {
   this->index = idx;
 
+  this->_useInternalHeap = false;
+  this->_enableChecks = false;
+
   this->status = E_THREAD_STARTING;
   this->available = false;
-  this->internalheap = false;
-  this->disablecheck = false;
   this->isNewlySpawned = true;
   this->parent = nullptr;
   this->joiner = nullptr;
@@ -90,6 +91,15 @@ void DT::Thread::initialize(bool isMain, xmemory* memory) {
     current->altstack.ss_size = SIGSTKSZ;
     current->altstack.ss_flags = 0;
   }
+}
+
+void DT::Thread::makeSafe() {
+  _useInternalHeap = false;
+  _enableChecks = true;
+}
+void DT::Thread::makeUnsafe() {
+  _useInternalHeap = true;
+  _enableChecks = false;
 }
 
 void DT::Thread::lock() { Real::pthread_mutex_lock(&_mutex); }

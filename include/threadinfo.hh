@@ -148,12 +148,6 @@ public:
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
-  inline char* getThreadBuffer(int index) {
-    DT::Thread* thread = getThreadInfo(index);
-
-    return thread->outputBuf;
-  }
-
 	// Everytime, a pthread_join call will put the joinee into the queue of deadthreads.
   inline int incrementReapableThreads() {
     _reapableThreads++;

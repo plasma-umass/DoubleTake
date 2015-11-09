@@ -69,9 +69,6 @@ namespace DT {
   public:
     stack_t altstack;
     bool available; // True: the thread index is free.
-    bool internalheap;
-    // Should we disable check or not?
-    bool disablecheck;
     // bool      isSpawning; // Whether a new thread is spawning?
     bool isNewlySpawned; // whether this thread is spawned in this epoch?
     // Whether this thread has been joined or not.
@@ -134,6 +131,13 @@ namespace DT {
     void* startArg;
     void* result;
 
+    // used to be xthread::enableCheck and disableCheck respectively
+    void makeSafe();
+    void makeUnsafe();
+
+    inline bool useInternalHeap() const { return _useInternalHeap; }
+    inline bool checksEnabled() const { return _enableChecks; }
+
     // called in the parent thread
     void allocate(int index);
     // called in the child thread to initialize ourselves
@@ -152,6 +156,10 @@ namespace DT {
     // we need to care about the joiner
     pthread_mutex_t _mutex;
     pthread_cond_t _cond;
+
+    bool _useInternalHeap;
+    bool _enableChecks;
+
   };
 }
 

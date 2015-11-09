@@ -247,9 +247,9 @@ void watchpoint::trapHandler(int /* sig */, siginfo_t* /* siginfo */, void* cont
 
   // Check whether this callsite is the same as the previous callsite.
   void* callsites[xdefines::CALLSITE_MAXIMUM_LENGTH];
-  xthread::disableCheck();
+  current->makeUnsafe();
   size_t depth = backtrace(callsites, xdefines::CALLSITE_MAXIMUM_LENGTH);
-  xthread::enableCheck();
+  current->makeSafe();
 
   // If current callsite is the same as the previous one, we do not want to report again.
   if(watchpoint::getInstance().checkAndSaveCallsite(object, depth, (void**)&callsites)) {

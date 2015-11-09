@@ -97,15 +97,15 @@ bool addThreadQuarantineList(void* ptr, size_t sz) {
 }
 
 void* call_dlsym(void* handle, const char* funcname) {
-  bool isCheckDisabled = !doubletake::initialized || xthread::isCheckDisabled();
+  const bool checksEnabled = doubletake::initialized && current->checksEnabled();
 
-  if(!isCheckDisabled)
-    xthread::disableCheck();
+  if (checksEnabled)
+    current->makeUnsafe();
 
   void* p = dlsym(handle, funcname);
 
-  if(!isCheckDisabled)
-    xthread::enableCheck();
+  if (checksEnabled)
+    current->makeSafe();
 
   return p;
 }
@@ -480,20 +480,18 @@ extern "C" {
 
   int mprotect(void* addr, size_t len, int prot) {
     //fprintf(stderr, "mprotect in doubletake at %d with current disablecheck %d\n", __LINE__, current->disablecheck);
-    if (current->disablecheck) {
+    if (current->checksEnabled())
+      return xrun::getInstance().syscall()->mprotect(addr, len, prot);
+    else
       return Real::mprotect(addr, len, prot);
-    }
-    return xrun::getInstance().syscall()->mprotect(addr, len, prot);
   }
   
 	void* mmap(void* start, size_t length, int prot, int flags, int fd, off_t offset) {
     //fprintf(stderr, "*****mmap in doubletake at %d start %p fd %d length %lx\n", __LINE__, start, fd, length);
-    if (current->disablecheck) {
+    if (current->checksEnabled())
+      return xrun::getInstance().syscall()->mmap(start, length, prot, flags, fd, offset);
+    else
       return Real::mmap(start, length, prot, flags, fd, offset);
-    }
-
-    return xrun::getInstance().syscall()->mmap(start, length, prot, flags, fd, offset);
-    // return Real::mmap(start, length, prot, flags, fd, offset);
   }
 
 
@@ -531,21 +529,19 @@ extern "C" {
   }
 
   int sigaction(int signum, const struct sigaction* act, struct sigaction* oldact) {
-    if(current->disablecheck) {
-      return Real::sigaction(signum, act, oldact);
-    } else {
-    //fprintf(stderr, "%d: sigaction in doubletake at %d. Disablecheck %d\n", __LINE__, getpid(), current->disablecheck);
+    if (current->checksEnabled())
       return xrun::getInstance().syscall()->sigaction(signum, act, oldact);
-    }
+    else
+      return Real::sigaction(signum, act, oldact);
+    //fprintf(stderr, "%d: sigaction in doubletake at %d. Disablecheck %d\n", __LINE__, getpid(), current->disablecheck);
   }
 
   int sigprocmask(int how, const sigset_t* set, sigset_t* oldset) {
-    if(current->disablecheck) {
-      return Real::sigprocmask(how, set, oldset);
-    } else {
-    //fprintf(stderr, "sigprocmask in doubletake at %d\n", __LINE__);
+    if (current->checksEnabled())
       return xrun::getInstance().syscall()->sigprocmask(how, set, oldset);
-    }
+    else
+      return Real::sigprocmask(how, set, oldset);
+    //fprintf(stderr, "sigprocmask in doubletake at %d\n", __LINE__);
   }
 
   //  int sigreturn(unsigned long __unused) {
@@ -796,13 +792,11 @@ extern "C" {
   //  pid_t vfork(){
 
   int execve(const char* filename, char* const argv[], char* const envp[]) {
-
-  //fprintf(stderr, " in doubletake at %d. filename %s\n", __LINE__, filename);
-    if(current->disablecheck) {
-      return Real::execve(filename, argv, envp);
-    } else {
+    //fprintf(stderr, " in doubletake at %d. filename %s\n", __LINE__, filename);
+    if(current->checksEnabled())
       return xrun::getInstance().syscall()->execve(filename, argv, envp);
-    }
+    else
+      return Real::execve(filename, argv, envp);
   }
 
   // void exit(int status){

@@ -66,7 +66,6 @@ public:
   void printStack(int depth, void** array) { _memory.printStack(depth, array); }
 
   int getThreadIndex() const { return _thread.getThreadIndex(); }
-  char *getCurrentThreadBuffer() { return _thread.getCurrentThreadBuffer(); }
 
   xmemory *memory() { return &_memory; }
   xthread *thread() { return &_thread; }

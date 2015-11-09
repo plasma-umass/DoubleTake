@@ -54,8 +54,8 @@ xrun::xrun()
   // gettimeofday alloc, and that currently accesses current, so
   // ensure that is setup too.
   _thread.registerInitialThread(&_memory);
-  current->isSafe = true;
   installSignalHandlers();
+  current->isSafe = true;
 
   _syscalls.initialize();
 
@@ -79,10 +79,6 @@ void xrun::finalize() {
   //    PRINF("%d: finalize now !!!!!\n", getpid());
   // Now we have to cleanup all semaphores.
   _thread.finalize();
-}
-
-char *getCurrentThreadBuffer() {
-  return current->outputBuf;
 }
 
 void xrun::rollback() {

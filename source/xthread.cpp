@@ -44,12 +44,6 @@ int xthread::getThreadIndex() const {
   return ::getThreadIndex();
 }
 
-char* xthread::getCurrentThreadBuffer() {
-  int index = getThreadIndex();
-
-  return _thread.getThreadBuffer(index);
-}
-
 void xthread::invokeCommit() {
   xrun::getInstance().epochEnd(false);
 	PRINF("invokeCommit after epochEnd\n");
@@ -254,9 +248,9 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
 
     PRINF("thread creation with index %d\n", child->index);
     // Now we are going to record this spawning event.
-    disableCheck();
+    current->makeUnsafe();
     result = Real::pthread_create(tid, attr, xthread::startThread, (void*)child);
-    enableCheck();
+    current->makeSafe();
     if (result != 0) {
       FATAL("thread creation failed with errno %d -- %s", errno, strerror(errno));
     }

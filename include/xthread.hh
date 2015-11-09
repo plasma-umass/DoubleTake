@@ -71,7 +71,6 @@ public:
 	}
 
   int getThreadIndex() const;
-  char *getCurrentThreadBuffer();
 
   // After an epoch is end and there is no overflow,
   // we should discard those record events since there is no
@@ -150,22 +149,20 @@ public:
       case E_SYNC_MUTEX_LOCK:
         ret = Real::pthread_mutex_lock(realMutex);
         break;
-
       case E_SYNC_MUTEX_TRY_LOCK:
         ret = Real::pthread_mutex_trylock(realMutex);
         break;
-
       default:
         break;
       }
 
-			if(!current->disablecheck) {
+			if (current->checksEnabled()) {
       	// Record this event
       	list->recordSyncEvent(E_SYNC_MUTEX_LOCK, ret);
         PRINF("Thread %d recording: mutex_lock at mutex %p realMutex %p list %p\n",
               current->index, (void *)mutex, (void *)realMutex, (void *)list);
 			}
-    } else if (!current->disablecheck) {
+    } else if (current->checksEnabled()) {
       // PRINF("synceventlist get mutex at %p list %p\n", mutex, list);
       PRINF("REPLAY: Thread %d: mutex_lock at mutex %p list %p.\n",
             current->index, (void *)mutex, (void *)list);
@@ -196,17 +193,17 @@ public:
   }
 
   int mutex_lock(pthread_mutex_t* mutex) {
-    if (current->disablecheck)
-      return Real::pthread_mutex_lock((pthread_mutex_t *)mutex);
-    else
+    if (current->checksEnabled())
       return do_mutex_lock(mutex, E_SYNC_MUTEX_LOCK);
+    else
+      return Real::pthread_mutex_lock((pthread_mutex_t *)mutex);
   }
 
   int mutex_trylock(pthread_mutex_t* mutex) {
-    if (current->disablecheck)
-      return Real::pthread_mutex_trylock((pthread_mutex_t *)mutex);
-    else
+    if (current->checksEnabled())
       return do_mutex_lock(mutex, E_SYNC_MUTEX_TRY_LOCK);
+    else
+      return Real::pthread_mutex_trylock((pthread_mutex_t *)mutex);
   }
 
   int mutex_unlock(pthread_mutex_t* mutex) {
@@ -216,10 +213,10 @@ public:
     if(!doubletake::inRollback) {
       realMutex = (pthread_mutex_t*)getSyncEntry(mutex);
       ret = Real::pthread_mutex_unlock(realMutex);
-
 			// Now the thread is safe to be interrupted.
   		setThreadSafe();
-    } else if(!current->disablecheck) {
+
+    } else if (current->checksEnabled()) {
       SyncEventList* list = getSyncEventList(mutex, sizeof(pthread_mutex_t));
       PRDBG("mutex_unlock at mutex %p list %p\n", (void *)mutex, (void *)list);
       //	PRINF("mutex_unlock at mutex %p list %p\n", mutex, list);
@@ -622,20 +619,6 @@ public:
   inline void runDeferredSyncs() { _thread.runDeferredSyncs(); }
 
   inline bool hasReapableThreads() { return _thread.hasReapableThreads(); }
-
-  inline static void enableCheck() {
-    current->internalheap = false;
-    current->disablecheck = false;
-    // PRINF("Enable check for current %p disablecheck %d\n", current, current->disablecheck);
-  }
-
-  inline static bool isCheckDisabled() { return current->disablecheck; }
-
-  inline static void disableCheck() {
-    current->internalheap = true;
-    current->disablecheck = true;
-    // PRINF("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
-  }
 
   static void invokeCommit();
   bool addQuarantineList(void* ptr, size_t sz);

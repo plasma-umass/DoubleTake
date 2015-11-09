@@ -136,7 +136,7 @@ void selfmap::printStackCurrent() {
   int frames;
 
   // get void*'s for all entries on the stack
-  xthread::disableCheck();
+  current->makeUnsafe();
   frames = backtrace(array, 256);
   //  write(2, "FD PRINT:{\n", 11);
   //  backtrace_symbols_fd(array, frames, 2);
@@ -146,7 +146,7 @@ void selfmap::printStackCurrent() {
   // Print out the source code information if it is an overflow site.
   this->printStack(frames, array);
 
-  xthread::enableCheck();
+  current->makeSafe();
 }
 
 // Calling system involves a lot of irrevocable system calls.

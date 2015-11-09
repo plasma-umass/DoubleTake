@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "log.hh"
+#include "threadstruct.hh"
 
 #define NORMAL_CYAN "\033[36m"
 #define NORMAL_MAGENTA "\033[35m"
@@ -55,7 +56,7 @@ std::atomic_int DT_LOG_LEVEL(DEBUG_LEVEL);
 
 void doubletake::logf(const char *file, int line, int level, const char *fmt, ...) {
   char fmtbuf[FMTBUF_LEN];
-  char *tbuf = getCurrentThreadBuffer();
+  char *tbuf = current->outputBuf;
 
   if (level < 1 || (size_t)level >= LEVEL_NAMES_LEN)
     level = 1;
@@ -76,7 +77,7 @@ void doubletake::logf(const char *file, int line, int level, const char *fmt, ..
 
 void doubletake::printf(const char *fmt, ...) {
   char fmtbuf[FMTBUF_LEN];
-  char *tbuf = getCurrentThreadBuffer();
+  char *tbuf = current->outputBuf;
 
   ::snprintf(fmtbuf, FMTBUF_LEN-1, BRIGHT_MAGENTA "%s" ESC_END "\n", fmt);
 
