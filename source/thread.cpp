@@ -2,6 +2,7 @@
 #include <sys/types.h>
 
 #include "threadstruct.hh"
+#include "doubletake.hh"
 #include "real.hh"
 #include "xmemory.hh"
 #include "xrun.hh"
@@ -14,10 +15,12 @@ void DT::Thread::allocate(int idx) {
   this->_useInternalHeap = false;
   this->_enableChecks = false;
 
+  this->parent = current;
+
+  this->creationEpoch = doubletake::epochID();
   this->status = E_THREAD_STARTING;
-  this->available = false;
   this->isNewlySpawned = true;
-  this->parent = nullptr;
+  this->available = false;
   this->joiner = nullptr;
   this->hasJoined = false;
   this->isSafe = false;

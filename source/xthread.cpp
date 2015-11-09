@@ -188,6 +188,7 @@ void xthread::thread_exit(void*) {
 }
 
 void xthread::registerInitialThread(xmemory* memory) {
+  current = nullptr;
   DT::Thread *t = _thread.allocThread();
   if (t == nullptr) {
     FATAL("couldn't allocThreadIndex");
@@ -233,22 +234,15 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
       }
     }
 
-    child->parent = current;
     child->startRoutine = fn;
     child->startArg = arg;
-    child->status = E_THREAD_STARTING;
-    child->creationEpoch = doubletake::epochID();
 
     child->lock();
 
-    // Now we set the joiner to NULL before creation.
-    // It is impossible to let newly spawned child to set this correctly since
-    // the parent may already sleep on that.
-    child->joiner = NULL;
-
-    PRINF("thread creation with index %d\n", child->index);
+    PRINF("thread creation with index %d", child->index);
     // Now we are going to record this spawning event.
     current->makeUnsafe();
+    errno = 0;
     result = Real::pthread_create(tid, attr, xthread::startThread, (void*)child);
     current->makeSafe();
     if (result != 0) {
@@ -277,7 +271,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
       PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
 
       // Wakeup correponding thread, now they can move on.
-      DT::Thread* thread = getThread(*tid);
+      DT::Thread *thread = getThread(*tid);
 
       // Wakeup corresponding thread
       thread->joiner = NULL;
