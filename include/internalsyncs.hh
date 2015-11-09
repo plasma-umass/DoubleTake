@@ -9,9 +9,9 @@
 
 #include "threadstruct.hh"
 
-void lock_thread(thread_t* thread);
-void unlock_thread(thread_t* thread);
-void wait_thread(thread_t* thread);
-void signal_thread(thread_t* thread);
+void lock_thread(DT::Thread* thread);
+void unlock_thread(DT::Thread* thread);
+void wait_thread(DT::Thread* thread);
+void signal_thread(DT::Thread* thread);
 
 #endif

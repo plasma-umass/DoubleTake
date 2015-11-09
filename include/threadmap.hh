@@ -44,8 +44,8 @@ public:
     listInit(&_alivethreads);
   }
 
-  thread_t* getThreadInfo(pthread_t thread) {
-    thread_t* info = NULL;
+  DT::Thread* getThreadInfo(pthread_t thread) {
+    DT::Thread* info = NULL;
 
     _xmap.find((void*)thread, sizeof(void*), &info);
 		if(info == NULL) {
@@ -57,7 +57,7 @@ public:
 
   void deleteThreadMap(pthread_t thread) { _xmap.erase((void*)thread, sizeof(void*)); }
 
-  void insertAliveThread(thread_t* thread, pthread_t tid) {
+  void insertAliveThread(DT::Thread* thread, pthread_t tid) {
     // Malloc
     struct aliveThread* ath =
         (struct aliveThread*)InternalHeap::getInstance().malloc(sizeof(struct aliveThread));
@@ -72,7 +72,7 @@ public:
     _xmap.insert((void*)tid, sizeof(void*), thread);
   }
 
-  void removeAliveThread(thread_t* thread) {
+  void removeAliveThread(DT::Thread* thread) {
     // First, remove thread from the threadmap.
     deleteThreadMap(thread->self);
 
@@ -107,7 +107,7 @@ public:
   }
 
   // Set a threadInfo structure to be free.
-  void setFreeThread(thread_t* thread) { thread->available = true; }
+  void setFreeThread(DT::Thread* thread) { thread->available = true; }
 
   // How to return a thread event from specified entry.
   inline struct syncEvent* getThreadEvent(list_t* entry) {
@@ -149,7 +149,7 @@ public:
 
     bool operator!=(const aliveThreadIterator& that) const { return thread != that.thread; }
 
-    thread_t* getThread() { return thread->thread; }
+    DT::Thread* getThread() { return thread->thread; }
   };
 
   void traverseAllThreads() {
@@ -158,7 +158,7 @@ public:
     // Search the whole list for given tid.
     ath = (struct aliveThread*)nextEntry(&_alivethreads);
     while(true) {
-      thread_t* thread = ath->thread;
+      DT::Thread* thread = ath->thread;
 
       if(thread->status != E_THREAD_WAITFOR_REAPING) {
         PRINF("thread %p self %p status %d\n", (void *)thread, (void*)thread->self, thread->status);
@@ -187,7 +187,7 @@ public:
 
 private:
   // We are maintainning a private hash map for each thread.
-  typedef HashMap<void*, thread_t*, spinlock, InternalHeapAllocator> threadHashMap;
+  typedef HashMap<void*, DT::Thread*, spinlock, InternalHeapAllocator> threadHashMap;
 
   // The  variables map shared by all threads
   threadHashMap _xmap;

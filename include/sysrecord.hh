@@ -309,7 +309,7 @@ public:
 
   // For some list, we donot need to search one by one.
   // We can clear the whole list.
-  static void epochBegin(thread_t * thread) {
+  static void epochBegin(DT::Thread *thread) {
 
 		list_t * munmapList= &thread->syslist[E_SYS_MUNMAP];
 		struct recordMunmap * record = NULL;
@@ -332,7 +332,7 @@ public:
   }
 
   // Prepare the traverse for all list.
-  static void prepareRollback(thread_t * thread) { thread->syscalls.prepareRollback(); }
+  static void prepareRollback(DT::Thread *thread) { thread->syscalls.prepareRollback(); }
 
 private:
 

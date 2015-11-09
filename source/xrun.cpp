@@ -106,7 +106,7 @@ void xrun::epochBegin() {
  
   PRINF("xrun epochBegin, joinning every thread.");
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread *thread = i.getThread();
 
     if(thread != current && thread->hasJoined) {
       PRINF("xrun, joining thread %d\n", thread->index);
@@ -204,7 +204,7 @@ void xrun::quiesce() {
   // threads.
 
   for(i = tm.begin(); i != tm.end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread *thread = i.getThread();
     if (thread == current)
       continue;
     waiters++;
@@ -217,7 +217,7 @@ void xrun::quiesce() {
   doubletake::setWaiterCount(waiters);
 
   for(i = tm.begin(); i != tm.end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread *thread = i.getThread();
     if (thread == current)
       continue;
 
@@ -232,7 +232,7 @@ bool xrun::finalUAFCheck() {
   threadmap::aliveThreadIterator i;
   // Check all threads' quarantine list
   for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread *thread = i.getThread();
     if(thread->qlist.finalUAFCheck())
       return true;
   }

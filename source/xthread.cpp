@@ -28,7 +28,7 @@
 
 // bool xthread::_isRollbackPhase;
 // list_t xthread::_deadSyncVars;
-__thread thread_t* current;
+__thread DT::Thread* current;
 // threadmap::threadHashMap threadmap::_xmap;
 list_t threadmap::_alivethreads;
 
@@ -58,7 +58,7 @@ void xthread::invokeCommit() {
 }
 
 // Each thread should 
-void xthread::epochBegin(thread_t * thread) {
+void xthread::epochBegin(DT::Thread *thread) {
 	
 	// Now we should not have the pending synchronization events.	
 	listInit(&thread->pendingSyncevents);
@@ -79,7 +79,7 @@ void xthread::rollbackOtherThreads() {
 	threadmap::aliveThreadIterator i;
 
 	for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread* thread = i.getThread();
       
 		// Initialize the semaphore for this thread.
     initThreadSemaphore(thread);
@@ -98,7 +98,7 @@ void xthread::destroyAllSemaphores() {
 	threadmap::aliveThreadIterator i;
 
 	for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread* thread = i.getThread();
 
     // If we found the entry, remove this entry from the list.
     destroyThreadSemaphore(thread);
@@ -106,7 +106,7 @@ void xthread::destroyAllSemaphores() {
 }
 
 // Initialize the semaphore for  specified thread
-void xthread::destroyThreadSemaphore(thread_t* thread) {
+void xthread::destroyThreadSemaphore(DT::Thread* thread) {
   semaphore* sema = &thread->sema;
 
   // We initialize the semaphore value to 0.
@@ -114,7 +114,7 @@ void xthread::destroyThreadSemaphore(thread_t* thread) {
 }
 
 // Initialize the semaphore for  specified thread
-void xthread::initThreadSemaphore(thread_t* thread) {
+void xthread::initThreadSemaphore(DT::Thread* thread) {
     semaphore* sema = &thread->sema;
 
     PRINF("INITSEMA: THREAD%d at %p sema %p\n", thread->index, (void *)thread, (void *)sema);
@@ -141,7 +141,7 @@ void xthread::wakeupOldWaitingThreads() {
 	threadmap::aliveThreadIterator i;
 
 	for(i = threadmap::getInstance().begin(); i != threadmap::getInstance().end(); i++) {
-    thread_t* thread = i.getThread();
+    DT::Thread* thread = i.getThread();
  
 		// Currently, we only care about those old threads since 
 		// the parent will wakeup those newly spawned threads appropriately 
@@ -170,7 +170,7 @@ void xthread::setThreadUnsafe() {
   __atomic_store_n(&current->isSafe, false, __ATOMIC_SEQ_CST);
 }
 
-bool xthread::isThreadSafe(thread_t * thread) {
+bool xthread::isThreadSafe(DT::Thread * thread) {
 	return __atomic_load_n(&thread->isSafe, __ATOMIC_SEQ_CST);
 }
 
@@ -218,7 +218,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
 
     // WRAP up the actual thread function.
     // Get corresponding thread_t structure.
-    thread_t *child = getThreadInfo(tindex);
+    DT::Thread *child = getThreadInfo(tindex);
 
     child->isDetached = false;
     if(attr) {
@@ -281,7 +281,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
       PRINF("process %d is after waitsemaphore, thread %lx\n", current->index, *tid);
 
       // Wakeup correponding thread, now they can move on.
-      thread_t* thread = getThread(*tid);
+      DT::Thread* thread = getThread(*tid);
 
       // Wakeup corresponding thread
       thread->joiner = NULL;
@@ -311,11 +311,10 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
 
 /// @brief Wait for a thread to exit.
 int xthread::thread_join(pthread_t joinee, void** result) {
-  thread_t* thread = NULL;
 
   // FIXME: if the thread has already terminated, return immediately.
 
-  thread = getThread(joinee);
+  DT::Thread *thread = getThread(joinee);
   assert(thread != NULL);
 
   PRINF("thread %d is joining thread %d\n", current->index, thread->index);
@@ -349,7 +348,7 @@ int xthread::thread_join(pthread_t joinee, void** result) {
 
 /// @brief Detach a thread
 int xthread::thread_detach(pthread_t thread) {
-  thread_t* threadinfo = NULL;
+  DT::Thread* threadinfo = NULL;
 
   // Try to check whether thread is empty or not?
   threadinfo = getThreadInfo(thread);
@@ -454,7 +453,7 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
 
 void* xthread::startThread(void* arg) {
   void* result = NULL;
-  current = (thread_t*)arg;
+  current = (DT::Thread *)arg;
 
   // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
   // Record some information before the thread moves on

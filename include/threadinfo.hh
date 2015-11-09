@@ -88,7 +88,7 @@ public:
     char* qbufStart = (char*)MM::mmapAllocatePrivate(qbufSize);
 
     // Initialize all mutex.
-    thread_t* tinfo;
+    DT::Thread* tinfo;
 
     for(int i = 0; i < xdefines::MAX_ALIVE_THREADS; i++) {
       tinfo = &_threads[i];
@@ -110,7 +110,7 @@ public:
 	// thread, we will re-initilize this. Thus, it is perfect to put this into 
 	// allocThreadIndex();
 
-	void threadInitialize(thread_t * thread) {
+	void threadInitialize(DT::Thread * thread) {
       // Initialize the system call entries.
       thread->syscalls.initialize(xdefines::MAX_SYSCALL_ENTRIES);
 
@@ -139,7 +139,7 @@ public:
     }
 
     int origindex = _threadIndex;
-    thread_t* thread;
+    DT::Thread* thread;
     while(true) {
       thread = getThreadInfo(_threadIndex);
       if(thread->available) {
@@ -163,14 +163,14 @@ public:
     return index;
   }
 
-  inline thread_t* getThreadInfo(int index) { return &_threads[index]; }
+  inline DT::Thread* getThreadInfo(int index) { return &_threads[index]; }
 
-  inline thread_t* getThread(pthread_t thread) {
+  inline DT::Thread* getThread(pthread_t thread) {
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
   inline char* getThreadBuffer(int index) {
-    thread_t* thread = getThreadInfo(index);
+    DT::Thread* thread = getThreadInfo(index);
 
     return thread->outputBuf;
   }
@@ -221,7 +221,7 @@ public:
   }
 
   void cancelAliveThread(pthread_t thread) {
-    thread_t* deadThread = getThread(thread);
+    DT::Thread* deadThread = getThread(thread);
 
     global_lock();
 
@@ -251,7 +251,7 @@ public:
 				
       case E_SYNCVAR_THREAD: {
 				//fprintf(stderr, "runDeferredSyncs with type %d variable %p\n", syncvar->syncVarType, (thread_t*)syncvar->variable);
-        threadmap::getInstance().removeAliveThread((thread_t*)syncvar->variable);
+        threadmap::getInstance().removeAliveThread((DT::Thread*)syncvar->variable);
         _aliveThreads--;
         _reapableThreads--;
         break;
@@ -299,7 +299,7 @@ private:
                         // list_t  _deadList;     // List of dead threads.
   list_t _deferSyncs;   // deferred synchronizations.
                         // pthread_mutex_t _mutex; // Mutex to protect these list.
-  thread_t _threads[xdefines::MAX_ALIVE_THREADS];
+  DT::Thread _threads[xdefines::MAX_ALIVE_THREADS];
   /*
     char * position;     // c. What is the global heap metadata.
     size_t remainingsize; //

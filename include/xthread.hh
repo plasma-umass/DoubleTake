@@ -97,7 +97,7 @@ public:
       FATAL("couldn't allocThreadIndex");
     }
 
-    thread_t* tinfo = getThreadInfo(tindex);
+    DT::Thread* tinfo = getThreadInfo(tindex);
 
     // Set the current to corresponding tinfo.
     current = tinfo;
@@ -624,11 +624,11 @@ public:
 	void rollbackOtherThreads();
 
 	void destroyAllSemaphores();
-	void initThreadSemaphore(thread_t* thread);
-	void destroyThreadSemaphore(thread_t* thread);
+	void initThreadSemaphore(DT::Thread* thread);
+	void destroyThreadSemaphore(DT::Thread* thread);
 	void wakeupOldWaitingThreads();
 
-  void epochBegin(thread_t * thread);
+  void epochBegin(DT::Thread * thread);
 
 	// It is called when a thread has to rollback.
 	// Thus, it will replace the current context (of signal handler)
@@ -662,7 +662,7 @@ public:
 
   static void invokeCommit();
   bool addQuarantineList(void* ptr, size_t sz);
-  static bool isThreadSafe(thread_t * thread);
+  static bool isThreadSafe(DT::Thread * thread);
 
 private:
   inline void* getSyncEntry(void* entry) {
@@ -758,9 +758,9 @@ private:
   /// @ internal function: allocation a thread index
   int allocThreadIndex() { return _thread.allocThreadIndex(); }
 
-  inline thread_t* getThreadInfo(int index) { return _thread.getThreadInfo(index); }
+  inline DT::Thread* getThreadInfo(int index) { return _thread.getThreadInfo(index); }
 
-  inline thread_t* getThread(pthread_t thread) {
+  inline DT::Thread* getThread(pthread_t thread) {
     return threadmap::getInstance().getThreadInfo(thread);
   }
 
@@ -777,7 +777,7 @@ private:
     }
   }
 
-  inline void insertAliveThread(thread_t* thread, pthread_t tid) {
+  inline void insertAliveThread(DT::Thread* thread, pthread_t tid) {
     threadmap::getInstance().insertAliveThread(thread, tid);
   }
 

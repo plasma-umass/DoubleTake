@@ -255,7 +255,7 @@ public:
 
   // Signal next thread on the same synchronization variable.
   static void signalNextThread(struct syncEvent* event) {
-    thread_t* thread = (thread_t*)event->thread;
+    DT::Thread* thread = (DT::Thread*)event->thread;
 
 		// Acquire the lock before adding an event to the pending list
 		// since the thread may try to check whether it can proceed or not
@@ -290,7 +290,7 @@ public:
 
   // Signal current thread if event is one of pending events.
   void signalCurrentThread(struct syncEvent* event) {
-    thread_t* thread = (thread_t*)event->thread;
+    DT::Thread* thread = (DT::Thread*)event->thread;
     list_t* eventlist = &thread->pendingSyncevents;
 
     lock_thread(current);
@@ -355,7 +355,7 @@ public:
 		// is not the current one, warn about this situaion. Something wrong!
 		if((event == NULL) || (event->thread != current) || (event->eventlist != tlist)) {
 			PRINF("Assertion:peekSyncEvent at thread %d: event %p event thread %d. eventlist %p targetlist %p\n",
-            current->index, (void *)event, ((thread_t*)event->thread)->index, (void *)event->eventlist, (void *)tlist);
+            current->index, (void *)event, ((DT::Thread*)event->thread)->index, (void *)event->eventlist, (void *)tlist);
 			while(1) ;
 			assert(event->thread == current);
 			assert(event->eventlist == tlist);
@@ -419,7 +419,7 @@ public:
   }
 
   // Add one synchronization event into the pending list of a thread.
-  static void addPendingSyncEvent(struct syncEvent* event, thread_t* thread) {
+  static void addPendingSyncEvent(struct syncEvent* event, DT::Thread* thread) {
     struct pendingSyncEvent* pendingEvent = NULL;
 
     pendingEvent = (struct pendingSyncEvent*)InternalHeap::getInstance().malloc(
@@ -432,11 +432,11 @@ public:
   }
 
   // Check whether this event is the first event of corresponding thread.
-  static bool isThreadNextEvent(struct syncEvent* event, thread_t* thread) {
+  static bool isThreadNextEvent(struct syncEvent* event, DT::Thread* thread) {
     return (event == thread->syncevents.firstIterEntry());
   }
 
-  static void signalThread(thread_t* thread) {
+  static void signalThread(DT::Thread* thread) {
     semaphore* sema = &thread->sema;
     PRINF("Thread %d: ^^^^^Signal semaphore to thread %d\n", current->index, thread->index);
     sema->put();

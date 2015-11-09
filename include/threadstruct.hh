@@ -1,10 +1,11 @@
-#if !defined(DOUBLETAKE_THREADSTRUCT_H)
+#ifndef DOUBLETAKE_THREADSTRUCT_H
 #define DOUBLETAKE_THREADSTRUCT_H
 
 /*
  * @file   threadstruct.h
  * @brief  Definition of thread related structure.
  * @author Tongping Liu <http://www.cs.umass.edu/~tonyliu>
+ * @author Bobby Powers <http://www.cs.umass.edu/~bpowers>
  */
 
 #include <pthread.h>
@@ -29,7 +30,7 @@ typedef enum e_thrstatus {
                     //    E_THREAD_EXITED, // The thread is exiting.
   //  E_THREAD_SIGNALED, // The thread has been signaled, waiting for the instruction
   //  E_THREAD_CONTINUE, // The thread should move forward.
-	E_THREAD_COND_WAITING, // Thre thread is waiting for a conditional variable
+  E_THREAD_COND_WAITING, // Thre thread is waiting for a conditional variable
   E_THREAD_ROLLBACK,
   E_THREAD_WAITFOR_JOINING, // The thread has finished and wait for the joining.
 
@@ -56,91 +57,94 @@ enum SyscallType {
 };
 
 struct SyscallEntry {
-  public:
-    SyscallType syscall;
-    char data[64 - sizeof(SyscallType)];
+public:
+  SyscallType syscall;
+  char data[64 - sizeof(SyscallType)];
 };
 
-typedef struct thread {
-  stack_t altstack;
-  bool available; // True: the thread index is free.
-  bool internalheap;
-  // Should we disable check or not?
-  bool disablecheck;
-  // bool      isSpawning; // Whether a new thread is spawning?
-  bool isNewlySpawned; // whether this thread is spawned in this epoch?
-  // Whether this thread has been joined or not.
-  // If the thread has not been joined, then we can't reap this thread.
-  // Otherwise, pthread_join may crash since the thread has exited/released.
-  bool hasJoined;
-  bool isSafe;   // whether a thread is safe to be interrupted
-  int index;
-  pid_t tid;      // Current process id of this thread.
-  pthread_t self; // Results of pthread_self
+namespace DT {
 
-  int origIndex;
-  int creationEpoch;
+  struct Thread {
+    stack_t altstack;
+    bool available; // True: the thread index is free.
+    bool internalheap;
+    // Should we disable check or not?
+    bool disablecheck;
+    // bool      isSpawning; // Whether a new thread is spawning?
+    bool isNewlySpawned; // whether this thread is spawned in this epoch?
+    // Whether this thread has been joined or not.
+    // If the thread has not been joined, then we can't reap this thread.
+    // Otherwise, pthread_join may crash since the thread has exited/released.
+    bool hasJoined;
+    bool isSafe;   // whether a thread is safe to be interrupted
+    int index;
+    pid_t tid;      // Current process id of this thread.
+    pthread_t self; // Results of pthread_self
 
-	// What is the status of a thread.
-  thrStatus status;
+    int origIndex;
+    int creationEpoch;
 
-	// If the thread is waiting on a user-provided conditional variable,	
-	// we will record this conditional variable.
-  pthread_cond_t * condwait;
+    // What is the status of a thread.
+    thrStatus status;
 
-  // mutex when a thread is trying to change its state.
-  // In fact, this mutex is only protect joiner.
-  // Only in the beginning of a thread (register),
-  // we need to care about the joiner
-  pthread_mutex_t mutex;
-  pthread_cond_t cond;
+    // If the thread is waiting on a user-provided conditional variable,
+    // we will record this conditional variable.
+    pthread_cond_t * condwait;
 
-  // if a thread is detached, then the current thread don't need to wait its parent
-  bool isDetached;
+    // mutex when a thread is trying to change its state.
+    // In fact, this mutex is only protect joiner.
+    // Only in the beginning of a thread (register),
+    // we need to care about the joiner
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
 
-  // Local output buffer for each thread. In order to avoid malloc requests in the
-  // replaying.
-  char outputBuf[LOG_SIZE];
+    // if a thread is detached, then the current thread don't need to wait its parent
+    bool isDetached;
 
-  // What is the parent of this thread
-  struct thread* parent;
+    // Local output buffer for each thread. In order to avoid malloc requests in the
+    // replaying.
+    char outputBuf[LOG_SIZE];
 
-  struct thread* joiner;
+    // What is the parent of this thread
+    DT::Thread *parent;
 
-	// System calls happens on this thread.
-	list_t syslist[E_SYS_MAX]; 
-	RecordEntries<struct SyscallEntry> syscalls;
+    DT::Thread *joiner;
 
-  // Synchronization events happens on this thread.
-  RecordEntries<struct syncEvent> syncevents;
+    // System calls happens on this thread.
+    list_t syslist[E_SYS_MAX];
+    RecordEntries<struct SyscallEntry> syscalls;
 
-  quarantine qlist;
+    // Synchronization events happens on this thread.
+    RecordEntries<struct syncEvent> syncevents;
 
-  // struct syncEventList syncevents;
-  list_t pendingSyncevents;
-  // struct syncEventList pendingSyncevents;
+    quarantine qlist;
 
-  // We used this to record the stack range
-  void* stackBottom;
-  void* stackTop;
+    // struct syncEventList syncevents;
+    list_t pendingSyncevents;
+    // struct syncEventList pendingSyncevents;
 
-  // Main thread have completely stack setting.
-  bool mainThread;
+    // We used this to record the stack range
+    void* stackBottom;
+    void* stackTop;
 
-  semaphore sema;
+    // Main thread have completely stack setting.
+    bool mainThread;
 
-  xcontext context;
+    semaphore sema;
 
-  // The following is the parameter about starting function.
-  threadFunction* startRoutine;
-  void* startArg;
-  void* result;
-} thread_t;
+    xcontext context;
+
+    // The following is the parameter about starting function.
+    threadFunction* startRoutine;
+    void* startArg;
+    void* result;
+  };
+}
 
 // The following structure will be added to alivelist
 struct aliveThread {
   list_t list;
-  thread_t* thread;
+  DT::Thread *thread;
 };
 
 // A pending synchronization event needed to be handled by corresponding
@@ -154,6 +158,6 @@ struct pendingSyncEvent {
 
 // We will maintain an array about the status of each thread.
 // Actually, there are two status that will be handled by us.
-extern __thread thread_t* current;
+extern __thread DT::Thread *current;
 
 #endif
