@@ -64,7 +64,8 @@ public:
 
 namespace DT {
 
-  struct Thread {
+  class Thread {
+  public:
     stack_t altstack;
     bool available; // True: the thread index is free.
     bool internalheap;
@@ -90,13 +91,6 @@ namespace DT {
     // If the thread is waiting on a user-provided conditional variable,
     // we will record this conditional variable.
     pthread_cond_t * condwait;
-
-    // mutex when a thread is trying to change its state.
-    // In fact, this mutex is only protect joiner.
-    // Only in the beginning of a thread (register),
-    // we need to care about the joiner
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
 
     // if a thread is detached, then the current thread don't need to wait its parent
     bool isDetached;
@@ -138,6 +132,22 @@ namespace DT {
     threadFunction* startRoutine;
     void* startArg;
     void* result;
+
+    void initialize();
+
+    // These used to be functions in internalsync, but are better as
+    // members on the thread object.
+    void lock();
+    void unlock();
+    void wait();
+    void signal();
+  private:
+    // mutex when a thread is trying to change its state.
+    // In fact, this mutex is only protect joiner.
+    // Only in the beginning of a thread (register),
+    // we need to care about the joiner
+    pthread_mutex_t _mutex;
+    pthread_cond_t _cond;
   };
 }
 

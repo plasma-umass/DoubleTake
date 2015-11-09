@@ -255,11 +255,11 @@ public:
 
   // Signal next thread on the same synchronization variable.
   static void signalNextThread(struct syncEvent* event) {
-    DT::Thread* thread = (DT::Thread*)event->thread;
+    DT::Thread *thread = (DT::Thread *)event->thread;
 
 		// Acquire the lock before adding an event to the pending list
 		// since the thread may try to check whether it can proceed or not
-    lock_thread(thread);
+    thread->lock();
 
     // Add this pending event into corresponding thread.
     // Whether this event is on the top of thread?
@@ -274,17 +274,15 @@ public:
       addPendingSyncEvent(event, thread);
     }
 
-		unlock_thread(thread);
+		thread->unlock();
   }
 
 	// Update the synchronization list.
   void advanceThreadSyncList() {
-    lock_thread(current);
-
+    current->lock();
     // Update next event of thread eventlist.
     current->syncevents.advanceEntry();
-
-    unlock_thread(current);
+    current->unlock();
   }
 
 
@@ -293,7 +291,7 @@ public:
     DT::Thread* thread = (DT::Thread*)event->thread;
     list_t* eventlist = &thread->pendingSyncevents;
 
-    lock_thread(current);
+    current->lock();
 
 		// Having pending events
     if(!isListEmpty(eventlist)) {
@@ -332,7 +330,7 @@ public:
       PRINF("signalCurrentThread %d: thread pending list is empty now!!!", thread->index);
     }
     
-		unlock_thread(current);
+		current->unlock();
   }
 
 	/*  Peek the synchronization event (first event in the thread), it will confirm the following things

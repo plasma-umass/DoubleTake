@@ -22,7 +22,6 @@
 
 #include "globalinfo.hh"
 #include "internalheap.hh"
-#include "internalsyncs.hh"
 #include "list.hh"
 #include "log.hh"
 #include "real.hh"
@@ -90,27 +89,7 @@ public:
   }
 
   // Register initial thread
-  void registerInitialThread(xmemory* memory) {
-    int tindex = allocThreadIndex();
-
-    if (tindex == -1) {
-      FATAL("couldn't allocThreadIndex");
-    }
-
-    DT::Thread* tinfo = getThreadInfo(tindex);
-
-    // Set the current to corresponding tinfo.
-    current = tinfo;
-    current->joiner = NULL;
-    current->index = tindex;
-    current->parent = NULL;
-
-    insertAliveThread(current, pthread_self());
-
-    // Setup tindex for initial thread.
-    threadRegister(true, memory);
-    current->isNewlySpawned = false;
-  }
+  void registerInitialThread(xmemory* memory);
 
   void thread_exit(void*);
   int thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFunction* fn, void* arg);
@@ -296,11 +275,11 @@ public:
 
 	// Mark whether 
 	void markThreadCondwait(pthread_cond_t * cond) {
-		lock_thread(current);
+		current->lock();
 		assert(current->status == E_THREAD_RUNNING);
 		current->status = E_THREAD_COND_WAITING;
 		current->condwait = cond;
-		unlock_thread(current);
+		current->unlock();
 
 		// Now thread is safe to be interrupted
 		setThreadSafe();
@@ -320,13 +299,13 @@ public:
 
 	void checkRollback(pthread_mutex_t * mutex) {
 		PRINF("checkRollback on thread %d with cond %p mutex %p\n", current->index, (void *)current->condwait, (void *)mutex);
-		lock_thread(current);
+		current->lock();
 		// Cleanup this thread
 		current->condwait = NULL;
 		
 		if(current->status == E_THREAD_ROLLBACK) {
       PRINF("THREAD%d (status %d) is wakenup after cond_wait, plan to rollback\n", current->index, current->status);
-			unlock_thread(current);
+			current->unlock();
 
 			if(mutex) {			
 				// If we are holding the lock, release it before the rollback.
@@ -340,7 +319,7 @@ public:
 		else {
       PRINF("THREAD%d (status %d) is wakenup after cond_wait with mutex %p\n", current->index, current->status, (void *)mutex);
 			current->status = E_THREAD_RUNNING;
-			unlock_thread(current);
+			current->unlock();
 		}
 	}
 
@@ -755,12 +734,9 @@ private:
 
   static bool isThreadDetached() { return current->isDetached; }
 
-  /// @ internal function: allocation a thread index
-  int allocThreadIndex() { return _thread.allocThreadIndex(); }
+  inline DT::Thread *getThreadInfo(int index) { return _thread.getThreadInfo(index); }
 
-  inline DT::Thread* getThreadInfo(int index) { return _thread.getThreadInfo(index); }
-
-  inline DT::Thread* getThread(pthread_t thread) {
+  inline DT::Thread *getThread(pthread_t thread) {
     return threadmap::getInstance().getThreadInfo(thread);
   }
 

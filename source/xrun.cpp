@@ -11,7 +11,6 @@
 #include <ucontext.h>
 
 #include "globalinfo.hh"
-#include "internalsyncs.hh"
 #include "leakcheck.hh"
 #include "syscalls.hh"
 #include "threadmap.hh"
@@ -111,7 +110,7 @@ void xrun::epochBegin() {
     if(thread != current && thread->hasJoined) {
       PRINF("xrun, joining thread %d\n", thread->index);
       thread->status = E_THREAD_EXITING;
-      Real::pthread_cond_signal(&thread->cond);
+      thread->signal();
       PRINF("xrun, actually joining thread %d\n", thread->index);
       Real::pthread_join(thread->self, NULL);
       PRINF("xrun, after joining thread %d\n", thread->index);

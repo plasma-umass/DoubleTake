@@ -9,7 +9,6 @@
 #include "xthread.hh"
 
 #include "globalinfo.hh"
-#include "internalsyncs.hh"
 #include "list.hh"
 #include "log.hh"
 #include "quarantine.hh"
@@ -151,7 +150,7 @@ void xthread::wakeupOldWaitingThreads() {
     		// If the thread is already at E_THREAD_WAITFOR_REAPING and it not a newly spawned thread,
 				// then we should wake this thread up immediately
 				thread->status = E_THREAD_ROLLBACK;
-				signal_thread(thread);
+				thread->signal();
     	}	
  			else if (thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
 				thread->status = E_THREAD_ROLLBACK;
@@ -194,6 +193,30 @@ void xthread::thread_exit(void*) {
   //  abort();
 }
 
+void xthread::registerInitialThread(xmemory* memory) {
+  int tindex = _thread.allocThreadIndex();
+
+  if (tindex == -1) {
+    FATAL("couldn't allocThreadIndex");
+  }
+
+  DT::Thread* tinfo = getThreadInfo(tindex);
+
+  // Set the current to corresponding tinfo.
+  current = tinfo;
+  current->joiner = NULL;
+  current->index = tindex;
+  current->parent = NULL;
+
+  insertAliveThread(current, pthread_self());
+
+  // Setup tindex for initial thread.
+  threadRegister(true, memory);
+  current->isNewlySpawned = false;
+}
+
+
+
 // In order to improve the speed, those spawning operations will do in
 // a batched way. Everything else will be stopped except this spawning
 // process.  All newly spawned children will also wait for the
@@ -212,7 +235,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     xrun::getInstance().epochEnd(false);
 
     // Allocate a global thread index for current thread.
-    tindex = allocThreadIndex();
+    tindex = _thread.allocThreadIndex();
 
     assert(tindex != -1);
 
@@ -240,10 +263,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     child->isSafe = false;
     child->creationEpoch = doubletake::epochID();
 
-    Real::pthread_mutex_init(&child->mutex, NULL);
-    Real::pthread_cond_init(&child->cond, NULL);
-
-    Real::pthread_mutex_lock(&child->mutex);
+    child->lock();
 
     // Now we set the joiner to NULL before creation.
     // It is impossible to let newly spawned child to set this correctly since
@@ -260,8 +280,8 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
     }
 
     while (!child->isSafe)
-      Real::pthread_cond_wait(&child->cond, &child->mutex);
-    Real::pthread_mutex_unlock(&child->mutex);
+      child->wait();
+    child->unlock();
 
     // Record spawning event
     _spawningList->recordSyncEvent(E_SYNC_SPAWN, result);
@@ -288,7 +308,7 @@ int xthread::thread_create(pthread_t* tid, const pthread_attr_t* attr, threadFun
       // Check the thread's status
       if(thread->status == E_THREAD_WAITFOR_REAPING) {
         thread->status = E_THREAD_ROLLBACK;
-        signal_thread(thread);
+        thread->signal();
       }
       else if(thread->status == E_THREAD_COND_WAITING || thread->status == E_THREAD_JOINING) {
         PRINF("Waken up thread %d with status %d condwait %p in thread_creation\n",
@@ -325,7 +345,7 @@ int xthread::thread_join(pthread_t joinee, void** result) {
   while(thread->status != E_THREAD_WAITFOR_REAPING) {
     // Set the joiner to current thread
     thread->joiner = current;
-    wait_thread(thread);
+    thread->wait();
   }
 
   // Now mark this thread's status so that the thread can be reaped.
@@ -347,17 +367,14 @@ int xthread::thread_join(pthread_t joinee, void** result) {
 }
 
 /// @brief Detach a thread
-int xthread::thread_detach(pthread_t thread) {
-  DT::Thread* threadinfo = NULL;
+int xthread::thread_detach(pthread_t ptid) {
+  // TODO: Try to check whether thread is empty or not?
+  DT::Thread *thread = getThreadInfo(ptid);
+  assert(thread != NULL);
 
-  // Try to check whether thread is empty or not?
-  threadinfo = getThreadInfo(thread);
-
-  assert(threadinfo != NULL);
-
-  lock_thread(threadinfo);
-  threadinfo->isDetached = true;
-  unlock_thread(threadinfo);
+  thread->lock();
+  thread->isDetached = true;
+  thread->unlock();
 
   abort();
 }
@@ -392,7 +409,7 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
   listInit(&current->pendingSyncevents);
 
   // Lock the mutex for this thread.
-  lock_thread(current);
+  current->lock();
 
   // Initialize corresponding cond and mutex.
   //listInit(&current->list);
@@ -439,11 +456,11 @@ void xthread::threadRegister(bool isMainThread, xmemory* memory) {
   current->stackTop = (void *)privateTop;
   current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
 
-  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p",
-        current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
-        (void *)&current->mutex);
+  //PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p",
+  //      current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
+  //      (void *)&current->mutex);
 
-  unlock_thread(current);
+  current->unlock();
 
   // WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
   PRINF("THREAD%d (pthread_t %p) registered at %p, status %d", current->index,
@@ -459,12 +476,12 @@ void* xthread::startThread(void* arg) {
   // Record some information before the thread moves on
   xrun::getInstance().thread()->threadRegister(false, nullptr);
 
-  Real::pthread_mutex_lock(&current->mutex);
+  current->lock();
 
   // Now current thread is safe to be interrupted.
   setThreadSafe();
-  Real::pthread_cond_broadcast(&current->cond);
-  Real::pthread_mutex_unlock(&current->mutex);
+  current->signal();
+  current->unlock();
 
   current->context.saveCurrent();
   doubletake::unblockEpochSignal();
@@ -490,7 +507,7 @@ void* xthread::startThread(void* arg) {
       assert(current->joiner->status == E_THREAD_JOINING);
       PRINF("Waking up the joiner %p!!!\n", (void*)current->joiner->self);
       // Now we can wakeup the joiner.
-      signal_thread(current);
+      current->signal();
     }
   } else {
     PRINF("Thread is detached!!!\n");
@@ -500,14 +517,14 @@ void* xthread::startThread(void* arg) {
   // should set the status to E_THREAD_EXITING, otherwise it should
   // be set to E_THREAD_ROLLBACK
   while(current->status != E_THREAD_EXITING && current->status != E_THREAD_ROLLBACK) {
-    wait_thread(current);
+    current->wait();
   }
 
   // What to do in the end of a thread?
   // It can only have two status, one is to rollback and another is to exit successfully.
   if(current->status == E_THREAD_ROLLBACK) {
     PRINF("THREAD%d (at %p) is wakenup and plan to rollback\n", current->index, (void *)current);
-    unlock_thread(current);
+    current->unlock();
 
     // Rollback: has the possible race conditions. FIXME
     // Since it is possible that we copy back everything after the join, then
@@ -521,7 +538,7 @@ void* xthread::startThread(void* arg) {
   } else {
     assert(current->status == E_THREAD_EXITING);
     PRINF("THREAD%d (at %p) is wakenup and plan to exit now\n", current->index, (void *)current);
-    unlock_thread(current);
+    current->unlock();
   }
   return result;
 }

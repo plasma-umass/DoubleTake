@@ -106,27 +106,6 @@ public:
 
   void finalize() {}
 
-	// Everytime, when a corresponding threadstruct is re-utilized by a different
-	// thread, we will re-initilize this. Thus, it is perfect to put this into 
-	// allocThreadIndex();
-
-	void threadInitialize(DT::Thread * thread) {
-      // Initialize the system call entries.
-      thread->syscalls.initialize(xdefines::MAX_SYSCALL_ENTRIES);
-
-			// Initilize the list of system calls.
-			for(int i = 0; i < E_SYS_MAX; i++) {
-				listInit(&thread->syslist[i]);
-			}
-		
-      // Initialize this syncevents.
-      thread->syncevents.initialize(xdefines::MAX_SYNCEVENT_ENTRIES);
-
-      // Starting
-      Real::pthread_mutex_init(&thread->mutex, NULL);
-      Real::pthread_cond_init(&thread->cond, NULL);
-	}
-
   /// @ internal function: allocation a thread index when spawning.
   /// Since we guarantee that only one thread can be in spawning phase,
   /// there is no need to acqurie the lock here.
@@ -150,7 +129,7 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex + 1) % _totalThreads;
-				threadInitialize(thread);
+				thread->initialize();
         break;
       } else {
         _threadIndex = (_threadIndex + 1) % _totalThreads;
