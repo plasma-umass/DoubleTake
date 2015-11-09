@@ -19,6 +19,8 @@
 #include "xcontext.hh"
 #include "xdefines.hh"
 
+
+
 typedef enum e_thrstatus {
   E_THREAD_STARTING = 0,
   E_THREAD_RUNNING,
@@ -38,7 +40,7 @@ typedef enum e_thrstatus {
 } thrStatus;
 
 // System calls that will be recorded.
-typedef enum e_recordSyscall {
+enum SyscallType {
   E_SYS_FILE_OPEN = 0,
   E_SYS_FILE_CLOSE,
   E_SYS_FILE_DUP,
@@ -50,13 +52,13 @@ typedef enum e_recordSyscall {
   E_SYS_GETTIMEOFDAY,
   E_SYS_TIMES,
   E_SYS_CLONE, // 10
-  E_SYS_MAX
-} eRecordSyscall;
+  E_SYS_MAX,
+};
 
 struct SyscallEntry {
   public:
-    eRecordSyscall syscall;
-    char data[64 - sizeof(eRecordSyscall)];
+    SyscallType syscall;
+    char data[64 - sizeof(SyscallType)];
 };
 
 typedef struct thread {

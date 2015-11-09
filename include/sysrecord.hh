@@ -80,11 +80,11 @@ private:
 public:
 
   // Record a file syscall according to given sc.
-  void recordFileOps(eRecordSyscall sc, int fd) {
+  void recordFileOps(SyscallType sc, int fd) {
 		recordFileOps(sc, fd, 0);
 	}
 
-  void recordFileOps(eRecordSyscall sc, int fd, int ret) {
+  void recordFileOps(SyscallType sc, int fd, int ret) {
     // using the assertion since only my code will call this.
     assert(sc <= E_SYS_FILE_DUP);
 
@@ -97,14 +97,14 @@ public:
   }
 
   // Get the fd with specific sc and remove corresponding item.
-  bool getFileOps(eRecordSyscall sc, int* fd) {
+  bool getFileOps(SyscallType sc, int* fd) {
 		int ret;
 
 		// We don't care about the return value for this case
 		return getFileOps(sc, fd, &ret);
 	}
 
-  bool getFileOps(eRecordSyscall sc, int* fd, int * ret) {
+  bool getFileOps(SyscallType sc, int* fd, int * ret) {
     bool isFound = false;
     assert(sc <= E_SYS_FILE_DUP);
     struct recordFile* record = (struct recordFile*)retrieveEntry(sc);
@@ -131,7 +131,7 @@ public:
   }
 
   // Record a file syscall according to given sc.
-  void recordDirOps(eRecordSyscall sc, DIR* dir) {
+  void recordDirOps(SyscallType sc, DIR* dir) {
     // using the assertion since only my code will call this.
     assert(sc == E_SYS_DIR_OPEN || sc == E_SYS_DIR_CLOSE);
 
@@ -143,7 +143,7 @@ public:
   }
 
   // Get the fd with specific sc and remove corresponding item.
-  bool getDirOps(eRecordSyscall sc, DIR** dir) {
+  bool getDirOps(SyscallType sc, DIR** dir) {
     bool isFound = false;
     assert(sc == E_SYS_DIR_OPEN || sc == E_SYS_DIR_CLOSE);
     struct recordDir* record = (struct recordDir*)retrieveEntry(sc);
@@ -336,7 +336,7 @@ public:
 
 private:
 
-  inline void* allocEntry(eRecordSyscall sc) {
+  inline void* allocEntry(SyscallType sc) {
     struct SyscallEntry* entry = current->syscalls.alloc();
     entry->syscall = sc;
 
@@ -345,7 +345,7 @@ private:
   }
 
   // For records, we only pop them from the beginning of a list
-  void* retrieveEntry(eRecordSyscall sc) {
+  void* retrieveEntry(SyscallType sc) {
     assert(sc >= E_SYS_FILE_OPEN && sc < E_SYS_MAX);
 
     struct SyscallEntry* entry = current->syscalls.retrieveIterEntry();
@@ -369,16 +369,16 @@ private:
   }
 
   // Remove an entry from the list.
-  void* retrieveListEntry(eRecordSyscall sc) {
+  void* retrieveListEntry(SyscallType sc) {
     assert(sc == E_SYS_FILE_CLOSE || sc == E_SYS_DIR_CLOSE || sc == E_SYS_MUNMAP);
     list_t* list = getTargetList(sc);
     return listRetrieveItem(list);
   }
 
-  inline list_t* getTargetList(eRecordSyscall sc) { return &current->syslist[sc]; }
+  inline list_t* getTargetList(SyscallType sc) { return &current->syslist[sc]; }
 
   // We are always insert an entry into the tail of a list.
-  void insertList(eRecordSyscall sc, list_t* list) {
+  void insertList(SyscallType sc, list_t* list) {
     list_t* head = getTargetList(sc);
     listInit(list);
     listInsertTail(list, head);
