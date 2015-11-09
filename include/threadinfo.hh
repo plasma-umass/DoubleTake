@@ -129,7 +129,7 @@ public:
         _aliveThreads++;
 
         _threadIndex = (_threadIndex + 1) % _totalThreads;
-				thread->initialize(index);
+				thread->allocate(index);
         break;
       } else {
         _threadIndex = (_threadIndex + 1) % _totalThreads;

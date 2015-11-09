@@ -21,6 +21,7 @@
 #include "xdefines.hh"
 
 
+class xmemory;
 
 typedef enum e_thrstatus {
   E_THREAD_STARTING = 0,
@@ -120,8 +121,9 @@ namespace DT {
     void* stackBottom;
     void* stackTop;
 
-    // Main thread have completely stack setting.
-    bool mainThread;
+    // the main thread is special because its stack came from the
+    // kernel, not pthread_create
+    bool isMain;
 
     semaphore sema;
 
@@ -132,7 +134,10 @@ namespace DT {
     void* startArg;
     void* result;
 
-    void initialize(int index);
+    // called in the parent thread
+    void allocate(int index);
+    // called in the child thread to initialize ourselves
+    void initialize(bool isMain, xmemory *memory);
 
     // These used to be functions in internalsync, but are better as
     // members on the thread object.

@@ -637,8 +637,6 @@ public:
     // PRINF("Disable check for current %p disablecheck %d\n", current, current->disablecheck);
   }
 
-  inline static pid_t gettid() { return syscall(SYS_gettid); }
-
   static void invokeCommit();
   bool addQuarantineList(void* ptr, size_t sz);
   static bool isThreadSafe(DT::Thread * thread);
@@ -727,10 +725,6 @@ private:
   }
 
   semaphore* getSemaphore() { return &current->sema; }
-
-  // Newly created threads MUST call this
-  void threadRegister(bool isMainThread, xmemory *memory);
-
 
   static bool isThreadDetached() { return current->isDetached; }
 

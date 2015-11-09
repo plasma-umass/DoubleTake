@@ -203,8 +203,7 @@ void xthread::registerInitialThread(xmemory* memory) {
 
   insertAliveThread(current, pthread_self());
 
-  // Setup tindex for initial thread.
-  threadRegister(true, memory);
+  current->initialize(true, memory);
   current->isNewlySpawned = false;
 }
 
@@ -379,84 +378,11 @@ int xthread::thread_kill(pthread_t thread, int sig) {
 }
 
 
-void xthread::threadRegister(bool isMainThread, xmemory* memory) {
-  pid_t tid = gettid();
-  uintptr_t privateTop;
-  size_t stackSize = __max_stack_size;
-
-  current->self = Real::pthread_self();
-
-  xrun::installSignalHandlers();
-
-  // Initialize event pool for this thread.
-  listInit(&current->pendingSyncevents);
-
-  // Lock the mutex for this thread.
-  current->lock();
-
-  // Initialize corresponding cond and mutex.
-  //listInit(&current->list);
-
-  current->tid = tid;
-  current->status = E_THREAD_RUNNING;
-  current->isNewlySpawned = true;
-
-  current->disablecheck = false;
-
-  // FIXME: problem
-  current->joiner = NULL;
-
-  // Initially, we should set to check system calls.
-  enableCheck();
-
-  // Initialize the localized synchronization sequence number.
-  // pthread_t thread = current->self;
-  pthread_t thread = pthread_self();
-
-  current->mainThread = isMainThread;
-
-  if(isMainThread) {
-    uintptr_t stackBottom;
-    // First, we must get the stack corresponding information.
-    memory->findStack(gettid(), &stackBottom, &privateTop);
-  } else {
-    /*
-      Currently, the memory layout of a thread private area is like the following.
-      ----------------------  Higher address
-      |      TCB           |
-      ---------------------- pd (pthread_self)
-      |      TLS           |
-      ----------------------
-      |      Stacktop      |
-      ---------------------- Lower address
-    */
-    // Calculate the top of this page.
-    privateTop = ((uintptr_t)thread + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
-  }
-
-  current->context.setupStackInfo((void *)privateTop, stackSize);
-  current->stackTop = (void *)privateTop;
-  current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
-
-  //PRINF("THREAD%d (pthread_t %p) registered at %p, status %d wakeup %p. lock at %p",
-  //      current->index, (void *)current->self, (void *)current, current->status, (void *)&current->cond,
-  //      (void *)&current->mutex);
-
-  current->unlock();
-
-  // WARN("THREAD%d (pthread_t %p) registered at %p", current->index, current->self, current );
-  PRINF("THREAD%d (pthread_t %p) registered at %p, status %d", current->index,
-        (void *)current->self, (void *)current, current->status);
-}
-
-
 void* xthread::startThread(void* arg) {
   void* result = NULL;
   current = (DT::Thread *)arg;
-
-  // PRINF("thread %p self %p is starting now.\n", current, (void*)current->self);
-  // Record some information before the thread moves on
-  xrun::getInstance().thread()->threadRegister(false, nullptr);
+  current->initialize(false, nullptr);
+  xrun::getInstance().installSignalHandlers();
 
   current->lock();
 

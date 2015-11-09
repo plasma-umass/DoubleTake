@@ -55,6 +55,7 @@ xrun::xrun()
   // ensure that is setup too.
   _thread.registerInitialThread(&_memory);
   current->isSafe = true;
+  installSignalHandlers();
 
   _syscalls.initialize();
 
@@ -294,11 +295,6 @@ void xrun::sigsegvHandler(int /* signum */, siginfo_t* siginfo, void* uctx) {
 }
 
 void xrun::installSignalHandlers() {
-  // Set up an alternate signal stack.
-  memset(&current->altstack, 0, sizeof(current->altstack));
-  current->altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
-  current->altstack.ss_size = SIGSTKSZ;
-  current->altstack.ss_flags = 0;
   Real::sigaltstack(&current->altstack, (stack_t *)NULL);
 
   /**

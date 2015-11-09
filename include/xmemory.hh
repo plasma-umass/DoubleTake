@@ -26,7 +26,6 @@
 #include "objectheader.hh"
 #include "real.hh"
 #include "selfmap.hh"
-#include "threadstruct.hh"
 #include "watchpoint.hh"
 #include "xdefines.hh"
 #include "xglobals.hh"
