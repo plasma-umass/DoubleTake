@@ -451,10 +451,9 @@ extern "C" {
   }
 
   ssize_t write(int fd, const void* buf, size_t count) {
-    if(!initialized || fd == 1 || fd == 2) {
+    if(!initialized) {
       return Real::write(fd, buf, count);
     } else {
-      //  //fprintf(stderr, " write in doubletake at %d\n", __LINE__);
       return syscalls::getInstance().write(fd, buf, count);
     }
   }
