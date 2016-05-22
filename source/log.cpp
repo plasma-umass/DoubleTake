@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "log.hh"
+#include "real.hh"
 
 #define NORMAL_CYAN "\033[36m"
 #define NORMAL_MAGENTA "\033[35m"
@@ -71,7 +72,7 @@ void doubletake::logf(const char *file, int line, int level, const char *fmt, ..
   ::vsnprintf(tbuf, LOG_SIZE, fmtbuf, args);
   va_end(args);
 
-  write(OUTFD, tbuf, strlen(tbuf));
+  Real::write(OUTFD, tbuf, strlen(tbuf));
 }
 
 void doubletake::printf(const char *fmt, ...) {
@@ -86,7 +87,7 @@ void doubletake::printf(const char *fmt, ...) {
   ::vsnprintf(tbuf, LOG_SIZE, fmtbuf, args);
   va_end(args);
 
-  write(OUTFD, tbuf, strlen(tbuf));
+  Real::write(OUTFD, tbuf, strlen(tbuf));
 }
 
 void doubletake::fatalf(const char *file, int line, const char *fmt, ...) {
