@@ -128,14 +128,11 @@ public:
   ssize_t write(int fd, const void* buf, size_t count) {
     ssize_t ret;
 
-    // Check whether this fd is not a socketid.
-    if(_fops.checkPermission(fd)) {
-      ret = Real::write(fd, buf, count);
-    } else {
-      epochEnd();
-      ret = Real::write(fd, buf, count);
-      epochBegin();
-    }
+    // writes always need to end an epoch, otherwise we could end up
+    // with double-writes if we rollback.
+    epochEnd();
+    ret = Real::write(fd, buf, count);
+    epochBegin();
 
     return ret;
   }
