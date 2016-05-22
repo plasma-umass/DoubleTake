@@ -46,7 +46,7 @@ bool watchpoint::addWatchpoint(void* addr, size_t value, faultyObjectType objtyp
     PRINT("DoubleTake: Buffer overflow detected at address %p: value=0x%zx, size=%zx, start=%p\n",
 	  addr, value, objectsize, objectstart);
     // PRINT("DoubleTake: Buffer overflow at address %p with value 0x%lx. \n", addr, value);
-  } 
+  }
 	else if(objtype == OBJECT_TYPE_USEAFTERFREE) {
    // assert(objtype == OBJECT_TYPE_USEAFTERFREE);
     PRINT("DoubleTake: Use-after-free error detected at address %p.", addr);
@@ -114,7 +114,8 @@ void watchpoint::installWatchpoints() {
   // Now we are setting a trap handler for myself.
   trap_action.sa_sigaction = watchpoint::trapHandler;
   trap_action.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
-  Real::sigaction(SIGTRAP, &trap_action, NULL);
+  int err = Real::sigaction(SIGTRAP, &trap_action, NULL);
+  assert(err == 0);
 
   // Setup the watchpoints information and notify the daemon (my parent)
   struct watchpointsInfo wpinfo;
