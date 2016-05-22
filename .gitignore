@@ -5,6 +5,7 @@
 libdoubletake.so
 libdttest_s.a
 simple.test
+simple_cxx.test
 unit.test
 heaplayers
 tests/simple_leak/simple_leak
