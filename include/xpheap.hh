@@ -12,6 +12,7 @@
 
 #include <new>
 
+#include "compat.hh"
 #include "log.hh"
 #include "objectheader.hh"
 #include "sentinelmap.hh"
