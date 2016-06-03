@@ -61,7 +61,7 @@ void DT::Thread::initialize(bool isMain, xmemory* memory) {
   this->status = E_THREAD_RUNNING;
   this->tid = gettid();
 
-  listInit(&current->pendingSyncevents);
+  listInit(&this->pendingSyncevents);
 
   uintptr_t privateTop = 0;
   if (isMain) {
@@ -83,16 +83,14 @@ void DT::Thread::initialize(bool isMain, xmemory* memory) {
     privateTop = ((uintptr_t)this->self + xdefines::PageSize) & ~xdefines::PAGE_SIZE_MASK;
   }
 
-  current->context.setupStackInfo((void *)privateTop, stackSize);
-  current->stackTop = (void *)privateTop;
-  current->stackBottom = (void*)((intptr_t)privateTop - stackSize);
+  this->context.setupStackInfo((void *)privateTop, stackSize);
+  this->stackTop = (void *)privateTop;
+  this->stackBottom = (void*)((intptr_t)privateTop - stackSize);
 
-  current = this;
-
-  if (!current->altstack.ss_sp) {
-    current->altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
-    current->altstack.ss_size = SIGSTKSZ;
-    current->altstack.ss_flags = 0;
+  if (!this->altstack.ss_sp) {
+    this->altstack.ss_sp = MM::mmapAllocatePrivate(SIGSTKSZ);
+    this->altstack.ss_size = SIGSTKSZ;
+    this->altstack.ss_flags = 0;
   }
 }
 
