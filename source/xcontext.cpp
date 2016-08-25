@@ -16,6 +16,7 @@ extern "C" {
 #define PAGE_SIZE 4096
 #define PAGE_MASK (PAGE_SIZE-1)
 #define PAGE_ALIGN(x) (((intptr_t)(x) + (intptr_t)(PAGE_MASK)) & ~PAGE_MASK)
+// FIXME: not right: what if we pass in 0, or some other multiple of PAGE_SIZE?
 #define PAGE_ALIGN_DOWN(x) PAGE_ALIGN(x) - PAGE_SIZE
 
 static intptr_t getStackPointer(ucontext* uctx) {
