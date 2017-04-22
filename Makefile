@@ -28,7 +28,7 @@ RANLIB   = ranlib
 
 # want stdatomic.h in C, which is a c11 feature
 CVER     = c11
-CXXVER   = c++11
+CXXVER   = c++14
 
 CFLAGS   = -g -pedantic -fPIC -fno-omit-frame-pointer -D_DEFAULT_SOURCE -D_BSD_SOURCE \
            $(WARNFLAGS) $(FEATURE_FLAGS) -Iinclude -Iheaplayers

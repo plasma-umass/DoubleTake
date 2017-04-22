@@ -157,6 +157,20 @@ extern "C" {
     else
       return 0;
 	}
+
+  // ensure we don't concurrently allocate/mess with internal heap data
+  // structures while forking.  This is not normally invoked when
+  // libmesh is dynamically linked or LD_PRELOADed into a binary.
+  void xxmalloc_lock(void) {
+    // mesh::runtime().lock();
+  }
+
+  // ensure we don't concurrently allocate/mess with internal heap data
+  // structures while forking.  This is not normally invoked when
+  // libmesh is dynamically linked or LD_PRELOADed into a binary.
+  void xxmalloc_unlock(void) {
+    // mesh::runtime().unlock();
+  }
 }
 
 // Thread functions

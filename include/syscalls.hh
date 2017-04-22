@@ -907,7 +907,7 @@ public:
 
   //  void exit(int status){
 
-  pid_t wait4(pid_t pid, void* status, int options, struct rusage* rusage) {
+  pid_t wait4(pid_t pid, int* status, int options, struct rusage* rusage) {
 
     pid_t ret;
     epochEnd();

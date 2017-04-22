@@ -129,7 +129,7 @@ public:
 
 private:
   std::map<interval, mapping, std::less<interval>,
-           HL::STLAllocator<std::pair<interval, mapping>, InternalHeapAllocator>> _mappings;
+           HL::STLAllocator<std::pair<const interval, mapping>, InternalHeapAllocator>> _mappings;
 
   std::string _exe;
   void* _appTextStart;
