@@ -3,21 +3,21 @@
 /*
 
   Heap Layers: An Extensible Memory Allocation Infrastructure
-  
-  Copyright (C) 2000-2014 by Emery Berger
-  http://www.cs.umass.edu/~emery
+
+  Copyright (C) 2000-2015 by Emery Berger
+  http://www.emeryberger.com
   emery@cs.umass.edu
-  
+
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
-  
+
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -40,16 +40,15 @@ extern "C" {
 
   void * xxmalloc (size_t);
   void   xxfree (void *);
-  void * xxrealloc (void *, size_t);
 
   // Takes a pointer and returns how much space it holds.
   size_t xxmalloc_usable_size (void *);
 
   // Locks the heap(s), used prior to any invocation of fork().
-  void xxmalloc_lock (void);
+  void xxmalloc_lock();
 
   // Unlocks the heap(s), after fork().
-  void xxmalloc_unlock (void);
+  void xxmalloc_unlock();
 
 }
 
@@ -127,6 +126,12 @@ extern "C" {
 
 /***** generic malloc functions *****/
 
+#include <stdio.h>
+
+extern "C" void MYCDECL CUSTOM_FREE(void *)     __attribute__((always_inline));
+extern "C" void * MYCDECL CUSTOM_MALLOC(size_t) __attribute__((always_inline));
+extern "C" void * MYCDECL CUSTOM_CALLOC(size_t nelem, size_t elsize) __attribute__((always_inline));
+
 extern "C" void MYCDECL CUSTOM_FREE (void * ptr)
 {
   xxfree (ptr);
@@ -134,21 +139,18 @@ extern "C" void MYCDECL CUSTOM_FREE (void * ptr)
 
 extern "C" void * MYCDECL CUSTOM_MALLOC(size_t sz)
 {
-  if (sz >> (sizeof(size_t) * 8 - 1)) {
-    return NULL;
-  }
   void * ptr = xxmalloc(sz);
-	//fprintf(stderr, "custom malloc ptr %p\n", ptr); 
   return ptr;
 }
 
 extern "C" void * MYCDECL CUSTOM_CALLOC(size_t nelem, size_t elsize)
 {
   size_t n = nelem * elsize;
-  if (elsize && nelem != n / elsize) {
+  if (!elsize) {
     return NULL;
   }
-  void * ptr = CUSTOM_MALLOC(n);
+  void * ptr = xxmalloc(n);
+
   // Zero out the malloc'd block.
   if (ptr != NULL) {
     memset (ptr, 0, n);
@@ -159,13 +161,13 @@ extern "C" void * MYCDECL CUSTOM_CALLOC(size_t nelem, size_t elsize)
 
 #if !defined(_WIN32)
 extern "C" void * MYCDECL CUSTOM_MEMALIGN (size_t alignment, size_t size)
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__SVR4)
   throw()
 #endif
 ;
 
 extern "C" int CUSTOM_POSIX_MEMALIGN (void **memptr, size_t alignment, size_t size)
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__SVR4)
 throw()
 #endif
 {
@@ -187,7 +189,7 @@ throw()
 
 
 extern "C" void * MYCDECL CUSTOM_MEMALIGN (size_t alignment, size_t size)
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__SVR4)
   throw()
 #endif
 {
@@ -199,18 +201,18 @@ extern "C" void * MYCDECL CUSTOM_MEMALIGN (size_t alignment, size_t size)
     }
 
   if (alignment == sizeof(double)) {
-    return CUSTOM_MALLOC (size);
+    return xxmalloc (size);
   } else {
     // Try to just allocate an object of the requested size.
     // If it happens to be aligned properly, just return it.
-    void * ptr = CUSTOM_MALLOC(size);
+    void * ptr = xxmalloc(size);
     if (((size_t) ptr & (alignment - 1)) == (size_t) ptr) {
       // It is already aligned just fine; return it.
       return ptr;
     }
     // It was not aligned as requested: free the object and allocate a big one.
     CUSTOM_FREE(ptr);
-    ptr = CUSTOM_MALLOC (size + 2 * alignment);
+    ptr = xxmalloc (size + 2 * alignment);
     void * alignedPtr = (void *) (((size_t) ptr + alignment - 1) & ~(alignment - 1));
     return alignedPtr;
   }
@@ -240,7 +242,7 @@ extern "C" void MYCDECL CUSTOM_CFREE (void * ptr)
 }
 
 extern "C" size_t MYCDECL CUSTOM_GOODSIZE (size_t sz) {
-  void * ptr = CUSTOM_MALLOC(sz);
+  void * ptr = xxmalloc(sz);
   size_t objSize = CUSTOM_GETSIZE(ptr);
   CUSTOM_FREE(ptr);
   return objSize;
@@ -248,12 +250,8 @@ extern "C" size_t MYCDECL CUSTOM_GOODSIZE (size_t sz) {
 
 extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
 {
-#ifdef DETECT_OVERFLOW
-  return xxrealloc(ptr, sz);
-#else
-	//fprintf(stderr, "custom realloc ptr %p sz %lx\n", ptr, sz); 
   if (ptr == NULL) {
-    ptr = CUSTOM_MALLOC (sz);
+    ptr = xxmalloc (sz);
     return ptr;
   }
   if (sz == 0) {
@@ -261,7 +259,7 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
 #if defined(__APPLE__)
     // 0 size = free. We return a small object.  This behavior is
     // apparently required under Mac OS X and optional under POSIX.
-    return CUSTOM_MALLOC(1);
+    return xxmalloc(1);
 #else
     // For POSIX, don't return anything.
     return NULL;
@@ -270,22 +268,15 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
 
   size_t objSize = CUSTOM_GETSIZE (ptr);
 
-  void * buf = CUSTOM_MALLOC(sz);
+  void * buf = xxmalloc(sz);
 
   if (buf != NULL) {
-#if 0
-		// Bug found by Tongping Liu.
-		// We can't do this for doubletake since doubletake 
-		// relies on those malloc-related information to capture buffer overflows.
-		// Since it didn't notify doubletake about this trick, 
-		// doubletake will report a lot of false negatives.
     if (objSize == CUSTOM_GETSIZE(buf)) {
       // The objects are the same actual size.
       // Free the new object and return the original.
       CUSTOM_FREE (buf);
       return ptr;
     }
-#endif
     // Copy the contents of the original object
     // up to the size of the new block.
     size_t minSize = (objSize < sz) ? objSize : sz;
@@ -297,17 +288,16 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
 
   // Return a pointer to the new one.
   return buf;
-#endif
 }
 
-#if defined(linux)
+#if defined(__linux)
 
 extern "C" char * MYCDECL CUSTOM_STRNDUP(const char * s, size_t sz)
 {
   char * newString = NULL;
   if (s != NULL) {
     size_t cappedLength = strnlen (s, sz);
-    if ((newString = (char *) CUSTOM_MALLOC(cappedLength + 1))) {
+    if ((newString = (char *) xxmalloc(cappedLength + 1))) {
       strncpy(newString, s, cappedLength);
       newString[cappedLength] = '\0';
     }
@@ -320,7 +310,7 @@ extern "C" char * MYCDECL CUSTOM_STRDUP(const char * s)
 {
   char * newString = NULL;
   if (s != NULL) {
-    if ((newString = (char *) CUSTOM_MALLOC(strlen(s) + 1))) {
+    if ((newString = (char *) xxmalloc(strlen(s) + 1))) {
       strcpy(newString, s);
     }
   }
@@ -344,12 +334,12 @@ extern "C"  char * MYCDECL CUSTOM_GETCWD(char * buf, size_t size)
   static getcwdFunction * real_getcwd
     = reinterpret_cast<getcwdFunction *>
     (reinterpret_cast<uintptr_t>(dlsym (RTLD_NEXT, "getcwd")));
-  
+
   if (!buf) {
     if (size == 0) {
       size = PATH_MAX;
     }
-    buf = (char *) CUSTOM_MALLOC(size);
+    buf = (char *) xxmalloc(size);
   }
   return (real_getcwd)(buf, size);
 }
@@ -362,25 +352,25 @@ extern "C" int  CUSTOM_MALLOPT (int /* param */, int /* value */) {
   return 1; // success.
 }
 
-extern "C" int CUSTOM_MALLOC_TRIM(size_t /* pad */) {
+extern "C" int xxmalloc_TRIM(size_t /* pad */) {
   // NOP.
   return 0; // no memory returned to OS.
 }
 
-extern "C" void CUSTOM_MALLOC_STATS() {
+extern "C" void xxmalloc_STATS() {
   // NOP.
 }
 
-extern "C" void * CUSTOM_MALLOC_GET_STATE() {
+extern "C" void * xxmalloc_GET_STATE() {
   return NULL; // always returns "error".
 }
 
-extern "C" int CUSTOM_MALLOC_SET_STATE(void * /* ptr */) {
+extern "C" int xxmalloc_SET_STATE(void * /* ptr */) {
   return 0; // success.
 }
 
 #if defined(__GNUC__) && !defined(__FreeBSD__)
-extern "C" struct mallinfo CUSTOM_MALLINFO(void) {
+extern "C" struct mallinfo CUSTOM_MALLINFO() {
   // For now, we return useless stats.
   struct mallinfo m;
   m.arena = 0;
@@ -407,11 +397,11 @@ extern "C" struct mallinfo CUSTOM_MALLINFO(void) {
 #define NEW_INCLUDED
 
 void * operator new (size_t sz)
-#if defined(__GNUC__)
+#if defined(_GLIBCXX_THROW)
   _GLIBCXX_THROW (std::bad_alloc)
 #endif
 {
-  void * ptr = CUSTOM_MALLOC (sz);
+  void * ptr = xxmalloc (sz);
   if (ptr == NULL) {
     throw std::bad_alloc();
   } else {
@@ -429,15 +419,15 @@ void operator delete (void * ptr)
 
 #if !defined(__SUNPRO_CC) || __SUNPRO_CC > 0x420
 void * operator new (size_t sz, const std::nothrow_t&) throw() {
-  return CUSTOM_MALLOC(sz);
-} 
+  return xxmalloc(sz);
+}
 
-void * operator new[] (size_t size) 
-#if defined(__GNUC__)
+void * operator new[] (size_t size)
+#if defined(_GLIBCXX_THROW)
   _GLIBCXX_THROW (std::bad_alloc)
 #endif
 {
-  void * ptr = CUSTOM_MALLOC(size);
+  void * ptr = xxmalloc(size);
   if (ptr == NULL) {
     throw std::bad_alloc();
   } else {
@@ -448,16 +438,40 @@ void * operator new[] (size_t size)
 void * operator new[] (size_t sz, const std::nothrow_t&)
   throw()
  {
-  return CUSTOM_MALLOC(sz);
-} 
+  return xxmalloc(sz);
+}
 
 void operator delete[] (void * ptr)
+#if defined(_GLIBCXX_USE_NOEXCEPT)
+  _GLIBCXX_USE_NOEXCEPT
+#else
+#if defined(__GNUC__)
+  // clang + libcxx on linux
+  _NOEXCEPT
+#endif
+#endif
+{
+  CUSTOM_FREE (ptr);
+}
+
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309
+
+void operator delete(void * ptr, size_t)
+#if !defined(linux_)
+  throw ()
+#endif
+{
+  CUSTOM_FREE (ptr);
+}
+
+void operator delete[](void * ptr, size_t)
 #if defined(__GNUC__)
   _GLIBCXX_USE_NOEXCEPT
 #endif
 {
   CUSTOM_FREE (ptr);
 }
+#endif
 
 #endif
 #endif
@@ -468,7 +482,7 @@ void operator delete[] (void * ptr)
 
 extern "C" void * MYCDECL CUSTOM_VALLOC (size_t sz)
 {
-  return CUSTOM_MEMALIGN (8192, sz);
+  return CUSTOM_MEMALIGN (8192UL, sz);
 }
 
 
@@ -476,7 +490,7 @@ extern "C" void * MYCDECL CUSTOM_PVALLOC (size_t sz)
 {
   // Rounds up to the next pagesize and then calls valloc. Hoard
   // doesn't support aligned memory requests.
-  return CUSTOM_VALLOC ((sz + 8191) & ~8191);
+  return CUSTOM_VALLOC ((sz + 8191UL) & ~8191UL);
 }
 
 // The wacky recalloc function, for Windows.

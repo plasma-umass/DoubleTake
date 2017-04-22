@@ -12,12 +12,10 @@
 #include "hash.h"
 #include "ilog2.h"
 #include "gcd.h"
-#include "guard.h"
 #include "istrue.h"
 #include "lcm.h"
 #include "modulo.h"
 #include "myhashmap.h"
-#include "sassert.h"
 #include "sllist.h"
 #include "timer.h"
 

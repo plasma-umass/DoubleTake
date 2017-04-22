@@ -30,7 +30,6 @@
 #include <cstddef>
 
 #include "utility/gcd.h"
-#include "utility/sassert.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -45,9 +44,9 @@
 
 namespace HL {
 
-  template <int ChunkSize,
+  template <size_t ChunkSize,
 	    class SuperHeap,
-	    int Alignment_ = 1>
+	    size_t Alignment_ = 1UL>
   class BumpAlloc : public SuperHeap {
   public:
 
@@ -57,20 +56,17 @@ namespace HL {
       : _bump (NULL),
 	_remaining (0)
     {
-      sassert<((int) gcd<ChunkSize, Alignment>::VALUE == Alignment)> 
-	verifyAlignmentSatisfiable;
-      sassert<((int) gcd<SuperHeap::Alignment, Alignment>::VALUE == Alignment)>
-	verifyAlignmentFromSuperHeap;
-      sassert<((Alignment & (Alignment-1)) == 0)>
-	verifyPowerOfTwoAlignment;
-      verifyAlignmentSatisfiable = verifyAlignmentSatisfiable;
-      verifyAlignmentFromSuperHeap = verifyAlignmentFromSuperHeap;
-      verifyPowerOfTwoAlignment = verifyPowerOfTwoAlignment;
+      static_assert((int) gcd<ChunkSize, Alignment>::VALUE == Alignment,
+		    "Alignment must be satisfiable.");
+      static_assert((int) gcd<SuperHeap::Alignment, Alignment>::VALUE == Alignment,
+		    "Alignment must be compatible with the SuperHeap's alignment.");
+      static_assert((Alignment & (Alignment-1)) == 0,
+		    "Alignment must be a power of two.");
     }
 
     inline void * malloc (size_t sz) {
       // Round up the size if necessary.
-      size_t newSize = (sz + Alignment - 1) & ~(Alignment - 1);
+      size_t newSize = (sz + Alignment - 1UL) & ~(Alignment - 1UL);
 
       // If there's not enough space left to fulfill this request, get
       // another chunk.

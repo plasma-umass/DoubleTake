@@ -4,7 +4,7 @@
 
   Heap Layers: An Extensible Memory Allocation Infrastructure
   
-  Copyright (C) 2000-2012 by Emery Berger
+  Copyright (C) 2000-2015 by Emery Berger
   http://www.cs.umass.edu/~emery
   emery@cs.umass.edu
   
@@ -42,7 +42,6 @@
 
 #include "utility/align.h"
 #include "wrappers/mallocinfo.h"
-#include "utility/sassert.h"
 
 namespace HL {
 
@@ -53,7 +52,7 @@ namespace HL {
     enum { Alignment = SuperHeap::Alignment };
 
     ZoneHeap()
-      : _sizeRemaining (-1),
+      : _sizeRemaining (0),
 	_currentArena (NULL),
 	_pastArenas (NULL)
     {}
@@ -94,21 +93,10 @@ namespace HL {
 
     inline void * zoneMalloc (size_t sz) {
       void * ptr;
-
-			//fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx. int sz %x\n", sz, _currentArena, _sizeRemaining, (int)sz);
       // Round up size to an aligned value.
       sz = HL::align<HL::MallocInfo::Alignment>(sz);
-
-			//fprintf(stderr, "after alingment sz %lx: zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx\n", sz, sz, _currentArena, _sizeRemaining);
-	
-			//fprintf(stderr, "first is %d second is %d\n", (_currentArena == NULL), (_sizeRemaining < (unsigned int) sz));	
-			//fprintf(stderr, "first is %d second removing int is %d\n", (_currentArena == NULL), (_sizeRemaining <  sz));	
       // Get more space in our arena if there's not enough room in this one.
-			// TONGPING: first bug, we should not use (int) to transfer
-      if ((_currentArena == NULL) || (_sizeRemaining < (ssize_t)sz)) {
-			//fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx line %d\n", sz, _currentArena, _sizeRemaining, __LINE__);
-			
-		//	fprintf(stderr, "zoneMalloc size sz %lx _currentArena %p _sizeRemaining %lx _currentArena at %p\n", sz, _currentArena, _sizeRemaining, &_currentArena);
+      if ((_currentArena == NULL) || (_sizeRemaining < sz)) {
 	// First, add this arena to our past arena list.
 	if (_currentArena != NULL) {
 	  _currentArena->nextArena = _pastArenas;
@@ -121,16 +109,12 @@ namespace HL {
 	}
 	_currentArena =
 	  (Arena *) SuperHeap::malloc (allocSize + sizeof(Arena));
-	//fprintf(stderr, "_currentArena is %p\n", _currentArena);
 	if (_currentArena == NULL) {
 	  return NULL;
 	}
 	_currentArena->arenaSpace = (char *) (_currentArena + 1);
 	_currentArena->nextArena = NULL;
-	
-		// TONGPING Second bug: 
-		//_sizeRemaining = ChunkSize;
-			_sizeRemaining = allocSize;
+	_sizeRemaining = allocSize;
       }
       // Bump the pointer and update the amount of memory remaining.
       _sizeRemaining -= sz;
@@ -144,7 +128,8 @@ namespace HL {
     class Arena {
     public:
       Arena() {
-	sassert<(sizeof(Arena) % HL::MallocInfo::Alignment == 0)> verifyAlignment;
+	static_assert((sizeof(Arena) % HL::MallocInfo::Alignment == 0),
+		      "Alignment must match Arena size.");
       }
 
       Arena * nextArena;
@@ -152,7 +137,7 @@ namespace HL {
     };
     
     /// Space left in the current arena.
-    long _sizeRemaining;
+    size_t _sizeRemaining;
 
     /// The current arena.
     Arena * _currentArena;
